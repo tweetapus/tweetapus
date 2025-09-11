@@ -1,7 +1,4 @@
-:root {
-  --primary: #1185fe;
-  --primary-rgb: 17, 133, 254;
-}
+@import url("../shared/variables.css");
 
 * {
   box-sizing: border-box;
@@ -13,11 +10,15 @@ body {
   font-optical-sizing: auto;
   max-width: 500px;
   margin: 4em auto;
-  color: #1a1a1a;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   font-size: 16px;
   font-variation-settings: "slnt" 0, "wdth" 100;
   line-height: 1.5;
   padding: 0 24px;
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+  overflow-x: hidden;
 }
 
 nav {
@@ -58,15 +59,15 @@ h1 {
   a {
     text-decoration: none;
     margin-right: 8px;
-    color: rgba(0, 0, 0, 0.25);
+    color: var(--text-muted);
 
     &.active {
-      color: #1a1a1a;
+      color: var(--text-primary);
       pointer-events: none;
     }
 
     :hover {
-      color: rgba(0, 0, 0, 0.4);
+      color: var(--text-muted-hover);
     }
   }
 }
@@ -74,7 +75,7 @@ h1 {
 .compose-tweet {
   margin-bottom: 24px;
   width: 100%;
-  border-bottom: 1px solid #e3e5e7;
+  border-bottom: 1px solid var(--border-primary);
   padding-bottom: 24px;
 
   .compose-header {
@@ -104,10 +105,10 @@ h1 {
         height: 0px;
         padding: 0;
         background: transparent;
-        color: #1a1a1a;
+        color: var(--text-primary);
 
         &::placeholder {
-          color: #6b7280;
+          color: var(--text-secondary);
           font-size: 18px;
         }
       }
@@ -120,10 +121,10 @@ h1 {
 
         .character-counter {
           font-size: 14px;
-          color: #6b7280;
+          color: var(--text-secondary);
 
           &#over-limit {
-            color: #dc2626;
+            color: var(--error-color);
           }
         }
 
@@ -140,11 +141,11 @@ h1 {
           transition: all 0.2s;
 
           &:hover:not(:disabled) {
-            background: rgba(var(--primary-rgb), 0.9);
+            background: var(--primary-hover);
           }
 
           &:disabled {
-            background: rgba(var(--primary-rgb), 0.5);
+            background: var(--primary-disabled);
             cursor: not-allowed;
           }
 
@@ -185,9 +186,9 @@ h1 {
 
         p {
           margin: 0px;
-            display: flex;
-            align-items: center;
-            gap: 2px;
+          display: flex;
+          align-items: center;
+          gap: 2px;
 
           &.name {
             font-weight: 500;
@@ -195,7 +196,7 @@ h1 {
           }
 
           &.username {
-            color: #6b7280;
+            color: var(--text-secondary);
           }
         }
       }
@@ -242,7 +243,7 @@ h1 {
         padding: 0px;
         border: none;
         background: none;
-        color: #344252;
+        color: var(--text-secondary);
         cursor: pointer;
         font-size: 15px;
         font-family: inherit;
@@ -253,7 +254,7 @@ h1 {
     }
 
     .tweet-focused-reply {
-      border-left: 2px solid #e3e5e7;
+      border-left: 2px solid var(--border-primary);
       margin-left: 14px;
       padding-left: 14px;
 
@@ -281,7 +282,7 @@ h1 {
   left: 0;
   width: 100%;
   height: 100%;
-  background: white;
+  background: var(--loader-bg);
   z-index: 1000;
   align-items: center;
   justify-content: center;

@@ -1,0 +1,47 @@
+.dark-toggle {
+  background: transparent;
+  border: 1px solid var(--border-tertiary);
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  min-width: 40px;
+  justify-content: center;
+}
+
+.dark-toggle:hover {
+  background: var(--bg-overlay-light);
+  border-color: var(--border-hover);
+}
+
+.dark-toggle:active {
+  transform: scale(0.98);
+}
+
+.dark-toggle .toggle-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dark-toggle .toggle-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.dark-toggle .toggle-text {
+  font-weight: 500;
+}
+
+.dark-toggle {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  z-index: 100;
+}

@@ -9,6 +9,7 @@
 
     <link rel="stylesheet" href="/public/timeline/styles.css" />
     <link rel="stylesheet" href="/public/shared/toasts.css" />
+    <link rel="stylesheet" href="/public/shared/darkmode.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap"
       rel="stylesheet"
@@ -27,7 +28,7 @@
         >
           <path
             d="M4.5 6.75L9 11.25L13.5 6.75"
-            stroke="black"
+            stroke="currentColor"
             stroke-width="1.5"
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -35,6 +36,8 @@
         </svg>
       </button>
     </nav>
+
+    <div class="dark-toggle"></div>
     <svg
       class="icon"
       width="48"
@@ -76,6 +79,7 @@
 
     <div class="tweets"></div>
 
+    <script src="/public/shared/darkmode.js" defer></script>
     <script src="/public/timeline/script.js" defer type="module"></script>
 
     <div class="loader">

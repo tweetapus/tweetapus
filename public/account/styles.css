@@ -1,6 +1,4 @@
-:root {
-  --primary: #1285fe;
-}
+@import url('../shared/variables.css');
 
 * {
   box-sizing: border-box;
@@ -11,7 +9,8 @@ body {
     "Helvetica Neue", sans-serif;
   max-width: 400px;
   margin: 0px auto;
-  color: #1a1a1a;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   font-size: 16px;
   line-height: 1.5;
   padding: 0 24px;
@@ -43,7 +42,7 @@ h1 {
   margin-top: 8px;
   margin-bottom: 0px;
   text-align: center;
-  color: #1a1a1a;
+  color: var(--text-primary);
   user-select: none;
   transition: opacity 0.4s 100ms, transform 0.4s 100ms;
 }
@@ -87,7 +86,7 @@ label {
   display: block;
   font-weight: 500;
   margin-bottom: 8px;
-  color: #1a1a1a;
+  color: var(--text-primary);
   font-size: 14px;
   user-select: none;
 }
@@ -140,63 +139,63 @@ button.btn:not(:disabled):active {
 }
 
 #login:hover:not(:disabled) {
-  background: #1076e1;
+  background: var(--primary-hover);
 }
 
 #login:focus:not(:disabled) {
-  background-color: #0f62b9;
+  background-color: var(--primary-focus);
 }
 
 #login:disabled {
-  background: #d1d5db;
+  background: var(--btn-disabled-bg);
   cursor: not-allowed;
 }
 
 input#username {
   width: 100%;
   padding: 12px 16px;
-  border: 1px solid color(display-p3 0 0 0 / 0.1922);
-  color: #202020;
+  border: 1px solid var(--border-input);
+  color: var(--text-primary);
   border-radius: 8px;
   padding-left: 29px;
   font-size: 16px;
   font-family: inherit;
-  background: white;
+  background: var(--bg-primary);
   box-sizing: border-box;
 }
 
 input#username:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: inset 0 0 0 1px var(--primary);
+  border-color: var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
 }
 
 input#username::placeholder {
-  color: #838383;
+  color: var(--text-placeholder);
   font-weight: 350;
 }
 
 #register,
 #logout {
-  background: white;
-  color: #202020;
-  border: 1px solid color(display-p3 0 0 0 / 0.1922);
+  background: var(--btn-secondary-bg);
+  color: var(--btn-secondary-color);
+  border: 1px solid var(--btn-secondary-border);
 }
 
 #register:hover:not(:disabled),
 #logout:hover:not(:disabled) {
-  border-color: #bbb;
+  border-color: var(--border-hover);
 }
 
 #register:focus:not(:disabled),
 #logout:focus:not(:disabled) {
-  background-color: #f0f0f0;
+  background-color: var(--btn-secondary-hover-bg);
 }
 
 #register:disabled,
 #logout:disabled {
-  background: #f9fafb;
-  color: #d1d5db;
+  background: var(--bg-secondary);
+  color: var(--btn-disabled-color);
   cursor: not-allowed;
 }
 
@@ -204,7 +203,7 @@ input#username::placeholder {
   display: flex;
   align-items: center;
   margin: 24px 0;
-  color: #9ca3af;
+  color: var(--text-tertiary);
   font-size: 14px;
   user-select: none;
 }
@@ -214,7 +213,7 @@ input#username::placeholder {
   content: "";
   flex: 1;
   height: 1px;
-  background: #e5e7eb;
+  background: var(--border-secondary);
 }
 
 .divider::before {
@@ -235,7 +234,7 @@ input#username::placeholder {
   margin-top: 20px;
   margin-bottom: 20px;
   font-size: 16px;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 #user-info p b {
@@ -255,7 +254,7 @@ input#username::placeholder {
   font-size: 20px;
   font-weight: 500;
   margin: 0 0 16px 0;
-  color: #1a1a1a;
+  color: var(--text-primary);
 }
 
 .btn {
@@ -274,23 +273,23 @@ input#username::placeholder {
 }
 
 .btn:hover {
-  background: #1076e1;
+  background: var(--primary-hover);
 }
 
 .btn:disabled {
-  background: #9ca3af;
+  background: var(--text-tertiary);
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: white;
+  background: var(--btn-secondary-bg);
   color: #6366f1;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-tertiary);
   width: auto;
 }
 
 .btn-secondary:hover {
-  background: #f9fafb;
+  background: var(--bg-secondary);
 }
 
 .passkey-item {
@@ -298,10 +297,10 @@ input#username::placeholder {
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-secondary);
   border-radius: 8px;
   margin-bottom: 12px;
-  background: white;
+  background: var(--bg-primary);
 }
 
 .passkey-info {
@@ -328,7 +327,7 @@ input#username::placeholder {
 
 .passkey-details {
   font-size: 14px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
 .passkey-actions {
@@ -340,11 +339,11 @@ input#username::placeholder {
   padding: 0px;
   border: none;
   background: none;
-  color: #202020;
+  color: var(--text-primary);
 }
 
 .passkey-actions button:disabled {
-  color: #202020;
+  color: var(--text-primary);
   cursor: not-allowed;
   opacity: 0.3;
 }
@@ -392,7 +391,7 @@ input#username::placeholder {
   width: 100%;
   max-width: 500px;
   margin: 0px auto;
-  background-color: rgb(255, 255, 255);
+  background-color: var(--bg-primary);
   border-radius: 14px;
   height: calc(100% - 48px);
   border: none;
@@ -432,7 +431,7 @@ input#username::placeholder {
   left: 0;
   width: 100%;
   height: 100%;
-  background: white;
+  background: var(--loader-bg);
   z-index: 1000;
   align-items: center;
   justify-content: center;

@@ -69,7 +69,7 @@ export default new Elysia({ prefix: "/timeline" })
 		const getUserRetweetsQuery = db.query(
 			`SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${likePlaceholders})`,
 		);
-
+		
 		const userRetweets = getUserRetweetsQuery.all(user.id, ...postIds);
 		const userRetweetedPosts = new Set(userRetweets.map((retweet) => retweet.post_id));
 

@@ -6,8 +6,10 @@
     <title>tweetapus</title>
     <link rel="stylesheet" href="/public/account/styles.css" />
     <link rel="stylesheet" href="/public/shared/toasts.css" />
+    <link rel="stylesheet" href="/public/shared/darkmode.css" />
   </head>
   <body>
+    <button class="dark-toggle">Toggle dark mode</button>
     <div class="loader">
       <svg
         width="24"
@@ -89,6 +91,8 @@
 
       <button class="btn" id="logout">Sign out</button>
     </div>
+
+    <script src="/public/shared/darkmode.js" defer></script>
 
     <script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.es5.umd.min.js"></script>
     <script src="/public/account/script.js" type="module"></script>

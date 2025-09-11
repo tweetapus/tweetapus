@@ -12,10 +12,10 @@
   display: flex;
   justify-content: space-between;
   padding: 16px;
-  background-color: white;
-  border: 1px solid oklch(92.2% 0 0);
+  background-color: var(--toast-bg);
+  border: 1px solid var(--toast-border);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow-toast);
   position: relative;
   gap: 6px;
 }
@@ -26,8 +26,8 @@
   padding-right: 8px;
   height: 24px;
   font-size: 12px;
-  color: white;
-  background: oklch(14.5% 0 0);
+  color: var(--toast-action-color);
+  background: var(--toast-action-bg);
   border: none;
   cursor: pointer;
   outline: 0;
@@ -67,7 +67,7 @@
   -webkit-line-clamp: 3;
   font-weight: 400;
   line-height: 1.4;
-  color: #3f3f3f;
+  color: var(--toast-content-color);
 }
 
 [data-toast="actions"] {
