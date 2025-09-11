@@ -43,6 +43,7 @@ const getTweetReplies = db.query(`
 const createTweet = db.query(`
   INSERT INTO posts (id, user_id, content, reply_to) 
   VALUES (?, ?, ?, ?)
+	RETURNING *
 `);
 
 const updatePostCounts = db.query(`
@@ -67,6 +68,22 @@ const removeLike = db.query(`
 
 const updateLikeCount = db.query(`
   UPDATE posts SET like_count = like_count + ? WHERE id = ?
+`);
+
+const checkRetweetExists = db.query(`
+  SELECT id FROM retweets WHERE user_id = ? AND post_id = ?
+`);
+
+const addRetweet = db.query(`
+  INSERT INTO retweets (id, user_id, post_id) VALUES (?, ?, ?)
+`);
+
+const removeRetweet = db.query(`
+  DELETE FROM retweets WHERE user_id = ? AND post_id = ?
+`);
+
+const updateRetweetCount = db.query(`
+  UPDATE posts SET retweet_count = retweet_count + ? WHERE id = ?
 `);
 
 export default new Elysia({ prefix: "/tweets" })
@@ -103,7 +120,12 @@ export default new Elysia({ prefix: "/tweets" })
 
 			const tweetId = Bun.randomUUIDv7();
 
-			createTweet.run(tweetId, user.id, tweetContent.trim(), reply_to || null);
+			const tweet = createTweet.get(
+				tweetId,
+				user.id,
+				tweetContent.trim(),
+				reply_to || null,
+			);
 
 			if (reply_to) {
 				updatePostCounts.run(reply_to);
@@ -114,12 +136,8 @@ export default new Elysia({ prefix: "/tweets" })
 			return {
 				success: true,
 				tweet: {
-					id: tweetId,
-					content: tweetContent.trim(),
-					user_id: user.id,
-					username: user.username,
-					reply_to: reply_to || null,
-					created_at: new Date().toISOString(),
+					...tweet,
+					author: user,
 				},
 			};
 		} catch (error) {
@@ -177,5 +195,36 @@ export default new Elysia({ prefix: "/tweets" })
 			console.error("Like toggle error:", error);
 			return { error: "Failed to toggle like" };
 		}
+	})
+	.post("/:id/retweet", async ({ jwt, headers, params }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const user = getUserByUsername.get(payload.username);
+			if (!user) return { error: "User not found" };
+
+			const { id } = params;
+			const tweet = getTweetById.get(id);
+			if (!tweet) return { error: "Tweet not found" };
+
+			const existingRetweet = checkRetweetExists.get(user.id, id);
+
+			if (existingRetweet) {
+				removeRetweet.run(user.id, id);
+				updateRetweetCount.run(-1, id);
+				return { success: true, retweeted: false };
+			} else {
+				const retweetId = Bun.randomUUIDv7();
+				addRetweet.run(retweetId, user.id, id);
+				updateRetweetCount.run(1, id);
+				return { success: true, retweeted: true };
+			}
+		} catch (error) {
+			console.error("Retweet toggle error:", error);
+			return { error: "Failed to toggle retweet" };
+		}
 	});
-	

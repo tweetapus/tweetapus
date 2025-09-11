@@ -54,6 +54,26 @@
       <a href="javascript:">Following</a>
     </h1>
 
+    <div class="compose-tweet">
+      <div class="compose-header">
+        <img src="" alt="Your avatar" id="compose-avatar" />
+        <div class="compose-input">
+          <textarea
+            placeholder="What's happening?"
+            maxlength="280"
+            id="tweet-textarea"
+          ></textarea>
+          <div class="compose-footer">
+            <div class="character-counter">
+              <span id="char-count">0</span>
+              /280
+            </div>
+            <button id="tweet-button" disabled>Tweet</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="tweets"></div>
 
     <script src="/public/timeline/script.js" defer type="module"></script>
