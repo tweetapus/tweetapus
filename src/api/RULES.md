@@ -1,0 +1,11 @@
+- NEVER use autoincrement IDs, always Bun.randomUUIDv7() instead
+- DO NOT run migrations in the db.js file, which should NOT be bloated. Instead, use the SQLite3 CLI then update the schema.
+- ALWAYS use Bun SQLite's prepared statements instead of functions that execute queries
+- ALWAYS look for existing tables and USE THEM unless you have a good reason not to.
+- DO NOT change code you're not supposed to
+- AVOID using code comments
+- ALWAYS use as little queries as possible to optimize performance
+- NEVER use crypto.randomUUID(), instead ALWAYS use Bun.randomUUIDv7()
+- ALWAYS use as little helper functions as possible
+- DO NOT put stuff in weird places, like dataset to store stuff that can be stored in variables, OR calling functions using HTML events like onclick="x()"
+- ALWAYS ASK and explain before doing permanent DB changes 
