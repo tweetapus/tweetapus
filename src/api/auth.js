@@ -114,6 +114,7 @@ export default new Elysia({
 				user: {
 					id: user.id,
 					username: user.username,
+					avatar: user.avatar,
 				},
 				passkeys: passkeys.map((passkey) => ({
 					id: passkey.cred_id,

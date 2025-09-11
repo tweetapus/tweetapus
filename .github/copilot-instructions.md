@@ -10,3 +10,7 @@
 - DO NOT put stuff in weird places, like dataset to store stuff that can be stored in variables, OR calling functions using HTML events like onclick="x()"
 - ALWAYS ASK and explain before doing permanent DB changes
 - ALWAYS prefer TEMPLATE LITERALS over string concatenation
+- NEVER USE PROFILES TABLE!!! It doesn't exist, use users instead.
+- DONT USE user_id ON THE USERS TABLE, IT'S JUST id
+- DO NOT CREATE PROFILES IF THEY DONT EXIST.
+- IT'S NOT display_name, IT'S NAME.
