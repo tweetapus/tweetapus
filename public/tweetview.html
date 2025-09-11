@@ -480,14 +480,14 @@
                   </svg>
                   <span>${post.reply_count || 0}</span>
                 </button>
-                <button class="post-action retweet">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button class="post-action retweet" onclick="toggleRetweet('${post.id}', this)" data-retweeted="${post.retweeted_by_user || false}" data-tweet-id="${post.id}">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="${post.retweeted_by_user ? '#00BA7C' : 'currentColor'}" stroke-width="2">
                     <path d="M17 1l4 4-4 4"/>
                     <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
                     <path d="M7 23l-4-4 4-4"/>
                     <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
                   </svg>
-                  <span>0</span>
+                  <span class="retweet-count">${post.retweet_count || 0}</span>
                 </button>
                 <button class="post-action like" onclick="toggleLike('${
                   post.id
@@ -553,14 +553,14 @@
                   </svg>
                   <span>${reply.reply_count || 0}</span>
                 </button>
-                <button class="post-action retweet">
-                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button class="post-action retweet" onclick="toggleRetweet('${reply.id}', this)" data-retweeted="${reply.retweeted_by_user || false}" data-tweet-id="${reply.id}">
+                  <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="${reply.retweeted_by_user ? '#00BA7C' : 'currentColor'}" stroke-width="2">
                     <path d="M17 1l4 4-4 4"/>
                     <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
                     <path d="M7 23l-4-4 4-4"/>
                     <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
                   </svg>
-                  <span>0</span>
+                  <span class="retweet-count">${reply.retweet_count || 0}</span>
                 </button>
                 <button class="post-action like" onclick="toggleLike('${
                   reply.id
@@ -751,6 +751,47 @@
           }
         } catch (error) {
           console.error("Error toggling like:", error);
+        }
+      };
+
+      const toggleRetweet = async (tweetId, buttonElement) => {
+        if (!authToken) {
+          window.location.href = "/account";
+          return;
+        }
+
+        const isRetweeted = buttonElement.dataset.retweeted === "true";
+
+        try {
+          const response = await fetch(`/api/tweets/${tweetId}/retweet`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${authToken}` },
+          });
+
+          const result = await response.json();
+
+          if (result.success) {
+            // Update button state
+            const newIsRetweeted = result.retweeted;
+            buttonElement.dataset.retweeted = newIsRetweeted;
+
+            // Update visual state
+            const svg = buttonElement.querySelector("svg");
+            const retweetCountSpan = buttonElement.querySelector(".retweet-count");
+            const currentCount = parseInt(retweetCountSpan.textContent);
+
+            if (newIsRetweeted) {
+              svg.setAttribute("stroke", "#00BA7C");
+              retweetCountSpan.textContent = currentCount + 1;
+            } else {
+              svg.setAttribute("stroke", "currentColor");
+              retweetCountSpan.textContent = Math.max(0, currentCount - 1);
+            }
+          } else {
+            console.error("Failed to toggle retweet:", result.error);
+          }
+        } catch (error) {
+          console.error("Error toggling retweet:", error);
         }
       };
 

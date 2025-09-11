@@ -71,8 +71,6 @@ export default new Elysia({ prefix: "/profile" })
 
 			const profile = getProfileByUserId.get(user.id);
 
-			// WHAT
-			// IS THIS ?????????
 			if (!profile) {
 				return "404";
 			}

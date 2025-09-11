@@ -66,10 +66,18 @@ export default new Elysia({ prefix: "/timeline" })
 		const userLikes = getUserLikesQuery.all(user.id, ...postIds);
 		const userLikedPosts = new Set(userLikes.map((like) => like.post_id));
 
+		const getUserRetweetsQuery = db.query(
+			`SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${likePlaceholders})`,
+		);
+
+		const userRetweets = getUserRetweetsQuery.all(user.id, ...postIds);
+		const userRetweetedPosts = new Set(userRetweets.map((retweet) => retweet.post_id));
+
 		const timeline = posts.map((post) => ({
 			...post,
 			author: userMap[post.user_id],
 			liked_by_user: userLikedPosts.has(post.id),
+			retweeted_by_user: userRetweetedPosts.has(post.id),
 		}));
 
 		return { timeline };

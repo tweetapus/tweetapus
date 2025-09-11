@@ -41,8 +41,8 @@ const getTweetReplies = db.query(`
 `);
 
 const createTweet = db.query(`
-  INSERT INTO posts (id, user_id, content, reply_to) 
-  VALUES (?, ?, ?, ?)
+  INSERT INTO posts (id, user_id, content, reply_to, source) 
+  VALUES (?, ?, ?, ?, ?)
 	RETURNING *
 `);
 
@@ -125,6 +125,7 @@ export default new Elysia({ prefix: "/tweets" })
 				user.id,
 				tweetContent.trim(),
 				reply_to || null,
+				body.source || null,
 			);
 
 			if (reply_to) {
@@ -145,7 +146,7 @@ export default new Elysia({ prefix: "/tweets" })
 			return { error: "Failed to create tweet" };
 		}
 	})
-	.get("/:id", async ({ params }) => {
+	.get("/:id", async ({ params, jwt, headers }) => {
 		try {
 			const { id } = params;
 
@@ -156,6 +157,66 @@ export default new Elysia({ prefix: "/tweets" })
 
 			const threadPosts = getTweetWithThread.all(id);
 			const replies = getTweetReplies.all(id);
+
+			// Add user interaction status if authenticated
+			let currentUser = null;
+			const authorization = headers.authorization;
+			if (authorization) {
+				try {
+					const payload = await jwt.verify(
+						authorization.replace("Bearer ", ""),
+					);
+					if (payload) {
+						currentUser = getUserByUsername.get(payload.username);
+					}
+				} catch {
+					// Invalid token, continue as unauthenticated
+				}
+			}
+
+			if (currentUser) {
+				// Add like and retweet status for main post and thread posts
+				const allPostIds = [
+					tweet.id,
+					...threadPosts.map((p) => p.id),
+					...replies.map((r) => r.id),
+				];
+				const placeholders = allPostIds.map(() => "?").join(",");
+
+				const getUserLikesQuery = db.query(
+					`SELECT post_id FROM likes WHERE user_id = ? AND post_id IN (${placeholders})`,
+				);
+				const getUserRetweetsQuery = db.query(
+					`SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${placeholders})`,
+				);
+
+				const userLikes = getUserLikesQuery.all(currentUser.id, ...allPostIds);
+				const userRetweets = getUserRetweetsQuery.all(
+					currentUser.id,
+					...allPostIds,
+				);
+
+				const likedPosts = new Set(userLikes.map((like) => like.post_id));
+				const retweetedPosts = new Set(
+					userRetweets.map((retweet) => retweet.post_id),
+				);
+
+				// Add status to main tweet
+				tweet.liked_by_user = likedPosts.has(tweet.id);
+				tweet.retweeted_by_user = retweetedPosts.has(tweet.id);
+
+				// Add status to thread posts
+				threadPosts.forEach((post) => {
+					post.liked_by_user = likedPosts.has(post.id);
+					post.retweeted_by_user = retweetedPosts.has(post.id);
+				});
+
+				// Add status to replies
+				replies.forEach((reply) => {
+					reply.liked_by_user = likedPosts.has(reply.id);
+					reply.retweeted_by_user = retweetedPosts.has(reply.id);
+				});
+			}
 
 			return {
 				post: tweet,

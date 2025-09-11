@@ -123,7 +123,12 @@ const timeAgo = (date) => {
 						"Content-Type": "application/json",
 						Authorization: `Bearer ${authToken}`,
 					},
-					body: JSON.stringify({ content }),
+					body: JSON.stringify({
+						content,
+						source: /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+							? "mobile_web"
+							: "desktop_web",
+					}),
 				})
 			).json();
 
@@ -205,10 +210,22 @@ function addTweetToTimeline(tweet, prepend = false) {
           </svg>`;
 	}
 
+	const source_icons = {
+		desktop_web: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-monitor-icon lucide-monitor"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`,
+	};
+
 	const tweetHeaderUsernameEl = document.createElement("p");
 	tweetHeaderUsernameEl.className = "username";
 	tweetHeaderUsernameEl.textContent = `@${tweet.author.username} · ${timeAgo(tweet.created_at)}`;
 
+	if (tweet.source && source_icons[tweet.source]) {
+		const sourceIconEl = document.createElement("span");
+		sourceIconEl.innerHTML = source_icons[tweet.source];
+		tweetHeaderUsernameEl.appendChild(sourceIconEl);
+	} else if (tweet.source) {
+		tweetHeaderUsernameEl.textContent += ` • ${tweet.source}`;
+	}
+// do i press a the keep code, Tr???????????????? what does it change it changes the tweet.js, script.js, tweetview.html and timeline.js file to add the a retweet
 	tweetHeaderInfoEl.appendChild(tweetHeaderNameEl);
 	tweetHeaderInfoEl.appendChild(tweetHeaderUsernameEl);
 
@@ -278,6 +295,10 @@ function addTweetToTimeline(tweet, prepend = false) {
 
 	const tweetInteractionsRetweetEl = document.createElement("button");
 	tweetInteractionsRetweetEl.className = "engagement";
+	tweetInteractionsRetweetEl.dataset.retweeted = tweet.retweeted_by_user;
+
+	const retweetColor = tweet.retweeted_by_user ? "#00BA7C" : "#344252";
+
 	tweetInteractionsRetweetEl.innerHTML = `
             <svg
               width="19"
@@ -288,33 +309,67 @@ function addTweetToTimeline(tweet, prepend = false) {
             >
               <path
                 d="M1.58333 7.125L3.95833 4.75L6.33333 7.125"
-                stroke="#344252"
+                stroke="${retweetColor}"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
               <path
                 d="M10.2917 14.25H5.54166C5.12174 14.25 4.71901 14.0832 4.42208 13.7863C4.12514 13.4893 3.95833 13.0866 3.95833 12.6667V4.75"
-                stroke="#344252"
+                stroke="${retweetColor}"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
               <path
                 d="M17.4167 11.875L15.0417 14.25L12.6667 11.875"
-                stroke="#344252"
+                stroke="${retweetColor}"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
               <path
                 d="M8.70833 4.75H13.4583C13.8783 4.75 14.281 4.91681 14.5779 5.21375C14.8748 5.51068 15.0417 5.91341 15.0417 6.33333V14.25"
-                stroke="#344252"
+                stroke="${retweetColor}"
                 stroke-width="1.5"
                 stroke-linecap="round"
                 stroke-linejoin="round"
               />
-            </svg> ${tweet.retweet_count}`;
+            </svg> <span class="retweet-count">${tweet.retweet_count}</span>`;
+
+	tweetInteractionsRetweetEl.addEventListener("click", async (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		const response = await fetch(`/api/tweets/${tweet.id}/retweet`, {
+			method: "POST",
+			headers: { Authorization: `Bearer ${authToken}` },
+		});
+
+		const result = await response.json();
+
+		if (result.success) {
+			const newIsRetweeted = result.retweeted;
+			tweetInteractionsRetweetEl.dataset.retweeted = newIsRetweeted;
+
+			const svgPaths = tweetInteractionsRetweetEl.querySelectorAll("svg path");
+			const retweetCountSpan =
+				tweetInteractionsRetweetEl.querySelector(".retweet-count");
+			const currentCount = parseInt(retweetCountSpan.textContent);
+
+			if (newIsRetweeted) {
+				svgPaths.forEach((path) => path.setAttribute("stroke", "#00BA7C"));
+				retweetCountSpan.textContent = currentCount + 1;
+				toastQueue.add(`<h1>Tweet retweeted!</h1>`);
+			} else {
+				svgPaths.forEach((path) => path.setAttribute("stroke", "#344252"));
+				retweetCountSpan.textContent = Math.max(0, currentCount - 1);
+				toastQueue.add(`<h1>Retweet removed!</h1>`);
+			}
+		} else {
+			toastQueue.add(`<h1>${result.error || "Failed to retweet"}</h1>`);
+		}
+	});
 
 	const tweetInteractionsReplyEl = document.createElement("button");
 	tweetInteractionsReplyEl.className = "engagement";
@@ -347,4 +402,3 @@ function addTweetToTimeline(tweet, prepend = false) {
 		tweetsContainer.appendChild(tweetEl);
 	}
 }
-// what should i do RN, Tr?

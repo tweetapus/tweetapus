@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS posts (
   like_count INTEGER DEFAULT 0,
   reply_count INTEGER DEFAULT 0,
   retweet_count INTEGER DEFAULT 0,
+  source TEXT DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
