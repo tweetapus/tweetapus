@@ -2,7 +2,7 @@ export const authToken = localStorage.getItem("authToken");
 
 (async () => {
 	if (!authToken) {
-		document.cookie = "agree=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+		cookieStore.delete("agree");
 		window.location.href = "/";
 		return;
 	}

@@ -253,6 +253,8 @@ h1 {
       transform: scale(1, 0.98);
     }
   }
+}
+
 
   .tweet {
     display: flex;
@@ -386,4 +388,3 @@ h1 {
       }
     }
   }
-}

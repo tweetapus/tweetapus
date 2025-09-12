@@ -1,5 +1,4 @@
-/** biome-ignore-all lint/suspicious/noDocumentCookie: not available on older browsers */
-import toastQueue from "../../shared/toasts.js";
+import toastQueue from "../shared/toasts.js";
 
 const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
 
@@ -128,8 +127,11 @@ async function handleRegistration() {
 		authToken = verification.token;
 		localStorage.setItem("authToken", authToken);
 
-		document.cookie =
-			"agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+		await cookieStore.set({
+			name: "agree",
+			value: "yes",
+			expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
+		});
 		location.href = "/";
 	} catch (error) {
 		if (error.name === "NotAllowedError") return;
@@ -188,8 +190,11 @@ async function handleAuthentication() {
 			authToken = verification.token;
 			localStorage.setItem("authToken", authToken);
 
-			document.cookie =
-				"agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT";
+			await cookieStore.set({
+				name: "agree",
+				value: "yes",
+				expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
+			});
 			location.href = "/";
 		} else {
 			toastQueue.add(
@@ -457,7 +462,7 @@ elements.username.addEventListener("input", (e) => {
 });
 elements.logout.addEventListener("click", () => {
 	showLoginForm();
-	document.cookie = "agree=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+	cookieStore.delete("agree");
 });
 
 elements.username.addEventListener("keypress", (e) => {
@@ -485,7 +490,7 @@ document.querySelector(".legal").addEventListener("click", (e) => {
 	iframeWrapper.appendChild(closeButton);
 });
 
-window.onerror = (message, source, lineno, colno, error) => {
+window.onerror = (message, source, lineno, colno) => {
 	toastQueue.add(
 		`<h1>${message}</h1><p>at ${lineno || "?"}:${colno || "?"} in ${source || "?"}</p>`,
 	);
