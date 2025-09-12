@@ -1,6 +1,6 @@
 import confetti from "../../shared/confetti.js";
 import toastQueue from "../../shared/toasts.js";
-import { authToken } from "./auth.js";
+import getUser, { authToken } from "./auth.js";
 
 export const useComposer = (element, callback, { replyTo = null } = {}) => {
 	const textarea = element.querySelector("#tweet-textarea");
@@ -71,10 +71,13 @@ export const useComposer = (element, callback, { replyTo = null } = {}) => {
 			textarea.style.height = "25px";
 
 			callback(tweet);
-			confetti(tweetButton, {
-				count: 40,
-				fade: true,
-			});
+
+			if (!replyTo) {
+				confetti(tweetButton, {
+					count: 40,
+					fade: true,
+				});
+			}
 
 			toastQueue.add(`<h1>Tweet posted successfully!</h1>`);
 		} catch (e) {
@@ -95,7 +98,7 @@ export const useComposer = (element, callback, { replyTo = null } = {}) => {
 	});
 };
 
-export const createComposer = ({
+export const createComposer = async ({
 	callback = () => {},
 	placeholder = "What's happening?",
 	replyTo = null,
@@ -116,8 +119,8 @@ export const createComposer = ({
           </div>
         </div>`;
 	el.querySelector("#tweet-textarea").placeholder = placeholder;
-	el.querySelector(".compose-header img").src =
-		document.querySelector(".account img").src;
+	el.querySelector(".compose-header img").src = (await getUser()).avatar;
 	useComposer(el, callback, { replyTo });
+
 	return el;
 };

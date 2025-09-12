@@ -30,7 +30,7 @@ export default async function openTweet(
 	switchPage("tweet", {
 		path: `/tweet/${tweet.id}`,
 		recoverState: async (page) => {
-			page.innerHTML = `<a href="/" class="back-button">← Back</a>`;
+			page.innerHTML = `<a href="/" class="back-button"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left-icon lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></a>`;
 
 			page.querySelector(".back-button").addEventListener("click", (e) => {
 				e.preventDefault();
@@ -42,7 +42,7 @@ export default async function openTweet(
 			});
 			page.appendChild(tweetEl);
 
-			const composer = createComposer({
+			const composer = await createComposer({
 				placeholder: `Add a reply…`,
 				replyTo: tweet.id,
 				callback: (tweet) => {
@@ -80,7 +80,7 @@ export default async function openTweet(
 
 			threadPostsCache.forEach((reply) => {
 				const postEl = createTweetElement(reply, {
-					clickToOpen: true,
+					clickToOpen: reply.id !== tweet.id,
 				});
 				composer.insertAdjacentElement("beforebegin", postEl);
 			});

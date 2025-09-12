@@ -395,3 +395,13 @@ h1 {
     }
   }
 }
+
+.back-button {
+  color: inherit;
+  margin-bottom: 12px;
+  transition: transform .2s;
+
+  &:hover {
+    transform: translate(-2px, 0);
+  }
+}
