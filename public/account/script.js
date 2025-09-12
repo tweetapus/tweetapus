@@ -10,13 +10,6 @@ const toastQueue = new ToastQueue({
 	root: document.body,
 });
 
-// Hello, Opua Opulinski.
-// Hello, Tr. wait im gonna update VS Code
-// Ok, Opua YT.
-
-// Hello Opua Dm (1)
-// TrZip
-
 const elements = {
 	title: document.querySelector("h1"),
 	username: document.getElementById("username"),
@@ -71,6 +64,7 @@ function checkExistingSession() {
 function showUserInfo(user) {
 	currentUser = user.user;
 	elements.title.textContent = `@${user.user.username}`;
+	document.querySelector(".tagline").innerText = "Manage your account";
 	elements.loginForm.style.display = "none";
 	elements.userInfo.style.display = "block";
 	loadPasskeys(user.passkeys);
@@ -83,6 +77,7 @@ function showLoginForm() {
 	elements.userInfo.style.display = "none";
 	elements.username.value = "";
 	elements.title.textContent = "Welcome to Tweetapus";
+	document.querySelector(".tagline").innerText = "Twitter, but better";
 }
 
 function setButtonsDisabled(disabled) {

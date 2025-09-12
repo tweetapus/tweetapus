@@ -9,7 +9,7 @@
 
     <link rel="stylesheet" href="/public/timeline/styles.css" />
     <link rel="stylesheet" href="/public/shared/toasts.css" />
-    <link rel="stylesheet" href="/public/shared/darkmode.css" />
+    <link rel="stylesheet" href="/public/shared/base.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap"
       rel="stylesheet"
@@ -35,9 +35,18 @@
           />
         </svg>
       </button>
+      <div class="background">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
     </nav>
 
-    <div class="dark-toggle"></div>
     <svg
       class="icon"
       width="48"
@@ -63,13 +72,13 @@
         <div class="compose-input">
           <textarea
             placeholder="What's happening?"
-            maxlength="280"
+            maxlength="400"
             id="tweet-textarea"
           ></textarea>
           <div class="compose-footer">
+            <!-- prettier-ignore -->
             <div class="character-counter">
-              <span id="char-count">0</span>
-              /280
+              <span id="char-count">0</span>/400
             </div>
             <button id="tweet-button" disabled>Tweet</button>
           </div>
@@ -103,12 +112,17 @@
         <path
           d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
           opacity=".25"
+          fill="currentColor"
         />
         <path
           d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
           class="spinner_z9k8"
+          fill="currentColor"
         />
       </svg>
     </div>
   </body>
+
+  <script>
+  </script>
 </html>

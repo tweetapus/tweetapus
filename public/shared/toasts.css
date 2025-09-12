@@ -98,9 +98,6 @@
 }
 
 @layer toast-queue {
-  * {
-    box-sizing: border-box;
-  }
   [data-toast="popover"] {
     --toast-width: 200px;
     width: var(--toast-width);

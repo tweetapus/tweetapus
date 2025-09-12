@@ -370,10 +370,10 @@
             class="reply-textarea"
             id="replyText"
             placeholder="Tweet your reply"
-            maxlength="280"
+            maxlength="400"
           ></textarea>
           <div class="composer-footer">
-            <span class="char-count" id="charCount">0 / 280</span>
+            <span class="char-count" id="charCount">0 / 400</span>
             <button class="reply-btn" id="sendReply" disabled>Reply</button>
           </div>
           <div class="status" id="replyStatus"></div>
@@ -594,9 +594,9 @@
 
         replyText.addEventListener("input", () => {
           const length = replyText.value.length;
-          charCount.textContent = `${length} / 280`;
+          charCount.textContent = `${length} / 400`;
 
-          if (length > 280) {
+          if (length > 400) {
             charCount.classList.add("over-limit");
             sendReply.disabled = true;
           } else {
@@ -631,7 +631,7 @@
             if (data.success) {
               showReplyStatus("Reply sent successfully!", "success");
               replyText.value = "";
-              charCount.textContent = "0 / 280";
+              charCount.textContent = "0 / 400";
 
               setTimeout(() => {
                 window.location.reload();

@@ -1,32 +1,23 @@
-@import url("../shared/variables.css");
-
-* {
-  box-sizing: border-box;
-}
-
 body {
-  font-family: "Tiktok Sans", -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, "Helvetica Neue", sans-serif;
-  font-optical-sizing: auto;
   max-width: 500px;
   margin: 4em auto;
-  color: var(--text-primary);
-  background-color: var(--bg-primary);
-  font-size: 16px;
-  font-variation-settings: "slnt" 0, "wdth" 100;
-  line-height: 1.5;
   padding: 0 24px;
-  scrollbar-gutter: stable;
   overflow-y: scroll;
-  overflow-x: hidden;
 }
 
 nav {
   position: fixed;
-  top: 20px;
-  right: 20px;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  z-index: 20;
+  height: 70px;
+  display: flex;
+  align-items: center;
 
   .account {
+    position: absolute;
+    right: 20px;
     background-color: transparent;
     border: none;
     cursor: pointer;
@@ -34,11 +25,101 @@ nav {
     display: flex;
     align-items: center;
     gap: 4px;
+    color: inherit;
+    z-index: 2;
 
     img {
       width: 36px;
       height: 36px;
       border-radius: 50%;
+    }
+  }
+
+  .background {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    bottom: 10px;
+    right: 0;
+    pointer-events: none;
+    transform: rotate(180deg);
+
+    div {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+
+      &:nth-child(1) {
+        backdrop-filter: blur(1px);
+        mask: linear-gradient(
+          rgba(0, 0, 0, 0),
+          rgba(0, 0, 0, 1) 10%,
+          rgba(0, 0, 0, 1) 30%,
+          rgba(0, 0, 0, 0) 40%
+        );
+      }
+
+      &:nth-child(2) {
+        backdrop-filter: blur(2px);
+        mask: linear-gradient(
+          rgba(0, 0, 0, 0) 10%,
+          rgba(0, 0, 0, 1) 20%,
+          rgba(0, 0, 0, 1) 40%,
+          rgba(0, 0, 0, 0) 50%
+        );
+      }
+
+      &:nth-child(3) {
+        backdrop-filter: blur(4px);
+        mask: linear-gradient(
+          rgba(0, 0, 0, 0) 15%,
+          rgba(0, 0, 0, 1) 30%,
+          rgba(0, 0, 0, 1) 50%,
+          rgba(0, 0, 0, 0) 60%
+        );
+      }
+
+      &:nth-child(4) {
+        backdrop-filter: blur(8px);
+        mask: linear-gradient(
+          rgba(0, 0, 0, 0) 20%,
+          rgba(0, 0, 0, 1) 40%,
+          rgba(0, 0, 0, 1) 60%,
+          rgba(0, 0, 0, 0) 70%
+        );
+      }
+
+      &:nth-child(5) {
+        backdrop-filter: blur(16px);
+        mask: linear-gradient(
+          rgba(0, 0, 0, 0) 40%,
+          rgba(0, 0, 0, 1) 60%,
+          rgba(0, 0, 0, 1) 80%,
+          rgba(0, 0, 0, 0) 90%
+        );
+      }
+
+      &:nth-child(6) {
+        backdrop-filter: blur(32px);
+        mask: linear-gradient(rgba(0, 0, 0, 0) 60%, rgba(0, 0, 0, 1) 80%);
+      }
+
+      &:nth-child(7) {
+        z-index: 10;
+        backdrop-filter: blur(64px);
+        mask: linear-gradient(rgba(0, 0, 0, 0) 70%, rgba(0, 0, 0, 1) 100%);
+      }
+
+      &:nth-child(8) {
+        z-index: 11;
+        background-image: linear-gradient(
+          to top,
+          rgba(var(--bg-rgb)),
+          rgba(var(--bg-rgb), 0)
+        );
+      }
     }
   }
 }
@@ -83,8 +164,8 @@ h1 {
     gap: 12px;
 
     img {
-      width: 48px;
-      height: 48px;
+      width: 43px;
+      height: 43px;
       border-radius: 50%;
       flex-shrink: 0;
     }
@@ -106,6 +187,7 @@ h1 {
         padding: 0;
         background: transparent;
         color: var(--text-primary);
+        caret-color: var(--primary);
 
         &::placeholder {
           color: var(--text-secondary);
@@ -117,7 +199,7 @@ h1 {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 12px;
+        margin-top: 2px;
 
         .character-counter {
           font-size: 14px;
@@ -145,7 +227,7 @@ h1 {
           }
 
           &:disabled {
-            background: var(--primary-disabled);
+            opacity: 0.5;
             cursor: not-allowed;
           }
 
@@ -273,24 +355,5 @@ h1 {
         }
       }
     }
-  }
-}
-
-.loader {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: var(--loader-bg);
-  z-index: 1000;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.1s;
-  display: flex;
-
-  svg {
-    width: 28px;
-    height: 28px;
   }
 }

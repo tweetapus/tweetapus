@@ -122,11 +122,11 @@
       <textarea
         class="tweet-textarea"
         placeholder="What's happening?"
-        maxlength="280"
+        maxlength="400"
         id="tweetText"
       ></textarea>
       <div class="tweet-footer">
-        <span class="char-count" id="charCount">0 / 280</span>
+        <span class="char-count" id="charCount">0 / 400</span>
         <button class="tweet-btn" id="sendTweet" disabled>Tweet</button>
       </div>
       <div class="status" id="status"></div>
@@ -152,9 +152,9 @@
 
       tweetText.addEventListener("input", () => {
         const length = tweetText.value.length;
-        charCount.textContent = `${length} / 280`;
+        charCount.textContent = `${length} / 400`;
 
-        if (length > 280) {
+        if (length > 400) {
           charCount.classList.add("over-limit");
           sendTweet.disabled = true;
         } else {
@@ -186,7 +186,7 @@
           if (response.ok && data.success) {
             showStatus("Tweet sent successfully!", "success");
             tweetText.value = "";
-            charCount.textContent = "0 / 280";
+            charCount.textContent = "0 / 400";
             setTimeout(() => {
               window.close();
             }, 1500);

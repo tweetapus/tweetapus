@@ -114,8 +114,8 @@ export default new Elysia({ prefix: "/tweets" })
 				return { error: "Tweet content is required" };
 			}
 
-			if (tweetContent.length > 280) {
-				return { error: "Tweet content must be 280 characters or less" };
+			if (tweetContent.length > 400) {
+				return { error: "Tweet content must be 400 characters or less" };
 			}
 
 			const tweetId = Bun.randomUUIDv7();

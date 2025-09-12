@@ -4,12 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>tweetapus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
     <link rel="stylesheet" href="/public/account/styles.css" />
     <link rel="stylesheet" href="/public/shared/toasts.css" />
-    <link rel="stylesheet" href="/public/shared/darkmode.css" />
+    <link rel="stylesheet" href="/public/shared/base.css" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
-    <button class="dark-toggle">Toggle dark mode</button>
     <div class="loader">
       <svg
         width="24"
@@ -30,33 +37,37 @@
         </style>
         <path
           d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+          fill="currentColor"
           opacity=".25"
         />
         <path
           d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
+          fill="currentColor"
           class="spinner_z9k8"
         />
       </svg>
     </div>
-    <svg
-      class="icon"
-      width="48"
-      height="48"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-    >
-      <path
-        d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
-      />
-    </svg>
 
+    <a href="/">
+      <svg
+        class="icon"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
+        />
+      </svg>
+    </a>
     <h1>Welcome to Tweetapus</h1>
     <p class="tagline">Twitter, but better</p>
 
     <div id="login-form">
-      <button class="btn" id="login">Sign in with passkey</button>
+      <button class="btn primary" id="login">Sign in with passkey</button>
 
       <div class="divider">Don't have an account yet?</div>
 
@@ -70,7 +81,7 @@
           maxlength="40"
         />
       </div>
-      <button class="btn" id="register">Create account</button>
+      <button class="btn secondary" id="register">Create account</button>
 
       <p class="claim">
         Claim your username in a few seconds,
@@ -84,12 +95,16 @@
 
     <div id="user-info" style="display: none">
       <div class="section">
+        <h2>Theme</h2>
+
+        <button class="dark-toggle btn secondary">Toggle dark mode</button>
+
         <h2>Passkeys</h2>
-        <button class="btn" id="addPasskey">Add passkey</button>
+        <button class="btn primary" id="addPasskey">Add passkey</button>
         <div id="passkeyList"></div>
       </div>
 
-      <button class="btn" id="logout">Sign out</button>
+      <button class="btn secondary" id="logout">Sign out</button>
     </div>
 
     <script src="/public/shared/darkmode.js" defer></script>
