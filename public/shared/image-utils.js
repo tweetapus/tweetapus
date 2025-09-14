@@ -81,10 +81,15 @@ export async function convertToWebPAvatar(file, size = 250, quality = 0.8) {
  * @param {number} quality - WebP quality (default: 0.8)
  * @returns {Promise<File>} The converted WebP file
  */
-export async function convertToWebPBanner(file, maxWidth = 1500, maxHeight = 500, quality = 0.8) {
+export async function convertToWebPBanner(
+	file,
+	maxWidth = 1500,
+	maxHeight = 500,
+	quality = 0.8,
+) {
 	return new Promise((resolve, reject) => {
-		const canvas = document.createElement('canvas');
-		const ctx = canvas.getContext('2d');
+		const canvas = document.createElement("canvas");
+		const ctx = canvas.getContext("2d");
 		const img = new Image();
 
 		img.onload = () => {
@@ -94,7 +99,7 @@ export async function convertToWebPBanner(file, maxWidth = 1500, maxHeight = 500
 			let newHeight = maxHeight;
 
 			// For banners, we want to fill the width and crop height if needed
-			if (aspectRatio > (maxWidth / maxHeight)) {
+			if (aspectRatio > maxWidth / maxHeight) {
 				// Image is wider than banner ratio, fit to height
 				newHeight = maxHeight;
 				newWidth = newHeight * aspectRatio;
@@ -120,17 +125,17 @@ export async function convertToWebPBanner(file, maxWidth = 1500, maxHeight = 500
 				(blob) => {
 					if (blob) {
 						// Create a File object with WebP MIME type
-						const webpFile = new File([blob], 'banner.webp', {
-							type: 'image/webp',
-							lastModified: Date.now()
+						const webpFile = new File([blob], "banner.webp", {
+							type: "image/webp",
+							lastModified: Date.now(),
 						});
 						resolve(webpFile);
 					} else {
-						reject(new Error('Failed to create WebP blob'));
+						reject(new Error("Failed to create WebP blob"));
 					}
 				},
-				'image/webp',
-				quality
+				"image/webp",
+				quality,
 			);
 
 			// Clean up the object URL
@@ -138,7 +143,7 @@ export async function convertToWebPBanner(file, maxWidth = 1500, maxHeight = 500
 		};
 
 		img.onerror = () => {
-			reject(new Error('Failed to load image'));
+			reject(new Error("Failed to load image"));
 		};
 
 		// Create object URL and load the image
