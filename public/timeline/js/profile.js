@@ -1,5 +1,6 @@
 import {
 	convertToWebPAvatar,
+	convertToWebPBanner,
 	isConvertibleImage,
 } from "../../shared/image-utils.js";
 import toastQueue from "../../shared/toasts.js";
@@ -177,6 +178,18 @@ const renderProfile = (data) => {
 		profile.post_count || 0
 	} posts`;
 
+	// Update banner
+	const bannerElement = document.querySelector(".profile-banner");
+	if (profile.banner) {
+		bannerElement.style.backgroundImage = `url(${profile.banner})`;
+		bannerElement.style.backgroundSize = "cover";
+		bannerElement.style.backgroundPosition = "center";
+		bannerElement.style.backgroundRepeat = "no-repeat";
+	} else {
+		bannerElement.style.backgroundImage = "none";
+		bannerElement.style.backgroundColor = "var(--bg-secondary)";
+	}
+
 	const avatarImg = document.getElementById("profileAvatar");
 	avatarImg.src = profile.avatar || `https://unavatar.io/${profile.username}`;
 	avatarImg.alt = profile.name || profile.username;
@@ -315,6 +328,9 @@ const showEditModal = () => {
 	// Update avatar display
 	updateEditAvatarDisplay();
 
+	// Update banner display
+	updateEditBannerDisplay();
+
 	updateCharCounts();
 	document.getElementById("editProfileModal").classList.add("show");
 };
@@ -338,6 +354,162 @@ const updateCharCounts = () => {
 			counter.textContent = input.value.length;
 		}
 	});
+};
+
+const updateEditBannerDisplay = () => {
+	if (!currentProfile) return;
+
+	const { profile } = currentProfile;
+	const bannerPreview = document.getElementById("edit-current-banner");
+	const removeBtn = document.getElementById("edit-remove-banner");
+
+	if (bannerPreview) {
+		if (profile.banner) {
+			bannerPreview.style.backgroundImage = `url(${profile.banner})`;
+			bannerPreview.style.backgroundSize = "cover";
+			bannerPreview.style.backgroundPosition = "center";
+			bannerPreview.style.backgroundRepeat = "no-repeat";
+		} else {
+			bannerPreview.style.backgroundImage = "none";
+			bannerPreview.style.backgroundColor = "var(--bg-secondary)";
+		}
+	}
+
+	if (removeBtn) {
+		removeBtn.style.display = profile.banner ? "inline-block" : "none";
+	}
+};
+
+const handleEditBannerUpload = async (file) => {
+	if (!file) return;
+
+	// Validate file size (10MB max for banners)
+	if (file.size > 10 * 1024 * 1024) {
+		toastQueue.add(
+			`<h1>File too large</h1><p>Please choose an image smaller than 10MB.</p>`,
+		);
+		return;
+	}
+
+	// Check if it's a convertible image format
+	if (!isConvertibleImage(file)) {
+		toastQueue.add(
+			`<h1>Invalid file type</h1><p>Please upload a valid image file (JPEG, PNG, GIF, WebP, etc.).</p>`,
+		);
+		return;
+	}
+
+	const changeBtn = document.getElementById("edit-change-banner");
+	if (changeBtn) {
+		changeBtn.disabled = true;
+		changeBtn.textContent = "Processing...";
+	}
+
+	try {
+		// Convert to WebP and resize to 1500x500 for banner
+		const webpFile = await convertToWebPBanner(file, 1500, 500, 0.8);
+
+		// Update progress text
+		if (changeBtn) {
+			changeBtn.textContent = "Uploading...";
+		}
+
+		const formData = new FormData();
+		formData.append("banner", webpFile);
+
+		const response = await fetch(
+			`/api/profile/${currentProfile.profile.username}/banner`,
+			{
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${authToken}`,
+				},
+				body: formData,
+			},
+		);
+
+		const result = await response.json();
+
+		if (result.success) {
+			currentProfile.profile.banner = result.banner;
+			updateEditBannerDisplay();
+			// Also update the main profile display
+			const profileBanner = document.querySelector(".profile-banner");
+			if (profileBanner) {
+				profileBanner.style.backgroundImage = `url(${result.banner})`;
+				profileBanner.style.backgroundSize = "cover";
+				profileBanner.style.backgroundPosition = "center";
+				profileBanner.style.backgroundRepeat = "no-repeat";
+			}
+			toastQueue.add(
+				`<h1>Banner updated!</h1><p>Your profile banner has been uploaded and changed.</p>`,
+			);
+		} else {
+			toastQueue.add(
+				`<h1>Upload failed</h1><p>${result.error || "Failed to upload banner"}</p>`,
+			);
+		}
+	} catch (error) {
+		console.error("Banner upload error:", error);
+		toastQueue.add(
+			`<h1>Processing error</h1><p>Failed to process image: ${error.message}</p>`,
+		);
+	} finally {
+		if (changeBtn) {
+			changeBtn.disabled = false;
+			changeBtn.textContent = "Change Banner";
+		}
+	}
+};
+
+const handleEditBannerRemoval = async () => {
+	const removeBtn = document.getElementById("edit-remove-banner");
+	if (removeBtn) {
+		removeBtn.disabled = true;
+		removeBtn.textContent = "Removing...";
+	}
+
+	try {
+		const response = await fetch(
+			`/api/profile/${currentProfile.profile.username}/banner`,
+			{
+				method: "DELETE",
+				headers: {
+					Authorization: `Bearer ${authToken}`,
+				},
+			},
+		);
+
+		const result = await response.json();
+
+		if (result.success) {
+			currentProfile.profile.banner = null;
+			updateEditBannerDisplay();
+			// Also update the main profile display
+			const profileBanner = document.querySelector(".profile-banner");
+			if (profileBanner) {
+				profileBanner.style.backgroundImage = "none";
+				profileBanner.style.backgroundColor = "var(--bg-secondary)";
+			}
+			toastQueue.add(
+				`<h1>Banner removed</h1><p>Your profile banner has been reset to default.</p>`,
+			);
+		} else {
+			toastQueue.add(
+				`<h1>Failed to remove banner</h1><p>${result.error || "An error occurred"}</p>`,
+			);
+		}
+	} catch (error) {
+		console.error("Banner removal error:", error);
+		toastQueue.add(
+			`<h1>Network error</h1><p>Failed to remove banner. Please try again.</p>`,
+		);
+	} finally {
+		if (removeBtn) {
+			removeBtn.disabled = false;
+			removeBtn.textContent = "Remove Banner";
+		}
+	}
 };
 
 const updateEditAvatarDisplay = () => {
@@ -586,6 +758,30 @@ editAvatarUpload?.addEventListener("change", (e) => {
 });
 
 editRemoveAvatarBtn?.addEventListener("click", handleEditAvatarRemoval);
+
+// Banner upload event listeners
+const editChangeBannerBtn = document.getElementById("edit-change-banner");
+const editBannerUpload = document.getElementById("edit-banner-upload");
+const editRemoveBannerBtn = document.getElementById("edit-remove-banner");
+const editBannerPreview = document.querySelector(".banner-preview");
+
+editChangeBannerBtn?.addEventListener("click", () => {
+	editBannerUpload?.click();
+});
+
+editBannerPreview?.addEventListener("click", () => {
+	editBannerUpload?.click();
+});
+
+editBannerUpload?.addEventListener("change", (e) => {
+	const file = e.target.files[0];
+	if (file) {
+		handleEditBannerUpload(file);
+	}
+	e.target.value = ""; // Reset input
+});
+
+editRemoveBannerBtn?.addEventListener("click", handleEditBannerRemoval);
 
 document.getElementById("editProfileModal").addEventListener("click", (e) => {
 	if (e.target === e.currentTarget) closeEditModal();

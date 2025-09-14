@@ -47,6 +47,12 @@ const updateProfile = db.query(`
   WHERE id = ?
 `);
 
+const updateBanner = db.query(`
+  UPDATE users
+  SET banner = ?
+  WHERE id = ?
+`);
+
 const updateAvatar = db.query(`
   UPDATE users
   SET avatar = ?
@@ -565,6 +571,93 @@ export default new Elysia({ prefix: "/profile" })
 		} catch (error) {
 			console.error("Avatar removal error:", error);
 			return { error: "Failed to remove avatar" };
+		}
+	})
+	.post("/:username/banner", async ({ params, jwt, headers, body }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const currentUser = getUserByUsername.get(payload.username);
+			if (!currentUser) return { error: "User not found" };
+
+			const { username } = params;
+			if (currentUser.username !== username) {
+				return { error: "You can only update your own banner" };
+			}
+
+			const { banner } = body;
+			if (!banner || !banner.stream) {
+				return { error: "Banner file is required" };
+			}
+
+			// Get file extension based on MIME type first
+			const allowedTypes = {
+				"image/webp": ".webp",
+			};
+
+			const fileExtension = allowedTypes[banner.type];
+			if (!fileExtension) {
+				return {
+					error: "Invalid file type. Only WebP images are allowed for banners.",
+				};
+			}
+
+			if (banner.size > 10 * 1024 * 1024) {
+				return {
+					error: "File too large. Please upload an image smaller than 10MB.",
+				};
+			}
+
+			const uploadsDir = "./.data/uploads";
+
+			// Calculate secure hash for filename
+			const arrayBuffer = await banner.arrayBuffer();
+			const hasher = new Bun.CryptoHasher("sha256");
+			hasher.update(arrayBuffer);
+			const fileHash = hasher.digest("hex");
+
+			const fileName = `${fileHash}${fileExtension}`;
+			const filePath = `${uploadsDir}/${fileName}`;
+
+			await Bun.write(filePath, arrayBuffer);
+
+			const bannerUrl = `/api/uploads/${fileName}`;
+			updateBanner.run(bannerUrl, currentUser.id);
+
+			const updatedUser = getUserByUsername.get(currentUser.username);
+			return { success: true, banner: updatedUser.banner };
+		} catch (error) {
+			console.error("Banner upload error:", error);
+			return { error: "Failed to upload banner" };
+		}
+	})
+	.delete("/:username/banner", async ({ params, jwt, headers }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const currentUser = getUserByUsername.get(payload.username);
+			if (!currentUser) return { error: "User not found" };
+
+			const { username } = params;
+			if (currentUser.username !== username) {
+				return { error: "You can only update your own banner" };
+			}
+
+			// Remove banner from database
+			updateBanner.run(null, currentUser.id);
+
+			return { success: true };
+		} catch (error) {
+			console.error("Banner removal error:", error);
+			return { error: "Failed to remove banner" };
 		}
 	})
 	.get("/:username/followers", async ({ params, jwt, headers }) => {

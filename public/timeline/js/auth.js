@@ -23,10 +23,40 @@ let _user;
 	_user = user;
 	document.querySelector(".account img").src =
 		user.avatar || `https://unavatar.io/${user.username}`;
-	document.querySelector(".account").addEventListener("click", () => {
+	document.querySelector(".account").addEventListener("click", (e) => {
+		e.preventDefault();
+		const dropdown = document.getElementById("accountDropdown");
+		dropdown.style.display =
+			dropdown.style.display === "none" ? "block" : "none";
+	});
+
+	document.getElementById("myProfileLink").addEventListener("click", (e) => {
+		e.preventDefault();
+		document.getElementById("accountDropdown").style.display = "none";
 		import("./profile.js").then(({ default: openProfile }) => {
-			openProfile(user.username);
+			openProfile(_user.username);
 		});
+	});
+
+	document.getElementById("settingsLink").addEventListener("click", (e) => {
+		e.preventDefault();
+		document.getElementById("accountDropdown").style.display = "none";
+		window.location.href = "/settings/main";
+	});
+
+	document.getElementById("signOutLink").addEventListener("click", (e) => {
+		e.preventDefault();
+		document.getElementById("accountDropdown").style.display = "none";
+		localStorage.removeItem("authToken");
+		window.location.href = "/";
+	});
+
+	document.addEventListener("click", (e) => {
+		const accountBtn = document.querySelector(".account");
+		const dropdown = document.getElementById("accountDropdown");
+		if (!accountBtn.contains(e.target) && !dropdown.contains(e.target)) {
+			dropdown.style.display = "none";
+		}
 	});
 
 	document.querySelector(".loader").style.opacity = "0";
