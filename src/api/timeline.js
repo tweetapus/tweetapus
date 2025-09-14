@@ -200,6 +200,11 @@ export default new Elysia({ prefix: "/timeline" })
 				post.like_count > 0 &&
 				topReply.like_count / post.like_count >= 0.8;
 
+			if (topReply) {
+				topReply.liked_by_user = userLikedPosts.has(topReply.id);
+				topReply.retweeted_by_user = userRetweetedPosts.has(topReply.id);
+			}
+
 			return {
 				...post,
 				author: userMap[post.user_id],
@@ -274,6 +279,11 @@ export default new Elysia({ prefix: "/timeline" })
 				topReply &&
 				post.like_count > 0 &&
 				topReply.like_count / post.like_count >= 0.8;
+
+			if (topReply) {
+				topReply.liked_by_user = userLikedPosts.has(topReply.id);
+				topReply.retweeted_by_user = userRetweetedPosts.has(topReply.id);
+			}
 
 			return {
 				...post,

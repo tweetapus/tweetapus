@@ -1875,7 +1875,6 @@ h1 {
   padding-top: 8px;
 }
 
-.notification-loading,
 .no-notifications {
   padding: 40px 16px;
   text-align: center;
@@ -2009,7 +2008,6 @@ h1 {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  font-style: italic;
 }
 
 @media (max-width: 688px) {
@@ -2053,10 +2051,6 @@ h1 {
 
   .notification-tweet-preview .tweet {
     padding: 8px;
-    font-size: 12px;
-  }
-
-  .notification-tweet-subtitle {
     font-size: 12px;
   }
 }

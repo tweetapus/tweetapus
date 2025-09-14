@@ -659,9 +659,88 @@ export const createTweetElement = (tweet, config = {}) => {
           />
         </svg> ${tweet.reply_count}`;
 
+	const tweetInteractionsShareEl = document.createElement("button");
+	tweetInteractionsShareEl.className = "engagement";
+	tweetInteractionsShareEl.style.setProperty("--color", "119, 119, 119");
+	tweetInteractionsShareEl.innerHTML = `<svg
+          width="19"
+          height="19"
+          viewBox="0 0 19 19"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M14.25 5.54167C15.6307 5.54167 16.75 4.42235 16.75 3.04167C16.75 1.66099 15.6307 0.541672 14.25 0.541672C12.8693 0.541672 11.75 1.66099 11.75 3.04167C11.75 4.42235 12.8693 5.54167 14.25 5.54167Z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M4.75 12.6667C6.13069 12.6667 7.25 11.5474 7.25 10.1667C7.25 8.78598 6.13069 7.66667 4.75 7.66667C3.36931 7.66667 2.25 8.78598 2.25 10.1667C2.25 11.5474 3.36931 12.6667 4.75 12.6667Z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M14.25 18.4583C15.6307 18.4583 16.75 17.339 16.75 15.9583C16.75 14.5777 15.6307 13.4583 14.25 13.4583C12.8693 13.4583 11.75 14.5777 11.75 15.9583C11.75 17.339 12.8693 18.4583 14.25 18.4583Z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M7.07 8.87L11.94 5.34"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M7.07 11.4625L11.94 14.9925"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>`;
+
+	tweetInteractionsShareEl.addEventListener("click", async (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		const tweetUrl = `${window.location.origin}/tweet/${tweet.id}`;
+		const shareData = {
+			title: `${tweet.author.name || tweet.author.username} on Tweetapus`,
+			text: tweet.content,
+			url: tweetUrl,
+		};
+
+		try {
+			if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+				await navigator.share(shareData);
+				toastQueue.add(`<h1>Tweet shared!</h1>`);
+			} else {
+				await navigator.clipboard.writeText(tweetUrl);
+				toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
+			}
+		} catch (error) {
+			console.error("Error sharing tweet:", error);
+			const textArea = document.createElement("textarea");
+			textArea.value = tweetUrl;
+			document.body.appendChild(textArea);
+			textArea.select();
+			document.execCommand("copy");
+			document.body.removeChild(textArea);
+			toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
+		}
+	});
+
 	tweetInteractionsEl.appendChild(tweetInteractionsLikeEl);
 	tweetInteractionsEl.appendChild(tweetInteractionsRetweetEl);
 	tweetInteractionsEl.appendChild(tweetInteractionsReplyEl);
+	tweetInteractionsEl.appendChild(tweetInteractionsShareEl);
 
 	// Hide interactions for preview tweets
 	if (size !== "preview") {
