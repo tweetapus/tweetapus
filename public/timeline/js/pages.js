@@ -1,6 +1,6 @@
 const pages = {
 	timeline: document.querySelector(".timeline"),
-	tweet: document.querySelector(".tweet"),
+	tweet: document.querySelector(".tweetPage"),
 	profile: document.querySelector(".profile"),
 };
 const states = {};

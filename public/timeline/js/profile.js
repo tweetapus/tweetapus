@@ -15,69 +15,24 @@ export default async function openProfile(username) {
 		path: `/@${username}`,
 		recoverState: async () => {
 			document.getElementById("profileContainer").style.display = "none";
-			const data = await getUserByUsername(username);
+			const data = await (
+				await fetch(`/api/profile/${username}`, {
+					headers: {
+						Authorization: `Bearer ${authToken}`,
+					},
+				})
+			).json();
 
-			if (data) {
-				currentProfile = data;
-				renderProfile(data);
+			if (data.error) {
+				toastQueue.add(`<h1>${escapeHtml(data.error)}</h1>`);
+				return null;
 			}
+
+			currentProfile = data;
+			renderProfile(data);
 		},
 	});
 }
-
-const getUserByUsername = async (username) => {
-	const data = await (
-		await fetch(`/api/profile/${username}`, {
-			headers: {
-				Authorization: `Bearer ${authToken}`,
-			},
-		})
-	).json();
-
-	if (data.error) {
-		toastQueue.add(`<h1>${escapeHtml(data.error)}</h1>`);
-		return null;
-	}
-
-	return data;
-};
-
-const fetchUserProfile = async (username) => {
-	try {
-		const data = await (
-			await fetch(`/api/profile/${username}`, {
-				headers: {
-					Authorization: `Bearer ${authToken}`,
-				},
-			})
-		).json();
-
-		if (data.error) {
-			return null;
-		}
-
-		return data.user || data.profile;
-	} catch {
-		return null;
-	}
-};
-
-const loadReplies = async (username) => {
-	const data = await (
-		await fetch(`/api/profile/${username}/replies`, {
-			headers: {
-				Authorization: `Bearer ${authToken}`,
-			},
-		})
-	).json();
-
-	if (data.error) {
-		toastQueue.add(`<h1>${escapeHtml(data.error)}</h1>`);
-		return [];
-	}
-
-	return data.replies || [];
-};
 
 const renderPosts = async (posts, isReplies = false) => {
 	const container = document.getElementById("profilePostsContainer");
@@ -110,9 +65,21 @@ const renderPosts = async (posts, isReplies = false) => {
 	await Promise.all(
 		uniqueUsernames.map(async (username) => {
 			if (username === currentUsername && currentProfile) {
-				profileCache[username] = currentProfile.profile || currentProfile.user;
+				profileCache[username] = currentProfile.profile;
 			} else {
-				const profile = await fetchUserProfile(username);
+				const { error, profile } = await (
+					await fetch(`/api/profile/${username}`, {
+						headers: {
+							Authorization: `Bearer ${authToken}`,
+						},
+					})
+				).json();
+
+				if (error) {
+					toastQueue.add(`<h1>${escapeHtml(error)}</h1>`);
+					return;
+				}
+
 				profileCache[username] = profile;
 			}
 		}),
@@ -150,28 +117,45 @@ const switchTab = async (tabName) => {
 	} else if (tabName === "replies") {
 		if (currentReplies.length === 0 && currentUsername) {
 			document.getElementById("profilePostsContainer").innerHTML = "";
-			currentReplies = await loadReplies(currentUsername);
+
+			let { error, replies } = await (
+				await fetch(`/api/profile/${currentUsername}/replies`, {
+					headers: {
+						Authorization: `Bearer ${authToken}`,
+					},
+				})
+			).json();
+
+			if (error) {
+				toastQueue.add(`<h1>${escapeHtml(error)}</h1>`);
+				replies = [];
+			}
+
+			currentReplies = replies || [];
 		}
+
 		renderPosts(currentReplies, true);
 	}
 };
 
 const renderProfile = (data) => {
-	const { user, profile, posts, isFollowing, isOwnProfile } = data;
+	console.log("data", data);
+	const { profile, posts, isFollowing, isOwnProfile } = data;
 
 	document.getElementById("profileHeaderName").textContent =
-		profile.name || user.username;
+		profile.name || profile.username;
 	document.getElementById("profileHeaderPostCount").textContent = `${
 		profile.post_count || 0
 	} posts`;
 
 	const avatarImg = document.getElementById("profileAvatar");
-	avatarImg.src = user.avatar;
-	avatarImg.alt = profile.name || user.username;
+	avatarImg.src = profile.avatar || `https://unavatar.io/${profile.username}`;
+	avatarImg.alt = profile.name || profile.username;
 
 	document.getElementById("profileDisplayName").textContent =
-		profile.name || user.username;
-	document.getElementById("profileUsername").textContent = `@${user.username}`;
+		profile.name || profile.username;
+	document.getElementById("profileUsername").textContent =
+		`@${profile.username}`;
 	document.getElementById("profileBio").textContent = profile.bio || "";
 	document.getElementById("profileBio").style.display = profile.bio
 		? "block"
@@ -193,7 +177,7 @@ const renderProfile = (data) => {
 	}
 	meta.push(
 		`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-icon lucide-calendar"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Joined ${new Date(
-			user.created_at,
+			profile.created_at,
 		).toLocaleDateString("en-US", {
 			month: "long",
 			year: "numeric",
@@ -232,58 +216,54 @@ const updateFollowButton = (isFollowing) => {
 	if (isFollowing) {
 		btn.textContent = "Following";
 		btn.className = "profile-btn profile-btn-following";
-		btn.onclick = unfollowUser;
+
+		btn.onclick = async () => {
+			if (!authToken) {
+				location.href = "/account";
+				return;
+			}
+
+			const { success } = await (
+				await fetch(`/api/profile/${currentUsername}/follow`, {
+					method: "DELETE",
+					headers: { Authorization: `Bearer ${authToken}` },
+				})
+			).json();
+
+			if (!success) {
+				return toastQueue.add(`<h1>Failed to unfollow user</h1>`);
+			}
+
+			updateFollowButton(false);
+			const count = document.getElementById("profileFollowerCount");
+			count.textContent = Math.max(0, parseInt(count.textContent) - 1);
+		};
 	} else {
 		btn.textContent = "Follow";
-		btn.className = "profile-btn profile-btn-primary";
-		btn.onclick = followUser;
+		btn.className = "profile-btn profile-btn-primary profile-btn-follow";
+		btn.onclick = async () => {
+			if (!authToken) {
+				location.href = "/account";
+				return;
+			}
+
+			const { success } = await (
+				await fetch(`/api/profile/${currentUsername}/follow`, {
+					method: "POST",
+					headers: {
+						Authorization: `Bearer ${authToken}`,
+					},
+				})
+			).json();
+
+			if (!success) {
+				return toastQueue.add(`<h1>Failed to follow user</h1>`);
+			}
+			updateFollowButton(true);
+			const count = document.getElementById("profileFollowerCount");
+			count.textContent = parseInt(count.textContent) + 1;
+		};
 	}
-};
-
-const followUser = async () => {
-	if (!authToken) {
-		switchPage("timeline", { path: "/" });
-		return;
-	}
-
-	const { success } = await (
-		await fetch(`/api/profile/${currentUsername}/follow`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${authToken}`,
-				"Content-Type": "application/json",
-			},
-		})
-	).json();
-
-	if (!success) {
-		return toastQueue.add(`<h1>Failed to follow user</h1>`);
-	}
-	updateFollowButton(true);
-	const count = document.getElementById("profileFollowerCount");
-	count.textContent = parseInt(count.textContent) + 1;
-};
-
-const unfollowUser = async () => {
-	if (!authToken) {
-		switchPage("timeline", { path: "/" });
-		return;
-	}
-
-	const { success } = await (
-		await fetch(`/api/profile/${currentUsername}/follow`, {
-			method: "DELETE",
-			headers: { Authorization: `Bearer ${authToken}` },
-		})
-	).json();
-
-	if (!success) {
-		return toastQueue.add(`<h1>Failed to unfollow user</h1>`);
-	}
-
-	updateFollowButton(false);
-	const count = document.getElementById("profileFollowerCount");
-	count.textContent = Math.max(0, parseInt(count.textContent) - 1);
 };
 
 const showEditModal = () => {
@@ -372,8 +352,7 @@ document.querySelectorAll(".profile-tab-btn").forEach((btn) => {
 			.forEach((b) => b.classList.remove("active"));
 		btn.classList.add("active");
 
-		const tabName = btn.dataset.tab;
-		switchTab(tabName);
+		switchTab(btn.dataset.tab);
 	});
 });
 

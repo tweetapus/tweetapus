@@ -108,7 +108,6 @@ export default new Elysia({ prefix: "/profile" })
 			}
 
 			return {
-				user,
 				profile,
 				posts,
 				isFollowing,
