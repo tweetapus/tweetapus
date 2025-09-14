@@ -11,6 +11,36 @@ const getNotifications = db.prepare(`
   LIMIT ?
 `);
 
+const getTweetById = db.prepare(`
+  SELECT 
+    p.*,
+    u.username,
+    u.name,
+    u.avatar,
+    u.verified,
+    COALESCE(like_counts.count, 0) as like_count,
+    COALESCE(retweet_counts.count, 0) as retweet_count,
+    COALESCE(reply_counts.count, 0) as reply_count,
+    COALESCE(quote_counts.count, 0) as quote_count,
+    EXISTS(SELECT 1 FROM likes WHERE user_id = ? AND post_id = p.id) as liked_by_user,
+    EXISTS(SELECT 1 FROM retweets WHERE user_id = ? AND post_id = p.id) as retweeted_by_user
+  FROM posts p
+  JOIN users u ON p.user_id = u.id
+  LEFT JOIN (
+    SELECT post_id, COUNT(*) as count FROM likes GROUP BY post_id
+  ) like_counts ON p.id = like_counts.post_id
+  LEFT JOIN (
+    SELECT post_id, COUNT(*) as count FROM retweets GROUP BY post_id
+  ) retweet_counts ON p.id = retweet_counts.post_id
+  LEFT JOIN (
+    SELECT reply_to, COUNT(*) as count FROM posts WHERE reply_to IS NOT NULL GROUP BY reply_to
+  ) reply_counts ON p.id = reply_counts.reply_to
+  LEFT JOIN (
+    SELECT quote_tweet_id, COUNT(*) as count FROM posts WHERE quote_tweet_id IS NOT NULL GROUP BY quote_tweet_id
+  ) quote_counts ON p.id = quote_counts.quote_tweet_id
+  WHERE p.id = ?
+`);
+
 const markAsRead = db.prepare(`
   UPDATE notifications 
   SET read = TRUE 
@@ -35,15 +65,10 @@ const createNotification = db.prepare(`
 `);
 
 export function addNotification(userId, type, content, relatedId = null) {
-	try {
-		const id = Bun.randomUUIDv7();
-		createNotification.run(id, userId, type, content, relatedId);
-		console.log(`Notification created: ${type} for user ${userId}`);
-		return id;
-	} catch (error) {
-		console.error("Error creating notification:", error);
-		return null;
-	}
+	const id = Bun.randomUUIDv7();
+
+	createNotification.run(id, userId, type, content, relatedId);
+	return id;
 }
 
 export default new Elysia({ prefix: "/notifications" })
@@ -57,8 +82,48 @@ export default new Elysia({ prefix: "/notifications" })
 			if (!user) return { error: "User not found" };
 
 			const notifications = getNotifications.all(user.id, parseInt(limit));
-			
-			return { notifications };
+
+			// Enhance notifications with tweet data if related_id refers to a tweet
+			const enhancedNotifications = notifications.map((notification) => {
+				const enhanced = { ...notification };
+
+				// If the notification is about a tweet (like, retweet, reply, quote), fetch tweet data
+				if (
+					notification.related_id &&
+					["like", "retweet", "reply", "quote"].includes(notification.type)
+				) {
+					try {
+						const tweet = getTweetById.get(
+							user.id,
+							user.id,
+							notification.related_id,
+						);
+						if (tweet) {
+							enhanced.tweet = {
+								id: tweet.id,
+								content: tweet.content,
+								created_at: tweet.created_at,
+								user: {
+									username: tweet.username,
+									name: tweet.name,
+									avatar: tweet.avatar,
+									verified: tweet.verified,
+								},
+								like_count: tweet.like_count,
+								retweet_count: tweet.retweet_count,
+								reply_count: tweet.reply_count,
+								quote_count: tweet.quote_count,
+							};
+						}
+					} catch (error) {
+						console.error("Error fetching tweet for notification:", error);
+					}
+				}
+
+				return enhanced;
+			});
+
+			return { notifications: enhancedNotifications };
 		} catch (error) {
 			console.error("Error fetching notifications:", error);
 			return { error: "Failed to fetch notifications" };

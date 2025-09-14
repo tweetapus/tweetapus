@@ -188,6 +188,20 @@ export const useComposer = (
 				return null;
 			}
 
+			// Check file size (100MB hard limit for videos, 10MB for images)
+			const maxSize =
+				processedFile.type === "video/mp4"
+					? 100 * 1024 * 1024
+					: 10 * 1024 * 1024;
+			if (processedFile.size > maxSize) {
+				const maxSizeMB = maxSize / 1024 / 1024;
+				const fileSizeMB = (processedFile.size / 1024 / 1024).toFixed(1);
+				toastQueue.add(
+					`<h1>File too large</h1><p>File size: ${fileSizeMB}MB. Maximum allowed: ${maxSizeMB}MB${processedFile.type === "video/mp4" ? " (videos will be compressed if needed)" : ""}</p>`,
+				);
+				return null;
+			}
+
 			// Create temporary UUID for UI purposes only
 			const tempId = crypto.randomUUID();
 
@@ -234,7 +248,6 @@ export const useComposer = (
 			?.addEventListener("click", () => {
 				pendingFiles = pendingFiles.filter((f) => f.tempId !== fileData.tempId);
 				previewEl.remove();
-				updateAttachmentCounter();
 			});
 
 		attachmentPreview.appendChild(previewEl);
@@ -355,6 +368,16 @@ export const useComposer = (
 				const uploadResult = await uploadResponse.json();
 				if (uploadResult.success) {
 					uploadedFiles.push(uploadResult.file);
+
+					// Show compression feedback for videos
+					if (
+						uploadResult.file.compressed &&
+						uploadResult.file.compressionRatio > 0
+					) {
+						console.log(
+							`Video compressed: ${uploadResult.file.compressionRatio}% size reduction`,
+						);
+					}
 				} else {
 					toastQueue.add(`<h1>Upload failed</h1><p>${uploadResult.error}</p>`);
 					return;
@@ -472,7 +495,7 @@ export const createComposer = async ({
                 <button type="button" id="file-upload-btn">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-icon lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                 </button>
-                <input type="file" id="file-input" multiple accept="image/png,image/webp,image/avif,image/jpeg,image/jpg,image/gif,video/mp4" style="display: none;">
+                <input type="file" id="file-input" multiple accept="image/png,image/webp,image/avif,image/jpeg,image/jpg,image/gif,video/mp4" style="display: none;" title="Images: max 10MB, Videos: max 100MB (auto-compressed if needed)">
               </div>
               <div class="compose-submit">
                 <div class="character-counter" id="">

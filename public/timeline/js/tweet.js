@@ -104,3 +104,5 @@ addRoute(
 		});
 	},
 );
+
+export { openTweet };

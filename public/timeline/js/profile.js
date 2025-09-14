@@ -12,6 +12,8 @@ let currentPosts = [];
 let currentReplies = [];
 let currentUsername = null;
 
+const escapeHTML = (str) => str.split("").join("").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
 export default async function openProfile(username) {
 	currentUsername = username;
 
@@ -28,7 +30,7 @@ export default async function openProfile(username) {
 			).json();
 
 			if (data.error) {
-				toastQueue.add(`<h1>${escapeHtml(data.error)}</h1>`);
+				toastQueue.add(`<h1>${escapeHTML(data.error)}</h1>`);
 				return null;
 			}
 
@@ -80,7 +82,7 @@ const renderPosts = async (posts, isReplies = false) => {
 				).json();
 
 				if (error) {
-					toastQueue.add(`<h1>${escapeHtml(error)}</h1>`);
+					toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
 					return;
 				}
 
@@ -153,7 +155,7 @@ const switchTab = async (tabName) => {
 			).json();
 
 			if (error) {
-				toastQueue.add(`<h1>${escapeHtml(error)}</h1>`);
+				toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
 				replies = [];
 			}
 
@@ -200,13 +202,13 @@ const renderProfile = (data) => {
 	};
 
 	const meta = [];
-	if (profile.location) meta.push(`📍 ${escapeHtml(profile.location)}`);
+	if (profile.location) meta.push(`📍 ${escapeHTML(profile.location)}`);
 	if (profile.website) {
 		const url = profile.website.startsWith("http")
 			? profile.website
 			: `https://${profile.website}`;
 		meta.push(
-			`🔗 <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(profile.website)}</a>`,
+			`🔗 <a href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer">${escapeHTML(profile.website)}</a>`,
 		);
 	}
 	meta.push(
@@ -607,7 +609,7 @@ async function showFollowersList(username, type) {
 
 		if (error) {
 			toastQueue.add(
-				`<h1>Error loading ${type}</h1><p>${escapeHtml(error)}</p>`,
+				`<h1>Error loading ${type}</h1><p>${escapeHTML(error)}</p>`,
 			);
 			return;
 		}
@@ -629,12 +631,12 @@ async function showFollowersList(username, type) {
 							: users
 									.map(
 										(user) => `
-							<div class="follower-item" data-username="${escapeHtml(user.username)}">
-								<img src="${user.avatar || "/api/avatars/default.png"}" alt="${escapeHtml(user.name)}" class="follower-avatar">
+							<div class="follower-item" data-username="${escapeHTML(user.username)}">
+								<img src="${user.avatar || "/api/avatars/default.png"}" alt="${escapeHTML(user.name)}" class="follower-avatar">
 								<div class="follower-info">
-									<div class="follower-name">${escapeHtml(user.name)}</div>
-									<div class="follower-username">@${escapeHtml(user.username)}</div>
-									${user.bio ? `<div class="follower-bio">${escapeHtml(user.bio)}</div>` : ""}
+									<div class="follower-name">${escapeHTML(user.name)}</div>
+									<div class="follower-username">@${escapeHTML(user.username)}</div>
+									${user.bio ? `<div class="follower-bio">${escapeHTML(user.bio)}</div>` : ""}
 								</div>
 							</div>
 						`,

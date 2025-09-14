@@ -2,6 +2,7 @@ const pages = {
 	timeline: document.querySelector(".timeline"),
 	tweet: document.querySelector(".tweetPage"),
 	profile: document.querySelector(".profile"),
+	notifications: document.querySelector(".notifications"),
 };
 const states = {};
 

@@ -103,6 +103,13 @@ window.onunhandledrejection = (event) => {
 	});
 
 	document.querySelector("#composer-container").appendChild(composer);
+
+	document
+		.getElementById("notificationsBtn")
+		?.addEventListener("click", async () => {
+			const { openNotifications } = await import("./notifications.js");
+			openNotifications();
+		});
 })();
 
 addRoute(

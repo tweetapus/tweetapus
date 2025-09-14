@@ -1,10 +1,14 @@
 import { jwt } from "@elysiajs/jwt";
 import { Elysia, file } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
-import { existsSync, mkdirSync } from "fs";
+import { existsSync, promises as fsPromises, mkdirSync } from "fs";
 import { join } from "path";
 import db from "../db.js";
 import ratelimit from "../helpers/ratelimit.js";
+import {
+	compressVideo,
+	shouldCompressVideo,
+} from "../helpers/video-compression.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -22,7 +26,9 @@ const ALLOWED_TYPES = {
 	"video/mp4": ".mp4",
 };
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB for regular uploads
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB hard limit for videos
+const MAX_COMPRESSED_SIZE = 10 * 1024 * 1024; // 10MB after compression
 
 export default new Elysia({ prefix: "/upload" })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
@@ -59,19 +65,123 @@ export default new Elysia({ prefix: "/upload" })
 				};
 			}
 
-			// Validate file size
-			if (file.size > MAX_FILE_SIZE) {
-				return { error: "File too large. Maximum size is 10MB" };
+			// Validate file size - different limits for videos vs images
+			if (file.type === "video/mp4" && file.size > MAX_VIDEO_SIZE) {
+				return { error: "Video too large. Maximum size is 100MB" };
+			} else if (file.type !== "video/mp4" && file.size > MAX_FILE_SIZE) {
+				return { error: "File too large. Maximum size is 50MB" };
 			}
 
-			// Calculate SHA256 hash
+			// Get file content
 			const arrayBuffer = await file.arrayBuffer();
+
+			let finalArrayBuffer = arrayBuffer;
+			const finalType = file.type;
+			const originalSize = file.size;
+
+			// Handle video compression
+			if (file.type === "video/mp4") {
+				// Create temporary file for processing
+				const tempInputPath = join(
+					uploadsDir,
+					`temp_input_${Bun.randomUUIDv7()}.mp4`,
+				);
+				const tempOutputPath = join(
+					uploadsDir,
+					`temp_output_${Bun.randomUUIDv7()}.mp4`,
+				);
+
+				try {
+					// Write original file to temp location
+					await Bun.write(tempInputPath, arrayBuffer);
+
+					// Check if compression is needed
+					const compressionCheck = await shouldCompressVideo(
+						tempInputPath,
+						MAX_COMPRESSED_SIZE,
+					);
+
+					if (compressionCheck.needsCompression) {
+						console.log(`Compressing video: ${compressionCheck.reason}`);
+
+						// Compress the video
+						const compressionResult = await compressVideo(
+							tempInputPath,
+							tempOutputPath,
+							{
+								crf: 28, // Good quality/size balance for social media
+								preset: "fast",
+								maxWidth: 1280,
+								maxHeight: 720,
+							},
+						);
+
+						if (compressionResult.success) {
+							// Read compressed file
+							finalArrayBuffer = await Bun.file(tempOutputPath).arrayBuffer();
+							console.log(
+								`Video compressed: ${compressionResult.compressionRatio}% size reduction`,
+							);
+						} else {
+							console.error(
+								"Video compression failed:",
+								compressionResult.error,
+							);
+							// Clean up temp files
+							try {
+								(await Bun.file(tempInputPath).exists()) &&
+									(await fsPromises.unlink(tempInputPath));
+								(await Bun.file(tempOutputPath).exists()) &&
+									(await fsPromises.unlink(tempOutputPath));
+							} catch (cleanupError) {
+								console.error("Cleanup error:", cleanupError);
+							}
+							return {
+								error: "Video compression failed. Please try a smaller file.",
+							};
+						}
+					} else {
+						console.log("Video compression not needed");
+					}
+
+					// Clean up temp files
+					try {
+						(await Bun.file(tempInputPath).exists()) &&
+							(await fsPromises.unlink(tempInputPath));
+						(await Bun.file(tempOutputPath).exists()) &&
+							(await fsPromises.unlink(tempOutputPath));
+					} catch (cleanupError) {
+						console.error("Cleanup error:", cleanupError);
+					}
+				} catch (videoError) {
+					console.error("Video processing error:", videoError);
+					// Clean up temp files on error
+					try {
+						(await Bun.file(tempInputPath).exists()) &&
+							(await fsPromises.unlink(tempInputPath));
+						(await Bun.file(tempOutputPath).exists()) &&
+							(await fsPromises.unlink(tempOutputPath));
+					} catch (cleanupError) {
+						console.error("Cleanup error:", cleanupError);
+					}
+					return { error: "Video processing failed. Please try again." };
+				}
+			}
+
+			// Final size check after compression
+			if (finalArrayBuffer.byteLength > MAX_COMPRESSED_SIZE) {
+				return {
+					error: `File too large after processing. Maximum size is ${MAX_COMPRESSED_SIZE / 1024 / 1024}MB`,
+				};
+			}
+
+			// Calculate SHA256 hash of final file
 			const hasher = new Bun.CryptoHasher("sha256");
-			hasher.update(arrayBuffer);
+			hasher.update(finalArrayBuffer);
 			const fileHash = hasher.digest("hex");
 
 			// Save file with hash as filename (secure against path traversal)
-			const fileExtension = ALLOWED_TYPES[file.type];
+			const fileExtension = ALLOWED_TYPES[finalType];
 			const fileName = fileHash + fileExtension;
 
 			// Validate filename to prevent path traversal
@@ -82,8 +192,8 @@ export default new Elysia({ prefix: "/upload" })
 			const filePath = join(uploadsDir, fileName);
 			const fileUrl = `/api/uploads/${fileName}`;
 
-			// Write file to disk
-			await Bun.write(filePath, arrayBuffer);
+			// Write final file to disk
+			await Bun.write(filePath, finalArrayBuffer);
 
 			// Return file data for client to include in tweet creation
 			return {
@@ -91,9 +201,19 @@ export default new Elysia({ prefix: "/upload" })
 				file: {
 					hash: fileHash,
 					name: file.name,
-					type: file.type,
-					size: file.size,
+					type: finalType,
+					size: finalArrayBuffer.byteLength,
 					url: fileUrl,
+					originalSize: originalSize,
+					compressed: originalSize !== finalArrayBuffer.byteLength,
+					compressionRatio:
+						originalSize !== finalArrayBuffer.byteLength
+							? (
+									((originalSize - finalArrayBuffer.byteLength) /
+										originalSize) *
+									100
+								).toFixed(1)
+							: 0,
 				},
 			};
 		} catch (error) {
