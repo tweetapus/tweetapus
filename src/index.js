@@ -6,6 +6,7 @@ import api from "./api.js";
 new Elysia()
 	.use(staticPlugin())
 	.get("/account", () => file("./public/account/index.html"))
+	.get("/notifications", () => file("./public/notifications/index.html"))
 	.get("/profile/:username", () => file("./public/profile.html"))
 	.get("/settings", ({ redirect }) => redirect("/settings/main"))
 	.get("/settings/:section", () => file("./public/settings.html"))

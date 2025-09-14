@@ -2,6 +2,7 @@ import toastQueue from "../../shared/toasts.js";
 import { authToken } from "./auth.js";
 import switchPage, { addRoute } from "./pages.js";
 import { createTweetElement } from "./tweets.js";
+import { convertToWebPAvatar, isConvertibleImage } from "../../shared/image-utils.js";
 
 let currentProfile = null;
 let currentPosts = [];
@@ -355,7 +356,7 @@ const updateEditAvatarDisplay = () => {
 const handleEditAvatarUpload = async (file) => {
 	if (!file) return;
 
-	// Validate file size (5MB max)
+	// Validate file size (5MB max for input)
 	if (file.size > 5 * 1024 * 1024) {
 		toastQueue.add(
 			`<h1>File too large</h1><p>Please choose an image smaller than 5MB.</p>`,
@@ -363,17 +364,10 @@ const handleEditAvatarUpload = async (file) => {
 		return;
 	}
 
-	// Validate file type
-	const allowedTypes = [
-		"image/jpeg",
-		"image/jpg",
-		"image/png",
-		"image/gif",
-		"image/webp",
-	];
-	if (!allowedTypes.includes(file.type)) {
+	// Check if it's a convertible image format
+	if (!isConvertibleImage(file)) {
 		toastQueue.add(
-			`<h1>Invalid file type</h1><p>Please upload a JPEG, PNG, GIF, or WebP image.</p>`,
+			`<h1>Invalid file type</h1><p>Please upload a valid image file (JPEG, PNG, GIF, WebP, etc.).</p>`,
 		);
 		return;
 	}
@@ -381,12 +375,20 @@ const handleEditAvatarUpload = async (file) => {
 	const changeBtn = document.getElementById("edit-change-avatar");
 	if (changeBtn) {
 		changeBtn.disabled = true;
-		changeBtn.textContent = "Uploading...";
+		changeBtn.textContent = "Processing...";
 	}
 
 	try {
+		// Convert to WebP and resize to 250x250
+		const webpFile = await convertToWebPAvatar(file, 250, 0.8);
+
+		// Update progress text
+		if (changeBtn) {
+			changeBtn.textContent = "Uploading...";
+		}
+
 		const formData = new FormData();
-		formData.append("avatar", file);
+		formData.append("avatar", webpFile);
 
 		const response = await fetch(
 			`/api/profile/${currentProfile.profile.username}/avatar`,
@@ -410,7 +412,7 @@ const handleEditAvatarUpload = async (file) => {
 				profileAvatar.src = result.avatar;
 			}
 			toastQueue.add(
-				`<h1>Avatar updated!</h1><p>Your profile picture has been changed.</p>`,
+				`<h1>Avatar updated!</h1><p>Your profile picture has been uploaded and changed.</p>`,
 			);
 		} else {
 			toastQueue.add(
@@ -420,7 +422,7 @@ const handleEditAvatarUpload = async (file) => {
 	} catch (error) {
 		console.error("Avatar upload error:", error);
 		toastQueue.add(
-			`<h1>Network error</h1><p>Failed to upload avatar. Please try again.</p>`,
+			`<h1>Processing error</h1><p>Failed to process image: ${error.message}</p>`,
 		);
 	} finally {
 		if (changeBtn) {

@@ -24,7 +24,9 @@ let _user;
 	document.querySelector(".account img").src =
 		user.avatar || `https://unavatar.io/${user.username}`;
 	document.querySelector(".account").addEventListener("click", () => {
-		window.location.href = `/account`;
+		import("./profile.js").then(({ default: openProfile }) => {
+			openProfile(user.username);
+		});
 	});
 
 	document.querySelector(".loader").style.opacity = "0";

@@ -3,8 +3,8 @@ import { authToken } from "./auth.js";
 import { createComposer } from "./composer.js";
 import showPage, { addRoute } from "./pages.js";
 import { addTweetToTimeline } from "./tweets.js";
-import "./profile.js"; // Import to register profile routes
-import "./notifications.js"; // Import to initialize notifications
+import "./profile.js";
+import "./notifications.js";
 
 window.onerror = (message, source, lineno, colno) => {
 	toastQueue.add(
@@ -29,7 +29,7 @@ window.onunhandledrejection = (event) => {
 (async () => {
 	if (!authToken) return;
 
-	let currentTimeline = "home"; // 'home' or 'following'
+	let currentTimeline = "home";
 
 	const loadTimeline = async (type = "home") => {
 		const endpoint =
@@ -63,15 +63,12 @@ window.onunhandledrejection = (event) => {
 		}
 	};
 
-	// Add click handlers to timeline navigation
 	const feedLinks = document.querySelectorAll("h1 a");
 	feedLinks.forEach((link, index) => {
 		link.addEventListener("click", async (e) => {
 			e.preventDefault();
 
-			// Remove active class from all links
 			feedLinks.forEach((l) => l.classList.remove("active"));
-			// Add active class to clicked link
 			link.classList.add("active");
 
 			const timelineType = index === 0 ? "home" : "following";
@@ -80,13 +77,25 @@ window.onunhandledrejection = (event) => {
 		});
 	});
 
-	// Load initial timeline
-	await loadTimeline("home");
+	const handleUrlParams = () => {
+		const urlParams = new URLSearchParams(window.location.search);
+		const tweetId = urlParams.get("tweet");
+		const profileUsername = urlParams.get("profile");
 
-	// Create and add the composer
+		if (tweetId) {
+			window.history.replaceState(null, "", `/tweet/${tweetId}`);
+			window.dispatchEvent(new PopStateEvent("popstate"));
+		} else if (profileUsername) {
+			window.history.replaceState(null, "", `/@${profileUsername}`);
+			window.dispatchEvent(new PopStateEvent("popstate"));
+		}
+	};
+
+	await loadTimeline("home");
+	handleUrlParams();
+
 	const composer = await createComposer({
 		callback: (tweet) => {
-			// Only add to timeline if we're on home feed or it's the user's own tweet
 			if (currentTimeline === "home") {
 				addTweetToTimeline(tweet, true).classList.add("created");
 			}

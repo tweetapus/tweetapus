@@ -2,6 +2,7 @@ import confetti from "../../shared/confetti.js";
 import createMentionSelector from "../../shared/mention-selector.js";
 import toastQueue from "../../shared/toasts.js";
 import getUser, { authToken } from "./auth.js";
+import { isConvertibleImage } from "../../shared/image-utils.js";
 
 export const useComposer = (
 	element,
@@ -74,7 +75,9 @@ export const useComposer = (
 		if (!pollContainer || !pollToggle) return;
 		pollEnabled = !pollEnabled;
 		pollContainer.style.display = pollEnabled ? "block" : "none";
-		pollToggle.textContent = pollEnabled ? "Remove poll" : "Add poll";
+		pollToggle.innerHTML = pollEnabled
+			? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-x-icon lucide-circle-x"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>`
+			: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-column-big-icon lucide-chart-column-big"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="15" y="5" width="4" height="12" rx="1"/><rect x="7" y="8" width="4" height="9" rx="1"/></svg>`;
 
 		if (
 			pollEnabled &&
@@ -102,7 +105,7 @@ export const useComposer = (
 	}
 
 	const convertToWebP = (file, quality = 0.8) => {
-		return new Promise((resolve, reject) => {
+		return new Promise((resolve) => {
 			// Only convert image files, skip videos
 			if (!file.type.startsWith("image/")) {
 				resolve(file);
@@ -111,6 +114,12 @@ export const useComposer = (
 
 			// Skip if already WebP
 			if (file.type === "image/webp") {
+				resolve(file);
+				return;
+			}
+
+			// Check if it's a convertible image format
+			if (!isConvertibleImage(file)) {
 				resolve(file);
 				return;
 			}
@@ -145,6 +154,8 @@ export const useComposer = (
 							// Fallback to original file if conversion fails
 							resolve(file);
 						}
+						// Clean up object URL
+						URL.revokeObjectURL(img.src);
 					},
 					"image/webp",
 					quality,
@@ -153,6 +164,7 @@ export const useComposer = (
 
 			img.onerror = () => {
 				// Fallback to original file if loading fails
+				URL.revokeObjectURL(img.src);
 				resolve(file);
 			};
 
@@ -166,40 +178,29 @@ export const useComposer = (
 			// Convert to WebP if it's an image
 			const processedFile = await convertToWebP(file);
 
-			// Calculate SHA256 hash on client side
-			const arrayBuffer = await processedFile.arrayBuffer();
-			const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
-			const hashArray = Array.from(new Uint8Array(hashBuffer));
-			const hashHex = hashArray
-				.map((b) => b.toString(16).padStart(2, "0"))
-				.join("");
+			// Validate file type client-side for UX
+			const allowedTypes = [
+				"image/webp",
+				"video/mp4",
+			];
 
-			// Determine file extension
-			const typeMap = {
-				"image/png": ".png",
-				"image/webp": ".webp",
-				"image/avif": ".avif",
-				"image/jpeg": ".jpg",
-				"image/jpg": ".jpg",
-				"image/gif": ".gif",
-				"video/mp4": ".mp4",
-			};
-
-			const fileExtension = typeMap[processedFile.type];
-			if (!fileExtension) {
+			if (!allowedTypes.includes(processedFile.type)) {
 				toastQueue.add(
-					`<h1>Unsupported file type</h1><p>Please use PNG, WEBP, AVIF, JPEG, GIF, or MP4</p>`,
+					`<h1>Unsupported file type</h1><p>Only WebP images and MP4 videos are allowed</p>`,
 				);
 				return null;
 			}
 
+			// Create temporary UUID for UI purposes only
+			const tempId = crypto.randomUUID();
+
 			const fileData = {
-				hash: hashHex,
+				tempId,
 				name: processedFile.name,
 				type: processedFile.type,
 				size: processedFile.size,
-				url: `/public/uploads/${hashHex}${fileExtension}`,
-				file: processedFile, // Keep the processed file for upload
+				file: processedFile,
+				uploaded: false, // Will be set to true after server upload
 			};
 
 			pendingFiles.push(fileData);
@@ -215,7 +216,7 @@ export const useComposer = (
 	const displayAttachmentPreview = (fileData) => {
 		const previewEl = document.createElement("div");
 		previewEl.className = "attachment-preview-item";
-		previewEl.dataset.fileHash = fileData.hash;
+		previewEl.dataset.tempId = fileData.tempId;
 
 		if (fileData.type.startsWith("image/")) {
 			const objectUrl = URL.createObjectURL(fileData.file);
@@ -234,8 +235,9 @@ export const useComposer = (
 		previewEl
 			.querySelector(".remove-attachment")
 			?.addEventListener("click", () => {
-				pendingFiles = pendingFiles.filter((f) => f.hash !== fileData.hash);
+				pendingFiles = pendingFiles.filter((f) => f.tempId !== fileData.tempId);
 				previewEl.remove();
+				updateAttachmentCounter();
 			});
 
 		attachmentPreview.appendChild(previewEl);
@@ -265,7 +267,7 @@ export const useComposer = (
 				const file = item.getAsFile();
 				if (
 					file &&
-					(file.type.startsWith("image/") || file.type === "video/mp4")
+					(isConvertibleImage(file) || file.type === "video/mp4")
 				) {
 					await processFileForUpload(file);
 				}
@@ -292,7 +294,7 @@ export const useComposer = (
 
 		const files = Array.from(e.dataTransfer.files);
 		const validFiles = files.filter(
-			(file) => file.type.startsWith("image/") || file.type === "video/mp4",
+			(file) => isConvertibleImage(file) || file.type === "video/mp4",
 		);
 
 		for (const file of validFiles) {
@@ -472,14 +474,9 @@ export const createComposer = async ({
             </div>
             <div class="compose-footer">
               <div class="compose-actions">
-                <button type="button" id="poll-toggle">Add poll</button>
+                <button type="button" id="poll-toggle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-column-big-icon lucide-chart-column-big"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><rect x="15" y="5" width="4" height="12" rx="1"/><rect x="7" y="8" width="4" height="9" rx="1"/></svg></button>
                 <button type="button" id="file-upload-btn">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
-                    <circle cx="9" cy="9" r="2"/>
-                    <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-                  </svg>
-                  Add media
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image-icon lucide-image"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
                 </button>
                 <input type="file" id="file-input" multiple accept="image/png,image/webp,image/avif,image/jpeg,image/jpg,image/gif,video/mp4" style="display: none;">
               </div>

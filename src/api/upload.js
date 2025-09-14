@@ -1,5 +1,5 @@
 import { jwt } from "@elysiajs/jwt";
-import { Elysia } from "elysia";
+import { Elysia, file } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import { existsSync, mkdirSync } from "fs";
 import { join } from "path";
@@ -16,14 +16,9 @@ if (!existsSync(uploadsDir)) {
 	mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Allowed file types
+// Allowed file types - only WebP for images
 const ALLOWED_TYPES = {
-	"image/png": ".png",
 	"image/webp": ".webp",
-	"image/avif": ".avif",
-	"image/jpeg": ".jpg",
-	"image/jpg": ".jpg",
-	"image/gif": ".gif",
 	"video/mp4": ".mp4",
 };
 
@@ -60,7 +55,7 @@ export default new Elysia({ prefix: "/upload" })
 			if (!ALLOWED_TYPES[file.type]) {
 				return {
 					error:
-						"Unsupported file type. Allowed: PNG, WEBP, AVIF, JPEG, JPG, GIF, MP4",
+						"Unsupported file type. Only WebP images and MP4 videos are allowed",
 				};
 			}
 
@@ -78,12 +73,12 @@ export default new Elysia({ prefix: "/upload" })
 			// Save file with hash as filename (secure against path traversal)
 			const fileExtension = ALLOWED_TYPES[file.type];
 			const fileName = fileHash + fileExtension;
-			
+
 			// Validate filename to prevent path traversal
-			if (!/^[a-f0-9]{64}\.(png|webp|avif|jpg|gif|mp4)$/i.test(fileName)) {
+			if (!/^[a-f0-9]{64}\.(webp|mp4)$/i.test(fileName)) {
 				return { error: "Invalid filename generated" };
 			}
-			
+
 			const filePath = join(uploadsDir, fileName);
 			const fileUrl = `/api/uploads/${fileName}`;
 
@@ -106,3 +101,19 @@ export default new Elysia({ prefix: "/upload" })
 			return { error: "Failed to upload file" };
 		}
 	});
+
+// Secure file serving route
+export const uploadRoutes = new Elysia({ prefix: "/uploads" }).get(
+	"/:filename",
+	({ params }) => {
+		const { filename } = params;
+
+		// Strict filename validation to prevent path traversal
+		if (!/^[a-f0-9]{64}\.(webp|mp4)$/i.test(filename)) {
+			return new Response("Invalid filename", { status: 400 });
+		}
+
+		const filePath = join(process.cwd(), ".data", "uploads", filename);
+		return file(filePath);
+	},
+);

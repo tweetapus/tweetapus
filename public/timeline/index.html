@@ -16,7 +16,7 @@
   </head>
   <body>
     <nav>
-      <button class="notifications-btn" id="notificationsBtn">
+      <a href="/notifications" class="notifications-btn" id="notificationsBtn">
         <svg
           width="24"
           height="24"
@@ -37,7 +37,7 @@
         >
           0
         </span>
-      </button>
+      </a>
       <button class="account">
         <img src="" alt="User avatar" id="user-avatar" />
         <svg
@@ -91,39 +91,6 @@
       <div id="composer-container"></div>
 
       <div class="tweets"></div>
-    </div>
-
-    <div class="notifications-page">
-      <div class="notifications-page-header">
-        <a href="/" class="back-button">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </a>
-        <div class="notifications-page-header-info">
-          <h1>Notifications</h1>
-          <button class="mark-all-read-btn" id="markAllReadBtnPage">
-            Mark all as read
-          </button>
-        </div>
-      </div>
-
-      <div class="notifications-page-content">
-        <div class="notifications-list" id="notificationsPageList">
-          <div class="notification-loading">Loading notifications...</div>
-        </div>
-      </div>
     </div>
 
     <div class="tweetPage"></div>

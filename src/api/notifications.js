@@ -57,9 +57,7 @@ export default new Elysia({ prefix: "/notifications" })
 			if (!user) return { error: "User not found" };
 
 			const notifications = getNotifications.all(user.id, parseInt(limit));
-			console.log(
-				`Fetched ${notifications.length} notifications for user ${user.username}`,
-			);
+			
 			return { notifications };
 		} catch (error) {
 			console.error("Error fetching notifications:", error);

@@ -136,7 +136,7 @@ export default new Elysia({ prefix: "/timeline" })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({
-			duration: 15_000,
+			duration: 10_000,
 			max: 30,
 			scoping: "scoped",
 			generator: ratelimit,

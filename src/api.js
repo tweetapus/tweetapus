@@ -5,7 +5,7 @@ import notifications from "./api/notifications.js";
 import profile, { avatarRoutes } from "./api/profile.js";
 import timeline from "./api/timeline.js";
 import tweet from "./api/tweet.js";
-import upload from "./api/upload.js";
+import upload, { uploadRoutes } from "./api/upload.js";
 import ratelimit from "./helpers/ratelimit.js";
 
 export default new Elysia({
@@ -13,7 +13,7 @@ export default new Elysia({
 })
 	.use(
 		rateLimit({
-			duration: 15_000,
+			duration: 10_000,
 			max: 30,
 			scoping: "scoped",
 			generator: ratelimit,
@@ -25,4 +25,5 @@ export default new Elysia({
 	.use(timeline)
 	.use(upload)
 	.use(notifications)
-	.use(avatarRoutes);
+	.use(avatarRoutes)
+	.use(uploadRoutes);

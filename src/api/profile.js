@@ -194,7 +194,7 @@ export default new Elysia({ prefix: "/profile" })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({
-			duration: 15_000,
+			duration: 10_000,
 			max: 50,
 			scoping: "scoped",
 			generator: ratelimit,
@@ -501,17 +501,15 @@ export default new Elysia({ prefix: "/profile" })
 				return { error: "Avatar file is required" };
 			}
 
-			const allowedTypes = [
-				"image/jpeg",
-				"image/jpg",
-				"image/png",
-				"image/gif",
-				"image/webp",
-			];
-			if (!allowedTypes.includes(avatar.type)) {
+			// Get file extension based on MIME type first
+			const allowedTypes = {
+				"image/webp": ".webp",
+			};
+
+			const fileExtension = allowedTypes[avatar.type];
+			if (!fileExtension) {
 				return {
-					error:
-						"Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.",
+					error: "Invalid file type. Only WebP images are allowed for avatars.",
 				};
 			}
 
@@ -521,16 +519,20 @@ export default new Elysia({ prefix: "/profile" })
 				};
 			}
 
-			const uploadsDir = "./.data/uploads/avatars";
+			const uploadsDir = "./.data/uploads";
 
-			const fileExtension = avatar.name.split(".").pop();
-			const fileName = `${currentUser.id}-${Date.now()}.${fileExtension}`;
+			// Calculate secure hash for filename
+			const arrayBuffer = await avatar.arrayBuffer();
+			const hasher = new Bun.CryptoHasher("sha256");
+			hasher.update(arrayBuffer);
+			const fileHash = hasher.digest("hex");
+
+			const fileName = `${fileHash}${fileExtension}`;
 			const filePath = `${uploadsDir}/${fileName}`;
 
-			const arrayBuffer = await avatar.arrayBuffer();
 			await Bun.write(filePath, arrayBuffer);
 
-			const avatarUrl = `/api/avatars/${fileName}`;
+			const avatarUrl = `/api/uploads/${fileName}`;
 			updateAvatar.run(avatarUrl, currentUser.id);
 
 			const updatedUser = getUserByUsername.get(currentUser.username);
@@ -635,14 +637,12 @@ export const avatarRoutes = new Elysia({ prefix: "/avatars" }).get(
 	({ params }) => {
 		const { filename } = params;
 
-		if (!/^[a-zA-Z0-9\-.]+$/.test(filename)) {
-			return new Response("Invalid filename", { status: 400 });
-		}
-		if (filename.includes("..")) {
+		// Legacy avatar route - redirect to uploads
+		if (!/^[a-f0-9]{64}\.(webp)$/i.test(filename)) {
 			return new Response("Invalid filename", { status: 400 });
 		}
 
-		const filePath = `./.data/uploads/avatars/${filename}`;
+		const filePath = `./.data/uploads/${filename}`;
 		return file(filePath);
 	},
 );
