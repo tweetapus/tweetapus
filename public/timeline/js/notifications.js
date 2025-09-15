@@ -3,7 +3,6 @@ import { authToken } from "./auth.js";
 import switchPage, { addRoute } from "./pages.js";
 import { createTweetElement } from "./tweets.js";
 
-let pollInterval = null;
 let currentNotifications = [];
 
 async function updateUnreadCount() {
@@ -302,7 +301,7 @@ document
 
 addRoute((pathname) => pathname === "/notifications", openNotifications);
 
-pollInterval = setInterval(updateUnreadCount, 30000);
+const pollInterval = setInterval(updateUnreadCount, 30000);
 updateUnreadCount();
 
 export default { updateUnreadCount };

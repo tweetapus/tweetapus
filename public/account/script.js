@@ -149,7 +149,7 @@ async function handlePasswordRegistration() {
 			});
 			location.href = "/";
 		}
-	} catch (error) {
+	} catch {
 		toastQueue.add(
 			`<h1>Registration Failed</h1><p>Unable to connect to server</p>`,
 		);
@@ -297,11 +297,11 @@ const timeAgo = (input) => {
 	diff = Math.abs(diff);
 
 	let str;
-	if (diff < 60) str = diff + "s";
-	else if (diff < 3600) str = Math.floor(diff / 60) + "m";
-	else if (diff < 86400) str = Math.floor(diff / 3600) + "h";
-	else if (diff < 604800) str = Math.floor(diff / 86400) + "d";
-	else if (diff < 2419200) str = Math.floor(diff / 604800) + "w";
+	if (diff < 60) str = `${diff}s`;
+	else if (diff < 3600) str = `${Math.floor(diff / 60)}m`;
+	else if (diff < 86400) str = `${Math.floor(diff / 3600)}h`;
+	else if (diff < 604800) str = `${Math.floor(diff / 86400)}d`;
+	else if (diff < 2419200) str = `${Math.floor(diff / 604800)}w`;
 	else {
 		const d = new Date(date);
 		if (Math.abs(now - date) < 31536000000) {
@@ -651,12 +651,11 @@ document
 
 				toastQueue.add(`<h1>Welcome back!</h1><p>Signed in successfully</p>`);
 			}
-		} catch (error) {
+		} catch {
 			toastQueue.add(`<h1>Login Failed</h1><p>Unable to connect to server</p>`);
 		}
 	});
 
-// Change username functionality
 elements.changeUsernameBtn?.addEventListener("click", () => {
 	showModal(elements.changeUsernameModal);
 	const newUsernameInput = document.getElementById("newUsername");
@@ -665,12 +664,9 @@ elements.changeUsernameBtn?.addEventListener("click", () => {
 	}
 });
 
-// Change password functionality
 elements.changePasswordBtn?.addEventListener("click", () => {
-	// Check if user already has a password
 	const hasPassword = currentUser.password_hash !== null;
 
-	// Update modal title
 	const modalTitle = elements.changePasswordModal.querySelector("h2");
 	modalTitle.textContent = hasPassword ? "Change Password" : "Set Password";
 
@@ -758,14 +754,13 @@ document
 					`<h1>Username Changed!</h1><p>Your username is now @${data.username}</p>`,
 				);
 			}
-		} catch (error) {
+		} catch {
 			toastQueue.add(
 				`<h1>Username Change Failed</h1><p>Unable to connect to server</p>`,
 			);
 		}
 	});
 
-// Delete account functionality
 elements.deleteAccountBtn?.addEventListener("click", () => {
 	showModal(elements.deleteAccountModal);
 });
@@ -820,14 +815,13 @@ document
 					showLoginForm();
 				}, 2000);
 			}
-		} catch (error) {
+		} catch {
 			toastQueue.add(
 				`<h1>Account Deletion Failed</h1><p>Unable to connect to server</p>`,
 			);
 		}
 	});
 
-// Close modals when clicking outside
 [
 	elements.basicLoginModal,
 	elements.changeUsernameModal,
@@ -904,7 +898,7 @@ document
 					`<h1>Password ${hasPassword ? "Changed" : "Set"}!</h1><p>Your password has been ${hasPassword ? "updated" : "set"} successfully</p>`,
 				);
 			}
-		} catch (error) {
+		} catch {
 			toastQueue.add(
 				`<h1>Password Change Failed</h1><p>Unable to connect to server</p>`,
 			);

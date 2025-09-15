@@ -1,6 +1,5 @@
 import confetti from "../../shared/confetti.js";
 import { isConvertibleImage } from "../../shared/image-utils.js";
-import createMentionSelector from "../../shared/mention-selector.js";
 import toastQueue from "../../shared/toasts.js";
 import getUser, { authToken } from "./auth.js";
 

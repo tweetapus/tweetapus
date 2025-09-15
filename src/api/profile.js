@@ -714,32 +714,6 @@ export default new Elysia({ prefix: "/profile" })
 			return { error: "Failed to get following" };
 		}
 	})
-	.get("/search", async ({ query, jwt, headers }) => {
-		const authorization = headers.authorization;
-		if (!authorization) return { error: "Authentication required" };
-
-		try {
-			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-			if (!payload) return { error: "Invalid token" };
-
-			const { q } = query;
-			if (!q || q.length < 1) return { users: [] };
-
-			const searchTerm = `%${q}%`;
-			const exactTerm = `${q}%`;
-
-			const users = searchUsers.all(
-				searchTerm,
-				searchTerm,
-				exactTerm,
-				exactTerm,
-			);
-			return { users };
-		} catch (error) {
-			console.error("Search users error:", error);
-			return { error: "Failed to search users" };
-		}
-	})
 	.patch("/:username/username", async ({ params, jwt, headers, body }) => {
 		const authorization = headers.authorization;
 		if (!authorization) return { error: "Authentication required" };

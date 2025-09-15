@@ -1,3 +1,4 @@
+import { marked } from "https://esm.sh/marked@16.3.0";
 import confetti from "../../shared/confetti.js";
 import createPopup from "../../shared/popup.js";
 import toastQueue from "../../shared/toasts.js";
@@ -16,25 +17,58 @@ const linkifyText = (text) => {
 	const urlRegex = /(https?:\/\/[^\s]+)/g;
 	const mentionRegex = /@([a-zA-Z0-9_]+)/g;
 
-	let safeText = escapeHtml(text);
-
-	safeText = safeText.replace(urlRegex, (url) => {
-		const cleanUrl = url.replace(/[.,!?;:]$/, "");
-		const trailingPunc = url.slice(cleanUrl.length);
-		try {
-			const hostname = new URL(cleanUrl).hostname;
-			return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="tweet-link">${hostname}</a>${trailingPunc}`;
-		} catch {
-			return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="tweet-link">${cleanUrl}</a>${trailingPunc}`;
-		}
+	const html = marked.parse(text, {
+		breaks: true,
+		gfm: true,
+		html: false,
+		headerIds: false,
+		mangle: false,
 	});
 
-	safeText = safeText.replace(
-		mentionRegex,
-		'<a href="#" class="tweet-mention" data-username="$1">@$1</a>',
-	);
+	// Parse the HTML and linkify text nodes
+	const parser = new DOMParser();
+	const doc = parser.parseFromString(html, "text/html");
 
-	return safeText;
+	const linkifyNode = (node) => {
+		if (node.nodeType === Node.TEXT_NODE) {
+			let text = node.textContent;
+
+			// Handle mentions
+			text = text.replace(
+				mentionRegex,
+				'<a href="#" class="tweet-mention" data-username="$1">@$1</a>',
+			);
+
+			// Handle URLs
+			text = text.replace(urlRegex, (url) => {
+				const cleanUrl = url.replace(/[.,!?;:]$/, "");
+				const trailingPunc = url.slice(cleanUrl.length);
+				try {
+					const hostname = new URL(cleanUrl).hostname;
+					return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="tweet-link">${hostname}</a>${trailingPunc}`;
+				} catch {
+					return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="tweet-link">${cleanUrl}</a>${trailingPunc}`;
+				}
+			});
+
+			// Replace the text node with HTML
+			const tempDiv = document.createElement("div");
+			tempDiv.innerHTML = text;
+			while (tempDiv.firstChild) {
+				node.parentNode.insertBefore(tempDiv.firstChild, node);
+			}
+			node.parentNode.removeChild(node);
+		} else if (node.nodeType === Node.ELEMENT_NODE) {
+			// Recurse on children
+			for (const child of Array.from(node.childNodes)) {
+				linkifyNode(child);
+			}
+		}
+	};
+
+	linkifyNode(doc.body);
+
+	return doc.body.innerHTML;
 };
 
 const timeAgo = (date) => {
@@ -575,15 +609,10 @@ export const createTweetElement = (tweet, config = {}) => {
 						placeholder: "Add your thoughts about this tweet...",
 						quoteTweet: tweet,
 						callback: async (newTweet) => {
-							try {
-								addTweetToTimeline(newTweet, true).classList.add("created");
-								toastQueue.add(`<h1>Quote tweet posted!</h1>`);
+							addTweetToTimeline(newTweet, true).classList.add("created");
+							setTimeout(() => {
 								overlay.remove();
-							} catch (error) {
-								console.error("Error adding quote tweet to timeline:", error);
-								toastQueue.add(`<h1>Error posting quote tweet</h1>`);
-								overlay.remove();
-							}
+							}, 10);
 						},
 					});
 
@@ -772,8 +801,8 @@ export const createTweetElement = (tweet, config = {}) => {
 };
 
 export const addTweetToTimeline = (tweet, prepend = false) => {
-	if (!tweet) {
-		console.error("No tweet provided to addTweetToTimeline");
+	if (!tweet || !tweet.author) {
+		console.error("Invalid tweet object provided to addTweetToTimeline");
 		return null;
 	}
 

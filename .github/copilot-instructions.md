@@ -22,3 +22,4 @@
 - DO NOT run bun run src/index.js, it's already running.
 - AVOID code comments unless strictly needed
 - for uploads, EVERYTHING goes as a SHA256 HASH to the .DATA/UPLOADS folder. ONLY ACCEPT WEBPS, and convert all images to WEBPs.
+- DO NOT USE --spacing variables, THEY DO NOT EXIST.
