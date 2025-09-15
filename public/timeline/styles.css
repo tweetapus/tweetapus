@@ -2084,6 +2084,11 @@ h1 {
     color: #00ba7c;
   }
 
+  &.mention-icon {
+    background-color: rgba(29, 155, 240, 0.1);
+    color: #1d9bf0;
+  }
+
   svg {
     width: 16px;
     height: 16px;

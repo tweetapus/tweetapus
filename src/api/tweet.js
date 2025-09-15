@@ -298,7 +298,32 @@ export default new Elysia({ prefix: "/tweets" })
 				}
 			}
 
-			// Handle file attachments if provided
+			const mentionRegex = /@(\w+)/g;
+			const mentions = new Set();
+			if (tweetContent && typeof tweetContent === 'string') {
+				let match;
+				mentionRegex.lastIndex = 0;
+				match = mentionRegex.exec(tweetContent);
+				while (match !== null) {
+					mentions.add(match[1]);
+					match = mentionRegex.exec(tweetContent);
+				}
+			}
+
+			for (const mentionedUsername of mentions) {
+				if (mentionedUsername.toLowerCase() === user.username.toLowerCase()) continue; // Don't notify self-mentions
+
+				const mentionedUser = getUserByUsername.get(mentionedUsername);
+				if (mentionedUser) {
+					addNotification(
+						mentionedUser.id,
+						"mention",
+						`${user.name || user.username} mentioned you in a tweet`,
+						tweetId,
+					);
+				}
+			}
+
 			const attachments = [];
 			if (files && Array.isArray(files)) {
 				files.forEach((file) => {

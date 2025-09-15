@@ -1,12 +1,20 @@
 import showPage, { addRoute } from "./pages.js";
 
 const settingsPages = [
-	{ key: "main", title: "Main", content: () => `
+	{
+		key: "main",
+		title: "Main",
+		content: () => `
         h
-        ` },
-	{ key: "other", title: "Other", content: () => `
-        h
-        ` },
+        `,
+	},
+	{
+		key: "other",
+		title: "Other",
+		content: () => `
+        j
+        `,
+	},
 ];
 
 const createSettingsPage = () => {
@@ -194,9 +202,8 @@ const initializeSettings = () => {
 	});
 
 	const backButton = settingsPage.querySelector(".back-button");
-	backButton.addEventListener("click", (e) => {
-		e.preventDefault();
-		showPage("timeline", { path: "/" });
+	backButton.addEventListener("click", () => {
+		window.location.href = "/";
 	});
 
 	const pathParts = window.location.pathname.split("/");

@@ -39,7 +39,14 @@ const linkifyText = (text) => {
 
 const timeAgo = (date) => {
 	const now = new Date();
-	const dateObj = new Date(date);
+	let dateObj;
+
+	if (typeof date === "string" && !date.endsWith("Z") && !date.includes("+")) {
+		dateObj = new Date(date + "Z");
+	} else {
+		dateObj = new Date(date);
+	}
+
 	const seconds = Math.floor((now - dateObj) / 1000);
 
 	if (seconds < 60) return `${seconds}s`;
@@ -367,7 +374,6 @@ export const createTweetElement = (tweet, config = {}) => {
 		}
 	}
 
-	// Display attachments
 	if (tweet.attachments && tweet.attachments.length > 0) {
 		const attachmentsEl = document.createElement("div");
 		attachmentsEl.className = "tweet-attachments";
@@ -735,7 +741,6 @@ export const createTweetElement = (tweet, config = {}) => {
 			isTopReply: true,
 		});
 
-		// Add reply indicator
 		const replyIndicator = document.createElement("div");
 		replyIndicator.className = "reply-indicator";
 		replyIndicator.innerHTML = `

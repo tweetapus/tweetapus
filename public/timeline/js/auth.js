@@ -41,22 +41,31 @@ const closeDropdown = (dropdown) => {
 	_user = user;
 	document.querySelector(".account img").src =
 		user.avatar || `https://unavatar.io/${user.username}`;
+	const outsideClickHandler = (e) => {
+		const accountBtn = document.querySelector(".account");
+		const dropdown = document.getElementById("accountDropdown");
+		if (!dropdown) return;
+		if (!accountBtn.contains(e.target) && !dropdown.contains(e.target)) {
+			closeDropdown(dropdown);
+			document.removeEventListener("click", outsideClickHandler);
+		}
+	};
+
 	document.querySelector(".account").addEventListener("click", (e) => {
 		e.stopPropagation();
 		e.preventDefault();
 		const dropdown = document.getElementById("accountDropdown");
 		if (!dropdown.classList.contains("open")) {
-			// make visible so animation can run
 			dropdown.style.display = "block";
-			// force reflow so transition picks up the change
 			void dropdown.offsetHeight;
 			dropdown.classList.add("open");
+			document.addEventListener("click", outsideClickHandler);
 		} else {
 			closeDropdown(dropdown);
+			document.removeEventListener("click", outsideClickHandler);
 		}
 	});
 
-	// menu links should close the dropdown and perform actions
 	document.getElementById("myProfileLink").addEventListener("click", (e) => {
 		e.preventDefault();
 		const dropdown = document.getElementById("accountDropdown");
@@ -81,15 +90,6 @@ const closeDropdown = (dropdown) => {
 		closeDropdown(dropdown);
 		localStorage.removeItem("authToken");
 		window.location.href = "/";
-	});
-
-	document.addEventListener("click", (e) => {
-		const accountBtn = document.querySelector(".account");
-		const dropdown = document.getElementById("accountDropdown");
-		if (!dropdown) return;
-		if (!accountBtn.contains(e.target) && !dropdown.contains(e.target)) {
-			closeDropdown(dropdown);
-		}
 	});
 
 	document.querySelector(".loader").style.opacity = "0";

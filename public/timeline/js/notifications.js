@@ -55,7 +55,6 @@ async function loadNotifications() {
 			})
 		).json();
 
-		// Fix tweet author property mapping for createTweetElement compatibility
 		const notifications = (data.notifications || []).map((notification) => {
 			if (notification.tweet?.user) {
 				notification.tweet.author = notification.tweet.user;
@@ -79,7 +78,6 @@ function renderNotifications() {
 	const listElement = document.getElementById("notificationsList");
 	if (!listElement) return;
 
-	// Clear existing content
 	listElement.innerHTML = "";
 
 	if (currentNotifications.length === 0) {
@@ -90,7 +88,6 @@ function renderNotifications() {
 		return;
 	}
 
-	// Create and append notification elements
 	currentNotifications.forEach((notification) => {
 		const notificationEl = createNotificationElement(notification);
 		listElement.appendChild(notificationEl);
@@ -99,7 +96,18 @@ function renderNotifications() {
 
 function createNotificationElement(notification) {
 	const now = new Date();
-	const date = new Date(notification.created_at);
+	let date;
+
+	if (
+		typeof notification.created_at === "string" &&
+		!notification.created_at.endsWith("Z") &&
+		!notification.created_at.includes("+")
+	) {
+		date = new Date(notification.created_at + "Z");
+	} else {
+		date = new Date(notification.created_at);
+	}
+
 	const diffInSeconds = Math.floor((now - date) / 1000);
 
 	let timeAgo;
@@ -136,6 +144,12 @@ function createNotificationElement(notification) {
 			<path d="M3 21c3 0 7-1 7-8V5c0-1.25-.756-2.017-2-2H4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2 1 0 1 0 1 1v1c0 1-1 2-2 2s-1 .008-1 1.031V20c0 1 0 1 1 1z"/>
 			<path d="M15 21c3 0 7-1 7-8V5c0-1.25-.757-2.017-2-2h-4c-1.25 0-2 .75-2 1.972V11c0 1.25.75 2 2 2h.75c0 2.25.25 4-2.75 4v3c0 1 0 1 1 1z"/>
 		</svg>`,
+		mention: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+			<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+			<circle cx="9" cy="7" r="4"/>
+			<path d="M19 8v6"/>
+			<path d="M22 11h-6"/>
+		</svg>`,
 	};
 
 	const iconClasses = {
@@ -144,31 +158,27 @@ function createNotificationElement(notification) {
 		reply: "reply-icon",
 		follow: "follow-icon",
 		quote: "quote-icon",
+		mention: "mention-icon",
 	};
 
-	// Create main notification item element
 	const notificationEl = document.createElement("div");
 	notificationEl.className = `notification-item ${isUnread ? "unread" : ""}`;
 	notificationEl.dataset.id = notification.id;
 	notificationEl.dataset.type = notification.type;
 	notificationEl.dataset.relatedId = notification.related_id || "";
 
-	// Create icon element
 	const iconEl = document.createElement("div");
 	iconEl.className = `notification-icon ${iconClasses[notification.type] || "follow-icon"}`;
 	iconEl.innerHTML = icons[notification.type] || icons.like;
 
-	// Create content element
 	const contentEl = document.createElement("div");
 	contentEl.className = "notification-content";
 
-	// Create content paragraph
 	const contentP = document.createElement("p");
 	contentP.innerHTML = `${notification.content} <span class="notification-time">• ${timeAgo}</span>`;
 
 	contentEl.appendChild(contentP);
 
-	// Add tweet preview if available
 	if (notification.tweet) {
 		if (notification.type === "reply") {
 			const tweetElement = createTweetElement(notification.tweet, {
@@ -181,7 +191,9 @@ function createNotificationElement(notification) {
 			tweetPreviewEl.className = "notification-tweet-preview";
 			tweetPreviewEl.appendChild(tweetElement);
 			contentEl.appendChild(tweetPreviewEl);
-		} else if (["like", "retweet", "quote"].includes(notification.type)) {
+		} else if (
+			["like", "retweet", "quote", "mention"].includes(notification.type)
+		) {
 			const tweetContent =
 				notification.tweet.content.length > 100
 					? `${notification.tweet.content.substring(0, 100)}...`
@@ -193,13 +205,11 @@ function createNotificationElement(notification) {
 		}
 	}
 
-	// Add click event listener
 	notificationEl.addEventListener("click", async (e) => {
 		const notificationId = e.currentTarget.dataset.id;
 		const notificationType = e.currentTarget.dataset.type;
 		const relatedId = e.currentTarget.dataset.relatedId;
 
-		// Mark as read inline
 		if (authToken) {
 			try {
 				await fetch(`/api/notifications/${notificationId}/read`, {
@@ -220,10 +230,13 @@ function createNotificationElement(notification) {
 			}
 		}
 
-		// Handle navigation
 		if (!relatedId) return;
 
-		if (["like", "retweet", "reply", "quote"].includes(notificationType)) {
+		if (
+			["like", "retweet", "reply", "quote", "mention"].includes(
+				notificationType,
+			)
+		) {
 			try {
 				const response = await fetch(`/api/tweets/${relatedId}`, {
 					headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
@@ -250,7 +263,6 @@ function createNotificationElement(notification) {
 		}
 	});
 
-	// Assemble the notification
 	notificationEl.appendChild(iconEl);
 	notificationEl.appendChild(contentEl);
 
@@ -280,9 +292,8 @@ async function markAllAsRead() {
 
 document
 	.querySelector(".notifications .back-button")
-	?.addEventListener("click", (e) => {
-		e.preventDefault();
-		history.back();
+	?.addEventListener("click", () => {
+		window.location.href = "/";
 	});
 
 document

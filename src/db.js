@@ -8,7 +8,7 @@ db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username VARCHAR,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   name TEXT DEFAULT NULL, 
   avatar TEXT DEFAULT NULL, 
   verified BOOLEAN DEFAULT FALSE,
@@ -31,7 +31,7 @@ CREATE TABLE IF NOT EXISTS passkeys (
   backup_eligible BOOLEAN,
   backup_status BOOLEAN,
   transports TEXT,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   last_used TIMESTAMP, name TEXT DEFAULT NULL,
   FOREIGN KEY (internal_user_id) REFERENCES users(id)  ON DELETE CASCADE
 );
@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS follows (
   id TEXT PRIMARY KEY,
   follower_id TEXT NOT NULL,
   following_id TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE,
   UNIQUE(follower_id, following_id)
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS posts (
   reply_to TEXT,
   poll_id TEXT,
   quote_tweet_id TEXT,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   like_count INTEGER DEFAULT 0,
   reply_count INTEGER DEFAULT 0,
   retweet_count INTEGER DEFAULT 0,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS likes (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   post_id TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
   UNIQUE(user_id, post_id)
@@ -78,7 +78,7 @@ CREATE TABLE IF NOT EXISTS retweets (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   post_id TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
   UNIQUE(user_id, post_id)
@@ -88,7 +88,7 @@ CREATE TABLE IF NOT EXISTS polls (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL,
   expires_at TIMESTAMP NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
   UNIQUE(post_id)
 );
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS poll_options (
   option_text TEXT NOT NULL,
   vote_count INTEGER DEFAULT 0,
   option_order INTEGER NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
 );
 
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS poll_votes (
   user_id TEXT NOT NULL,
   poll_id TEXT NOT NULL,
   option_id TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
   FOREIGN KEY (option_id) REFERENCES poll_options(id) ON DELETE CASCADE,
@@ -123,7 +123,7 @@ CREATE TABLE IF NOT EXISTS attachments (
   file_type TEXT NOT NULL,
   file_size INTEGER NOT NULL,
   file_url TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 );
 
@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS notifications (
   content TEXT NOT NULL,
   related_id TEXT,
   read BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMP DEFAULT (datetime('now')),
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );`);
 

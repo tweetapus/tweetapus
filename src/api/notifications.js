@@ -87,10 +87,10 @@ export default new Elysia({ prefix: "/notifications" })
 			const enhancedNotifications = notifications.map((notification) => {
 				const enhanced = { ...notification };
 
-				// If the notification is about a tweet (like, retweet, reply, quote), fetch tweet data
+				// If the notification is about a tweet (like, retweet, reply, quote, mention), fetch tweet data
 				if (
 					notification.related_id &&
-					["like", "retweet", "reply", "quote"].includes(notification.type)
+					["like", "retweet", "reply", "quote", "mention"].includes(notification.type)
 				) {
 					try {
 						const tweet = getTweetById.get(
