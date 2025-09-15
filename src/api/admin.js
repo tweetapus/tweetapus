@@ -343,14 +343,13 @@ export default new Elysia({ prefix: "/admin" })
 	.delete("/posts/:id", async ({ params }) => {
 		db.transaction(() => {
 			db.query("DELETE FROM likes WHERE post_id = ?").run(params.id);
-			db.query("DELETE FROM replies WHERE post_id = ?").run(params.id);
+			db.query("DELETE FROM posts WHERE reply_to = ?").run(params.id);
 			db.query("DELETE FROM retweets WHERE post_id = ?").run(params.id);
 			adminQueries.deletePost.run(params.id);
 		})();
 		return { success: true };
 	})
 
-	// Suspension management
 	.get("/suspensions", async ({ query }) => {
 		const page = parseInt(query.page) || 1;
 		const limit = parseInt(query.limit) || 20;

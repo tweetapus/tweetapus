@@ -4,7 +4,7 @@ const pages = {
 	profile: document.querySelector(".profile"),
 	notifications: document.querySelector(".notifications"),
 	search: document.querySelector(".search-page"),
-	settings: null, // Will be created dynamically by settings.js
+	settings: null,
 };
 const states = {};
 let searchInitialized = false;
@@ -18,7 +18,6 @@ function showPage(page, recoverState = () => {}) {
 		pages[page].style.display = "flex";
 		recoverState(pages[page]);
 
-		// Initialize search page if needed
 		if (page === "search" && !searchInitialized) {
 			searchInitialized = true;
 			try {
@@ -30,7 +29,6 @@ function showPage(page, recoverState = () => {}) {
 			}
 		}
 	} else if (page === "settings") {
-		// Settings page will be created dynamically
 		const settingsElement = document.querySelector(".settings");
 		if (settingsElement) {
 			pages.settings = settingsElement;
@@ -38,7 +36,6 @@ function showPage(page, recoverState = () => {}) {
 			recoverState(settingsElement);
 		}
 	} else if (page === "search") {
-		// This case is now handled above in the main if block
 	}
 
 	return pages[page];

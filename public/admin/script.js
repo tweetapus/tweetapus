@@ -349,9 +349,6 @@ class AdminPanel {
                       <button class="btn btn-outline-info btn-sm" onclick="adminPanel.impersonateUser('${user.id}')">
                         <i class="bi bi-person-fill-gear"></i> Impersonate
                       </button>
-                      <button class="btn btn-outline-dark btn-sm" onclick="adminPanel.deleteUser('${user.id}', '@${user.username}')">
-                        <i class="bi bi-trash"></i> Delete
-                      </button>
                     `
 												: ""
 										}
