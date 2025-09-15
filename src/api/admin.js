@@ -65,12 +65,12 @@ const adminQueries = {
 	// User details
 	getUserWithDetails: db.query(`
     SELECT u.*, 
-           COUNT(DISTINCT p.id) as actual_post_count,
-           COUNT(DISTINCT f1.id) as actual_follower_count,
-           COUNT(DISTINCT f2.id) as actual_following_count,
-           COUNT(DISTINCT l.id) as likes_given,
-           COUNT(DISTINCT r.id) as retweets_given,
-           COUNT(DISTINCT pk.cred_id) as passkey_count
+           (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as actual_post_count,
+           (SELECT COUNT(*) FROM follows WHERE following_id = u.id) as actual_follower_count,
+           (SELECT COUNT(*) FROM follows WHERE follower_id = u.id) as actual_following_count,
+           (SELECT COUNT(DISTINCT l.id) FROM likes l WHERE u.id = l.user_id) as likes_given,
+           (SELECT COUNT(DISTINCT r.id) FROM retweets r WHERE u.id = r.user_id) as retweets_given,
+           (SELECT COUNT(DISTINCT pk.cred_id) FROM passkeys pk WHERE u.id = pk.internal_user_id) as passkey_count
     FROM users u
     LEFT JOIN posts p ON u.id = p.user_id
     LEFT JOIN follows f1 ON u.id = f1.following_id
@@ -173,11 +173,19 @@ const requireAdmin = async ({ headers, jwt, set }) => {
 	}
 };
 
+const isSuspended = async ({ user, set }) => {
+	if (user.suspended) {
+		set.status = 403;
+		return { error: "User is suspended" };
+	}
+};
+
 export default new Elysia({ prefix: "/admin" })
 	.use(
 		jwt({ name: "jwt", secret: process.env.JWT_SECRET || "your-secret-key" }),
 	)
 	.derive(requireAdmin)
+	.guard({ before: [isSuspended] })
 
 	// Dashboard stats
 	.get("/stats", async () => {
@@ -333,7 +341,12 @@ export default new Elysia({ prefix: "/admin" })
 	})
 
 	.delete("/posts/:id", async ({ params }) => {
-		adminQueries.deletePost.run(params.id);
+		db.transaction(() => {
+			db.query("DELETE FROM likes WHERE post_id = ?").run(params.id);
+			db.query("DELETE FROM replies WHERE post_id = ?").run(params.id);
+			db.query("DELETE FROM retweets WHERE post_id = ?").run(params.id);
+			adminQueries.deletePost.run(params.id);
+		})();
 		return { success: true };
 	})
 
@@ -383,11 +396,6 @@ export default new Elysia({ prefix: "/admin" })
 			}),
 		},
 	)
-
-	.delete("/posts/:id", async ({ params }) => {
-		adminQueries.deletePost.run(params.id);
-		return { success: true };
-	})
 
 	.post(
 		"/tweets",

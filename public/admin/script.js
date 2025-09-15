@@ -322,11 +322,8 @@ class AdminPanel {
                 </td>
                 <td>
                   <div class="btn-group-vertical btn-group-sm">
-                    <button class="btn btn-outline-primary btn-sm" onclick="adminPanel.viewUser('${user.id}')">
-                      <i class="bi bi-eye"></i> View
-                    </button>
-                    <button class="btn btn-outline-secondary btn-sm" onclick="adminPanel.editProfile('${user.id}')">
-                      <i class="bi bi-person-gear"></i> Edit Profile
+                    <button class="btn btn-outline-primary btn-sm" onclick="adminPanel.showUserModal('${user.id}')">
+                      <i class="bi bi-eye"></i> View / Edit
                     </button>
                     <button class="btn btn-outline-info btn-sm" onclick="adminPanel.tweetOnBehalf('${user.id}')">
                       <i class="bi bi-chat-text"></i> Tweet As
@@ -427,7 +424,7 @@ class AdminPanel {
                 </td>
                 <td>
                   <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
-                    ${post.content.length > 100 ? post.content.substring(0, 100) + "..." : post.content}
+                    ${post.content.length > 100 ? post.content.replaceAll("<", "&lt;").replaceAll(">", "&gt;").substring(0, 100) + "..." : post.content.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}
                   </div>
                 </td>
                 <td>
@@ -593,110 +590,159 @@ class AdminPanel {
     `;
 	}
 
-	async viewUser(userId) {
+	async showUserModal(userId) {
 		try {
-			const user = await this.apiCall(`/api/admin/users/${userId}`);
-			this.showUserModal(user);
+			const userData = await this.apiCall(`/api/admin/users/${userId}`);
+			const { user, suspensions, recentPosts } = userData;
+
+			document.getElementById("userModalBody").innerHTML = `
+        <div class="row">
+          <div class="col-md-4 text-center">
+            <img src="${user.avatar || "/img/default-avatar.png"}" class="img-fluid rounded-circle mb-3" style="max-width: 150px;" alt="Avatar">
+            <h4>@${user.username}</h4>
+            <p class="text-muted">${user.name || ""}</p>
+            <div class="d-flex justify-content-center gap-2 mb-3">
+              ${user.verified ? '<span class="badge bg-success">Verified</span>' : ''}
+              ${user.admin ? '<span class="badge bg-primary">Admin</span>' : ''}
+              ${user.suspended ? '<span class="badge bg-danger">Suspended</span>' : ''}
+            </div>
+          </div>
+          <div class="col-md-8">
+            <form id="editProfileForm">
+              <input type="hidden" id="editProfileId" value="${user.id}">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Username</label>
+                  <input type="text" class="form-control" id="editProfileUsername" value="${user.username}" readonly>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Display Name</label>
+                  <input type="text" class="form-control" id="editProfileName" value="${user.name || ""}" readonly>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Bio</label>
+                <textarea class="form-control" id="editProfileBio" rows="3" readonly>${user.bio || ""}</textarea>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Followers</label>
+                  <input type="number" class="form-control" id="editProfileFollowers" value="${user.actual_follower_count}" readonly>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Following</label>
+                  <input type="number" class="form-control" id="editProfileFollowing" value="${user.actual_following_count}" readonly>
+                </div>
+              </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="editProfileVerified" ${user.verified ? "checked" : ""} disabled>
+                <label class="form-check-label">Verified</label>
+              </div>
+               <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="editProfileAdmin" ${user.admin ? "checked" : ""} disabled>
+                <label class="form-check-label">Admin</label>
+              </div>
+            </form>
+            
+            <h5>Recent Posts</h5>
+            <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
+              ${recentPosts && recentPosts.length ? recentPosts.map(post => `
+                <div class="border-bottom pb-2 mb-2">
+                  <small class="text-muted">${this.formatDate(post.created_at)}</small>
+                  <p class="mb-1">${post.content.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</p>
+                  <small>Likes: ${post.like_count} | Retweets: ${post.retweet_count} | Replies: ${post.reply_count}</small>
+                </div>
+              `).join("") : '<p class="text-muted">No recent posts</p>'}
+            </div>
+
+            ${suspensions && suspensions.length ? `
+              <h5>Suspension History</h5>
+              <div style="max-height: 200px; overflow-y: auto;">
+                ${suspensions.map(suspension => `
+                  <div class="border-bottom pb-2 mb-2">
+                    <div class="d-flex justify-content-between">
+                      <strong>Severity ${suspension.severity}/5</strong>
+                      <span class="badge ${suspension.status === "active" ? "bg-danger" : suspension.status === "lifted" ? "bg-success" : "bg-secondary"}">
+                        ${suspension.status}
+                      </span>
+                    </div>
+                    <p class="mb-1">${suspension.reason}</p>
+                    <small class="text-muted">
+                      ${this.formatDate(suspension.created_at)} by ${suspension.suspended_by_username || "Unknown"}
+                      ${suspension.expires_at ? ` | Expires: ${this.formatDate(suspension.expires_at)}` : " | Permanent"}
+                    </small>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
+          </div>
+        </div>
+      `;
+
+			document.getElementById("userModalFooter").innerHTML = `
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="editProfileBtn" onclick="adminPanel.toggleEditMode(true)">Edit Profile</button>
+        <button type="button" class="btn btn-success d-none" id="saveProfileBtn" onclick="adminPanel.saveProfile('${user.id}')">Save Changes</button>
+        <div class="btn-group">
+          <button type="button" class="btn btn-warning dropdown-toggle" data-bs-toggle="dropdown">
+            Actions
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="#" onclick="adminPanel.toggleVerification('${user.id}', ${!user.verified})">${user.verified ? "Unverify" : "Verify"} User</a></li>
+            <li><hr class="dropdown-divider"></li>
+            ${!user.suspended ? `<li><a class="dropdown-item" href="#" onclick="adminPanel.showSuspensionModal('${user.id}')">Suspend User</a></li>` : `<li><a class="dropdown-item" href="#" onclick="adminPanel.unsuspendUser('${user.id}')">Unsuspend User</a></li>`}
+            <li><a class="dropdown-item text-danger" href="#" onclick="adminPanel.deleteUser('${user.id}', '@${user.username}')">Delete User</a></li>
+          </ul>
+        </div>
+      `;
+
+			new bootstrap.Modal(document.getElementById("userModal")).show();
 		} catch (error) {
 			this.showError("Failed to load user details");
 		}
 	}
 
-	showUserModal(userData) {
-		const { user, suspensions, recentPosts } = userData;
+	toggleEditMode(enable) {
+    const form = document.getElementById('editProfileForm');
+    const fields = form.querySelectorAll('input, textarea');
+    
+    fields.forEach(field => {
+      if (field.id !== 'editProfileId') {
+        field.readOnly = !enable;
+      }
+      if (field.type === 'checkbox') {
+        field.disabled = !enable;
+      }
+    });
 
-		document.getElementById("userModalBody").innerHTML = `
-      <div class="row">
-        <div class="col-md-4 text-center">
-          ${
-						user.avatar
-							? `<img src="${user.avatar}" class="img-fluid rounded-circle mb-3" style="max-width: 150px;" alt="Avatar">`
-							: `<div class="bg-secondary rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 150px; height: 150px;">
-              <i class="bi bi-person text-white" style="font-size: 4rem;"></i>
-            </div>`
-					}
-          <h4>@${user.username}</h4>
-          ${user.name ? `<p class="text-muted">${user.name}</p>` : ""}
-          <div class="d-flex justify-content-center gap-2 mb-3">
-            ${user.verified ? '<span class="badge bg-success">Verified</span>' : ""}
-            ${user.admin ? '<span class="badge bg-primary">Admin</span>' : ""}
-            ${user.suspended ? '<span class="badge bg-danger">Suspended</span>' : ""}
-          </div>
-        </div>
-        <div class="col-md-8">
-          <h5>Account Statistics</h5>
-          <div class="row mb-3">
-            <div class="col-6">
-              <strong>Posts:</strong> ${user.actual_post_count || 0}<br>
-              <strong>Followers:</strong> ${user.actual_follower_count || 0}<br>
-              <strong>Following:</strong> ${user.actual_following_count || 0}
-            </div>
-            <div class="col-6">
-              <strong>Verified:</strong> ${user.verified ? "Yes" : "No"}<br>
-              <strong>Admin:</strong> ${user.admin ? "Yes" : "No"}<br>
-              <strong>Suspended:</strong> ${user.suspended ? "Yes" : "No"}
-            </div>
-          </div>
-          
-          <h5>Recent Posts</h5>
-          <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
-            ${
-							recentPosts && recentPosts.length
-								? recentPosts
-										.map(
-											(post) => `
-              <div class="border-bottom pb-2 mb-2">
-                <small class="text-muted">${this.formatDate(post.created_at)}</small>
-                <p class="mb-1">${post.content}</p>
-                <small>Likes: ${post.like_count} | Retweets: ${post.retweet_count} | Replies: ${post.reply_count}</small>
-              </div>
-            `,
-										)
-										.join("")
-								: '<p class="text-muted">No recent posts</p>'
-						}
-          </div>
+    document.getElementById('editProfileBtn').classList.toggle('d-none', enable);
+    document.getElementById('saveProfileBtn').classList.toggle('d-none', !enable);
+  }
 
-          ${
-						suspensions && suspensions.length
-							? `
-            <h5>Suspension History</h5>
-            <div style="max-height: 200px; overflow-y: auto;">
-              ${suspensions
-								.map(
-									(suspension) => `
-                <div class="border-bottom pb-2 mb-2">
-                  <div class="d-flex justify-content-between">
-                    <strong>Severity ${suspension.severity}/5</strong>
-                    <span class="badge ${
-											suspension.status === "active"
-												? "bg-danger"
-												: suspension.status === "lifted"
-													? "bg-success"
-													: "bg-secondary"
-										}">
-                      ${suspension.status}
-                    </span>
-                  </div>
-                  <p class="mb-1">${suspension.reason}</p>
-                  <small class="text-muted">
-                    ${this.formatDate(suspension.created_at)} by ${suspension.suspended_by_username || "Unknown"}
-                    ${suspension.expires_at ? ` | Expires: ${this.formatDate(suspension.expires_at)}` : " | Permanent"}
-                  </small>
-                </div>
-              `,
-								)
-								.join("")}
-            </div>
-          `
-							: ""
-					}
-        </div>
-      </div>
-    `;
+  async saveProfile(userId) {
+    const payload = {
+      username: document.getElementById('editProfileUsername').value,
+      name: document.getElementById('editProfileName').value,
+      bio: document.getElementById('editProfileBio').value,
+      verified: document.getElementById('editProfileVerified').checked,
+      admin: document.getElementById('editProfileAdmin').checked,
+      followers: parseInt(document.getElementById('editProfileFollowers').value),
+      following: parseInt(document.getElementById('editProfileFollowing').value),
+    };
 
-		new bootstrap.Modal(document.getElementById("userModal")).show();
-	}
+    try {
+      await this.apiCall(`/api/admin/users/${userId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
+      this.showSuccess('Profile updated successfully');
+      this.toggleEditMode(false);
+      this.loadUsers(this.currentPage.users);
+       bootstrap.Modal.getInstance(document.getElementById("userModal")).hide();
+    } catch (error) {
+      this.showError(error.message);
+    }
+  }
 
 	async toggleVerification(userId, verified) {
 		try {
@@ -815,7 +861,6 @@ class AdminPanel {
 			this.showError(error.message);
 		}
 	}
-
 	async deletePost(postId) {
 		if (!confirm("Are you sure you want to delete this post?")) return;
 
@@ -837,7 +882,7 @@ class AdminPanel {
 
 	findAndViewUser(username) {
 		// Switch to users tab
-		document.querySelector('[data-bs-target="#userManagement"]').click();
+		document.getElementById("users-nav").click();
 
 		// Focus and set search input
 		const searchInput = document.getElementById("userSearch");
@@ -898,73 +943,6 @@ class AdminPanel {
 			).hide();
 			this.showSuccess("Post updated successfully");
 			await this.loadPosts(this.currentPage.posts);
-		} catch (error) {
-			this.showError(error.message);
-		}
-	}
-
-	async editProfile(userId) {
-		try {
-			const userData = await this.apiCall(`/api/admin/users/${userId}`);
-			const user = userData.user;
-
-			document.getElementById("editProfileId").value = user.id;
-			document.getElementById("editProfileUsername").value = user.username;
-			document.getElementById("editProfileName").value = user.name || "";
-			document.getElementById("editProfileBio").value = user.bio || "";
-			document.getElementById("editProfileVerified").checked =
-				user.verified || false;
-			document.getElementById("editProfileAdmin").checked = user.admin || false;
-			document.getElementById("editProfileFollowers").value =
-				user.actual_follower_count || 0;
-			document.getElementById("editProfileFollowing").value =
-				user.actual_following_count || 0;
-
-			const modal = new bootstrap.Modal(
-				document.getElementById("editProfileModal"),
-			);
-			modal.show();
-		} catch (error) {
-			this.showError("Failed to load user details");
-		}
-	}
-
-	async saveProfileEdit() {
-		const userId = document.getElementById("editProfileId").value;
-		const username = document.getElementById("editProfileUsername").value;
-		const name = document.getElementById("editProfileName").value;
-		const bio = document.getElementById("editProfileBio").value;
-		const verified = document.getElementById("editProfileVerified").checked;
-		const admin = document.getElementById("editProfileAdmin").checked;
-		const followers =
-			parseInt(document.getElementById("editProfileFollowers").value) || 0;
-		const following =
-			parseInt(document.getElementById("editProfileFollowing").value) || 0;
-
-		if (!username.trim()) {
-			this.showError("Username cannot be empty");
-			return;
-		}
-
-		try {
-			await this.apiCall(`/api/admin/users/${userId}`, {
-				method: "PATCH",
-				body: JSON.stringify({
-					username: username.trim(),
-					name: name.trim() || null,
-					bio: bio.trim() || null,
-					verified,
-					admin,
-					followers,
-					following,
-				}),
-			});
-
-			bootstrap.Modal.getInstance(
-				document.getElementById("editProfileModal"),
-			).hide();
-			this.showSuccess("Profile updated successfully");
-			await this.loadUsers(this.currentPage.users);
 		} catch (error) {
 			this.showError(error.message);
 		}
@@ -1097,12 +1075,4 @@ function submitSuspension() {
 
 function submitPostEdit() {
 	adminPanel.savePostEdit();
-}
-
-function submitProfileEdit() {
-	adminPanel.saveProfileEdit();
-}
-
-function submitTweetOnBehalf() {
-	adminPanel.postTweetOnBehalf();
 }
