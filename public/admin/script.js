@@ -34,31 +34,11 @@ class AdminPanel {
 			}
 
 			this.currentUser = user;
-			this.checkImpersonation();
 			this.setupEventListeners();
 			this.loadDashboard();
 		} catch (error) {
 			location.href = "/";
 		}
-	}
-
-	checkImpersonation() {
-		try {
-			const payload = JSON.parse(atob(this.token.split(".")[1]));
-			if (payload.impersonation) {
-				this.isImpersonating = true;
-				this.showImpersonationBanner(payload.username);
-			}
-		} catch (error) {
-			console.log("Not an impersonation token");
-		}
-	}
-
-	showImpersonationBanner(username) {
-		const banner = document.getElementById("impersonationBanner");
-		const userSpan = document.getElementById("impersonatedUser");
-		userSpan.textContent = `@${username}`;
-		banner.classList.remove("d-none");
 	}
 
 	async stopImpersonation() {

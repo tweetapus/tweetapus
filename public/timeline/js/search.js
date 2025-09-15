@@ -157,7 +157,7 @@ export const initializeSearchPage = () => {
 				<circle cx="11" cy="11" r="8" />
 				<path d="M21 21l-4.35-4.35" />
 			</svg>
-			<h3>No results found</h3>
+			<h3>No search results found</h3>
 			<p>Try searching for something else</p>
 		`;
 	};

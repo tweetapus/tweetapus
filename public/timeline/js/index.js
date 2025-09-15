@@ -92,7 +92,7 @@ window.onunhandledrejection = (event) => {
 	document.addEventListener("click", (e) => {
 		if (e.target.closest("#searchBackBtn")) {
 			e.preventDefault();
-			switchPage("timeline", { path: "/" });
+			window.location.href = "/";
 		}
 	});
 
