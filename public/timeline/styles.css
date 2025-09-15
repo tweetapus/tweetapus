@@ -1273,8 +1273,8 @@ h1 {
         transition: all 0.2s;
 
         &.active {
-          color: #ffffff;
-          border-bottom-color: #ffffff;
+          color: var(--text-primary);
+          border-bottom-color: var(--text-primary);
         }
 
         &:hover:not(.active) {
