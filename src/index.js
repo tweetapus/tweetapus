@@ -73,7 +73,7 @@ new Elysia()
 	.use(staticPlugin())
 	.ws("/ws", wsHandler)
 	.get("/account", () => file("./public/account/index.html"))
-	.get("/tweetaai", () => file("./public/account/tweetaai/index.html"))
+	.get("/tweetaai", () => file("./public/timeline/index.html"))
 	.get("/admin", () => file("./public/admin/index.html"))
 	.get("/notifications", ({ cookie, redirect }) => {
 		return cookie.agree?.value === "yes"

@@ -163,6 +163,18 @@ addRoute(
 );
 
 addRoute(
+	(pathname) => pathname === "/tweetaai",
+	() => {
+		showPage("tweetaai");
+		setTimeout(() => {
+			import("./tweetaai.js").then(({ initializeTweetaAI }) => {
+				initializeTweetaAI();
+			});
+		}, 0);
+	},
+);
+
+addRoute(
 	(pathname) => pathname.startsWith("/settings"),
 	(pathname) => {
 		(async () => {
