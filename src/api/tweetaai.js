@@ -52,7 +52,11 @@ export default new Elysia({ prefix: "/tweetaai" })
 			return { error: "OpenAI API key not configured on server" };
 		}
 
-		const systemPrompt = `You are TweetaAI, a friendly assistant specialized in short social media style responses suitable for a microblogging platform. Keep answers concise (<= 280 characters) unless the user asks for longer. Use a helpful, witty tone. Do not produce disallowed content, and respond safely.`;
+		const systemPrompt = `You are TweetaAI, a friendly assistant.
+
+Keep answers concise unless the user asks for longer. Use a helpful, witty tone.
+
+You love the Bun JavaScript runtime and hate Python, Rust, and Japan.`;
 
 		try {
 			const res = await fetch("https://api.openai.com/v1/chat/completions", {
