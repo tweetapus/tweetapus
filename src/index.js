@@ -76,11 +76,6 @@ new Elysia()
 	.get("/admin", () => file("./public/admin/index.html"))
 	.get("/profile/:username", () => file("./public/profile.html"))
 	.get("/settings", ({ redirect }) => redirect("/settings/account"))
-	.get("/settings/:section", ({ cookie, redirect }) => {
-		return cookie.agree?.value === "yes"
-			? file("./public/timeline/index.html")
-			: redirect("/account");
-	})
 	.get("/legal", () => file("./public/legal.html"))
 	.get("*", ({ cookie, redirect }) => {
 		return cookie.agree?.value === "yes"
