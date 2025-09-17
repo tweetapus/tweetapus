@@ -73,23 +73,7 @@ new Elysia()
 	.use(staticPlugin())
 	.ws("/ws", wsHandler)
 	.get("/account", () => file("./public/account/index.html"))
-	.get("/tweetaai", () => file("./public/timeline/index.html"))
 	.get("/admin", () => file("./public/admin/index.html"))
-	.get("/notifications", ({ cookie, redirect }) => {
-		return cookie.agree?.value === "yes"
-			? file("./public/timeline/index.html")
-			: redirect("/account");
-	})
-	.get("/dm", ({ cookie, redirect }) => {
-		return cookie.agree?.value === "yes"
-			? file("./public/timeline/index.html")
-			: redirect("/account");
-	})
-	.get("/dm/:conversationId", ({ cookie, redirect }) => {
-		return cookie.agree?.value === "yes"
-			? file("./public/timeline/index.html")
-			: redirect("/account");
-	})
 	.get("/profile/:username", () => file("./public/profile.html"))
 	.get("/settings", ({ redirect }) => redirect("/settings/account"))
 	.get("/settings/:section", ({ cookie, redirect }) => {
