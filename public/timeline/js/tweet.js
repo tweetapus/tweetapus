@@ -102,7 +102,8 @@ export default async function openTweet(
 
 // Register tweet route
 addRoute(
-	(pathname) => pathname.startsWith("/tweet/") && pathname.split("/").length === 3,
+	(pathname) =>
+		pathname.startsWith("/tweet/") && pathname.split("/").length === 3,
 	(pathname) => {
 		const tweetId = pathname.split("/").pop();
 		openTweet({ id: tweetId });

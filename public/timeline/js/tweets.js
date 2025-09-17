@@ -1297,7 +1297,7 @@ export const createTweetElement = (tweet, config = {}) => {
 				// Check if this is user's own tweet first
 				const getUser = (await import("./auth.js")).default;
 				const currentUser = await getUser();
-				
+
 				if (currentUser && currentUser.id === tweet.author.id) {
 					// User can always reply to their own tweets
 					const restrictionEl = document.createElement("div");
@@ -1312,7 +1312,7 @@ export const createTweetElement = (tweet, config = {}) => {
 					tweetInteractionsEl.appendChild(restrictionEl);
 					return;
 				}
-				
+
 				// This is async but we'll handle the UI update
 				checkReplyPermissions(tweet, replyRestriction).then(
 					({ canReply: allowed, restrictionText }) => {
