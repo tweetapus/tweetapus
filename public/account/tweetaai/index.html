@@ -6,24 +6,23 @@
     <title>TweetaAI - tweetapus</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="/public/timeline/styles.css" />
     <link rel="stylesheet" href="/public/shared/base.css" />
-    <link rel="stylesheet" href="/public/shared/variables.css" />
-    <link rel="stylesheet" href="/public/shared/toasts.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap"
       rel="stylesheet"
     />
     <style>
-      body {
+      .tweetaai-page {
         max-width: 600px;
         margin: 0 auto;
         padding: 24px;
         min-height: 100vh;
-        display: flex;
+        display: none;
         flex-direction: column;
       }
 
-      .header {
+      .tweetaai-header {
         display: flex;
         align-items: center;
         gap: 16px;
@@ -32,7 +31,7 @@
         border-bottom: 1px solid var(--border-secondary);
       }
 
-      .back-button {
+      .tweetaai-header .back-button {
         background: none;
         border: none;
         cursor: pointer;
@@ -42,23 +41,23 @@
         transition: background-color 0.2s;
       }
 
-      .back-button:hover {
+      .tweetaai-header .back-button:hover {
         background-color: var(--bg-secondary);
       }
 
-      .icon {
+      .tweetaai-header .icon {
         color: var(--primary);
         margin-right: 8px;
       }
 
-      h1 {
+      .tweetaai-header h1 {
         font-weight: 500;
         font-size: 24px;
         margin: 0;
         color: var(--text-primary);
       }
 
-      #messages {
+      #tweetaai-messages {
         flex: 1;
         margin-bottom: 24px;
         min-height: 300px;
@@ -71,27 +70,32 @@
         max-width: 80%;
         word-wrap: break-word;
         line-height: 1.4;
+        white-space: pre-wrap;
       }
 
-      .user {
+      .bubble.user {
         background: var(--primary);
         color: white;
         margin-left: auto;
         text-align: left;
       }
 
-      .ai {
+      .bubble.ai {
         background: var(--bg-secondary);
         color: var(--text-primary);
         border: 1px solid var(--border-secondary);
       }
 
-      .thinking {
+      .bubble.thinking {
         opacity: 0.7;
         font-style: italic;
       }
 
-      .composer {
+      .bubble.streaming {
+        opacity: 0.9;
+      }
+
+      .tweetaai-composer {
         display: flex;
         gap: 12px;
         align-items: flex-end;
@@ -101,7 +105,7 @@
         border: 1px solid var(--border-secondary);
       }
 
-      .composer textarea {
+      .tweetaai-composer textarea {
         flex: 1;
         min-height: 44px;
         max-height: 120px;
@@ -116,17 +120,17 @@
         line-height: 1.4;
       }
 
-      .composer textarea:focus {
+      .tweetaai-composer textarea:focus {
         outline: none;
         border-color: var(--border-focus);
         box-shadow: inset 0 0 0 1px var(--border-focus);
       }
 
-      .composer textarea::placeholder {
+      .tweetaai-composer textarea::placeholder {
         color: var(--text-placeholder);
       }
 
-      .send-button {
+      .tweetaai-send-button {
         background: var(--primary);
         color: white;
         border: none;
@@ -139,34 +143,259 @@
         white-space: nowrap;
       }
 
-      .send-button:hover:not(:disabled) {
+      .tweetaai-send-button:hover:not(:disabled) {
         background: var(--primary-hover);
       }
 
-      .send-button:active:not(:disabled) {
+      .tweetaai-send-button:active:not(:disabled) {
         transform: scale(0.98);
       }
 
-      .send-button:disabled {
+      .tweetaai-send-button:disabled {
         background: var(--btn-disabled-bg);
         cursor: not-allowed;
       }
 
-      .empty-state {
+      .tweetaai-empty-state {
         text-align: center;
         color: var(--text-secondary);
         margin: 48px 0;
       }
 
-      .empty-state svg {
+      .tweetaai-empty-state svg {
         width: 48px;
         height: 48px;
         color: var(--text-tertiary);
         margin-bottom: 16px;
       }
+
+      .ai-btn {
+        position: relative;
+      }
     </style>
   </head>
   <body>
+    <nav>
+      <button class="home-btn" id="homeBtn">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          <polyline points="9,22 9,12 15,12 15,22" />
+        </svg>
+      </button>
+      <button class="search-btn" id="searchBtn">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <path d="M21 21l-4.35-4.35" />
+        </svg>
+      </button>
+      <button class="ai-btn" id="aiBtn">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
+          />
+        </svg>
+      </button>
+      <button class="notifications-btn" id="notificationsBtn">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+          <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+        </svg>
+        <span
+          class="notification-count"
+          id="notificationCount"
+          style="display: none"
+        >
+          0
+        </span>
+      </button>
+      <button class="dm-btn" id="dmBtn">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+          />
+        </svg>
+        <span class="dm-count" id="dmCount" style="display: none">0</span>
+      </button>
+      <button class="account">
+        <img src="" alt="User avatar" id="user-avatar" />
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 18 18"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M4.5 6.75L9 11.25L13.5 6.75"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+      <div class="account-dropdown" id="accountDropdown" style="display: none">
+        <ul>
+          <li><a href="#" id="myProfileLink">My Profile</a></li>
+          <li><a href="#" id="bookmarksLink">Bookmarks</a></li>
+          <li><a href="#" id="settingsLink">Settings</a></li>
+          <li><a href="/account">Manage passkeys</a></li>
+          <li><a href="#" id="signOutLink">Sign Out</a></li>
+        </ul>
+      </div>
+      <div class="background">
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+        <div></div>
+      </div>
+    </nav>
+
+    <div class="timeline">
+      <svg
+        class="icon"
+        width="48"
+        height="48"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path
+          d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
+        />
+      </svg>
+
+      <h1>
+        <a href="javascript:" class="active">Your feed</a>
+        <a href="javascript:">Following</a>
+      </h1>
+
+      <div id="composer-container"></div>
+
+      <div class="tweets"></div>
+    </div>
+
+    <div class="tweetaai-page">
+      <div class="tweetaai-header">
+        <button class="back-button" onclick="history.back()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.25"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m12 19-7-7 7-7" />
+            <path d="M19 12H5" />
+          </svg>
+        </button>
+        <div>
+          <svg
+            class="icon"
+            width="32"
+            height="32"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
+            />
+          </svg>
+          <h1>TweetaAI</h1>
+        </div>
+      </div>
+
+      <div id="tweetaai-messages">
+        <div class="tweetaai-empty-state">
+          <svg
+            width="48"
+            height="48"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
+            />
+          </svg>
+          <h3>Chat with TweetaAI</h3>
+          <p>Ask me anything! I'll keep my responses concise and helpful.</p>
+        </div>
+      </div>
+
+      <form class="tweetaai-composer" id="tweetaaiChatForm">
+        <textarea
+          id="tweetaai-message"
+          placeholder="Ask TweetaAI something..."
+          rows="1"
+        ></textarea>
+        <button
+          type="submit"
+          class="tweetaai-send-button"
+          id="tweetaaiSendButton"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+
     <div class="loader">
       <svg
         width="24"
@@ -198,71 +427,7 @@
       </svg>
     </div>
 
-    <div class="header">
-      <button class="back-button" onclick="history.back()">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.25"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="m12 19-7-7 7-7" />
-          <path d="M19 12H5" />
-        </svg>
-      </button>
-      <div>
-        <svg
-          class="icon"
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
-          />
-        </svg>
-        <h1>TweetaAI</h1>
-      </div>
-    </div>
-
-    <div id="messages">
-      <div class="empty-state">
-        <svg
-          width="48"
-          height="48"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-        >
-          <path
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
-          />
-        </svg>
-        <h3>Chat with TweetaAI</h3>
-        <p>Ask me anything! I'll keep my responses concise and helpful.</p>
-      </div>
-    </div>
-
-    <form class="composer" id="chatForm">
-      <textarea
-        id="message"
-        placeholder="Ask TweetaAI something..."
-        rows="1"
-      ></textarea>
-      <button type="submit" class="send-button" id="sendButton">Send</button>
-    </form>
-
     <script src="/public/shared/darkmode.js" defer></script>
-    <script src="/public/shared/toasts.js"></script>
-    <script src="/public/account/tweetaai/script.js"></script>
+    <script src="/public/timeline/js/index.js" defer type="module"></script>
   </body>
 </html>

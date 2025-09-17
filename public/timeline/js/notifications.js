@@ -6,7 +6,9 @@ import { createTweetElement } from "./tweets.js";
 let currentNotifications = [];
 
 async function updateUnreadCount() {
-	if (!authToken) return;
+	if (			if (response.ok) {
+				const openTweet = (await import("./tweet.js")).default;
+				openTweet({ id: relatedId });thToken) return;
 
 	const { count } = await (
 		await fetch("/api/notifications/unread-count", {
@@ -263,7 +265,7 @@ function createNotificationElement(notification) {
 				});
 
 				if (response.ok) {
-					const { openTweet } = await import("./tweet.js");
+					const openTweet = (await import("./tweet.js")).default;
 					openTweet({ id: relatedId });
 				} else {
 					toastQueue.add(`<h1>Tweet not found</h1>`);

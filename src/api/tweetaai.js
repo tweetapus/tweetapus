@@ -39,7 +39,7 @@ export default new Elysia({ prefix: "/tweetaai" })
 		const user = getUserByUsername.get(payload.username);
 		if (!user) return { error: "User not found" };
 
-		const { message } = body || {};
+		const { message, stream } = body || {};
 		if (
 			!message ||
 			typeof message !== "string" ||
@@ -69,6 +69,7 @@ export default new Elysia({ prefix: "/tweetaai" })
 					],
 					max_tokens: 300,
 					temperature: 0.8,
+					stream: stream || false,
 				}),
 			});
 
@@ -76,6 +77,16 @@ export default new Elysia({ prefix: "/tweetaai" })
 				const text = await res.text();
 				console.error("OpenAI error:", text);
 				return { error: "AI service error" };
+			}
+
+			if (stream) {
+				return new Response(res.body, {
+					headers: {
+						"Content-Type": "text/event-stream",
+						"Cache-Control": "no-cache",
+						Connection: "keep-alive",
+					},
+				});
 			}
 
 			const data = await res.json();

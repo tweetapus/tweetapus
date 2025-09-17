@@ -8,6 +8,7 @@ import "./profile.js";
 import "./notifications.js";
 import "./settings.js";
 import "./search.js";
+import "./tweetaai.js";
 
 window.onerror = (message, source, lineno, colno) => {
 	toastQueue.add(
