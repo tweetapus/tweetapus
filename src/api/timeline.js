@@ -204,37 +204,41 @@ export default new Elysia({ prefix: "/timeline" })
 			userBookmarks.map((bookmark) => bookmark.post_id),
 		);
 
-		const timeline = posts.map((post) => {
-			const topReply = getTopReplyData(post.id, user.id);
-			const shouldShowTopReply =
-				topReply &&
-				post.like_count > 0 &&
-				topReply.like_count / post.like_count >= 0.8;
+		const timeline = posts
+			.map((post) => {
+				const topReply = getTopReplyData(post.id, user.id);
+				const shouldShowTopReply =
+					topReply &&
+					post.like_count > 0 &&
+					topReply.like_count / post.like_count >= 0.8;
 
-			if (topReply) {
-				topReply.liked_by_user = userLikedPosts.has(topReply.id);
-				topReply.retweeted_by_user = userRetweetedPosts.has(topReply.id);
-				topReply.bookmarked_by_user = userBookmarkedPosts.has(topReply.id);
-			}
+				if (topReply) {
+					topReply.liked_by_user = userLikedPosts.has(topReply.id);
+					topReply.retweeted_by_user = userRetweetedPosts.has(topReply.id);
+					topReply.bookmarked_by_user = userBookmarkedPosts.has(topReply.id);
+				}
 
-			const author = userMap[post.user_id];
-			if (!author) {
-				console.error(`Missing author for post ${post.id}, user_id: ${post.user_id}`);
-				return null; // Skip posts with missing authors
-			}
+				const author = userMap[post.user_id];
+				if (!author) {
+					console.error(
+						`Missing author for post ${post.id}, user_id: ${post.user_id}`,
+					);
+					return null; // Skip posts with missing authors
+				}
 
-			return {
-				...post,
-				author,
-				liked_by_user: userLikedPosts.has(post.id),
-				retweeted_by_user: userRetweetedPosts.has(post.id),
-				bookmarked_by_user: userBookmarkedPosts.has(post.id),
-				poll: getPollDataForTweet(post.id, user.id),
-				quoted_tweet: getQuotedTweetData(post.quote_tweet_id, user.id),
-				top_reply: shouldShowTopReply ? topReply : null,
-				attachments: getTweetAttachments(post.id),
-			};
-		}).filter(Boolean); // Remove null entries
+				return {
+					...post,
+					author,
+					liked_by_user: userLikedPosts.has(post.id),
+					retweeted_by_user: userRetweetedPosts.has(post.id),
+					bookmarked_by_user: userBookmarkedPosts.has(post.id),
+					poll: getPollDataForTweet(post.id, user.id),
+					quoted_tweet: getQuotedTweetData(post.quote_tweet_id, user.id),
+					top_reply: shouldShowTopReply ? topReply : null,
+					attachments: getTweetAttachments(post.id),
+				};
+			})
+			.filter(Boolean); // Remove null entries
 
 		return { timeline };
 	})

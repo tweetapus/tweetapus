@@ -1,5 +1,4 @@
 import toastQueue from "../../shared/toasts.js";
-import { authToken } from "./auth.js";
 import { createComposer } from "./composer.js";
 import switchPage, { addRoute } from "./pages.js";
 import { createTweetElement } from "./tweets.js";
@@ -9,6 +8,7 @@ export default async function openTweet(
 	{ repliesCache, threadPostsCache } = {},
 ) {
 	if (!tweet?.author) {
+		const { authToken } = await import("./auth.js");
 		const apiOutput = await (
 			await fetch(`/api/tweets/${tweet.id}`, {
 				headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},

@@ -19,11 +19,13 @@ export const useComposer = (
 	const fileUploadBtn = element.querySelector("#file-upload-btn");
 	const attachmentPreview = element.querySelector("#attachment-preview");
 	const replyRestrictionBtn = element.querySelector("#reply-restriction-btn");
-	const replyRestrictionSelect = element.querySelector("#reply-restriction-select");
+	const replyRestrictionSelect = element.querySelector(
+		"#reply-restriction-select",
+	);
 
 	let pollEnabled = false;
 	let pendingFiles = [];
-	let replyRestriction = 'everyone';
+	let replyRestriction = "everyone";
 
 	const updateCharacterCount = () => {
 		const length = textarea.value.length;
@@ -311,20 +313,23 @@ export const useComposer = (
 		replyRestrictionSelect.addEventListener("change", () => {
 			replyRestriction = replyRestrictionSelect.value;
 			replyRestrictionSelect.style.display = "none";
-			
+
 			// Update button appearance based on selection
 			const restrictionTexts = {
-				'everyone': 'Everyone can reply',
-				'following': 'People you follow can reply',
-				'followers': 'Your followers can reply',
-				'verified': 'Verified accounts can reply'
+				everyone: "Everyone can reply",
+				following: "People you follow can reply",
+				followers: "Your followers can reply",
+				verified: "Verified accounts can reply",
 			};
 			replyRestrictionBtn.title = restrictionTexts[replyRestriction];
 		});
 
 		// Hide when clicking outside
 		document.addEventListener("click", (e) => {
-			if (!replyRestrictionBtn.contains(e.target) && !replyRestrictionSelect.contains(e.target)) {
+			if (
+				!replyRestrictionBtn.contains(e.target) &&
+				!replyRestrictionSelect.contains(e.target)
+			) {
 				replyRestrictionSelect.style.display = "none";
 			}
 		});

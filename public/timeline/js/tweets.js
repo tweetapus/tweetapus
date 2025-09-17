@@ -10,35 +10,43 @@ async function checkReplyPermissions(tweet, replyRestriction) {
 	try {
 		const response = await fetch(`/api/tweets/can-reply/${tweet.id}`, {
 			headers: {
-				'Authorization': `Bearer ${authToken}`
-			}
+				Authorization: `Bearer ${authToken}`,
+			},
 		});
-		
+
 		if (!response.ok) {
-			return { canReply: false, restrictionText: 'Unable to check reply permissions' };
+			return {
+				canReply: false,
+				restrictionText: "Unable to check reply permissions",
+			};
 		}
-		
+
 		const data = await response.json();
-		
-		let restrictionText = '';
+
+		let restrictionText = "";
 		switch (replyRestriction) {
-			case 'following':
+			case "following":
 				restrictionText = `Only people @${tweet.author.username} follows can reply`;
 				break;
-			case 'followers':
+			case "followers":
 				restrictionText = `Only people who follow @${tweet.author.username} can reply`;
 				break;
-			case 'verified':
-				restrictionText = 'Only verified users can reply';
+			case "verified":
+				restrictionText = "Only verified users can reply";
 				break;
 			default:
-				restrictionText = data.canReply ? 'You can reply' : 'You cannot reply to this tweet';
+				restrictionText = data.canReply
+					? "You can reply"
+					: "You cannot reply to this tweet";
 		}
-		
+
 		return { canReply: data.canReply, restrictionText };
 	} catch (error) {
-		console.error('Error checking reply permissions:', error);
-		return { canReply: false, restrictionText: 'Error checking reply permissions' };
+		console.error("Error checking reply permissions:", error);
+		return {
+			canReply: false,
+			restrictionText: "Error checking reply permissions",
+		};
 	}
 }
 
@@ -1280,35 +1288,37 @@ export const createTweetElement = (tweet, config = {}) => {
 	});
 
 	// Check reply restrictions and modify reply button accordingly
-	const replyRestriction = tweet.reply_restriction || 'everyone';
+	const replyRestriction = tweet.reply_restriction || "everyone";
 
-	if (replyRestriction !== 'everyone') {
+	if (replyRestriction !== "everyone") {
 		// Get current user info to check permissions
-		import('./auth.js').then(({ authToken }) => {
+		import("./auth.js").then(({ authToken }) => {
 			if (authToken) {
 				// This is async but we'll handle the UI update
-				checkReplyPermissions(tweet, replyRestriction).then(({ canReply: allowed, restrictionText }) => {
-					if (!allowed) {
-						tweetInteractionsReplyEl.disabled = true;
-						tweetInteractionsReplyEl.style.opacity = '0.5';
-						tweetInteractionsReplyEl.style.cursor = 'not-allowed';
-						tweetInteractionsReplyEl.title = 'You cannot reply to this tweet';
-					}
-					
-					// Add restriction text below interactions
-					if (restrictionText) {
-						const restrictionEl = document.createElement('div');
-						restrictionEl.className = 'reply-restriction-info';
-						restrictionEl.textContent = restrictionText;
-						restrictionEl.style.cssText = `
+				checkReplyPermissions(tweet, replyRestriction).then(
+					({ canReply: allowed, restrictionText }) => {
+						if (!allowed) {
+							tweetInteractionsReplyEl.disabled = true;
+							tweetInteractionsReplyEl.style.opacity = "0.5";
+							tweetInteractionsReplyEl.style.cursor = "not-allowed";
+							tweetInteractionsReplyEl.title = "You cannot reply to this tweet";
+						}
+
+						// Add restriction text below interactions
+						if (restrictionText) {
+							const restrictionEl = document.createElement("div");
+							restrictionEl.className = "reply-restriction-info";
+							restrictionEl.textContent = restrictionText;
+							restrictionEl.style.cssText = `
 							font-size: 13px;
 							color: var(--text-secondary);
 							margin-top: 8px;
 							padding-left: 20px;
 						`;
-						tweetInteractionsEl.appendChild(restrictionEl);
-					}
-				});
+							tweetInteractionsEl.appendChild(restrictionEl);
+						}
+					},
+				);
 			}
 		});
 	}

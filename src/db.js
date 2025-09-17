@@ -267,7 +267,9 @@ try {
 
 	if (!postsColNames.includes("reply_restriction")) {
 		try {
-			db.exec("ALTER TABLE posts ADD COLUMN reply_restriction TEXT DEFAULT 'everyone';");
+			db.exec(
+				"ALTER TABLE posts ADD COLUMN reply_restriction TEXT DEFAULT 'everyone';",
+			);
 			console.log("Added 'reply_restriction' column to posts table");
 		} catch (e) {
 			console.error("Failed to add 'reply_restriction' column:", e);
