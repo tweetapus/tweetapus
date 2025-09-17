@@ -59,7 +59,8 @@ export default async function openTweet(
 			page.appendChild(composer);
 
 			if (!threadPostsCache || !repliesCache) {
-				const apiOutput = await await (
+				const { authToken } = await import("./auth.js");
+				const apiOutput = await (
 					await fetch(`/api/tweets/${tweet.id}`, {
 						headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
 					})
@@ -77,15 +78,17 @@ export default async function openTweet(
 				return;
 			}
 
-			tweetEl.remove();
-
-			threadPostsCache.forEach((reply) => {
-				const postEl = createTweetElement(reply, {
-					clickToOpen: reply.id !== tweet.id,
-					showStats: reply.id === tweet.id,
+			// Replace the initial tweet element with thread posts
+			if (threadPostsCache.length > 0) {
+				tweetEl.remove();
+				threadPostsCache.forEach((reply) => {
+					const postEl = createTweetElement(reply, {
+						clickToOpen: reply.id !== tweet.id,
+						showStats: reply.id === tweet.id,
+					});
+					composer.insertAdjacentElement("beforebegin", postEl);
 				});
-				composer.insertAdjacentElement("beforebegin", postEl);
-			});
+			}
 
 			repliesCache.forEach((reply) => {
 				const replyEl = createTweetElement(reply, {
@@ -97,14 +100,11 @@ export default async function openTweet(
 	});
 }
 
+// Register tweet route
 addRoute(
-	(pathname) =>
-		pathname.startsWith("/tweet/") && pathname.split("/").length === 3,
+	(pathname) => pathname.startsWith("/tweet/") && pathname.split("/").length === 3,
 	(pathname) => {
-		openTweet({
-			id: pathname.split("/").pop(),
-		});
+		const tweetId = pathname.split("/").pop();
+		openTweet({ id: tweetId });
 	},
 );
-
-export { openTweet };

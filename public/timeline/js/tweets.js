@@ -1292,8 +1292,27 @@ export const createTweetElement = (tweet, config = {}) => {
 
 	if (replyRestriction !== "everyone") {
 		// Get current user info to check permissions
-		import("./auth.js").then(({ authToken }) => {
+		import("./auth.js").then(async ({ authToken }) => {
 			if (authToken) {
+				// Check if this is user's own tweet first
+				const getUser = (await import("./auth.js")).default;
+				const currentUser = await getUser();
+				
+				if (currentUser && currentUser.id === tweet.author.id) {
+					// User can always reply to their own tweets
+					const restrictionEl = document.createElement("div");
+					restrictionEl.className = "reply-restriction-info";
+					restrictionEl.textContent = "You can reply to your own tweet";
+					restrictionEl.style.cssText = `
+						font-size: 13px;
+						color: var(--text-secondary);
+						margin-top: 8px;
+						padding-left: 20px;
+					`;
+					tweetInteractionsEl.appendChild(restrictionEl);
+					return;
+				}
+				
 				// This is async but we'll handle the UI update
 				checkReplyPermissions(tweet, replyRestriction).then(
 					({ canReply: allowed, restrictionText }) => {

@@ -1,62 +1,268 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>TweetaAI</title>
-    <link rel="stylesheet" href="/shared/variables.css" />
-    <link rel="stylesheet" href="/shared/toasts.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TweetaAI - tweetapus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="/public/shared/base.css" />
+    <link rel="stylesheet" href="/public/shared/variables.css" />
+    <link rel="stylesheet" href="/public/shared/toasts.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap"
+      rel="stylesheet"
+    />
     <style>
       body {
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-        padding: 20px;
-      }
-      #chat {
-        max-width: 720px;
+        max-width: 600px;
         margin: 0 auto;
-      }
-      .bubble {
-        padding: 10px 14px;
-        border-radius: 14px;
-        margin: 8px 0;
-      }
-      .user {
-        background: #e6f0ff;
-        text-align: right;
-      }
-      .ai {
-        background: #f2f2f2;
-      }
-      #input {
+        padding: 24px;
+        min-height: 100vh;
         display: flex;
-        gap: 8px;
-        margin-top: 12px;
+        flex-direction: column;
       }
-      textarea {
+
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 32px;
+        padding-bottom: 16px;
+        border-bottom: 1px solid var(--border-secondary);
+      }
+
+      .back-button {
+        background: none;
+        border: none;
+        cursor: pointer;
+        color: var(--text-primary);
+        padding: 8px;
+        border-radius: 8px;
+        transition: background-color 0.2s;
+      }
+
+      .back-button:hover {
+        background-color: var(--bg-secondary);
+      }
+
+      .icon {
+        color: var(--primary);
+        margin-right: 8px;
+      }
+
+      h1 {
+        font-weight: 500;
+        font-size: 24px;
+        margin: 0;
+        color: var(--text-primary);
+      }
+
+      #messages {
+        flex: 1;
+        margin-bottom: 24px;
+        min-height: 300px;
+      }
+
+      .bubble {
+        padding: 12px 16px;
+        border-radius: 16px;
+        margin: 12px 0;
+        max-width: 80%;
+        word-wrap: break-word;
+        line-height: 1.4;
+      }
+
+      .user {
+        background: var(--primary);
+        color: white;
+        margin-left: auto;
+        text-align: left;
+      }
+
+      .ai {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border: 1px solid var(--border-secondary);
+      }
+
+      .thinking {
+        opacity: 0.7;
+        font-style: italic;
+      }
+
+      .composer {
+        display: flex;
+        gap: 12px;
+        align-items: flex-end;
+        padding: 16px;
+        background: var(--bg-secondary);
+        border-radius: 12px;
+        border: 1px solid var(--border-secondary);
+      }
+
+      .composer textarea {
         flex: 1;
         min-height: 44px;
-        resize: vertical;
+        max-height: 120px;
+        padding: 12px 16px;
+        border: 1px solid var(--border-input);
+        border-radius: 8px;
+        font-size: 16px;
+        font-family: inherit;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        resize: none;
+        line-height: 1.4;
       }
-      button {
-        padding: 10px 14px;
+
+      .composer textarea:focus {
+        outline: none;
+        border-color: var(--border-focus);
+        box-shadow: inset 0 0 0 1px var(--border-focus);
+      }
+
+      .composer textarea::placeholder {
+        color: var(--text-placeholder);
+      }
+
+      .send-button {
+        background: var(--primary);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 16px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.15s;
+        white-space: nowrap;
+      }
+
+      .send-button:hover:not(:disabled) {
+        background: var(--primary-hover);
+      }
+
+      .send-button:active:not(:disabled) {
+        transform: scale(0.98);
+      }
+
+      .send-button:disabled {
+        background: var(--btn-disabled-bg);
+        cursor: not-allowed;
+      }
+
+      .empty-state {
+        text-align: center;
+        color: var(--text-secondary);
+        margin: 48px 0;
+      }
+
+      .empty-state svg {
+        width: 48px;
+        height: 48px;
+        color: var(--text-tertiary);
+        margin-bottom: 16px;
       }
     </style>
   </head>
   <body>
-    <main id="chat">
-      <h1>TweetaAI</h1>
-      <div id="messages" aria-live="polite"></div>
+    <div class="loader">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <style>
+          .spinner_z9k8 {
+            transform-origin: center;
+            animation: spinner_StKS 0.75s infinite linear;
+          }
+          @keyframes spinner_StKS {
+            100% {
+              transform: rotate(360deg);
+            }
+          }
+        </style>
+        <path
+          d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+          fill="currentColor"
+          opacity=".25"
+        />
+        <path
+          d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
+          fill="currentColor"
+          class="spinner_z9k8"
+        />
+      </svg>
+    </div>
 
-      <form id="input">
-        <textarea
-          id="message"
-          placeholder="Ask TweetaAI something..."
-        ></textarea>
-        <button id="send">Send</button>
-      </form>
-    </main>
+    <div class="header">
+      <button class="back-button" onclick="history.back()">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.25"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="m12 19-7-7 7-7" />
+          <path d="M19 12H5" />
+        </svg>
+      </button>
+      <div>
+        <svg
+          class="icon"
+          width="32"
+          height="32"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
+          />
+        </svg>
+        <h1>TweetaAI</h1>
+      </div>
+    </div>
 
-    <script src="/shared/toasts.js"></script>
-    <script src="/account/tweetaai/script.js"></script>
+    <div id="messages">
+      <div class="empty-state">
+        <svg
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
+          />
+        </svg>
+        <h3>Chat with TweetaAI</h3>
+        <p>Ask me anything! I'll keep my responses concise and helpful.</p>
+      </div>
+    </div>
+
+    <form class="composer" id="chatForm">
+      <textarea
+        id="message"
+        placeholder="Ask TweetaAI something..."
+        rows="1"
+      ></textarea>
+      <button type="submit" class="send-button" id="sendButton">Send</button>
+    </form>
+
+    <script src="/public/shared/darkmode.js" defer></script>
+    <script src="/public/shared/toasts.js"></script>
+    <script src="/public/account/tweetaai/script.js"></script>
   </body>
 </html>
