@@ -398,3 +398,52 @@ export const getUserTweetaaiChats = (userId: string, limit = 20, offset = 0) =>
     .orderBy(desc(tweetaaiChats.createdAt))
     .limit(limit)
     .offset(offset);
+
+// Admin statistics queries
+export const getAdminStats = async () => {
+  const [userStats, postStats, suspensionStats] = await Promise.all([
+    db.select({ 
+      total: count(),
+      verified: count(sql`CASE WHEN verified = 1 THEN 1 END`),
+      suspended: count(sql`CASE WHEN suspended = 1 THEN 1 END`)
+    }).from(users).get(),
+    db.select({ total: count() }).from(posts).get(),
+    db.select({ active: count() }).from(suspensions).where(eq(suspensions.status, "active")).get()
+  ]);
+
+  return {
+    users: {
+      total: userStats?.total || 0,
+      verified: userStats?.verified || 0,
+      suspended: userStats?.suspended || 0,
+    },
+    posts: {
+      total: postStats?.total || 0,
+    },
+    suspensions: {
+      active: suspensionStats?.active || 0,
+    },
+  };
+};
+
+export const getRecentActivity = async () => {
+  const [recentUsers, recentSuspensions] = await Promise.all([
+    db.select({
+      username: users.username,
+      createdAt: users.createdAt,
+    }).from(users).orderBy(desc(users.createdAt)).limit(5),
+    db.select({
+      username: users.username,
+      createdAt: suspensions.createdAt,
+    }).from(suspensions)
+    .leftJoin(users, eq(suspensions.userId, users.id))
+    .where(eq(suspensions.status, "active"))
+    .orderBy(desc(suspensions.createdAt))
+    .limit(5)
+  ]);
+
+  return {
+    users: recentUsers || [],
+    suspensions: recentSuspensions || [],
+  };
+};

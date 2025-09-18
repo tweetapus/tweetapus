@@ -1,6 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import { Card, CardContent, CardHeader, CardTitle } from "@tweetapus/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@tweetapus/ui";
 import { MessageSquare, UserCheck, Users, UserX } from "lucide-react";
 import { requireAdmin } from "~/lib/auth.server";
 

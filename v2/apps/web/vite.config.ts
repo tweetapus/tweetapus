@@ -15,5 +15,6 @@ export default defineConfig({
   ],
   server: {
     port: 3001,
+    allowedHosts: ["looksmart-treatment-width-presence.trycloudflare.com"],
   },
 });

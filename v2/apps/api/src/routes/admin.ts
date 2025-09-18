@@ -1,6 +1,8 @@
 import {
   deletePost as dbDeletePost,
   deleteUser as dbDeleteUser,
+  getAdminStats,
+  getRecentActivity,
   getTimelinePosts,
   getUserById,
   searchPosts,
@@ -16,21 +18,8 @@ export const adminRouter = new Elysia({ prefix: "/admin" })
   .use(requireAdmin)
 
   .get("/stats", async () => {
-    const mockStats = {
-      users: {
-        total: 15420,
-        suspended: 12,
-        verified: 342,
-      },
-      posts: {
-        total: 87532,
-      },
-      suspensions: {
-        active: 12,
-      },
-    };
-
-    return { stats: mockStats };
+    const stats = await getAdminStats();
+    return { stats };
   })
 
   .get("/users", async ({ query }) => {
@@ -185,15 +174,6 @@ export const adminRouter = new Elysia({ prefix: "/admin" })
   })
 
   .get("/recent-activity", async () => {
-    const mockActivity = {
-      users: [
-        { username: "newuser1", createdAt: new Date().toISOString() },
-        { username: "newuser2", createdAt: new Date().toISOString() },
-      ],
-      suspensions: [
-        { username: "baduser", createdAt: new Date().toISOString() },
-      ],
-    };
-
-    return { activity: mockActivity };
+    const activity = await getRecentActivity();
+    return { activity };
   });
