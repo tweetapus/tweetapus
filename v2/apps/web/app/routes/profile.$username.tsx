@@ -155,7 +155,7 @@ export default function Profile() {
     
     const newFollowing = !isFollowing;
     setIsFollowing(newFollowing);
-    setFollowerCount((prev) => (newFollowing ? prev + 1 : prev - 1));
+    setFollowerCount((prev: number) => (newFollowing ? prev + 1 : prev - 1));
 
     fetcher.submit(
       { intent: newFollowing ? "follow" : "unfollow" },
@@ -258,7 +258,7 @@ export default function Profile() {
                   <AvatarFallback className="text-2xl">
                     {profileUser.name
                       ?.split(" ")
-                      .map((n) => n[0])
+                      .map((n: string) => n[0])
                       .join("") || "U"}
                   </AvatarFallback>
                 </Avatar>

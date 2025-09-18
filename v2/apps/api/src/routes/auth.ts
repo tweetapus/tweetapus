@@ -17,7 +17,7 @@ export const authRouter = new Elysia({ prefix: "/auth" })
   .post(
     "/register",
     async ({ body, jwt }) => {
-      const { username, name } = body;
+      const { username, name, password } = body;
 
       const existingUser = await getUserByUsername(username);
       if (existingUser) {
@@ -25,10 +25,13 @@ export const authRouter = new Elysia({ prefix: "/auth" })
       }
 
       try {
+        const passwordHash = await Bun.password.hash(password);
+
         const user = await createUser({
           id: generateId(),
           username,
           name,
+          passwordHash,
           verified: false,
           admin: false,
           suspended: false,
@@ -41,13 +44,10 @@ export const authRouter = new Elysia({ prefix: "/auth" })
         const token = await jwt.sign({
           userId: user.id,
           username: user.username,
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
         });
 
         return { success: true, token, user };
       } catch (error) {
-        console.error("Registration error:", error);
         return { error: "Registration failed" };
       }
     },
@@ -55,6 +55,7 @@ export const authRouter = new Elysia({ prefix: "/auth" })
       body: t.Object({
         username: t.String({ minLength: 1, maxLength: 50 }),
         name: t.String({ minLength: 1, maxLength: 50 }),
+        password: t.String({ minLength: 6, maxLength: 100 }),
       }),
     }
   )
@@ -62,22 +63,30 @@ export const authRouter = new Elysia({ prefix: "/auth" })
   .post(
     "/login",
     async ({ body, jwt }) => {
-      const { username } = body;
+      const { username, password } = body;
 
       const user = await getUserByUsername(username);
       if (!user) {
-        return { error: "User not found" };
+        return { error: "Invalid username or password" };
       }
 
       try {
+        const isValidPassword = await Bun.password.verify(
+          password,
+          user.passwordHash || ""
+        );
+        if (!isValidPassword) {
+          return { error: "Invalid username or password" };
+        }
+
         const token = await jwt.sign({
           userId: user.id,
           username: user.username,
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
         });
 
-        return { success: true, token, user };
+        // Remove password hash from user object
+        const { passwordHash: _, ...userWithoutPassword } = user;
+        return { success: true, token, user: userWithoutPassword };
       } catch (error) {
         console.error("Login error:", error);
         return { error: "Login failed" };
@@ -86,6 +95,7 @@ export const authRouter = new Elysia({ prefix: "/auth" })
     {
       body: t.Object({
         username: t.String(),
+        password: t.String(),
       }),
     }
   )

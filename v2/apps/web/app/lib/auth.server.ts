@@ -128,7 +128,7 @@ export async function apiCall(
   };
 
   if (token) {
-    headers.Authorization = `Bearer ${token}`;
+    (headers as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
   const response = await fetch(`http://localhost:3000/api${endpoint}`, {

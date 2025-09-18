@@ -30,9 +30,10 @@ export async function loader({ request }: { request: Request }) {
 export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const username = formData.get("username") as string;
+  const password = formData.get("password") as string;
 
-  if (!username) {
-    return { error: "Username is required" };
+  if (!username || !password) {
+    return { error: "Username and password are required" };
   }
 
   try {
@@ -41,7 +42,7 @@ export async function action({ request }: ActionFunctionArgs) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username }),
+      body: JSON.stringify({ username, password }),
     });
 
     const data = await response.json();
@@ -81,6 +82,20 @@ export default function Login() {
                 name="username"
                 type="text"
                 placeholder="Enter your username"
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium">
+                Password
+              </label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Enter your password"
                 required
                 disabled={isSubmitting}
               />

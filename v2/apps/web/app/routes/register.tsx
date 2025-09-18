@@ -31,9 +31,19 @@ export async function action({ request }: ActionFunctionArgs) {
   const formData = await request.formData();
   const username = formData.get("username") as string;
   const name = formData.get("name") as string;
+  const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
 
-  if (!username || !name) {
-    return { error: "Username and name are required" };
+  if (!username || !name || !password || !confirmPassword) {
+    return { error: "All fields are required" };
+  }
+
+  if (password !== confirmPassword) {
+    return { error: "Passwords do not match" };
+  }
+
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters long" };
   }
 
   if (username.length < 1 || username.length > 50) {
@@ -65,7 +75,7 @@ export async function action({ request }: ActionFunctionArgs) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, name }),
+      body: JSON.stringify({ username, name, password }),
     });
 
     const data = await response.json();
@@ -129,6 +139,39 @@ export default function Register() {
               <p className="text-xs text-muted-foreground">
                 Only letters, numbers, and underscores allowed
               </p>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="text-sm font-medium">
+                Password
+              </label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="Create a password"
+                required
+                disabled={isSubmitting}
+                minLength={6}
+              />
+              <p className="text-xs text-muted-foreground">
+                At least 6 characters
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium">
+                Confirm Password
+              </label>
+              <Input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                required
+                disabled={isSubmitting}
+                minLength={6}
+              />
             </div>
 
             {actionData?.error && (

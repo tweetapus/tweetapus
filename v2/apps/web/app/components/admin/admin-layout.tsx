@@ -1,7 +1,5 @@
 import { Link, useLocation } from "@remix-run/react";
-import { Button } from "@tweetapus/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@tweetapus/ui/card";
-import { cn } from "@tweetapus/ui/utils";
+import { Button, Card, CardContent, CardHeader, CardTitle, cn } from "@tweetapus/ui";
 import {
   ArrowLeft,
   LayoutDashboard,

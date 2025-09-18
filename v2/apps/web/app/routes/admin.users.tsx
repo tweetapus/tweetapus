@@ -4,10 +4,7 @@ import {
   type LoaderFunctionArgs,
 } from "@remix-run/node";
 import { Form, useLoaderData, useSubmit } from "@remix-run/react";
-import { Badge } from "@tweetapus/ui/badge";
-import { Button } from "@tweetapus/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@tweetapus/ui/card";
-import { Input } from "@tweetapus/ui/input";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@tweetapus/ui";
 import { Search, Trash2, UserCheck, UserX } from "lucide-react";
 import { useState } from "react";
 import { requireAdmin } from "~/lib/auth.server";
@@ -17,11 +14,12 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const search = url.searchParams.get("search") || "";
   const page = url.searchParams.get("page") || "1";
+  const limit = 20;
 
   const response = await fetch(
     `http://localhost:3000/api/admin/users?search=${encodeURIComponent(
       search
-    )}&page=${page}`,
+    )}&page=${page}&limit=${limit}`,
     {
       headers: { Authorization: `Bearer ${user.token}` },
     }
@@ -65,7 +63,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   } else if (action === "unsuspend") {
     const response = await fetch(
-      `http://localhost:3001/api/admin/users/${userId}/suspend`,
+      `http://localhost:3000/api/admin/users/${userId}/suspend`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${user.token}` },
@@ -77,7 +75,7 @@ export async function action({ request }: ActionFunctionArgs) {
     }
   } else if (action === "delete") {
     const response = await fetch(
-      `http://localhost:3001/api/admin/users/${userId}`,
+      `http://localhost:3000/api/admin/users/${userId}`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${user.token}` },

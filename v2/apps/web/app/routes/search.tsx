@@ -1,9 +1,6 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useLoaderData, useSearchParams } from "@remix-run/react";
-import { Avatar, AvatarFallback, Button } from "@tweetapus/ui";
-import { Card, CardContent } from "@tweetapus/ui/card";
-import { Input } from "@tweetapus/ui/input";
-import { Tabs, TabsList, TabsTrigger } from "@tweetapus/ui/tabs";
+import { Avatar, AvatarFallback, Button, Card, CardContent, Input, Tabs, TabsList, TabsTrigger } from "@tweetapus/ui";
 import { Search, UserCheck } from "lucide-react";
 import { requireAuth } from "~/lib/auth.server";
 
