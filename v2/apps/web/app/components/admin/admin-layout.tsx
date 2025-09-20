@@ -56,7 +56,7 @@ export function AdminLayout({ children, stats }: AdminLayoutProps) {
         <div className="w-64 bg-card border-r">
           <div className="p-6">
             <div className="flex items-center gap-2 mb-6">
-              <Link to="/timeline">
+              <Link to="/timeline-new">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to App

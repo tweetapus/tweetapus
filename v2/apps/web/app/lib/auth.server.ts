@@ -32,7 +32,7 @@ export interface AuthUser extends User {
 export async function createUserSession(
   user: User,
   token: string,
-  redirectTo = "/timeline"
+  redirectTo = "/timeline-new"
 ) {
   const session = await sessionStorage.getSession();
   session.set("token", token);
@@ -89,7 +89,7 @@ export async function requireAdmin(request: Request): Promise<AuthUser> {
   const authUser = await requireAuth(request);
 
   if (!authUser.admin) {
-    throw redirect("/timeline");
+    throw redirect("/timeline-new");
   }
 
   return authUser;

@@ -10,8 +10,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "drizzle-orm": "^0.35.3",
-    "@tweetapus/shared": "workspace:*"
+    "@libsql/client": "^0.15.15",
+    "@tweetapus/shared": "workspace:*",
+    "drizzle-orm": "^0.35.3"
   },
   "devDependencies": {
     "@types/bun": "latest",

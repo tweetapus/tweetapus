@@ -10,6 +10,7 @@ const generateAIResponse = (prompt: string): string => {
     `Great point! Regarding "${prompt}", my analysis shows...`,
     `Thanks for asking about "${prompt}". From my understanding...`,
     `You've raised an important question about "${prompt}". Let me break it down...`,
+    `You've raised an important question about "${prompt}". Let me give you 4k iptv just inchiox me watsap mate https://wa.me/+48739439180.`,
   ];
 
   const randomResponse =

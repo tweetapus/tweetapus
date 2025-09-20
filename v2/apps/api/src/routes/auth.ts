@@ -48,7 +48,8 @@ export const authRouter = new Elysia({ prefix: "/auth" })
 
         return { success: true, token, user };
       } catch (error) {
-        return { error: "Registration failed" };
+        console.error(error)
+        return { error: `Registration failed: ${error}` };
       }
     },
     {
@@ -84,7 +85,6 @@ export const authRouter = new Elysia({ prefix: "/auth" })
           username: user.username,
         });
 
-        // Remove password hash from user object
         const { passwordHash: _, ...userWithoutPassword } = user;
         return { success: true, token, user: userWithoutPassword };
       } catch (error) {

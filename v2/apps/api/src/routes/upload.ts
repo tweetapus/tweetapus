@@ -1,11 +1,11 @@
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { Elysia, t } from "elysia";
-import { existsSync, mkdirSync, writeFileSync } from "fs";
-import { join } from "path";
 import sharp from "sharp";
 import { requireAuth } from "../middleware/auth";
 
-const UPLOAD_DIR = join(process.cwd(), ".DATA", "UPLOADS");
+const UPLOAD_DIR = join(process.cwd(), ".data", "uploads");
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 if (!existsSync(UPLOAD_DIR)) {
@@ -70,7 +70,7 @@ export const uploadRouter = new Elysia({ prefix: "/upload" })
           size: webpBuffer.length,
           type: "image/webp",
         };
-      } catch (error) {
+      } catch {
         return { error: "Failed to process image" };
       }
     },

@@ -6,7 +6,7 @@ export default defineConfig({
   out: "./migrations",
   dialect: "sqlite",
   dbCredentials: {
-    url: process.env.DATABASE_URL || join(process.cwd(), ".data", "db.sqlite"),
+    url: "/Users/tiago/Desktop/code/tweetapus/v2/apps/api/.data/db.sqlite",
   },
   verbose: true,
   strict: true,

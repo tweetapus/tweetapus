@@ -22,7 +22,7 @@ export const meta: MetaFunction = () => {
 export async function loader({ request }: { request: Request }) {
   const user = await getOptionalUser(request);
   if (user) {
-    return redirect("/timeline");
+    return redirect("/timeline-new");
   }
   return null;
 }
