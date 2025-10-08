@@ -3,6 +3,23 @@ body {
   margin: 4em auto;
   padding: 0 24px;
   overflow-y: scroll;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.page-active {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 nav {
@@ -29,10 +46,14 @@ nav {
     color: inherit;
     z-index: 2;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 
     &:hover {
-      background-color: rgba(var(--primary-rgb), 0.2);
+      background-color: rgba(var(--primary-rgb), 0.15);
+    }
+
+    &:active {
+      transform: scale(0.95);
     }
 
     svg {
@@ -53,10 +74,14 @@ nav {
     color: inherit;
     z-index: 2;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease;
 
     &:hover {
-      background-color: rgba(var(--primary-rgb), 0.2);
+      background-color: rgba(var(--primary-rgb), 0.15);
+    }
+
+    &:active {
+      transform: scale(0.95);
     }
 
     svg {
@@ -77,11 +102,15 @@ nav {
     color: inherit;
     z-index: 2;
     border-radius: 50%;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.1s ease;
     text-decoration: none;
 
     &:hover {
-      background-color: rgba(var(--primary-rgb), 0.2);
+      background-color: rgba(var(--primary-rgb), 0.15);
+    }
+
+    &:active {
+      transform: scale(0.95);
     }
 
     svg {
@@ -119,12 +148,22 @@ nav {
     gap: 4px;
     color: inherit;
     z-index: 2;
+    transition: transform 0.1s ease;
+
+    &:active {
+      transform: scale(0.95);
+    }
 
     img {
       width: 36px;
       height: 36px;
       border-radius: 50%;
       font-size: 0px;
+      transition: box-shadow 0.2s ease;
+    }
+
+    &:hover img {
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.3);
     }
   }
 
@@ -134,8 +173,8 @@ nav {
     right: 20px;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-primary);
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 10;
     min-width: 150px;
     opacity: 0;
@@ -165,10 +204,10 @@ nav {
 
       a {
         display: block;
-        padding: 10px 16px;
+        padding: 12px 16px;
         color: var(--text-primary);
         text-decoration: none;
-        transition: background-color 0.2s, color 0.2s;
+        transition: background-color 0.15s, color 0.15s;
         outline: none;
 
         &:hover,
@@ -179,7 +218,7 @@ nav {
         }
 
         &:active {
-          opacity: 0.95;
+          opacity: 0.9;
         }
       }
 
@@ -187,7 +226,7 @@ nav {
         &:hover,
         &:focus,
         &:focus-visible {
-          border-radius: 8px 8px 0 0;
+          border-radius: 12px 12px 0 0;
         }
       }
 
@@ -195,7 +234,7 @@ nav {
         &:hover,
         &:focus,
         &:focus-visible {
-          border-radius: 0 0 8px 8px;
+          border-radius: 0 0 12px 12px;
         }
       }
 
@@ -458,6 +497,7 @@ nav {
   width: 100%;
   border-bottom: 1px solid var(--border-primary);
   padding-bottom: 24px;
+  transition: all 0.2s ease;
 
   .compose-header {
     display: flex;
@@ -468,6 +508,12 @@ nav {
       height: 43px;
       border-radius: 50%;
       flex-shrink: 0;
+      object-fit: cover;
+      transition: box-shadow 0.2s ease;
+    }
+
+    &:focus-within img#compose-avatar {
+      box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.3);
     }
 
     .compose-input {
@@ -479,7 +525,7 @@ nav {
         outline: none;
         font-family: inherit;
         font-size: 18px;
-        line-height: 1.4;
+        line-height: 1.5;
         resize: none;
         min-height: 25px;
         max-height: 250px;
@@ -488,7 +534,7 @@ nav {
         background-color: transparent;
         color: var(--text-primary);
         caret-color: var(--primary);
-        transition: background-color 0.2s, border-color 0.2s;
+        transition: all 0.2s ease;
 
         &::placeholder {
           color: var(--text-secondary);
@@ -498,8 +544,8 @@ nav {
         &.drag-over {
           background-color: rgba(var(--primary-rgb), 0.1);
           border: 2px dashed var(--primary);
-          border-radius: 8px;
-          padding: 8px;
+          border-radius: 12px;
+          padding: 12px;
         }
       }
 
@@ -511,7 +557,7 @@ nav {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 2px;
+        margin-top: 8px;
 
         .compose-actions {
           display: flex;
@@ -521,11 +567,9 @@ nav {
             background-color: transparent;
             color: var(--primary);
             border: none;
-            width: 20px;
-            height: 20px;
             padding: 0px;
             cursor: pointer;
-            transition: opacity 0.2s, transform 0.2s;
+            transition: opacity 0.2s, transform 0.2s, backgrou;
 
             &:hover {
               opacity: 0.8;
@@ -583,9 +627,11 @@ nav {
         .character-counter {
           font-size: 14px;
           color: var(--text-secondary);
+          font-weight: 500;
 
           &#over-limit {
-            color: var(--error-color);
+            color: #ef4444;
+            font-weight: 600;
           }
         }
 
@@ -599,19 +645,23 @@ nav {
           font-size: 15px;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s ease;
+          box-shadow: 0 2px 4px rgba(var(--primary-rgb), 0.2);
 
           &:hover:not(:disabled) {
             background-color: var(--primary-hover);
+            box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.3);
+            transform: translateY(-1px);
           }
 
           &:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            box-shadow: none;
           }
 
           &:active:not(:disabled) {
-            transform: scale(0.98);
+            transform: translateY(0) scale(0.98);
           }
         }
       }
@@ -1392,12 +1442,9 @@ nav {
             background: none;
             color: var(--text-primary);
             font-size: 14px;
+            font-family: inherit;
             cursor: pointer;
             transition: background-color 0.15s ease;
-
-            &:hover {
-              background-color: var(--bg-secondary);
-            }
 
             &:first-child {
               border-radius: 8px 8px 0 0;
@@ -2458,6 +2505,7 @@ nav {
         width: 100%;
         padding: 12px 16px 12px 48px;
         border: 1px solid var(--border-primary);
+        font-family: inherit;
         border-radius: 24px;
         background-color: var(--bg-primary);
         color: var(--text-primary);
@@ -2481,8 +2529,6 @@ nav {
     display: flex;
     gap: 8px;
     margin-bottom: 24px;
-    border-bottom: 1px solid var(--border-primary);
-    padding-bottom: 12px;
 
     .filter-btn {
       background-color: transparent;
@@ -2515,11 +2561,13 @@ nav {
   .search-results-page {
     display: flex;
     flex-direction: column;
+    width: 100%;
 
     .search-empty {
       text-align: center;
       color: var(--text-secondary);
       padding: 64px 24px;
+      width: 100%;
 
       .search-empty-icon {
         margin: 0 auto 24px;
@@ -4118,14 +4166,12 @@ nav {
   text-decoration: underline;
 }
 
-/* Expanded Tweet Stats */
 .expanded-tweet-stats {
   border-top: 1px solid var(--border-primary);
   padding: 16px 0 0;
   margin-top: 16px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .tweet-stat-item {
@@ -4133,6 +4179,7 @@ nav {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
+  padding-bottom: 0px;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.2s ease;

@@ -134,7 +134,7 @@ const adminQueries = {
 		"INSERT INTO posts (id, user_id, content, created_at) VALUES (?, ?, ?, datetime('now'))",
 	),
 	updateUser: db.query(
-		"UPDATE users SET username = ?, name = ?, bio = ?, verified = ? WHERE id = ?",
+		"UPDATE users SET username = ?, name = ?, bio = ?, verified = ?, admin = ? WHERE id = ?",
 	),
 
 	// DM Management queries
@@ -501,6 +501,7 @@ export default new Elysia({ prefix: "/admin" })
 				body.name !== undefined ? body.name : user.name,
 				body.bio !== undefined ? body.bio : user.bio,
 				body.verified !== undefined ? body.verified : user.verified,
+				body.admin !== undefined ? body.admin : user.admin,
 				params.id,
 			);
 
@@ -512,6 +513,7 @@ export default new Elysia({ prefix: "/admin" })
 				name: t.Optional(t.String()),
 				bio: t.Optional(t.String()),
 				verified: t.Optional(t.Boolean()),
+				admin: t.Optional(t.Boolean()),
 			}),
 		},
 	)

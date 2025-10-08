@@ -831,11 +831,10 @@ export default new Elysia({ prefix: "/tweets" })
 
 			const tweetAuthor = db
 				.query("SELECT * FROM users WHERE id = ?")
-				.get(tweet.author_id);
+				.get(tweet.user_id);
 			if (!tweetAuthor)
 				return { canReply: false, error: "Tweet author not found" };
 
-			// Check if user is blocked by tweet author
 			const isBlocked = db
 				.query("SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?")
 				.get(tweetAuthor.id, user.id);
@@ -864,5 +863,32 @@ export default new Elysia({ prefix: "/tweets" })
 		} catch (error) {
 			console.error("Check reply permission error:", error);
 			return { canReply: false, error: "Failed to check reply permission" };
+		}
+	})
+	.delete("/:id", async ({ jwt, headers, params }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const user = getUserByUsername.get(payload.username);
+			if (!user) return { error: "User not found" };
+
+			const { id } = params;
+			const tweet = getTweetById.get(id);
+			if (!tweet) return { error: "Tweet not found" };
+
+			if (tweet.user_id !== user.id && !user.admin) {
+				return { error: "You can only delete your own tweets" };
+			}
+
+			db.query("DELETE FROM posts WHERE id = ?").run(id);
+
+			return { success: true };
+		} catch (error) {
+			console.error("Delete tweet error:", error);
+			return { error: "Failed to delete tweet" };
 		}
 	});

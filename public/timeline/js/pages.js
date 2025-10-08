@@ -11,41 +11,46 @@ const pages = {
 	settings: null,
 };
 const states = {};
-let searchInitialized = false;
+const lazyInitializers = {
+	search: false,
+};
 
 function showPage(page, options = {}) {
-	const { recoverState = () => {}, path = "/" } = options;
+	const { recoverState = () => {} } = options;
 
 	Object.values(pages).forEach((p) => {
-		if (p) p.style.display = "none";
+		if (p) {
+			p.style.display = "none";
+			p.classList.remove("page-active");
+		}
 	});
 
 	if (pages[page]) {
 		pages[page].style.display = "flex";
-		try {
-			recoverState(pages[page]);
-		} catch (error) {
-			console.error(`Error in recoverState for page ${page}:`, error);
-		}
-
-		if (page === "search" && !searchInitialized) {
-			searchInitialized = true;
+		pages[page].classList.add("page-active");
+		
+		requestAnimationFrame(() => {
 			try {
-				import("./search.js").then(({ initializeSearchPage }) => {
-					initializeSearchPage();
-				});
+				recoverState(pages[page]);
 			} catch (error) {
-				console.error("Failed to initialize search page:", error);
+				console.error(`Error in recoverState for page ${page}:`, error);
 			}
+		});
+
+		if (page === "search" && !lazyInitializers.search) {
+			lazyInitializers.search = true;
+			import("./search.js")
+				.then(({ initializeSearchPage }) => initializeSearchPage())
+				.catch((error) => console.error("Failed to initialize search page:", error));
 		}
 	} else if (page === "settings") {
 		const settingsElement = document.querySelector(".settings");
 		if (settingsElement) {
 			pages.settings = settingsElement;
 			settingsElement.style.display = "flex";
-			recoverState(settingsElement);
+			settingsElement.classList.add("page-active");
+			requestAnimationFrame(() => recoverState(settingsElement));
 		}
-	} else if (page === "search") {
 	}
 
 	return pages[page];

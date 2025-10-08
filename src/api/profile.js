@@ -11,7 +11,7 @@ const getFollowers = db.query(`
   SELECT users.id, users.username, users.name, users.avatar, users.verified, users.bio
   FROM follows
   JOIN users ON follows.follower_id = users.id
-  WHERE follows.following_id = ?
+  WHERE follows.following_id = ? AND users.suspended = 0
   ORDER BY follows.created_at DESC
   LIMIT 50
 `);
@@ -20,7 +20,7 @@ const getFollowing = db.query(`
   SELECT users.id, users.username, users.name, users.avatar, users.verified, users.bio
   FROM follows
   JOIN users ON follows.following_id = users.id
-  WHERE follows.follower_id = ?
+  WHERE follows.follower_id = ? AND users.suspended = 0
   ORDER BY follows.created_at DESC
   LIMIT 50
 `);
@@ -80,7 +80,7 @@ const getUserPosts = db.query(`
   SELECT posts.*, users.username, users.name, users.avatar, users.verified
   FROM posts 
   JOIN users ON posts.user_id = users.id 
-  WHERE posts.user_id = ? AND posts.reply_to IS NULL
+  WHERE posts.user_id = ? AND posts.reply_to IS NULL AND users.suspended = 0
   ORDER BY posts.pinned DESC, posts.created_at DESC
 `);
 

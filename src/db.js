@@ -2,8 +2,6 @@ import { Database } from "bun:sqlite";
 
 const db = new Database("./.data/db.sqlite");
 
-// TODO: indexes for performance
-
 db.exec(`
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
@@ -27,6 +25,10 @@ CREATE TABLE IF NOT EXISTS users (
   theme TEXT DEFAULT NULL,
   accent_color TEXT DEFAULT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE INDEX IF NOT EXISTS idx_users_suspended ON users(suspended);
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
 
 CREATE TABLE IF NOT EXISTS passkeys (
   cred_id TEXT PRIMARY KEY,
@@ -52,6 +54,9 @@ CREATE TABLE IF NOT EXISTS follows (
   UNIQUE(follower_id, following_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
+
 CREATE TABLE IF NOT EXISTS follow_requests (
   id TEXT PRIMARY KEY,
   requester_id TEXT NOT NULL,
@@ -63,6 +68,9 @@ CREATE TABLE IF NOT EXISTS follow_requests (
   FOREIGN KEY (target_id) REFERENCES users(id) ON DELETE CASCADE,
   UNIQUE(requester_id, target_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_follow_requests_target_id ON follow_requests(target_id);
+CREATE INDEX IF NOT EXISTS idx_follow_requests_status ON follow_requests(status);
 
 CREATE TABLE IF NOT EXISTS posts (
   id TEXT PRIMARY KEY,
@@ -78,11 +86,16 @@ CREATE TABLE IF NOT EXISTS posts (
   quote_count INTEGER DEFAULT 0,
   source TEXT DEFAULT NULL,
   pinned BOOLEAN DEFAULT FALSE,
-  reply_restriction TEXT DEFAULT 'everyone', -- 'everyone', 'followers', 'following', 'verified'
+  reply_restriction TEXT DEFAULT 'everyone',
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
   FOREIGN KEY (quote_tweet_id) REFERENCES posts(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
+CREATE INDEX IF NOT EXISTS idx_posts_reply_to ON posts(reply_to);
+CREATE INDEX IF NOT EXISTS idx_posts_pinned ON posts(pinned);
 
 CREATE TABLE IF NOT EXISTS likes (
   id TEXT PRIMARY KEY,
@@ -94,6 +107,9 @@ CREATE TABLE IF NOT EXISTS likes (
   UNIQUE(user_id, post_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_likes_user_id ON likes(user_id);
+CREATE INDEX IF NOT EXISTS idx_likes_post_id ON likes(post_id);
+
 CREATE TABLE IF NOT EXISTS retweets (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -103,6 +119,9 @@ CREATE TABLE IF NOT EXISTS retweets (
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
   UNIQUE(user_id, post_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_retweets_user_id ON retweets(user_id);
+CREATE INDEX IF NOT EXISTS idx_retweets_post_id ON retweets(post_id);
 
 CREATE TABLE IF NOT EXISTS polls (
   id TEXT PRIMARY KEY,
@@ -225,6 +244,9 @@ CREATE TABLE IF NOT EXISTS blocks (
   UNIQUE(blocker_id, blocked_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_blocks_blocker_id ON blocks(blocker_id);
+CREATE INDEX IF NOT EXISTS idx_blocks_blocked_id ON blocks(blocked_id);
+
 CREATE TABLE IF NOT EXISTS bookmarks (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
@@ -234,6 +256,9 @@ CREATE TABLE IF NOT EXISTS bookmarks (
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
   UNIQUE(user_id, post_id)
 );
+
+CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_post_id ON bookmarks(post_id);
 
 CREATE TABLE IF NOT EXISTS tweetaai_chats (
   id TEXT PRIMARY KEY,

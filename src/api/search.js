@@ -8,15 +8,16 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const searchUsersQuery = db.query(`
   SELECT * FROM users 
-  WHERE LOWER(username) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?)
+  WHERE (LOWER(username) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?)) AND suspended = 0
   ORDER BY created_at DESC 
   LIMIT 20
 `);
 
 const searchPostsQuery = db.query(`
-  SELECT * FROM posts 
-  WHERE LOWER(content) LIKE LOWER(?)
-  ORDER BY created_at DESC 
+  SELECT posts.* FROM posts 
+  JOIN users ON posts.user_id = users.id
+  WHERE LOWER(posts.content) LIKE LOWER(?) AND users.suspended = 0
+  ORDER BY posts.created_at DESC 
   LIMIT 20
 `);
 

@@ -8,8 +8,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const getTimelinePosts = db.query(`
   SELECT posts.* FROM posts 
+  JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
-  WHERE posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0
+  WHERE posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0
   ORDER BY posts.created_at DESC 
   LIMIT 20
 `);
@@ -17,8 +18,9 @@ const getTimelinePosts = db.query(`
 const getFollowingTimelinePosts = db.query(`
   SELECT posts.* FROM posts 
   JOIN follows ON posts.user_id = follows.following_id
+  JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
-  WHERE follows.follower_id = ? AND posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0
+  WHERE follows.follower_id = ? AND posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0
   ORDER BY posts.created_at DESC 
   LIMIT 20
 `);
