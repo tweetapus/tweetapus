@@ -94,13 +94,6 @@ window.onunhandledrejection = (event) => {
     });
   }
 
-  document.addEventListener("click", (e) => {
-    if (e.target.closest("#searchBackBtn")) {
-      e.preventDefault();
-      history.back();
-    }
-  });
-
   const handleUrlParams = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const tweetId = urlParams.get("tweet");
