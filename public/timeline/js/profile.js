@@ -895,9 +895,9 @@ document
 document.addEventListener("click", (e) => {
   const dropdown = document.getElementById("profileDropdown");
   const menu = document.getElementById("profileDropdownMenu");
-  
+
   if (!dropdown || !menu) return;
-  
+
   if (!dropdown.contains(e.target) && menu.classList.contains("show")) {
     menu.classList.remove("show");
   }

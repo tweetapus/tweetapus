@@ -41,7 +41,6 @@ function connectWebSocket() {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-  
   const ws = new WebSocket(wsUrl);
   socket = ws;
 
@@ -179,7 +178,6 @@ function createConversationElement(conversation) {
   const unreadCount = conversation.unread_count || 0;
   const isGroup = conversation.type === "group";
 
-
   let avatarHtml;
   if (isGroup && conversation.participants.length > 0) {
     const maxAvatars = 3;
@@ -284,7 +282,6 @@ function renderConversationHeader() {
   const isGroup = currentConversation.type === "group";
 
   if (isGroup && participants.length > 3) {
-
     const visibleParticipants = participants.slice(0, 3);
     avatarsElement.innerHTML = `
       ${visibleParticipants
@@ -308,11 +305,9 @@ function renderConversationHeader() {
       .join("");
   }
 
-
   if (isGroup) {
     titleElement.textContent = currentConversation.title || "Group Chat";
     countElement.textContent = `${participants.length + 1} participants`;
-
 
     if (actionsElement) {
       actionsElement.innerHTML = `
@@ -534,13 +529,10 @@ function openNewMessageModal() {
 }
 
 function goBackToDMList() {
-
   currentConversation = null;
   currentMessages = [];
 
-
   switchPage("direct-messages", { path: "/dm" });
-
 
   loadConversations();
 }
@@ -667,7 +659,6 @@ async function removeParticipantFromGroup(userId, username) {
       toastQueue.add("error", data.error);
       return;
     }
-
 
     currentConversation.participants = currentConversation.participants.filter(
       (p) => p.id !== userId
@@ -815,7 +806,6 @@ async function confirmAddParticipant() {
       return;
     }
 
-
     if (data.participants) {
       currentConversation.participants.push(...data.participants);
     }
@@ -899,7 +889,6 @@ function addUser(username, name, avatar) {
   document.getElementById("userSuggestions").classList.remove("show");
   document.getElementById("startConversation").disabled =
     selectedUsers.length === 0;
-
 
   const groupToggle = document.getElementById("groupChatToggle");
   const groupTitleInput = document.getElementById("groupTitleInput");
@@ -1066,7 +1055,6 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("DM button not found in DOM!");
   }
 
-
   setTimeout(() => {
     const dmBtnDelayed = document.getElementById("dmBtn");
     if (dmBtnDelayed && !dmBtnDelayed.onclick) {
@@ -1109,17 +1097,14 @@ document.addEventListener("DOMContentLoaded", () => {
   dmSendBtn?.addEventListener("click", sendMessage);
   dmAttachmentBtn?.addEventListener("click", () => dmFileInput?.click());
 
-
   groupSettingsModalClose?.addEventListener("click", closeGroupSettings);
   cancelGroupSettings?.addEventListener("click", closeGroupSettings);
   saveGroupSettingsBtn?.addEventListener("click", saveGroupSettings);
   addParticipantBtn?.addEventListener("click", openAddParticipantModal);
 
-
   addParticipantModalClose?.addEventListener("click", closeAddParticipantModal);
   cancelAddParticipant?.addEventListener("click", closeAddParticipantModal);
   confirmAddParticipantBtn?.addEventListener("click", confirmAddParticipant);
-
 
   groupChatToggle?.addEventListener("change", (e) => {
     if (groupTitleInput) {
@@ -1156,7 +1141,6 @@ document.addEventListener("DOMContentLoaded", () => {
       renderUserSuggestions(users);
     }, 300);
   });
-
 
   let addParticipantSearchTimeout;
   addParticipantTo?.addEventListener("input", (e) => {
@@ -1200,7 +1184,6 @@ document.addEventListener("DOMContentLoaded", () => {
       addParticipantSuggestionsElement.classList.remove("show");
     }
   });
-
 
   if (authToken) {
     connectWebSocket();
