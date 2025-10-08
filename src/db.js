@@ -258,16 +258,7 @@ CREATE TABLE IF NOT EXISTS bookmarks (
 );
 
 CREATE INDEX IF NOT EXISTS idx_bookmarks_user_id ON bookmarks(user_id);
-CREATE INDEX IF NOT EXISTS idx_bookmarks_post_id ON bookmarks(post_id);
-
-CREATE TABLE IF NOT EXISTS tweetaai_chats (
-  id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  prompt TEXT NOT NULL,
-  response TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);`);
+CREATE INDEX IF NOT EXISTS idx_bookmarks_post_id ON bookmarks(post_id);`);
 
 try {
   const tableInfo = db.query("PRAGMA table_info(users);").all();

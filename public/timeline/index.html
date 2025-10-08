@@ -89,23 +89,6 @@
         <span class="dm-count" id="dmCount" style="display: none">0</span>
         <span class="nav-label">Messages</span>
       </button>
-      <button class="ai-btn" id="aiBtn">
-        <svg
-          width="26"
-          height="26"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path
-            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
-          />
-        </svg>
-        <span class="nav-label">TweetaAI</span>
-      </button>
       <button class="account">
         <img src="" alt="User avatar" id="user-avatar" />
         <svg
@@ -136,737 +119,619 @@
     </nav>
 
     <div class="main-content">
-
-    <div class="timeline">
-      <svg
-        class="icon"
-        width="48"
-        height="48"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <path
-          d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
-        />
-      </svg>
-
-      <h1>
-        <a href="javascript:" class="active">Your feed</a>
-        <a href="javascript:">Following</a>
-      </h1>
-
-      <div id="composer-container"></div>
-
-      <div class="tweets"></div>
-    </div>
-
-    <div class="tweetaai-page">
-      <div class="tweetaai-header">
-        <button class="back-button" id="tweetaaiBackBtn">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </button>
-        <div class="tweetaai-header-info">
-          <h1>TweetaAI</h1>
-          <p>Chat with our AI assistant</p>
-        </div>
-        <div class="tweetaai-controls">
-          <button class="tweetaai-control-btn" id="clearHistoryBtn" title="Clear chat history">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18l-2 13H5L3 6z"/>
-              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div id="tweetaai-messages">
-        <div class="tweetaai-empty-state">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386L8.46 15.54z"
-            />
-          </svg>
-          <h3>Chat with TweetaAI</h3>
-          <p>Ask me anything! I'll keep my responses concise and helpful.</p>
-        </div>
-      </div>
-
-      <form class="tweetaai-composer" id="tweetaaiChatForm">
-        <textarea
-          id="tweetaai-message"
-          placeholder="Ask TweetaAI something..."
-          rows="1"
-        ></textarea>
-        <button type="submit" class="tweetaai-send-button" id="tweetaaiSendButton">
-          Send
-        </button>
-      </form>
-    </div>
-
-    <div class="tweetPage"></div>
-
-    <div class="search-page">
-      <div class="search-header">
-        <a href="javascript:" class="back-button" id="searchBackBtn">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </a>
-        <div class="search-input-container">
-          <svg
-            class="search-icon"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            id="searchPageInput"
-            placeholder="Search users and tweets"
-            autofocus
+      <div class="timeline">
+        <svg
+          class="icon"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
           />
-        </div>
+        </svg>
+
+        <h1>
+          <a href="javascript:" class="active">Your feed</a>
+          <a href="javascript:">Following</a>
+        </h1>
+
+        <div id="composer-container"></div>
+
+        <div class="tweets"></div>
       </div>
 
-      <div class="search-filters">
-        <button class="filter-btn active" data-filter="all">All</button>
-        <button class="filter-btn" data-filter="users">Users</button>
-        <button class="filter-btn" data-filter="tweets">Tweets</button>
-      </div>
+      <div class="tweetPage"></div>
 
-      <div class="search-results-page">
-        <div class="search-empty" id="searchEmpty">
-          <svg
-            class="search-empty-icon"
-            width="48"
-            height="48"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="M21 21l-4.35-4.35" />
-          </svg>
-          <h3>Search for people and tweets</h3>
-          <p>Start typing to find what you're looking for</p>
-        </div>
-
-        <div class="users-section" id="usersSection" style="display: none">
-          <h4>Users</h4>
-          <div class="users-results-page"></div>
-        </div>
-
-        <div class="tweets-section" id="tweetsSection" style="display: none">
-          <h4>Tweets</h4>
-          <div class="tweets-results-page"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="bookmarks-page">
-      <div class="bookmarks-header">
-        <button class="back-button" onclick="history.back()">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </button>
-        <div class="bookmarks-header-info">
-          <h1>Bookmarks</h1>
-          <p>Tweets you've saved for later</p>
-        </div>
-      </div>
-
-      <div class="bookmarks-content">
-        <div class="bookmarks-empty" id="bookmarksEmpty" style="display: none">
-          <svg
-            width="48"
-            height="48"
-            viewBox="0 0 19 19"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-          >
-            <path
-              d="M3.95833 16.625L9.5 12.2917L15.0417 16.625V4.75C15.0417 4.33008 14.8749 3.92735 14.5779 3.63041C14.281 3.33348 13.8783 3.16667 13.4583 3.16667H5.54167C5.12174 3.16667 4.71901 3.33348 4.42208 3.63041C4.12514 3.92735 3.95833 4.33008 3.95833 4.75V16.625Z"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <h3>Save Tweets for later</h3>
-          <p>When you bookmark Tweets, they'll show up here.</p>
-        </div>
-
-        <div class="bookmarks-list" id="bookmarksList"></div>
-      </div>
-    </div>
-
-    <div class="notifications">
-      <div class="notifications-header">
-        <button class="back-button" onclick="history.back()">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </button>
-        <div class="notifications-header-info">
-          <h1>Notifications</h1>
-          <button class="mark-all-read-btn" id="markAllReadBtn">
-            Mark all as read
-          </button>
-        </div>
-      </div>
-
-      <div class="notifications-list" id="notificationsList"></div>
-    </div>
-
-    <div class="direct-messages">
-      <div class="dm-header">
-        <button class="back-button" onclick="history.back()">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </button>
-        <div class="dm-header-info">
-          <h1>Messages</h1>
-          <button class="new-message-btn" id="newMessageBtn">
+      <div class="search-page">
+        <div class="search-header">
+          <a href="javascript:" class="back-button" id="searchBackBtn">
             <svg
+              xmlns="http://www.w3.org/2000/svg"
               width="24"
               height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m12 19-7-7 7-7" />
+              <path d="M19 12H5" />
+            </svg>
+          </a>
+          <div class="search-input-container">
+            <svg
+              class="search-icon"
+              width="20"
+              height="20"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
               stroke-linecap="round"
               stroke-linejoin="round"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              id="searchPageInput"
+              placeholder="Search users and tweets"
+              autofocus
+            />
+          </div>
+        </div>
+
+        <div class="search-filters">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="users">Users</button>
+          <button class="filter-btn" data-filter="tweets">Tweets</button>
+        </div>
+
+        <div class="search-results-page">
+          <div class="search-empty" id="searchEmpty">
+            <svg
+              class="search-empty-icon"
+              width="48"
+              height="48"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="M21 21l-4.35-4.35" />
+            </svg>
+            <h3>Search for people and tweets</h3>
+            <p>Start typing to find what you're looking for</p>
+          </div>
+
+          <div class="users-section" id="usersSection" style="display: none">
+            <h4>Users</h4>
+            <div class="users-results-page"></div>
+          </div>
+
+          <div class="tweets-section" id="tweetsSection" style="display: none">
+            <h4>Tweets</h4>
+            <div class="tweets-results-page"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bookmarks-page">
+        <div class="bookmarks-header">
+          <button class="back-button" onclick="history.back()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m12 19-7-7 7-7" />
+              <path d="M19 12H5" />
+            </svg>
+          </button>
+          <div class="bookmarks-header-info">
+            <h1>Bookmarks</h1>
+            <p>Tweets you've saved for later</p>
+          </div>
+        </div>
+
+        <div class="bookmarks-content">
+          <div
+            class="bookmarks-empty"
+            id="bookmarksEmpty"
+            style="display: none"
+          >
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 19 19"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
             >
               <path
-                d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"
+                d="M3.95833 16.625L9.5 12.2917L15.0417 16.625V4.75C15.0417 4.33008 14.8749 3.92735 14.5779 3.63041C14.281 3.33348 13.8783 3.16667 13.4583 3.16667H5.54167C5.12174 3.16667 4.71901 3.33348 4.42208 3.63041C4.12514 3.92735 3.95833 4.33008 3.95833 4.75V16.625Z"
+                stroke-linecap="round"
+                stroke-linejoin="round"
               />
-              <polygon points="18,2 22,6 12,16 8,16 8,12 18,2" />
             </svg>
-          </button>
-        </div>
-      </div>
-      <div class="dm-conversations-list" id="dmConversationsList"></div>
-    </div>
-
-    <div class="dm-conversation">
-      <div class="dm-conversation-header">
-        <button class="back-button" onclick="goBackToDMList()" type="button">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </button>
-        <div class="dm-conversation-info">
-          <div class="dm-participant-avatars" id="dmParticipantAvatars"></div>
-          <div class="dm-conversation-names">
-            <h2 id="dmConversationTitle">Conversation</h2>
-            <span id="dmParticipantCount">2 participants</span>
-          </div>
-        </div>
-        <div class="dm-conversation-actions" id="dmConversationActions"></div>
-      </div>
-      <div class="dm-messages" id="dmMessages"></div>
-      <div class="dm-composer">
-        <div class="dm-composer-attachments" id="dmComposerAttachments"></div>
-        <div class="dm-composer-input">
-          <button class="dm-attachment-btn" id="dmAttachmentBtn">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-              <circle cx="9" cy="9" r="2" />
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-            </svg>
-          </button>
-          <input
-            type="file"
-            id="dmFileInput"
-            accept="image/webp,image/*"
-            multiple
-            style="display: none"
-          />
-          <textarea
-            id="dmMessageInput"
-            placeholder="Type a message..."
-            rows="1"
-          ></textarea>
-          <button class="dm-send-btn" id="dmSendBtn" disabled>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m22 2-7 20-4-9-9-4Z" />
-              <path d="M22 2 11 13" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="new-message-modal" id="newMessageModal" style="display: none">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>New Message</h3>
-          <button class="modal-close" id="newMessageModalClose">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="newMessageTo">To:</label>
-            <input
-              type="text"
-              id="newMessageTo"
-              placeholder="Enter username..."
-              autocomplete="off"
-            />
-            <div class="search-suggestions" id="userSuggestions"></div>
-          </div>
-          <div class="selected-users" id="selectedUsers"></div>
-
-          <div class="group-chat-options">
-            <label class="checkbox-label">
-              <input type="checkbox" id="groupChatToggle" />
-              <span>Create group chat</span>
-            </label>
-            <input
-              type="text"
-              id="groupTitleInput"
-              placeholder="Group name (optional)"
-              style="display: none"
-            />
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" id="cancelNewMessage">
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="btn-primary"
-            id="startConversation"
-            disabled
-          >
-            Start
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Group Settings Modal -->
-    <div
-      class="group-settings-modal"
-      id="groupSettingsModal"
-      style="display: none"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Group Settings</h3>
-          <button class="modal-close" id="groupSettingsModalClose">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="groupNameInput">Group Name:</label>
-            <input
-              type="text"
-              id="groupNameInput"
-              placeholder="Enter group name..."
-            />
+            <h3>Save Tweets for later</h3>
+            <p>When you bookmark Tweets, they'll show up here.</p>
           </div>
 
-          <div class="form-group">
-            <label>Participants:</label>
-            <div class="participants-list" id="participantsList"></div>
-            <button class="btn-secondary" id="addParticipantBtn">
-              Add Participant
+          <div class="bookmarks-list" id="bookmarksList"></div>
+        </div>
+      </div>
+
+      <div class="notifications">
+        <div class="notifications-header">
+          <div class="notifications-header-info">
+            <h1>Notifications</h1>
+            <button class="mark-all-read-btn" id="markAllReadBtn">
+              Mark all as read
             </button>
           </div>
         </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" id="cancelGroupSettings">
-            Cancel
-          </button>
-          <button type="button" class="btn-primary" id="saveGroupSettings">
-            Save
-          </button>
-        </div>
-      </div>
-    </div>
 
-    <!-- Add Participant Modal -->
-    <div
-      class="add-participant-modal"
-      id="addParticipantModal"
-      style="display: none"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Add Participants</h3>
-          <button class="modal-close" id="addParticipantModalClose">
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label for="addParticipantTo">Search users:</label>
-            <input
-              type="text"
-              id="addParticipantTo"
-              placeholder="Enter username..."
-              autocomplete="off"
-            />
-            <div
-              class="search-suggestions"
-              id="addParticipantSuggestions"
-            ></div>
-          </div>
-          <div class="selected-users" id="addParticipantSelectedUsers"></div>
-        </div>
-        <div class="modal-actions">
-          <button type="button" class="btn-secondary" id="cancelAddParticipant">
-            Cancel
-          </button>
-          <button
-            type="button"
-            class="btn-primary"
-            id="confirmAddParticipant"
-            disabled
-          >
-            Add to Group
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <div class="profile">
-      <div class="profile-header">
-        <button class="back-button" onclick="history.back()">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2.25"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="lucide lucide-arrow-left-icon lucide-arrow-left"
-          >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-        </button>
-        <div class="profile-header-info">
-          <h1 id="profileHeaderName">Profile</h1>
-          <p class="post-count" id="profileHeaderPostCount">0 posts</p>
-        </div>
+        <div class="notifications-list" id="notificationsList"></div>
       </div>
 
-      <div id="profileContainer" style="display: none">
-        <div class="profile-banner"></div>
-
-        <div class="profile-card">
-          <img class="profile-avatar" id="profileAvatar" />
-
-          <div class="profile-actions">
-            <button
-              class="profile-btn"
-              id="editProfileBtn"
-              style="display: none"
-            >
-              Edit profile
-            </button>
-            <button
-              class="profile-btn profile-btn-primary"
-              id="followBtn"
-              style="display: none"
-            >
-              Follow
-            </button>
-            <button
-              class="profile-btn profile-btn-secondary"
-              id="profileDmBtn"
-              style="display: none"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+      <div class="direct-messages">
+        <div class="dm-header">
+          <div class="dm-header-info">
+            <h1>Messages</h1>
+            <button class="new-message-btn" id="newMessageBtn">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"
+                />
+                <polygon points="18,2 22,6 12,16 8,16 8,12 18,2" />
               </svg>
-              Message
             </button>
-            <div
-              class="profile-dropdown"
-              id="profileDropdown"
-              style="display: none"
+          </div>
+        </div>
+        <div class="dm-conversations-list" id="dmConversationsList"></div>
+      </div>
+
+      <div class="dm-conversation">
+        <div class="dm-conversation-header">
+          <button class="back-button" onclick="goBackToDMList()" type="button">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"
             >
+              <path d="m12 19-7-7 7-7" />
+              <path d="M19 12H5" />
+            </svg>
+          </button>
+          <div class="dm-conversation-info">
+            <div class="dm-participant-avatars" id="dmParticipantAvatars"></div>
+            <div class="dm-conversation-names">
+              <h2 id="dmConversationTitle">Conversation</h2>
+              <span id="dmParticipantCount">2 participants</span>
+            </div>
+          </div>
+          <div class="dm-conversation-actions" id="dmConversationActions"></div>
+        </div>
+        <div class="dm-messages" id="dmMessages"></div>
+        <div class="dm-composer">
+          <div class="dm-composer-attachments" id="dmComposerAttachments"></div>
+          <div class="dm-composer-input">
+            <button class="dm-attachment-btn" id="dmAttachmentBtn">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+            </button>
+            <input
+              type="file"
+              id="dmFileInput"
+              accept="image/webp,image/*"
+              multiple
+              style="display: none"
+            />
+            <textarea
+              id="dmMessageInput"
+              placeholder="Type a message..."
+              rows="1"
+            ></textarea>
+            <button class="dm-send-btn" id="dmSendBtn" disabled>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m22 2-7 20-4-9-9-4Z" />
+                <path d="M22 2 11 13" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="new-message-modal" id="newMessageModal" style="display: none">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>New Message</h3>
+            <button class="modal-close" id="newMessageModalClose">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="newMessageTo">To:</label>
+              <input
+                type="text"
+                id="newMessageTo"
+                placeholder="Enter username..."
+                autocomplete="off"
+              />
+              <div class="search-suggestions" id="userSuggestions"></div>
+            </div>
+            <div class="selected-users" id="selectedUsers"></div>
+
+            <div class="group-chat-options">
+              <label class="checkbox-label">
+                <input type="checkbox" id="groupChatToggle" />
+                <span>Create group chat</span>
+              </label>
+              <input
+                type="text"
+                id="groupTitleInput"
+                placeholder="Group name (optional)"
+                style="display: none"
+              />
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn-secondary" id="cancelNewMessage">
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              id="startConversation"
+              disabled
+            >
+              Start
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group Settings Modal -->
+      <div
+        class="group-settings-modal"
+        id="groupSettingsModal"
+        style="display: none"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Group Settings</h3>
+            <button class="modal-close" id="groupSettingsModalClose">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="groupNameInput">Group Name:</label>
+              <input
+                type="text"
+                id="groupNameInput"
+                placeholder="Enter group name..."
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Participants:</label>
+              <div class="participants-list" id="participantsList"></div>
+              <button class="btn-secondary" id="addParticipantBtn">
+                Add Participant
+              </button>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              id="cancelGroupSettings"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn-primary" id="saveGroupSettings">
+              Save
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Add Participant Modal -->
+      <div
+        class="add-participant-modal"
+        id="addParticipantModal"
+        style="display: none"
+      >
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Add Participants</h3>
+            <button class="modal-close" id="addParticipantModalClose">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="addParticipantTo">Search users:</label>
+              <input
+                type="text"
+                id="addParticipantTo"
+                placeholder="Enter username..."
+                autocomplete="off"
+              />
+              <div
+                class="search-suggestions"
+                id="addParticipantSuggestions"
+              ></div>
+            </div>
+            <div class="selected-users" id="addParticipantSelectedUsers"></div>
+          </div>
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn-secondary"
+              id="cancelAddParticipant"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn-primary"
+              id="confirmAddParticipant"
+              disabled
+            >
+              Add to Group
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile">
+        <div class="profile-header">
+          <button class="back-button" onclick="history.back()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="lucide lucide-arrow-left-icon lucide-arrow-left"
+            >
+              <path d="m12 19-7-7 7-7" />
+              <path d="M19 12H5" />
+            </svg>
+          </button>
+          <div class="profile-header-info">
+            <h1 id="profileHeaderName">Profile</h1>
+            <p class="post-count" id="profileHeaderPostCount">0 posts</p>
+          </div>
+        </div>
+
+        <div id="profileContainer" style="display: none">
+          <div class="profile-banner"></div>
+
+          <div class="profile-card">
+            <img class="profile-avatar" id="profileAvatar" />
+
+            <div class="profile-actions">
               <button
-                class="profile-btn profile-btn-secondary profile-dropdown-btn"
-                id="profileDropdownBtn"
+                class="profile-btn"
+                id="editProfileBtn"
+                style="display: none"
+              >
+                Edit profile
+              </button>
+              <button
+                class="profile-btn profile-btn-primary"
+                id="followBtn"
+                style="display: none"
+              >
+                Follow
+              </button>
+              <button
+                class="profile-btn profile-btn-secondary"
+                id="profileDmBtn"
+                style="display: none"
               >
                 <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                >
-                  <circle cx="12" cy="12" r="1" />
-                  <circle cx="12" cy="5" r="1" />
-                  <circle cx="12" cy="19" r="1" />
-                </svg>
-              </button>
-              <div class="dropdown-menu" id="profileDropdownMenu">
-                <button class="dropdown-item" id="blockUserBtn">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M4.93 4.93l14.14 14.14" />
-                  </svg>
-                  Block @
-                  <span id="blockUsername"></span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="profile-info">
-            <h2 id="profileDisplayName">Display Name</h2>
-            <p class="username" id="profileUsername">@username</p>
-            <p class="profile-pronouns" id="profilePronouns"></p>
-            <p class="profile-bio" id="profileBio"></p>
-
-            <div class="profile-meta" id="profileMeta"></div>
-
-            <div class="profile-stats">
-              <a href="javascript:" id="profileFollowingLink">
-                <span class="number" id="profileFollowingCount">0</span>
-                <span class="label">Following</span>
-              </a>
-              <a href="javascript:" id="profileFollowersLink">
-                <span class="number" id="profileFollowerCount">0</span>
-                <span class="label">Followers</span>
-              </a>
-            </div>
-          </div>
-        </div>
-
-        <div class="profile-tabs">
-          <div class="profile-tab-nav">
-            <button class="profile-tab-btn active" data-tab="posts">
-              Posts
-            </button>
-            <button class="profile-tab-btn" data-tab="replies">Replies</button>
-          </div>
-
-          <div class="profile-tab-content">
-            <div id="profilePostsContainer"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="edit-profile-modal" id="editProfileModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Edit Profile</h3>
-          <button class="close-btn" id="closeEditModalBtn">&times;</button>
-        </div>
-
-        <form id="editProfileForm">
-          <div class="avatar-section">
-            <label>Profile Picture</label>
-            <div class="avatar-preview">
-              <img id="edit-current-avatar" src="" alt="Your avatar" />
-              <div class="avatar-overlay">
-                <svg
-                  width="24"
-                  height="24"
+                  width="18"
+                  height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2"
                 >
                   <path
-                    d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                    d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
                   />
-                  <circle cx="12" cy="13" r="4" />
                 </svg>
+                Message
+              </button>
+              <div
+                class="profile-dropdown"
+                id="profileDropdown"
+                style="display: none"
+              >
+                <button
+                  class="profile-btn profile-btn-secondary profile-dropdown-btn"
+                  id="profileDropdownBtn"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <circle cx="12" cy="12" r="1" />
+                    <circle cx="12" cy="5" r="1" />
+                    <circle cx="12" cy="19" r="1" />
+                  </svg>
+                </button>
+                <div class="dropdown-menu" id="profileDropdownMenu">
+                  <button class="dropdown-item" id="blockUserBtn">
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <path d="M4.93 4.93l14.14 14.14" />
+                    </svg>
+                    Block @
+                    <span id="blockUsername"></span>
+                  </button>
+                </div>
               </div>
             </div>
-            <div class="avatar-controls">
-              <input
-                type="file"
-                id="edit-avatar-upload"
-                accept="image/*"
-                style="display: none"
-              />
-              <button
-                type="button"
-                class="profile-btn profile-btn-secondary"
-                id="edit-change-avatar"
-              >
-                Change Avatar
-              </button>
-              <button
-                type="button"
-                class="profile-btn profile-btn-secondary"
-                id="edit-remove-avatar"
-                style="display: none"
-              >
-                Remove Avatar
-              </button>
+
+            <div class="profile-info">
+              <h2 id="profileDisplayName">Display Name</h2>
+              <p class="username" id="profileUsername">@username</p>
+              <p class="profile-pronouns" id="profilePronouns"></p>
+              <p class="profile-bio" id="profileBio"></p>
+
+              <div class="profile-meta" id="profileMeta"></div>
+
+              <div class="profile-stats">
+                <a href="javascript:" id="profileFollowingLink">
+                  <span class="number" id="profileFollowingCount">0</span>
+                  <span class="label">Following</span>
+                </a>
+                <a href="javascript:" id="profileFollowersLink">
+                  <span class="number" id="profileFollowerCount">0</span>
+                  <span class="label">Followers</span>
+                </a>
+              </div>
             </div>
           </div>
 
-          <div class="banner-section">
-            <label>Profile Banner</label>
-            <div class="banner-preview">
-              <div id="edit-current-banner" class="banner-image">
-                <div class="banner-overlay">
+          <div class="profile-tabs">
+            <div class="profile-tab-nav">
+              <button class="profile-tab-btn active" data-tab="posts">
+                Posts
+              </button>
+              <button class="profile-tab-btn" data-tab="replies">
+                Replies
+              </button>
+            </div>
+
+            <div class="profile-tab-content">
+              <div id="profilePostsContainer"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="edit-profile-modal" id="editProfileModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>Edit Profile</h3>
+            <button class="close-btn" id="closeEditModalBtn">&times;</button>
+          </div>
+
+          <form id="editProfileForm">
+            <div class="avatar-section">
+              <label>Profile Picture</label>
+              <div class="avatar-preview">
+                <img id="edit-current-avatar" src="" alt="Your avatar" />
+                <div class="avatar-overlay">
                   <svg
                     width="24"
                     height="24"
@@ -882,141 +747,186 @@
                   </svg>
                 </div>
               </div>
+              <div class="avatar-controls">
+                <input
+                  type="file"
+                  id="edit-avatar-upload"
+                  accept="image/*"
+                  style="display: none"
+                />
+                <button
+                  type="button"
+                  class="profile-btn profile-btn-secondary"
+                  id="edit-change-avatar"
+                >
+                  Change Avatar
+                </button>
+                <button
+                  type="button"
+                  class="profile-btn profile-btn-secondary"
+                  id="edit-remove-avatar"
+                  style="display: none"
+                >
+                  Remove Avatar
+                </button>
+              </div>
             </div>
-            <div class="banner-controls">
+
+            <div class="banner-section">
+              <label>Profile Banner</label>
+              <div class="banner-preview">
+                <div id="edit-current-banner" class="banner-image">
+                  <div class="banner-overlay">
+                    <svg
+                      width="24"
+                      height="24"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+                      />
+                      <circle cx="12" cy="13" r="4" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div class="banner-controls">
+                <input
+                  type="file"
+                  id="edit-banner-upload"
+                  accept="image/*"
+                  style="display: none"
+                />
+                <button
+                  type="button"
+                  class="profile-btn profile-btn-secondary"
+                  id="edit-change-banner"
+                >
+                  Change Banner
+                </button>
+                <button
+                  type="button"
+                  class="profile-btn profile-btn-secondary"
+                  id="edit-remove-banner"
+                  style="display: none"
+                >
+                  Remove Banner
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="editDisplayName">Display Name</label>
+              <input type="text" id="editDisplayName" maxlength="50" />
+              <div class="char-count">
+                <span id="displayNameCount">0</span>
+                /50
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="editBio">Bio</label>
+              <textarea
+                id="editBio"
+                maxlength="160"
+                placeholder="Tell us about yourself"
+              ></textarea>
+              <div class="char-count">
+                <span id="bioCount">0</span>
+                /160
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="editPronouns">Pronouns</label>
               <input
-                type="file"
-                id="edit-banner-upload"
-                accept="image/*"
-                style="display: none"
+                type="text"
+                id="editPronouns"
+                maxlength="30"
+                placeholder="e.g., she/her, he/him, they/them"
               />
-              <button
-                type="button"
-                class="profile-btn profile-btn-secondary"
-                id="edit-change-banner"
-              >
-                Change Banner
+              <div class="char-count">
+                <span id="pronounsCount">0</span>
+                /30
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="editLocation">Location</label>
+              <input
+                type="text"
+                id="editLocation"
+                maxlength="30"
+                placeholder="Where are you?"
+              />
+              <div class="char-count">
+                <span id="locationCount">0</span>
+                /30
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="editWebsite">Website</label>
+              <input
+                type="url"
+                id="editWebsite"
+                maxlength="100"
+                placeholder="https://example.com"
+              />
+              <div class="char-count">
+                <span id="websiteCount">0</span>
+                /100
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="profile-btn" id="cancelEditBtn">
+                Cancel
               </button>
-              <button
-                type="button"
-                class="profile-btn profile-btn-secondary"
-                id="edit-remove-banner"
-                style="display: none"
-              >
-                Remove Banner
+              <button type="submit" class="profile-btn profile-btn-primary">
+                Save
               </button>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label for="editDisplayName">Display Name</label>
-            <input type="text" id="editDisplayName" maxlength="50" />
-            <div class="char-count">
-              <span id="displayNameCount">0</span>
-              /50
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="editBio">Bio</label>
-            <textarea
-              id="editBio"
-              maxlength="160"
-              placeholder="Tell us about yourself"
-            ></textarea>
-            <div class="char-count">
-              <span id="bioCount">0</span>
-              /160
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="editPronouns">Pronouns</label>
-            <input
-              type="text"
-              id="editPronouns"
-              maxlength="30"
-              placeholder="e.g., she/her, he/him, they/them"
-            />
-            <div class="char-count">
-              <span id="pronounsCount">0</span>
-              /30
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="editLocation">Location</label>
-            <input
-              type="text"
-              id="editLocation"
-              maxlength="30"
-              placeholder="Where are you?"
-            />
-            <div class="char-count">
-              <span id="locationCount">0</span>
-              /30
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="editWebsite">Website</label>
-            <input
-              type="url"
-              id="editWebsite"
-              maxlength="100"
-              placeholder="https://example.com"
-            />
-            <div class="char-count">
-              <span id="websiteCount">0</span>
-              /100
-            </div>
-          </div>
-
-          <div class="modal-actions">
-            <button type="button" class="profile-btn" id="cancelEditBtn">
-              Cancel
-            </button>
-            <button type="submit" class="profile-btn profile-btn-primary">
-              Save
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-    </div>
 
-    <script src="/public/shared/darkmode.js" defer></script>
-    <script src="/public/timeline/js/index.js" defer type="module"></script>
+      <script src="/public/shared/darkmode.js" defer></script>
+      <script src="/public/timeline/js/index.js" defer type="module"></script>
 
-    <div class="loader">
-      <svg
-        width="24"
-        height="24"
-        viewBox="0 0 24 24"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <style>
-          .spinner_z9k8 {
-            transform-origin: center;
-            animation: spinner_StKS 0.75s infinite linear;
-          }
-          @keyframes spinner_StKS {
-            100% {
-              transform: rotate(360deg);
+      <div class="loader">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <style>
+            .spinner_z9k8 {
+              transform-origin: center;
+              animation: spinner_StKS 0.75s infinite linear;
             }
-          }
-        </style>
-        <path
-          d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
-          opacity=".25"
-          fill="currentColor"
-        />
-        <path
-          d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
-          class="spinner_z9k8"
-          fill="currentColor"
-        />
-      </svg>
-    </div>
+            @keyframes spinner_StKS {
+              100% {
+                transform: rotate(360deg);
+              }
+            }
+          </style>
+          <path
+            d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+            opacity=".25"
+            fill="currentColor"
+          />
+          <path
+            d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
+            class="spinner_z9k8"
+            fill="currentColor"
+          />
+        </svg>
+      </div>
     </div>
   </body>
   <script>

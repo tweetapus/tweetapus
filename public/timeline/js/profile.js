@@ -192,7 +192,9 @@ const renderProfile = (data) => {
   }
 
   const avatarImg = document.getElementById("profileAvatar");
-  avatarImg.src = profile.avatar || `https://upload.wikimedia.org/wikipedia/commons/0/03/Twitter_default_profile_400x400.png`;
+  avatarImg.src =
+    profile.avatar ||
+    `https://upload.wikimedia.org/wikipedia/commons/0/03/Twitter_default_profile_400x400.png`;
   avatarImg.alt = profile.name || profile.username;
 
   const profileNameEl = document.getElementById("profileDisplayName");
@@ -236,15 +238,16 @@ const renderProfile = (data) => {
 
   const usernameEl = document.getElementById("profileUsername");
   usernameEl.textContent = `@${profile.username}`;
-  
+
   if (currentProfile.followsMe && !isOwnProfile) {
     const followsBadge = document.createElement("span");
     followsBadge.className = "follows-me-badge";
     followsBadge.textContent = "Follows you";
-    followsBadge.style.cssText = "margin-left: 8px; padding: 2px 8px; background: rgba(var(--primary-rgb), 0.1); color: rgb(var(--primary-rgb)); border-radius: 4px; font-size: 12px; font-weight: 500;";
+    followsBadge.style.cssText =
+      "margin-left: 8px; padding: 2px 8px; background: rgba(var(--primary-rgb), 0.1); color: rgb(var(--primary-rgb)); border-radius: 4px; font-size: 12px; font-weight: 500;";
     usernameEl.appendChild(followsBadge);
   }
-  
+
   document.getElementById("profilePronouns").textContent =
     profile.pronouns || "";
   document.getElementById("profilePronouns").style.display = profile.pronouns
@@ -605,7 +608,8 @@ const updateEditAvatarDisplay = () => {
 
   if (avatarImg) {
     const avatarSrc =
-      profile.avatar || `https://upload.wikimedia.org/wikipedia/commons/0/03/Twitter_default_profile_400x400.png`;
+      profile.avatar ||
+      `https://upload.wikimedia.org/wikipedia/commons/0/03/Twitter_default_profile_400x400.png`;
     avatarImg.src = avatarSrc;
     avatarImg.alt = profile.name || profile.username;
   }

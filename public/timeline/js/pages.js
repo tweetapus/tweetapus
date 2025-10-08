@@ -7,7 +7,6 @@ const pages = {
   bookmarks: document.querySelector(".bookmarks-page"),
   "direct-messages": document.querySelector(".direct-messages"),
   "dm-conversation": document.querySelector(".dm-conversation"),
-  tweetaai: document.querySelector(".tweetaai-page"),
   settings: null,
 };
 const states = {};
