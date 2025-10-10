@@ -14,7 +14,6 @@ const wsHandler = {
       } else {
         data = message;
       }
-
       if (data.type === "authenticate") {
         const { token } = data;
         if (token) {
@@ -22,12 +21,10 @@ const wsHandler = {
             const payload = JSON.parse(atob(token.split(".")[1]));
             ws.data.userId = payload.userId;
             ws.data.username = payload.username;
-
             if (!connectedUsers.has(payload.userId)) {
               connectedUsers.set(payload.userId, new Set());
             }
             connectedUsers.get(payload.userId).add(ws);
-
             ws.send(JSON.stringify({ type: "authenticated", success: true }));
           } catch {
             ws.send(
@@ -44,7 +41,6 @@ const wsHandler = {
       console.error("WebSocket message error:", error);
     }
   },
-
   close: (ws) => {
     if (ws.data.userId && connectedUsers.has(ws.data.userId)) {
       connectedUsers.get(ws.data.userId).delete(ws);

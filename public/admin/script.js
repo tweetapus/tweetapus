@@ -37,7 +37,7 @@ class AdminPanel {
       this.currentUser = user;
       this.setupEventListeners();
       this.loadDashboard();
-    } catch (error) {
+    } catch () {
       location.href = "/";
     }
   }

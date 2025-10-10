@@ -4026,18 +4026,12 @@ nav {
   line-height: 1.4;
 }
 
-/* Pinned Tweet Indicator */
 .pinned-indicator {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: var(--text-secondary);
   font-size: 13px;
   font-weight: 600;
-}
-
-.pinned-indicator svg {
-  color: var(--primary);
 }

@@ -20,6 +20,8 @@ const elements = {
 let authToken = null;
 let currentUser = null;
 
+const query = fetch;
+
 function handleImpersonationToken() {
   const urlParams = new URLSearchParams(window.location.search);
   const impersonateToken = urlParams.get("impersonate");
@@ -238,12 +240,11 @@ async function handleAuthentication() {
   setButtonsDisabled(true);
 
   try {
-    const { options, expectedChallenge, error } = await query(
-      "/api/auth/generate-authentication-options",
-      {
+    const { options, expectedChallenge, error } = await (
+      await query("/api/auth/generate-authentication-options", {
         method: "POST",
-      }
-    );
+      })
+    ).json();
 
     if (error) {
       toastQueue.add(`<h1>Something's not right.</h1><p>${error || ""}</p>`);
@@ -261,14 +262,16 @@ async function handleAuthentication() {
       document.querySelector(".loader").style.opacity = "1";
     }, 150);
 
-    const verification = await query("/api/auth/verify-authentication", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        expectedChallenge,
-        credential: authenticationResponse,
-      }),
-    });
+    const verification = await (
+      await query("/api/auth/verify-authentication", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          expectedChallenge,
+          credential: authenticationResponse,
+        }),
+      })
+    ).json();
 
     document.querySelector(".loader").style.opacity = "0";
     setTimeout(() => {

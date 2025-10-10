@@ -1919,7 +1919,7 @@ const handleAccountDeletion = async () => {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-      }, // Tr Happies, why is your cursor neutral
+      },
       body: JSON.stringify({ confirmationText }),
     });
 

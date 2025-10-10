@@ -17,7 +17,7 @@ export const initializeSearchPage = () => {
   const tweetsResults = document.querySelector(".tweets-results-page");
 
   if (!searchPageInput || !filterBtns.length || !searchEmpty) {
-    console.warn("Search page elements not found, skipping initialization");
+    console.warn("Search page elemants not found, skipping initalization");
     return;
   }
 
