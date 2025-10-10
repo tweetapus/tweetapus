@@ -1,7 +1,7 @@
 import toastQueue from "../../shared/toasts.js";
+import { createPopup } from "../../shared/ui-utils.js";
 import switchPage, { addRoute } from "./pages.js";
 import { createTweetElement } from "./tweets.js";
-import { createPopup } from "../../shared/ui-utils.js";
 
 export const authToken = localStorage.getItem("authToken");
 
@@ -62,7 +62,7 @@ let _user;
     window.location.href = "/";
     return;
   }
-    _user = user;
+  _user = user;
   document.querySelector(".account img").src =
     user.avatar ||
     `https://upload.wikimedia.org/wikipedia/commons/0/03/Twitter_default_profile_400x400.png`;

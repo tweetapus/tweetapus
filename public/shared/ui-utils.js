@@ -51,7 +51,7 @@ export function createPopup(options) {
   if (triggerElement) {
     document.body.appendChild(overlay);
     overlay.appendChild(popup);
-    
+
     const rect = triggerElement.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
