@@ -293,9 +293,11 @@ const createPollElement = (poll, tweet) => {
 				</div>
 			`;
       optionEl.style.cursor = "pointer";
-      optionEl.addEventListener("click", () =>
-        votePoll(tweet.id, option.id, pollEl)
-      );
+      optionEl.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        votePoll(tweet.id, option.id, pollEl);
+      });
     }
 
     pollOptionsEl.appendChild(optionEl);

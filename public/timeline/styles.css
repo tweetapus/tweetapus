@@ -60,7 +60,7 @@ nav {
     gap: 12px;
     color: inherit;
     border-radius: 9999px;
-    transition: background-color 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.2s;
     font-size: 20px;
     font-weight: 400;
     justify-content: flex-start;
@@ -68,6 +68,10 @@ nav {
 
     &:hover {
       background-color: rgba(var(--primary-rgb), 0.1);
+    }
+
+    &:active {
+      transform: scale(0.98);
     }
 
     svg {
@@ -2550,7 +2554,7 @@ nav {
       }
 
       p {
-        margin: 0;
+        margin: 0px auto;
         font-size: 16px;
         max-width: 300px;
       }
@@ -2707,7 +2711,7 @@ nav {
 
 .dm-conversation {
   display: none;
-  height: 100vh;
+  height: calc(100vh - 24px);
   flex-direction: column;
 
   &.active {
