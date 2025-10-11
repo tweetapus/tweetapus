@@ -102,14 +102,14 @@ const createThemesContent = () => {
   dropdownMenu.className = "custom-dropdown-menu";
 
   [
-    { v: "light", t: "Light", icon: "☀️" },
-    { v: "dark", t: "Dark", icon: "🌙" },
-    { v: "auto", t: "Auto", icon: "🔄" },
-  ].forEach(({ v, t, icon }) => {
+    { v: "light", t: "Light" },
+    { v: "dark", t: "Dark" },
+    { v: "auto", t: "Auto" },
+  ].forEach(({ v, t }) => {
     const option = document.createElement("div");
     option.className = "custom-dropdown-option";
     option.dataset.value = v;
-    option.innerHTML = `${icon} ${t}`;
+    option.textContent = t;
     dropdownMenu.appendChild(option);
   });
 
@@ -429,9 +429,10 @@ const loadPasskeys = async () => {
       const createdAt = document.createElement("div");
       createdAt.style.fontSize = "12px";
       createdAt.style.color = "var(--text-secondary)";
-      createdAt.textContent = `Created: ${new Date(
-        passkey.created_at
-      ).toLocaleDateString()}`;
+      const date = passkey.created_at
+        ? new Date(passkey.created_at)
+        : new Date();
+      createdAt.textContent = `Created: ${date.toLocaleDateString()}`;
 
       info.appendChild(name);
       info.appendChild(createdAt);
@@ -440,7 +441,7 @@ const loadPasskeys = async () => {
       deleteBtn.className = "btn danger";
       deleteBtn.textContent = "Remove";
       deleteBtn.style.maxWidth = "120px";
-      deleteBtn.onclick = () => deletePasskey(passkey.id);
+      deleteBtn.onclick = () => deletePasskey(passkey.cred_id);
 
       item.appendChild(info);
       item.appendChild(deleteBtn);
@@ -990,10 +991,11 @@ const createSettingsPage = () => {
 		}
 
 		.color-presets {
-			display: flex;
-			flex-wrap: wrap;
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
 			gap: 12px;
 			align-items: center;
+			justify-items: center;
 		}
 
 		.color-option {
@@ -1434,7 +1436,7 @@ const setupSettingsEventHandlers = async () => {
       const hiddenSelect =
         dropdown.parentElement.querySelector(".theme-mode-select");
 
-      button.textContent = target.textContent;
+      if (button) button.textContent = target.textContent;
 
       if (hiddenSelect) {
         hiddenSelect.value = value;
@@ -1713,7 +1715,7 @@ const loadCurrentThemeMode = () => {
       if (option.dataset.value === currentTheme) {
         option.classList.add("selected");
         if (button) {
-          button.textContent = option.textContent.split(" ").slice(1).join(" ");
+          button.textContent = option.textContent;
         }
       }
     });

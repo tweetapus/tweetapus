@@ -1483,7 +1483,6 @@ nav {
 
         &:hover:not(.active) {
           color: var(--text-primary);
-          background-color: var(--bg-secondary);
         }
       }
     }
