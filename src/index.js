@@ -14,12 +14,16 @@ const getUnreadNotificationsCount = db.prepare(
 );
 
 const getUnreadDMCount = db.prepare(`
-  SELECT COUNT(DISTINCT dm.conversation_id) as count
-  FROM dm_messages dm
-  JOIN conversation_participants cp ON dm.conversation_id = cp.conversation_id
+  SELECT COUNT(DISTINCT c.id) as count
+  FROM conversations c
+  JOIN conversation_participants cp ON c.id = cp.conversation_id
   WHERE cp.user_id = ?
-  AND dm.created_at > COALESCE(cp.last_read_at, '1970-01-01')
-  AND dm.sender_id != ?
+  AND EXISTS (
+    SELECT 1 FROM dm_messages dm
+    WHERE dm.conversation_id = c.id
+    AND dm.created_at > COALESCE(cp.last_read_at, '1970-01-01')
+    AND dm.sender_id != ?
+  )
 `);
 
 export function broadcastToUser(userId, message) {
