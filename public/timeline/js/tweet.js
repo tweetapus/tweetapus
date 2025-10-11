@@ -75,7 +75,6 @@ export default async function openTweet(
         return;
       }
 
-      // Replace the initial tweet element with thread posts
       if (threadPostsCache.length > 0) {
         tweetEl.remove();
         threadPostsCache.forEach((reply) => {

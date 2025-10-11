@@ -228,26 +228,11 @@ function createNotificationElement(notification) {
     ) {
       try {
         const response = await query(`/tweets/${relatedId}`);
-        if (response.ok) {
-          try {
-            const tweetModule = await import(`./tweet.js`);
-            const openTweet = tweetModule.default;
+        if (response.tweet) {
+          const tweetModule = await import(`./tweet.js`);
+          const openTweet = tweetModule.default;
 
-            if (typeof openTweet !== "function") {
-              console.error(
-                "openTweet is not a function:",
-                typeof openTweet,
-                openTweet
-              );
-              toastQueue.add(`<h1>Error loading tweet function</h1>`);
-              return;
-            }
-
-            openTweet({ id: relatedId });
-          } catch (importError) {
-            console.error("Error importing tweet module:", importError);
-            toastQueue.add(`<h1>Failed to load tweet module</h1>`);
-          }
+          openTweet({ id: relatedId });
         } else {
           toastQueue.add(`<h1>Tweet not found</h1>`);
         }
