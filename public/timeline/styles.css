@@ -768,6 +768,7 @@ nav {
     align-items: center;
     gap: 8px;
     font-size: 14.95px;
+    position: relative;
 
     img {
       width: 43px;
@@ -897,20 +898,41 @@ nav {
       align-items: center;
       gap: 5px;
       transition: color 0.3s;
+      position: relative;
+
+      &:after {
+        content: "";
+        position: absolute;
+        top: -4.5px;
+        bottom: -4.5px;
+        left: -6px;
+        right: -6px;
+        border-radius: 200px;
+        background-color: rgba(var(--color), 0.2);
+        z-index: 0;
+        opacity: 0;
+        transform: scale(0.95);
+        transition: opacity 0.2s, transform 0.2s;
+        pointer-events: none;
+      }
 
       svg {
-        transition: box-shadow 0.15s, color 0.15s, background-color 0.3s,
-          border-radius 0.3s;
-        box-shadow: 0 0 0 2px rgb(var(--color), 0);
+        transition: color 0.15s;
+        z-index: 5;
+        position: relative;
+      }
+
+      &[data-liked="true"], &[data-retweeted="true"]  {
+        color: rgb(var(--color));
+        font-weight: 600;
       }
 
       &:hover {
         color: rgb(var(--color));
 
-        svg {
-          border-radius: 500px;
-          background-color: rgb(var(--color), 0.2);
-          box-shadow: 0 0 0 4px rgb(var(--color), 0.2);
+        &:after {
+          opacity: 1;
+          transform: scale(1);
         }
       }
 
@@ -918,7 +940,7 @@ nav {
         transition: transform 0.2s;
 
         &:active {
-          transform: scale(0.95);
+          transform: scale(0.96);
         }
       }
     }
@@ -1136,7 +1158,7 @@ nav {
     margin-bottom: 16px;
   }
 
-  .tweet {
+  .tweet:not(.tweet-preview) {
     margin-bottom: 26px;
   }
 }
@@ -1980,14 +2002,17 @@ nav {
   border: 1px solid var(--border-secondary);
   border-radius: 12px;
   padding: 12px;
-  background-color: var(--bg-secondary);
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
   position: relative;
 
   &:hover {
-    background-color: var(--bg-secondary);
+    background-color: var(--bg-overlay-light);
     border-color: var(--border-primary);
+  }
+
+  &.active {
+    transform: scale(0.98);
   }
 
   .tweet-header {
@@ -3968,7 +3993,7 @@ nav {
 .tweet-stat-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   padding: 8px 12px;
   padding-bottom: 0px;
   border-radius: 8px;

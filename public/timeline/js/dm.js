@@ -39,10 +39,6 @@ function connectSSE() {
   const sseUrl = `/sse?token=${encodeURIComponent(authToken)}`;
   eventSource = new EventSource(sseUrl);
 
-  eventSource.onopen = () => {
-    console.log("SSE connection established");
-  };
-
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);

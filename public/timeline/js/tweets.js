@@ -447,9 +447,9 @@ async function createExpandedStats(
   statsContainer.className = "expanded-tweet-stats";
 
   try {
-    const likesData = { users: extendedStats.likes || [] };
-    const retweetsData = { users: extendedStats.retweets || [] };
-    const quotesData = { users: extendedStats.quotes || [] };
+    const likesData = { users: extendedStats?.likes || [] };
+    const retweetsData = { users: extendedStats?.retweets || [] };
+    const quotesData = { users: extendedStats?.quotes || [] };
 
     const stats = [];
 
@@ -635,7 +635,6 @@ export const createTweetElement = (tweet, config = {}) => {
 
   tweetHeaderEl.appendChild(tweetHeaderInfoEl);
 
-  // Add pinned indicator if tweet is pinned
   if (tweet.pinned) {
     const pinnedIndicatorEl = document.createElement("div");
     pinnedIndicatorEl.className = "pinned-indicator";
@@ -649,19 +648,13 @@ export const createTweetElement = (tweet, config = {}) => {
     tweetEl.appendChild(pinnedIndicatorEl);
   }
 
-  getUser().then((currentUser) => {
-    if (
-      currentUser &&
-      currentUser.id === tweet.author.id &&
-      size !== "preview"
-    ) {
-      const menuButtonEl = document.createElement("button");
-      menuButtonEl.className = "tweet-menu-btn";
-      menuButtonEl.innerHTML = `
+  const menuButtonEl = document.createElement("button");
+  menuButtonEl.className = "tweet-menu-btn";
+  menuButtonEl.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 20 20"><path fill="currentColor" d="M10.001 7.8a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 10 7.8zm-7 0a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 3 7.8zm14 0a2.2 2.2 0 1 0 0 4.402A2.2 2.2 0 0 0 17 7.8z"/></svg>
       `;
-      menuButtonEl.title = "More options";
-      menuButtonEl.style.cssText = `
+  menuButtonEl.title = "More options";
+  menuButtonEl.style.cssText = `
         position: absolute;
         right: -8px;
         top: 10px;
@@ -678,141 +671,172 @@ export const createTweetElement = (tweet, config = {}) => {
         justify-content: center;
       `;
 
-      menuButtonEl.addEventListener("mouseover", () => {
-        menuButtonEl.style.backgroundColor = "rgba(29, 161, 242, 0.1)";
-        menuButtonEl.style.color = "#1da1f2";
-        menuButtonEl.style.opacity = "1";
-      });
+  menuButtonEl.addEventListener("mouseover", () => {
+    menuButtonEl.style.backgroundColor = "rgba(29, 161, 242, 0.1)";
+    menuButtonEl.style.color = "#1da1f2";
+    menuButtonEl.style.opacity = "1";
+  });
 
-      menuButtonEl.addEventListener("mouseout", () => {
-        menuButtonEl.style.backgroundColor = "transparent";
-        menuButtonEl.style.color = "#777";
-        menuButtonEl.style.opacity = "0.7";
-      });
+  menuButtonEl.addEventListener("mouseout", () => {
+    menuButtonEl.style.backgroundColor = "transparent";
+    menuButtonEl.style.color = "#777";
+    menuButtonEl.style.opacity = "0.7";
+  });
 
-      menuButtonEl.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+  menuButtonEl.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-        const menuItems = [
-          {
-            id: tweet.pinned ? "unpin-option" : "pin-option",
-            icon: tweet.pinned
-              ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    const defaultItems = [
+      {
+        id: "copy-link",
+        icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
+        title: "Copy link",
+        onClick: async () => {
+          const tweetUrl = `${window.location.origin}/tweet/${tweet.id}`;
+          try {
+            await navigator.clipboard.writeText(tweetUrl);
+            toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
+          } catch {
+            const textArea = document.createElement("textarea");
+            textArea.value = tweetUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            document.body.removeChild(textArea);
+            toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
+          }
+        },
+      },
+    ];
+
+    const userItems = [
+      {
+        id: tweet.pinned ? "unpin-option" : "pin-option",
+        icon: tweet.pinned
+          ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 17v5"></path>
                   <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 7.89 17H16.1a2 2 0 0 0 1.78-2.55l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z"></path>
                 </svg>`
-              : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          : `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M12 17v5"></path>
                   <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 7.89 17H16.1a2 2 0 0 0 1.78-2.55l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z"></path>
                 </svg>`,
-            title: tweet.pinned ? "Unpin from profile" : "Pin to profile",
-            onClick: async () => {
-              try {
-                const method = tweet.pinned ? "DELETE" : "POST";
-                const result = await query(
-                  `/profile/${currentUser.username}/pin/${tweet.id}`,
-                  {
-                    method,
-                  }
-                );
+        title: tweet.pinned ? "Unpin from profile" : "Pin to profile",
+        onClick: async () => {
+          try {
+            const method = tweet.pinned ? "DELETE" : "POST";
+            const result = await query(
+              `/profile/${currentUser.username}/pin/${tweet.id}`,
+              {
+                method,
+              }
+            );
 
-                if (result.success) {
-                  tweet.pinned = !tweet.pinned;
-                  toastQueue.add(
-                    `<h1>Tweet ${
-                      tweet.pinned ? "pinned" : "unpinned"
-                    } successfully</h1>`
-                  );
+            if (result.success) {
+              tweet.pinned = !tweet.pinned;
+              toastQueue.add(
+                `<h1>Tweet ${
+                  tweet.pinned ? "pinned" : "unpinned"
+                } successfully</h1>`
+              );
 
-                  if (tweet.pinned) {
-                    const pinnedIndicatorEl = document.createElement("div");
-                    pinnedIndicatorEl.className = "pinned-indicator";
-                    pinnedIndicatorEl.innerHTML = `
+              if (tweet.pinned) {
+                const pinnedIndicatorEl = document.createElement("div");
+                pinnedIndicatorEl.className = "pinned-indicator";
+                pinnedIndicatorEl.innerHTML = `
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M12 17v5"></path>
                         <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 7.89 17H16.1a2 2 0 0 0 1.78-2.55l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 0-1-1H10a1 1 0 0 0-1 1z"></path>
                       </svg>
                       <span>Pinned</span>
                     `;
-                    const existingIndicator =
-                      tweetEl.querySelector(".pinned-indicator");
-                    if (!existingIndicator) {
-                      tweetEl.insertBefore(
-                        pinnedIndicatorEl,
-                        tweetEl.firstChild
-                      );
-                    }
-                  } else {
-                    const pinnedIndicator =
-                      tweetEl.querySelector(".pinned-indicator");
-                    if (pinnedIndicator) {
-                      pinnedIndicator.remove();
-                    }
-                  }
-                } else {
-                  toastQueue.add(
-                    `<h1>${result.error || "Failed to update pin status"}</h1>`
-                  );
+                const existingIndicator =
+                  tweetEl.querySelector(".pinned-indicator");
+                if (!existingIndicator) {
+                  tweetEl.insertBefore(pinnedIndicatorEl, tweetEl.firstChild);
                 }
-              } catch (error) {
-                console.error("Error updating pin status:", error);
-                toastQueue.add(`<h1>Network error. Please try again.</h1>`);
+              } else {
+                const pinnedIndicator =
+                  tweetEl.querySelector(".pinned-indicator");
+                if (pinnedIndicator) {
+                  pinnedIndicator.remove();
+                }
               }
-            },
-          },
-          {
-            id: "delete-option",
-            icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            } else {
+              toastQueue.add(
+                `<h1>${result.error || "Failed to update pin status"}</h1>`
+              );
+            }
+          } catch (error) {
+            console.error("Error updating pin status:", error);
+            toastQueue.add(`<h1>Network error. Please try again.</h1>`);
+          }
+        },
+      },
+      {
+        id: "delete-option",
+        icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3,6 5,6 21,6"></polyline>
               <path d="m19,6v14a2,2 0,0 1,-2,2H7a2,2 0,0 1,-2,-2V6m3,0V4a2,2 0,0 1,2,-2h4a2,2 0,0 1,2,2v2"></path>
               <line x1="10" y1="11" x2="10" y2="17"></line>
               <line x1="14" y1="11" x2="14" y2="17"></line>
             </svg>`,
-            title: "Delete tweet",
-            onClick: async () => {
-              if (!confirm("Are you sure you want to delete this tweet?")) {
-                return;
-              }
+        title: "Delete tweet",
+        onClick: async () => {
+          if (!confirm("Are you sure you want to delete this tweet?")) {
+            return;
+          }
 
-              try {
-                const result = await query(`/tweets/${tweet.id}`, {
-                  method: "DELETE",
-                });
+          try {
+            const result = await query(`/tweets/${tweet.id}`, {
+              method: "DELETE",
+            });
 
-                if (result.success) {
-                  tweetEl.style.opacity = "0.5";
-                  tweetEl.style.transform = "scale(0.95)";
-                  tweetEl.style.transition = "all 0.3s ease";
+            if (result.success) {
+              tweetEl.style.opacity = "0.5";
+              tweetEl.style.transform = "scale(0.95)";
+              tweetEl.style.transition = "all 0.3s ease";
 
-                  setTimeout(() => {
-                    tweetEl.remove();
-                  }, 300);
+              setTimeout(() => {
+                tweetEl.remove();
+              }, 300);
 
-                  toastQueue.add(`<h1>Tweet deleted successfully</h1>`);
-                } else {
-                  toastQueue.add(
-                    `<h1>${result.error || "Failed to delete tweet"}</h1>`
-                  );
-                }
-              } catch (error) {
-                console.error("Error deleting tweet:", error);
-                toastQueue.add(`<h1>Network error. Please try again.</h1>`);
-              }
-            },
-          },
-        ];
+              toastQueue.add(`<h1>Tweet deleted successfully</h1>`);
+            } else {
+              toastQueue.add(
+                `<h1>${result.error || "Failed to delete tweet"}</h1>`
+              );
+            }
+          } catch (error) {
+            console.error("Error deleting tweet:", error);
+            toastQueue.add(`<h1>Network error. Please try again.</h1>`);
+          }
+        },
+      },
+    ];
 
+    getUser().then((currentUser) => {
+      if (
+        currentUser &&
+        currentUser.id === tweet.author.id &&
+        size !== "preview"
+      ) {
         createPopup({
           triggerElement: menuButtonEl,
-          items: menuItems,
+          items:
+            currentUser?.id === tweet.author.id
+              ? [...defaultItems, ...userItems]
+              : defaultItems,
         });
-      });
+      }
+    });
 
-      tweetEl.style.position = "relative";
-      tweetHeaderEl.appendChild(menuButtonEl);
-    }
+    tweetEl.style.position = "relative";
+    tweetHeaderEl.appendChild(menuButtonEl);
   });
+
+  if (size !== "preview") tweetHeaderEl.appendChild(menuButtonEl);
 
   tweetEl.appendChild(tweetHeaderEl);
 
@@ -896,12 +920,12 @@ export const createTweetElement = (tweet, config = {}) => {
   tweetInteractionsLikeEl.innerHTML = `<svg
           width="19"
           height="19"
-          viewBox="0 0 19 19"
+          viewBox="0 0 20 20"
           fill="${tweet.liked_by_user ? "#F91980" : "none"}"
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            d="M1.57852 7.51938C1.57854 6.63788 1.84594 5.77712 2.34542 5.05078C2.8449 4.32445 3.55296 3.76671 4.37607 3.45123C5.19918 3.13575 6.09863 3.07738 6.95561 3.28381C7.8126 3.49024 8.58681 3.95177 9.17599 4.60745C9.21749 4.65182 9.26766 4.68719 9.32339 4.71138C9.37912 4.73556 9.43922 4.74804 9.49997 4.74804C9.56073 4.74804 9.62083 4.73556 9.67656 4.71138C9.73229 4.68719 9.78246 4.65182 9.82396 4.60745C10.4113 3.94751 11.1857 3.4821 12.0441 3.27316C12.9024 3.06422 13.8041 3.12166 14.629 3.43783C15.4539 3.75401 16.163 4.31392 16.6619 5.04305C17.1607 5.77218 17.4256 6.63594 17.4214 7.51938C17.4214 9.33339 16.2332 10.688 15.045 11.8762L10.6945 16.0848C10.5469 16.2544 10.3649 16.3905 10.1607 16.4843C9.95638 16.5781 9.73448 16.6273 9.50971 16.6288C9.28494 16.6302 9.06243 16.5838 8.85698 16.4926C8.65153 16.4014 8.46783 16.2675 8.31809 16.0999L3.95496 11.8762C2.76674 10.688 1.57852 9.34131 1.57852 7.51938Z"
+            d="M5.00002 2.54822C8.00003 2.09722 9.58337 4.93428 10 5.87387C10.4167 4.93428 12 2.09722 15 2.54822C18 2.99923 18.75 5.66154 18.75 7.05826C18.75 9.28572 18.1249 10.9821 16.2499 13.244C14.3749 15.506 10 18.3333 10 18.3333C10 18.3333 5.62498 15.506 3.74999 13.244C1.875 10.9821 1.25 9.28572 1.25 7.05826C1.25 5.66154 2 2.99923 5.00002 2.54822Z"
             stroke="${tweet.liked_by_user ? "#F91980" : "currentColor"}"
             stroke-width="1.5"
             stroke-linecap="round"
@@ -953,6 +977,40 @@ export const createTweetElement = (tweet, config = {}) => {
     }
   });
 
+  const tweetInteractionsReplyEl = document.createElement("button");
+  tweetInteractionsReplyEl.className = "engagement";
+  tweetInteractionsReplyEl.style.setProperty("--color", "17, 133, 254");
+  tweetInteractionsReplyEl.innerHTML = `<svg
+          width="19"
+          height="19"
+          viewBox="0 0 19 19"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M18.7502 11V7.50097C18.7502 4.73917 16.5131 2.50033 13.7513 2.50042L6.25021 2.50044C3.48848 2.5004 1.25017 4.73875 1.2502 7.50048L1.25021 10.9971C1.2502 13.749 3.47395 15.9836 6.22586 15.9971L6.82888 16V19.0182L12.1067 16H13.7502C16.5116 16 18.7502 13.7614 18.7502 11Z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg> ${tweet.reply_count}`;
+
+  tweetInteractionsReplyEl.addEventListener("click", async (e) => {
+    if (!clickToOpen) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    await openTweet(tweet);
+
+    requestAnimationFrame(() => {
+      if (document.querySelector(".tweetPage #tweet-textarea")) {
+        document.querySelector(".tweetPage #tweet-textarea").focus();
+      }
+    });
+  });
+
   const tweetInteractionsRetweetEl = document.createElement("button");
   tweetInteractionsRetweetEl.className = "engagement";
   tweetInteractionsRetweetEl.dataset.retweeted = tweet.retweeted_by_user;
@@ -964,33 +1022,12 @@ export const createTweetElement = (tweet, config = {}) => {
             <svg
               width="19"
               height="19"
-              viewBox="0 0 19 19"
+              viewBox="0 0 20 20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
               <path
-                d="M1.58333 7.125L3.95833 4.75L6.33333 7.125"
-                stroke="${retweetColor}"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M10.2917 14.25H5.54166C5.12174 14.25 4.71901 14.0832 4.42208 13.7863C4.12514 13.4893 3.95833 13.0866 3.95833 12.6667V4.75"
-                stroke="${retweetColor}"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M17.4167 11.875L15.0417 14.25L12.6667 11.875"
-                stroke="${retweetColor}"
-                stroke-width="1.5"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M8.70833 4.75H13.4583C13.8783 4.75 14.281 4.91681 14.5779 5.21375C14.8748 5.51068 15.0417 5.91341 15.0417 6.33333V14.25"
+                d="M2.53001 7.81595C3.49179 4.73911 6.43281 2.5 9.91173 2.5C13.1684 2.5 15.9537 4.46214 17.0852 7.23684L17.6179 8.67647M17.6179 8.67647L18.5002 4.26471M17.6179 8.67647L13.6473 6.91176M17.4995 12.1841C16.5378 15.2609 13.5967 17.5 10.1178 17.5C6.86118 17.5 4.07589 15.5379 2.94432 12.7632L2.41165 11.3235M2.41165 11.3235L1.5293 15.7353M2.41165 11.3235L6.38224 13.0882"
                 stroke="${retweetColor}"
                 stroke-width="1.5"
                 stroke-linecap="round"
@@ -1005,11 +1042,8 @@ export const createTweetElement = (tweet, config = {}) => {
     const menuItems = [
       {
         id: "retweet-option",
-        icon: `<svg width="20" height="20" viewBox="0 0 19 19" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M1.58333 7.125L3.95833 4.75L6.33333 7.125" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M10.2917 14.25H5.54166C5.12174 14.25 4.71901 14.0832 4.42208 13.7863C4.12514 13.4893 3.95833 13.0866 3.95833 12.6667V4.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M17.4167 11.875L15.0417 14.25L12.6667 11.875" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M8.70833 4.75H13.4583C13.8783 4.75 14.281 4.91681 14.5779 5.21375C14.8748 5.51068 15.0417 5.91341 15.0417 6.33333V14.25" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2.53001 7.81595C3.49179 4.73911 6.43281 2.5 9.91173 2.5C13.1684 2.5 15.9537 4.46214 17.0852 7.23684L17.6179 8.67647M17.6179 8.67647L18.5002 4.26471M17.6179 8.67647L13.6473 6.91176M17.4995 12.1841C16.5378 15.2609 13.5967 17.5 10.1178 17.5C6.86118 17.5 4.07589 15.5379 2.94432 12.7632L2.41165 11.3235M2.41165 11.3235L1.5293 15.7353M2.41165 11.3235L6.38224 13.0882" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>`,
         title: "Retweet",
         onClick: async () => {
@@ -1098,40 +1132,6 @@ export const createTweetElement = (tweet, config = {}) => {
     createPopup({
       triggerElement: tweetInteractionsRetweetEl,
       items: menuItems,
-    });
-  });
-
-  const tweetInteractionsReplyEl = document.createElement("button");
-  tweetInteractionsReplyEl.className = "engagement";
-  tweetInteractionsReplyEl.style.setProperty("--color", "17, 133, 254");
-  tweetInteractionsReplyEl.innerHTML = `<svg
-          width="19"
-          height="19"
-          viewBox="0 0 19 19"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M3.795 12.25C3.88813 12.4849 3.90886 12.7423 3.85454 12.9891L3.18004 15.0728C3.1583 15.1784 3.16392 15.2879 3.19636 15.3908C3.2288 15.4937 3.28698 15.5866 3.36539 15.6607C3.4438 15.7348 3.53984 15.7876 3.6444 15.8142C3.74895 15.8408 3.85856 15.8402 3.96284 15.8125L6.1244 15.1804C6.35729 15.1342 6.59847 15.1544 6.82044 15.2387C8.17285 15.8703 9.70487 16.0039 11.1462 15.616C12.5875 15.2281 13.8455 14.3436 14.6983 13.1185C15.551 11.8935 15.9437 10.4066 15.807 8.92028C15.6703 7.43394 15.013 6.04363 13.9512 4.99466C12.8893 3.94569 11.4911 3.30546 10.0032 3.18694C8.51527 3.06842 7.03332 3.47921 5.81878 4.34685C4.60424 5.21449 3.73517 6.48321 3.3649 7.92917C2.99463 9.37513 3.14696 10.9054 3.795 12.25Z"
-            stroke="currentColor"
-            stroke-width="1.5"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg> ${tweet.reply_count}`;
-
-  tweetInteractionsReplyEl.addEventListener("click", async (e) => {
-    if (!clickToOpen) return;
-
-    e.stopPropagation();
-    e.preventDefault();
-
-    await openTweet(tweet);
-
-    requestAnimationFrame(() => {
-      if (document.querySelector(".tweetPage #tweet-textarea")) {
-        document.querySelector(".tweetPage #tweet-textarea").focus();
-      }
     });
   });
 

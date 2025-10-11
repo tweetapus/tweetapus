@@ -133,8 +133,8 @@ img {
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
   border-radius: 12px;
-  padding: 4px 0;
-  min-width: 220px;
+  padding: 0;
+  min-width: 160px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -164,42 +164,39 @@ img {
 }
 
 .popup-option {
-  width: 100%;
+  width: calc(100% - 8px);
   background: transparent;
   border: none;
-  padding: 14px 16px;
+  padding: 6px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   cursor: pointer;
-  transition: transform 0.15s;
+  transition: transform 0.15s, background-color 0.15s;
   font-family: inherit;
   text-align: left;
+  border-radius: 6px;
+  margin: 4px;
 
   &:hover {
-    transform: scale(1.01);
+    background-color: var(--bg-overlay-light);
   }
 
   &:active {
-    transform: scale(0.98);
-  }
-
-  &:first-child {
-    border-radius: 12px 12px 0 0;
-  }
-
-  &:last-child {
-    border-radius: 0 0 12px 12px;
+    transform: scale(0.99);
   }
 
   .popup-option-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
     color: var(--text-primary);
     flex-shrink: 0;
+
+    svg {
+      width: 16px;
+      height: 16px;
+    }
   }
 
   .popup-option-content {
@@ -209,7 +206,7 @@ img {
     text-align: left;
 
     .popup-option-title {
-      font-size: 15px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-primary);
       margin: 0;
@@ -223,7 +220,6 @@ img {
   }
 }
 
-/* Mention Selector Styles */
 .mention-suggestions {
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
