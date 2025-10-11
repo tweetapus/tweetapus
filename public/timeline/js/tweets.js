@@ -1146,7 +1146,7 @@ export const createTweetElement = (tweet, config = {}) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const tweetUrl = `${window.location.origin}/tweet/${tweet.id}`;
+    const tweetUrl = `${window.location.origin}/tweet/${tweet.id}?ref=share`;
     const shareData = {
       title: `${tweet.author.name || tweet.author.username} on Tweetapus`,
       text: tweet.content,
