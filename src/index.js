@@ -100,13 +100,15 @@ new Elysia()
 
         const notifResult = getUnreadNotificationsCount.get(userId);
         const dmResult = getUnreadDMCount.get(userId, userId);
-        
+
         try {
-          controller.enqueue(`data: ${JSON.stringify({
-            type: "unread_counts",
-            notifications: notifResult?.count || 0,
-            dms: dmResult?.count || 0,
-          })}\n\n`);
+          controller.enqueue(
+            `data: ${JSON.stringify({
+              type: "unread_counts",
+              notifications: notifResult?.count || 0,
+              dms: dmResult?.count || 0,
+            })}\n\n`
+          );
         } catch (error) {
           console.error("Error sending initial unread counts:", error);
         }
