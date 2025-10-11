@@ -239,7 +239,7 @@ class AdminPanel {
       this.renderUsersTable(data.users);
       this.renderPagination("users", data.pagination);
       this.currentPage.users = page;
-    } catch (error) {
+    } catch {
       this.showError("Failed to load users");
     }
   }
@@ -368,7 +368,7 @@ class AdminPanel {
       this.renderPostsTable(data.posts);
       this.renderPagination("posts", data.pagination);
       this.currentPage.posts = page;
-    } catch (error) {
+    } catch {
       this.showError("Failed to load posts");
     }
   }
@@ -472,7 +472,7 @@ class AdminPanel {
       this.renderSuspensionsTable(data.suspensions);
       this.renderPagination("suspensions", data.pagination);
       this.currentPage.suspensions = page;
-    } catch (error) {
+    } catch {
       this.showError("Failed to load suspensions");
     }
   }
@@ -695,7 +695,7 @@ class AdminPanel {
             <h5>Recent Posts</h5>
             <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
               ${
-                recentPosts && recentPosts.length
+                recentPosts?.length
                   ? recentPosts
                       .map(
                         (post) => `
@@ -718,7 +718,7 @@ class AdminPanel {
             </div>
 
             ${
-              suspensions && suspensions.length
+              suspensions?.length
                 ? `
               <h5>Suspension History</h5>
               <div style="max-height: 200px; overflow-y: auto;">
@@ -787,7 +787,7 @@ class AdminPanel {
       `;
 
       new bootstrap.Modal(document.getElementById("userModal")).show();
-    } catch (error) {
+    } catch {
       this.showError("Failed to load user details");
     }
   }
@@ -875,10 +875,10 @@ class AdminPanel {
       severity,
     };
 
-    if (duration && duration.trim()) {
+    if (duration?.trim()) {
       payload.duration = parseInt(duration);
     }
-    if (notes && notes.trim()) {
+    if (notes?.trim()) {
       payload.notes = notes.trim();
     }
 
@@ -997,7 +997,7 @@ class AdminPanel {
         document.getElementById("editPostModal")
       );
       modal.show();
-    } catch (error) {
+    } catch {
       this.showError("Failed to load post details");
     }
   }
@@ -1080,7 +1080,7 @@ class AdminPanel {
         document.getElementById("tweetOnBehalfModal")
       ).hide();
 
-			await this.loadPosts(this.currentPage.posts);
+      await this.loadPosts(this.currentPage.posts);
     } catch (error) {
       this.showError(error.message);
     }
@@ -1125,7 +1125,7 @@ class AdminPanel {
       this.currentPage.dms = page;
       this.renderDMsTable(data.conversations);
       this.renderDMsPagination(data.pagination);
-    } catch (error) {
+    } catch {
       this.showError("Failed to load DMs");
     }
   }
@@ -1143,7 +1143,7 @@ class AdminPanel {
       );
       this.renderDMsTable(data.conversations);
       document.getElementById("dmsPagination").innerHTML = "";
-    } catch (error) {
+    } catch {
       this.showError("Failed to search DMs");
     }
   }
@@ -1263,13 +1263,12 @@ class AdminPanel {
 
       const modal = new bootstrap.Modal(document.getElementById("dmModal"));
       modal.show();
-    } catch (error) {
+    } catch {
       this.showError("Failed to load conversation");
     }
   }
 
   renderConversationModal(conversation, messages, pagination) {
-    // Render conversation info
     const infoHtml = `
 			<div class="row">
 				<div class="col-md-6">
@@ -1401,7 +1400,7 @@ class AdminPanel {
       });
       this.showSuccess("Conversation deleted successfully");
       this.loadDMs(this.currentPage.dms || 1);
-    } catch (error) {
+    } catch {
       this.showError("Failed to delete conversation");
     }
   }
@@ -1424,7 +1423,7 @@ class AdminPanel {
       if (this.currentConversationId) {
         this.viewConversation(this.currentConversationId);
       }
-    } catch (error) {
+    } catch{
       this.showError("Failed to delete message");
     }
   }
@@ -1441,7 +1440,7 @@ class AdminPanel {
         messagesData.messages,
         messagesData.pagination
       );
-    } catch (error) {
+    } catch {
       this.showError("Failed to load messages");
     }
   }
@@ -1462,53 +1461,79 @@ function showSection(section) {
   adminPanel.showSection(section);
 }
 
+window.showSection = showSection;
+
 function searchUsers() {
   adminPanel.searchUsers();
 }
+
+window.searchUsers = searchUsers;
 
 function searchPosts() {
   adminPanel.searchPosts();
 }
 
+window.searchPosts = searchPosts;
+
 function loadUsers() {
   adminPanel.loadUsers();
 }
+
+window.loadUsers = loadUsers;
 
 function loadPosts() {
   adminPanel.loadPosts();
 }
 
+window.loadPosts = loadPosts;
+
 function loadSuspensions() {
   adminPanel.loadSuspensions();
 }
+
+window.loadSuspensions = loadSuspensions;
 
 function submitSuspension() {
   adminPanel.submitSuspension();
 }
 
+window.submitSuspension = submitSuspension;
+
 function submitPostEdit() {
   adminPanel.savePostEdit();
 }
+
+window.submitPostEdit = submitPostEdit;
 
 function loadDMs() {
   adminPanel.loadDMs();
 }
 
+window.loadDMs = loadDMs;
+
 function searchDMs() {
   adminPanel.searchDMs();
 }
+
+window.searchDMs = searchDMs;
 
 function viewConversation(conversationId) {
   adminPanel.viewConversation(conversationId);
 }
 
+window.viewConversation = viewConversation;
+
 function deleteConversationAdmin(conversationId) {
   adminPanel.deleteConversationAdmin(conversationId);
 }
 
+window.deleteConversationAdmin = deleteConversationAdmin;
+
 function deleteMessage(messageId) {
   adminPanel.deleteMessageAdmin(messageId);
 }
+
+window.deleteMessage = deleteMessage;
 
 function deleteConversation() {
   if (adminPanel.currentConversationId) {
@@ -1517,6 +1542,10 @@ function deleteConversation() {
   }
 }
 
+window.deleteConversation = deleteConversation;
+
 function loadConversationMessages(page) {
   adminPanel.loadConversationMessages(page);
 }
+
+window.loadConversationMessages = loadConversationMessages;
