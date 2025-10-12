@@ -262,7 +262,6 @@ export default new Elysia({ prefix: "/profile" })
         return { error: "User is suspended" };
       }
 
-      // Get user's posts and retweets separately, then combine
       const userPosts = getUserPosts.all(user.id);
       const userRetweets = getUserRetweets.all(user.id);
       const replies = getUserReplies.all(user.id);
