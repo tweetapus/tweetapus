@@ -1508,15 +1508,11 @@ class AdminPanel {
   }
 
   async loadModerationLogs(page = 1) {
-    try {
-      const data = await this.apiCall(
-        `/api/admin/moderation-logs?page=${page}&limit=50`
-      );
-      this.currentPage.moderationLogs = page;
-      this.renderModerationLogs(data.logs, data.pagination);
-    } catch {
-      this.showError("Failed to load moderation logs");
-    }
+    const data = await this.apiCall(
+      `/api/admin/moderation-logs?page=${page}&limit=50`
+    );
+    this.currentPage.moderationLogs = page;
+    this.renderModerationLogs(data.logs, data.pagination);
   }
 
   renderModerationLogs(logs, pagination) {

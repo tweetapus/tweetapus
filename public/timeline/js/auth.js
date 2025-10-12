@@ -29,6 +29,14 @@ let _user;
   const { user, error, suspension } = await query("/auth/me");
 
   if (error && suspension) {
+    document.body.style.flexDirection = "column";
+    document.body.style.maxWidth = "500px";
+    document.body.style.margin = "0px auto";
+    document.body.style.height = "fit-content";
+    document.body.style.marginTop = "2em";
+    document.body.style.overflow = "hidden";
+    document.body.style.padding = "16px";
+
     document.body.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-monitor-x-icon lucide-monitor-x"><path d="m14.5 12.5-5-5"/><path d="m9.5 12.5 5-5"/><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M12 17v4"/><path d="M8 21h8"/></svg>
 		
 		<h1 style="font-weight: 500;">Your account has been suspended</h1>
@@ -51,6 +59,7 @@ let _user;
 		<p>You may also pursue alternative forms of redress, including out-of-court dispute settlement or judicial redress.</p>
 		
 		<p><a href="javascript:" onclick="localStorage.removeItem("authToken");window.location.href = "/";">Log out</a></p>`;
+    document.body.querySelectorAll("p").forEach((p) => { p.style.marginBottom = "0px" });
     return;
   }
 

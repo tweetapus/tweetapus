@@ -163,7 +163,26 @@ const linkifyText = (text) => {
   const mentionRegex = /@([a-zA-Z0-9_]+)/g;
   const hashtagRegex = /#([a-zA-Z0-9_]+)/g;
 
-  const html = marked.parse(text.trim(), {
+  const normalizeListMarkers = (md) => {
+    const lines = md.split("\n");
+    let inFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^```/.test(line)) {
+        inFence = !inFence;
+        continue;
+      }
+      if (inFence) continue;
+      if (/^[ \t]{4,}/.test(line)) continue;
+      const m = line.match(/^([ \t]{0,3})([-+])(\s+)(.*)$/);
+      if (m) {
+        lines[i] = `${m[1]}*${m[3]}${m[4]}`;
+      }
+    }
+    return lines.join("\n");
+  };
+
+  const html = marked.parse(normalizeListMarkers(text.trim()), {
     breaks: true,
     gfm: true,
     html: false,

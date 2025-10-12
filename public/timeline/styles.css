@@ -549,19 +549,16 @@ nav {
 					font-size: 15px;
 					font-weight: 600;
 					cursor: pointer;
-					transition: all 0.2s ease;
-					box-shadow: 0 2px 4px rgba(var(--primary-rgb), 0.2);
+					transition: transform 0.2s, background-color 0.2s;
 
 					&:hover:not(:disabled) {
 						background-color: var(--primary-hover);
-						box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.3);
 						transform: translateY(-1px);
 					}
 
 					&:disabled {
 						opacity: 0.5;
 						cursor: not-allowed;
-						box-shadow: none;
 					}
 
 					&:active:not(:disabled) {
