@@ -577,6 +577,11 @@ export const createTweetElement = (tweet, config = {}) => {
 	tweetHeaderAvatarEl.src =
 		tweet.author.avatar || `/public/shared/default-avatar.png`;
 	tweetHeaderAvatarEl.alt = tweet.author.name || tweet.author.username;
+	if (tweet.author.gold) {
+		tweetHeaderAvatarEl.style.borderRadius = "8px";
+	} else {
+		tweetHeaderAvatarEl.style.borderRadius = "50%";
+	}
 	tweetHeaderAvatarEl.loading = "lazy";
 	tweetHeaderAvatarEl.style.cursor = "pointer";
 	tweetHeaderAvatarEl.addEventListener("click", (e) => {
@@ -602,7 +607,23 @@ export const createTweetElement = (tweet, config = {}) => {
 		});
 	});
 
-	if (tweet.author.verified) {
+	if (tweet.author.gold) {
+		const svgWrapper = document.createElement("div");
+		tweetHeaderNameEl.appendChild(svgWrapper);
+
+		svgWrapper.outerHTML = `
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            title="Gold Account"
+          >
+            <rect x="1" y="1" width="14" height="14" rx="3" fill="#D4AF37"/>
+            <path d="M6 8l1.2 1.2L10 6" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>`;
+	} else if (tweet.author.verified) {
 		const svgWrapper = document.createElement("div");
 		tweetHeaderNameEl.appendChild(svgWrapper);
 

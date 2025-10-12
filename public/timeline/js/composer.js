@@ -833,7 +833,7 @@ export const createComposer = async ({
   // Determine max characters based on whether user is verified
   try {
     const user = await getUser();
-    const maxChars = user?.verified ? 5500 : 400;
+    const maxChars = user?.gold ? 15000 : user?.verified ? 5500 : 400;
 
     // update the counter display to show the right max
     const counter = el.querySelector(".character-counter");

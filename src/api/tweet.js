@@ -320,8 +320,8 @@ export default new Elysia({ prefix: "/tweets" })
         return { error: "Tweet content is required" };
       }
 
-      // Allow longer tweets for verified users
-      const maxTweetLength = user.verified ? 5500 : 400;
+      // Allow longer tweets for gold or verified users
+      const maxTweetLength = user.gold ? 15000 : user.verified ? 5500 : 400;
       if (tweetContent.length > maxTweetLength) {
         return {
           error: `Tweet content must be ${maxTweetLength} characters or less`,

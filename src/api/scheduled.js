@@ -71,7 +71,7 @@ export default new Elysia({ prefix: "/scheduled" })
         return { error: "Content is required" };
       }
 
-      const maxContentLength = user.verified ? 5500 : 400;
+      const maxContentLength = user.gold ? 15000 : user.verified ? 5500 : 400;
       if (content.length > maxContentLength) {
         return {
           error: `Content must be ${maxContentLength} characters or less`,

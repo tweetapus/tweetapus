@@ -23,9 +23,8 @@ CREATE TABLE IF NOT EXISTS users (
   private BOOLEAN DEFAULT FALSE,
   pronouns TEXT DEFAULT NULL,
   theme TEXT DEFAULT NULL,
-  accent_color TEXT DEFAULT NULL
-  ,gold BOOLEAN DEFAULT FALSE,
-  avatar_square BOOLEAN DEFAULT FALSE
+  accent_color TEXT DEFAULT NULL,
+  gold BOOLEAN DEFAULT FALSE
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);

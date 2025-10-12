@@ -689,6 +689,12 @@ class AdminPanel {
                 <label class="form-check-label">Verified</label>
               </div>
                <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="editProfileGold" ${
+                  user.gold ? "checked" : ""
+                }>
+                <label class="form-check-label">Gold</label>
+              </div>
+               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" id="editProfileAdmin" ${
                   user.admin ? "checked" : ""
                 }>
@@ -852,6 +858,7 @@ class AdminPanel {
       name: document.getElementById("editProfileName").value,
       bio: document.getElementById("editProfileBio").value,
       verified: document.getElementById("editProfileVerified").checked,
+      gold: document.getElementById("editProfileGold").checked,
       admin: document.getElementById("editProfileAdmin").checked,
     };
 
@@ -1484,6 +1491,7 @@ class AdminPanel {
     const name = document.getElementById("createName").value.trim();
     const bio = document.getElementById("createBio").value.trim();
     const verified = document.getElementById("createVerified").checked;
+    const gold = document.getElementById("createGold")?.checked || false;
     const isAdmin = document.getElementById("createAdmin").checked;
 
     if (!username) {
@@ -1494,7 +1502,14 @@ class AdminPanel {
     try {
       await this.apiCall("/api/admin/users", {
         method: "POST",
-        body: JSON.stringify({ username, name, bio, verified, admin: isAdmin }),
+        body: JSON.stringify({
+          username,
+          name,
+          bio,
+          verified,
+          gold,
+          admin: isAdmin,
+        }),
       });
 
       bootstrap.Modal.getInstance(
