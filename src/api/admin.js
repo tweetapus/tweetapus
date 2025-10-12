@@ -45,7 +45,7 @@ const adminQueries = {
 
   // Post queries
   getPostsWithUsers: db.query(`
-    SELECT p.*, u.username, u.name, u.avatar, u.verified
+    SELECT p.*, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_square
     FROM posts p
     JOIN users u ON p.user_id = u.id
     WHERE p.content LIKE ?
@@ -61,7 +61,8 @@ const adminQueries = {
     SELECT 
       COUNT(*) as total,
       SUM(CASE WHEN suspended = 1 THEN 1 ELSE 0 END) as suspended,
-      SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) as verified
+      SUM(CASE WHEN verified = 1 THEN 1 ELSE 0 END) as verified,
+      SUM(CASE WHEN gold = 1 THEN 1 ELSE 0 END) as gold
     FROM users
   `),
   getPostStats: db.query("SELECT COUNT(*) as total FROM posts"),
@@ -129,6 +130,10 @@ const adminQueries = {
 
   // Admin operations
   updateUserVerified: db.query("UPDATE users SET verified = ? WHERE id = ?"),
+  updateUserGold: db.query("UPDATE users SET gold = ? WHERE id = ?"),
+  updateUserAvatarSquare: db.query(
+    "UPDATE users SET avatar_square = ? WHERE id = ?"
+  ),
   deleteUser: db.query("DELETE FROM users WHERE id = ?"),
   deletePost: db.query("DELETE FROM posts WHERE id = ?"),
 
@@ -156,7 +161,7 @@ const adminQueries = {
     "INSERT INTO posts (id, user_id, content, created_at) VALUES (?, ?, ?, datetime('now'))"
   ),
   updateUser: db.query(
-    "UPDATE users SET username = ?, name = ?, bio = ?, verified = ?, admin = ? WHERE id = ?"
+    "UPDATE users SET username = ?, name = ?, bio = ?, verified = ?, admin = ?, gold = ?, avatar_square = ? WHERE id = ?"
   ),
 
   // DM Management queries
@@ -344,7 +349,15 @@ export default new Elysia({ prefix: "/admin" })
   .post(
     "/users",
     async ({ body, user: moderator }) => {
-      const { username, name, bio, verified, admin: isAdmin } = body;
+      const {
+        username,
+        name,
+        bio,
+        verified,
+        gold,
+        avatar_square,
+        admin: isAdmin,
+      } = body;
       if (!username || !username.trim()) {
         return { error: "Username is required" };
       }
@@ -356,15 +369,22 @@ export default new Elysia({ prefix: "/admin" })
 
       const id = Bun.randomUUIDv7();
 
+      // Enforce exclusivity: gold cannot coexist with verified
+      const finalVerified = gold ? 0 : verified ? 1 : 0;
+      const finalGold = gold ? 1 : 0;
+      const finalAvatarSquare = avatar_square ? 1 : 0;
+
       db.query(
-        `INSERT INTO users (id, username, name, bio, verified, admin) VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (id, username, name, bio, verified, admin, gold, avatar_square) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         id,
         username.trim(),
         name || null,
         bio || null,
-        verified ? 1 : 0,
-        isAdmin ? 1 : 0
+        finalVerified,
+        isAdmin ? 1 : 0,
+        finalGold,
+        finalAvatarSquare
       );
 
       logModerationAction(moderator.id, "create_user", "user", id, {
@@ -379,6 +399,8 @@ export default new Elysia({ prefix: "/admin" })
         name: t.Optional(t.String()),
         bio: t.Optional(t.String()),
         verified: t.Optional(t.Boolean()),
+        gold: t.Optional(t.Boolean()),
+        avatar_square: t.Optional(t.Boolean()),
         admin: t.Optional(t.Boolean()),
       }),
     }
@@ -405,7 +427,11 @@ export default new Elysia({ prefix: "/admin" })
     async ({ params, body, user }) => {
       const { verified } = body;
       const targetUser = adminQueries.findUserById.get(params.id);
-      adminQueries.updateUserVerified.run(verified, params.id);
+      // If setting verified=true, unset gold
+      if (verified) {
+        adminQueries.updateUserGold.run(0, params.id);
+      }
+      adminQueries.updateUserVerified.run(verified ? 1 : 0, params.id);
       logModerationAction(
         user.id,
         verified ? "verify_user" : "unverify_user",
@@ -418,6 +444,32 @@ export default new Elysia({ prefix: "/admin" })
     {
       body: t.Object({
         verified: t.Boolean(),
+      }),
+    }
+  )
+
+  .patch(
+    "/users/:id/gold",
+    async ({ params, body, user }) => {
+      const { gold } = body;
+      const targetUser = adminQueries.findUserById.get(params.id);
+      // If granting gold, remove verified
+      if (gold) {
+        adminQueries.updateUserVerified.run(0, params.id);
+      }
+      adminQueries.updateUserGold.run(gold ? 1 : 0, params.id);
+      logModerationAction(
+        user.id,
+        gold ? "grant_gold" : "revoke_gold",
+        "user",
+        params.id,
+        { username: targetUser?.username, gold }
+      );
+      return { success: true };
+    },
+    {
+      body: t.Object({
+        gold: t.Boolean(),
       }),
     }
   )
@@ -670,15 +722,50 @@ export default new Elysia({ prefix: "/admin" })
         };
       if (body.verified !== undefined && body.verified !== user.verified)
         changes.verified = { old: user.verified, new: body.verified };
+      if (body.gold !== undefined && body.gold !== user.gold)
+        changes.gold = { old: user.gold, new: body.gold };
+      if (
+        body.avatar_square !== undefined &&
+        body.avatar_square !== user.avatar_square
+      )
+        changes.avatar_square = {
+          old: user.avatar_square,
+          new: body.avatar_square,
+        };
       if (body.admin !== undefined && body.admin !== user.admin)
         changes.admin = { old: user.admin, new: body.admin };
+
+      // Enforce exclusivity: if gold being set true, unset verified; if verified set true, unset gold
+      let newVerified =
+        body.verified !== undefined
+          ? body.verified
+            ? 1
+            : 0
+          : user.verified
+          ? 1
+          : 0;
+      let newGold =
+        body.gold !== undefined ? (body.gold ? 1 : 0) : user.gold ? 1 : 0;
+      if (newGold) newVerified = 0;
+      if (newVerified) newGold = 0;
+
+      const newAvatarSquare =
+        body.avatar_square !== undefined
+          ? body.avatar_square
+            ? 1
+            : 0
+          : user.avatar_square
+          ? 1
+          : 0;
 
       adminQueries.updateUser.run(
         body.username || user.username,
         body.name !== undefined ? body.name : user.name,
         body.bio !== undefined ? body.bio : user.bio,
-        body.verified !== undefined ? body.verified : user.verified,
+        newVerified,
         body.admin !== undefined ? body.admin : user.admin,
+        newGold,
+        newAvatarSquare,
         params.id
       );
 
