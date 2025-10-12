@@ -577,8 +577,9 @@ export const createTweetElement = (tweet, config = {}) => {
 	tweetHeaderAvatarEl.src =
 		tweet.author.avatar || `/public/shared/default-avatar.png`;
 	tweetHeaderAvatarEl.alt = tweet.author.name || tweet.author.username;
+
 	if (tweet.author.gold) {
-		tweetHeaderAvatarEl.style.borderRadius = "8px";
+		tweetHeaderAvatarEl.style.borderRadius = "2px";
 	} else {
 		tweetHeaderAvatarEl.style.borderRadius = "50%";
 	}
