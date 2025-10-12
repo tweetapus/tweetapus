@@ -25,7 +25,8 @@ CREATE TABLE IF NOT EXISTS users (
   theme TEXT DEFAULT NULL,
   accent_color TEXT DEFAULT NULL,
   avatar_radius INTEGER DEFAULT NULL,
-  gold BOOLEAN DEFAULT FALSE
+  gold BOOLEAN DEFAULT FALSE,
+  use_c_algorithm BOOLEAN DEFAULT FALSE
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
@@ -340,6 +341,19 @@ CREATE TABLE IF NOT EXISTS moderation_logs (
 CREATE INDEX IF NOT EXISTS idx_moderation_logs_moderator_id ON moderation_logs(moderator_id);
 CREATE INDEX IF NOT EXISTS idx_moderation_logs_target_id ON moderation_logs(target_id);
 CREATE INDEX IF NOT EXISTS idx_moderation_logs_action ON moderation_logs(action);
-CREATE INDEX IF NOT EXISTS idx_moderation_logs_created_at ON moderation_logs(created_at);`);
+CREATE INDEX IF NOT EXISTS idx_moderation_logs_created_at ON moderation_logs(created_at);
+
+CREATE TABLE IF NOT EXISTS seen_tweets (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  tweet_id TEXT NOT NULL,
+  seen_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (tweet_id) REFERENCES posts(id) ON DELETE CASCADE,
+  UNIQUE(user_id, tweet_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_seen_tweets_user_id ON seen_tweets(user_id);
+CREATE INDEX IF NOT EXISTS idx_seen_tweets_seen_at ON seen_tweets(seen_at);`);
 
 export default db;

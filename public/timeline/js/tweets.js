@@ -3,7 +3,7 @@ import { marked } from "https://esm.sh/marked@16.3.0";
 import toastQueue from "../../shared/toasts.js";
 import { createModal, createPopup } from "../../shared/ui-utils.js";
 import query from "./api.js";
-import getUser, { authToken } from "./auth.js";
+import getUser from "./auth.js";
 import openTweet from "./tweet.js";
 
 async function checkReplyPermissions(tweet, replyRestriction) {
@@ -1038,7 +1038,10 @@ export const createTweetElement = (tweet, config = {}) => {
 
   tweetEl.appendChild(tweetHeaderEl);
 
-  const isArticlePost = Boolean(tweet.is_article && tweet.article_body_markdown);
+  const isArticlePost = Boolean(
+    tweet.is_article && tweet.article_body_markdown
+  );
+  const showFullArticle = isArticlePost && clickToOpen === false;
 
   if (isArticlePost) {
     const articleContainer = document.createElement("div");
@@ -1076,57 +1079,102 @@ export const createTweetElement = (tweet, config = {}) => {
       articleContainer.appendChild(coverEl);
     }
 
-    const articleBody = document.createElement("div");
-    articleBody.style.fontSize = "16px";
-    articleBody.style.lineHeight = "1.6";
-    articleBody.innerHTML = DOMPurify.sanitize(
-      marked.parse(tweet.article_body_markdown, {
-        breaks: true,
-        gfm: true,
-        headerIds: false,
-        mangle: false,
-      })
-    );
+    if (showFullArticle) {
+      const articleBody = document.createElement("div");
+      articleBody.style.fontSize = "16px";
+      articleBody.style.lineHeight = "1.6";
+      articleBody.innerHTML = DOMPurify.sanitize(
+        marked.parse(tweet.article_body_markdown, {
+          breaks: true,
+          gfm: true,
+          headerIds: false,
+          mangle: false,
+        })
+      );
 
-    articleBody.querySelectorAll("a").forEach((anchor) => {
-      anchor.setAttribute("target", "_blank");
-      anchor.setAttribute("rel", "noopener noreferrer");
-    });
-
-    articleBody.querySelectorAll("img").forEach((img) => {
-      if (!img.hasAttribute("loading")) {
-        img.setAttribute("loading", "lazy");
-      }
-      img.style.maxWidth = "100%";
-      img.style.display = "block";
-      img.style.margin = "12px 0";
-      img.style.borderRadius = "14px";
-    });
-
-    articleBody.querySelectorAll("pre").forEach((pre) => {
-      pre.style.backgroundColor = "var(--bg-secondary)";
-      pre.style.borderRadius = "14px";
-      pre.style.padding = "12px";
-      pre.style.overflowX = "auto";
-      pre.style.margin = "0 0 16px";
-    });
-
-    articleBody.querySelectorAll("blockquote").forEach((blockquote) => {
-      blockquote.style.margin = "0 0 16px";
-      blockquote.style.paddingLeft = "14px";
-      blockquote.style.borderLeft = "4px solid var(--border-color)";
-      blockquote.style.color = "var(--text-secondary)";
-    });
-
-    articleBody
-      .querySelectorAll("h1, h2, h3, h4, h5, h6")
-      .forEach((heading) => {
-        heading.style.margin = "18px 0 10px";
-        heading.style.fontWeight = "600";
-        heading.style.lineHeight = "1.25";
+      articleBody.querySelectorAll("a").forEach((anchor) => {
+        anchor.setAttribute("target", "_blank");
+        anchor.setAttribute("rel", "noopener noreferrer");
       });
 
-    articleContainer.appendChild(articleBody);
+      articleBody.querySelectorAll("img").forEach((img) => {
+        if (!img.hasAttribute("loading")) {
+          img.setAttribute("loading", "lazy");
+        }
+        img.style.maxWidth = "100%";
+        img.style.display = "block";
+        img.style.margin = "12px 0";
+        img.style.borderRadius = "14px";
+      });
+
+      articleBody.querySelectorAll("pre").forEach((pre) => {
+        pre.style.backgroundColor = "var(--bg-secondary)";
+        pre.style.borderRadius = "14px";
+        pre.style.padding = "12px";
+        pre.style.overflowX = "auto";
+        pre.style.margin = "0 0 16px";
+      });
+
+      articleBody.querySelectorAll("blockquote").forEach((blockquote) => {
+        blockquote.style.margin = "0 0 16px";
+        blockquote.style.paddingLeft = "14px";
+        blockquote.style.borderLeft = "4px solid var(--border-color)";
+        blockquote.style.color = "var(--text-secondary)";
+      });
+
+      articleBody
+        .querySelectorAll("h1, h2, h3, h4, h5, h6")
+        .forEach((heading) => {
+          heading.style.margin = "18px 0 10px";
+          heading.style.fontWeight = "600";
+          heading.style.lineHeight = "1.25";
+        });
+
+      articleContainer.appendChild(articleBody);
+    } else {
+      const previewBody = document.createElement("div");
+      previewBody.style.fontSize = "16px";
+      previewBody.style.lineHeight = "1.5";
+      const previewSource =
+        tweet.article_preview?.excerpt ||
+        tweet.article_title ||
+        tweet.content ||
+        "";
+      let previewText = previewSource.trim();
+      if (previewText.length > 260) {
+        previewText = `${previewText.slice(0, 257)}…`;
+      }
+      previewBody.innerHTML = linkifyText(previewText);
+      articleContainer.appendChild(previewBody);
+
+      const readMoreButton = document.createElement("button");
+      readMoreButton.type = "button";
+      readMoreButton.textContent = "Read article";
+      readMoreButton.style.alignSelf = "flex-start";
+      readMoreButton.style.marginTop = "8px";
+      readMoreButton.style.backgroundColor = "transparent";
+      readMoreButton.style.border = "1px solid var(--border-color)";
+      readMoreButton.style.borderRadius = "9999px";
+      readMoreButton.style.padding = "6px 14px";
+      readMoreButton.style.fontSize = "14px";
+      readMoreButton.style.fontWeight = "600";
+      readMoreButton.style.cursor = "pointer";
+      readMoreButton.style.color = "var(--primary)";
+      readMoreButton.style.transition = "background-color 0.2s ease";
+      readMoreButton.addEventListener("mouseenter", () => {
+        readMoreButton.style.backgroundColor = "rgba(var(--primary-rgb), 0.08)";
+      });
+      readMoreButton.addEventListener("mouseleave", () => {
+        readMoreButton.style.backgroundColor = "transparent";
+      });
+      readMoreButton.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        await openTweet(tweet);
+      });
+      articleContainer.appendChild(readMoreButton);
+    }
+
     tweetEl.appendChild(articleContainer);
   } else {
     const tweetContentEl = document.createElement("div");
@@ -1558,13 +1606,7 @@ export const createTweetElement = (tweet, config = {}) => {
         toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
       }
     } catch {
-      const textArea = document.createElement("textarea");
-      textArea.value = tweetUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textArea);
-      toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
+      toastQueue.add(`<h1>Unable to share tweet</h1>`);
     }
   });
 
@@ -1573,34 +1615,33 @@ export const createTweetElement = (tweet, config = {}) => {
   tweetInteractionsBookmarkEl.dataset.bookmarked =
     tweet.bookmarked_by_user || false;
   tweetInteractionsBookmarkEl.style.setProperty("--color", "255, 169, 0");
-  tweetInteractionsBookmarkEl.style.marginLeft = "auto";
-  tweetInteractionsBookmarkEl.style.marginRight = "-10px";
-
-  const bookmarkColor = tweet.bookmarked_by_user ? "#FFA900" : "currentColor";
-  const bookmarkFill = tweet.bookmarked_by_user ? "#FFA900" : "none";
-
-  tweetInteractionsBookmarkEl.innerHTML = `<svg
-		width="24"
-		height="19"
-		viewBox="0 0 24 24"
-		fill="${bookmarkFill}"
-		xmlns="http://www.w3.org/2000/svg"
-	>
-		<path
-			d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"
-			stroke="${bookmarkColor}"
-			stroke-width="1.5"
-			stroke-linecap="round"
-			stroke-linejoin="round"
-		/>
-	</svg>`;
+  const isInitiallyBookmarked =
+    tweetInteractionsBookmarkEl.dataset.bookmarked === "true";
+  tweetInteractionsBookmarkEl.innerHTML = `
+        <svg
+          width="19"
+          height="19"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M5.625 3.125H14.375C14.9963 3.125 15.5 3.62868 15.5 4.25V16.5073C15.5 16.959 15.0134 17.2422 14.6301 17.011L10 14.2222L5.36986 17.011C4.98664 17.2422 4.5 16.959 4.5 16.5073V4.25C4.5 3.62868 5.00368 3.125 5.625 3.125Z"
+            stroke="${isInitiallyBookmarked ? "#FFA900" : "currentColor"}"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            fill="${isInitiallyBookmarked ? "#FFA900" : "none"}"
+          />
+        </svg>
+        <span class="bookmark-count">${tweet.bookmark_count || ""}</span>`;
 
   tweetInteractionsBookmarkEl.addEventListener("click", async (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!authToken) {
-      toastQueue.add(`<h1>Please log in to bookmark tweets</h1>`);
+    if (isBlockedByProfile) {
+      toastQueue.add(`<h1>You have been blocked by this user</h1>`);
       return;
     }
 

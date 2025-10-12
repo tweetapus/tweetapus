@@ -48,10 +48,14 @@ const convertToWebP = (file) =>
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            const webpFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".webp"), {
-              type: "image/webp",
-              lastModified: Date.now(),
-            });
+            const webpFile = new File(
+              [blob],
+              file.name.replace(/\.[^/.]+$/, ".webp"),
+              {
+                type: "image/webp",
+                lastModified: Date.now(),
+              }
+            );
             resolve(webpFile);
           } else {
             resolve(file);
@@ -59,7 +63,7 @@ const convertToWebP = (file) =>
           URL.revokeObjectURL(img.src);
         },
         "image/webp",
-        0.9,
+        0.9
       );
     };
 
@@ -78,7 +82,7 @@ const sanitizeMarkdown = (markdown) =>
       gfm: true,
       headerIds: false,
       mangle: false,
-    }),
+    })
   );
 
 const updatePreview = () => {
@@ -134,13 +138,12 @@ const renderArticleCard = (article, { prepend = false } = {}) => {
 
   const metaEl = document.createElement("div");
   metaEl.className = "article-card-meta";
-  const authorName = article.author?.name || article.author?.username || "Unknown";
+  const authorName =
+    article.author?.name || article.author?.username || "Unknown";
   const createdAt = article.created_at
     ? new Date(article.created_at).toLocaleString()
     : "";
-  metaEl.textContent = createdAt
-    ? `${authorName} • ${createdAt}`
-    : authorName;
+  metaEl.textContent = createdAt ? `${authorName} • ${createdAt}` : authorName;
   contentEl.appendChild(metaEl);
 
   card.appendChild(contentEl);
@@ -188,7 +191,9 @@ const loadArticles = async ({ append } = { append: false }) => {
       toggleEmptyState(false);
     }
 
-    const queryString = articleCursor ? `?before=${encodeURIComponent(articleCursor)}` : "";
+    const queryString = articleCursor
+      ? `?before=${encodeURIComponent(articleCursor)}`
+      : "";
     const response = await query(`/articles${queryString}`);
 
     if (response.error) {
@@ -244,7 +249,9 @@ const uploadCover = async (file) => {
     });
 
     if (!result.success) {
-      toastQueue.add(`<h1>Upload failed</h1><p>${result.error || "Try again"}</p>`);
+      toastQueue.add(
+        `<h1>Upload failed</h1><p>${result.error || "Try again"}</p>`
+      );
       return;
     }
 
@@ -273,7 +280,9 @@ const publishArticle = async () => {
   }
 
   if (markdown.length < 50) {
-    toastQueue.add(`<h1>Article too short</h1><p>Write at least 50 characters</p>`);
+    toastQueue.add(
+      `<h1>Article too short</h1><p>Write at least 50 characters</p>`
+    );
     return;
   }
 
@@ -299,7 +308,9 @@ const publishArticle = async () => {
     });
 
     if (!response.success) {
-      toastQueue.add(`<h1>Failed</h1><p>${response.error || "Could not publish"}</p>`);
+      toastQueue.add(
+        `<h1>Failed</h1><p>${response.error || "Could not publish"}</p>`
+      );
       return;
     }
 
@@ -404,7 +415,9 @@ export const initArticles = () => {
   setupComposer();
 
   if (loadMoreButton) {
-    loadMoreButton.addEventListener("click", () => loadArticles({ append: true }));
+    loadMoreButton.addEventListener("click", () =>
+      loadArticles({ append: true })
+    );
   }
 
   container.classList.add(hiddenClass);

@@ -105,7 +105,8 @@ const buildExcerpt = (markdown) => {
 const attachArticleExtras = (articles, attachmentsMap, userMap) => {
   return articles.map((article) => {
     const attachments = attachmentsMap.get(article.id) || [];
-    const cover = attachments.find((item) => item.file_type.startsWith("image/")) || null;
+    const cover =
+      attachments.find((item) => item.file_type.startsWith("image/")) || null;
     return {
       ...article,
       author: serializeUser(userMap.get(article.user_id)),
@@ -141,18 +142,17 @@ export default new Elysia({ prefix: "/articles" })
       return { error: "Authentication failed" };
     }
 
-    const {
-      title,
-      markdown,
-      cover,
-      source,
-    } = body || {};
+    const { title, markdown, cover, source } = body || {};
 
     if (!title || typeof title !== "string" || title.trim().length < 5) {
       return { error: "Title must be at least 5 characters" };
     }
 
-    if (!markdown || typeof markdown !== "string" || markdown.trim().length < 50) {
+    if (
+      !markdown ||
+      typeof markdown !== "string" ||
+      markdown.trim().length < 50
+    ) {
       return { error: "Article body must be at least 50 characters" };
     }
 
@@ -211,8 +211,8 @@ export default new Elysia({ prefix: "/articles" })
       article: {
         ...article,
         author: serializeUser(user),
-  attachments: attachment ? [attachment] : [],
-  cover: attachment || null,
+        attachments: attachment ? [attachment] : [],
+        cover: attachment || null,
         excerpt,
       },
     };
@@ -246,11 +246,15 @@ export default new Elysia({ prefix: "/articles" })
     const userIds = [...new Set(articles.map((item) => item.user_id))];
     const userPlaceholders = userIds.map(() => "?").join(",");
     const users = userPlaceholders
-      ? db.query(`SELECT * FROM users WHERE id IN (${userPlaceholders})`).all(...userIds)
+      ? db
+          .query(`SELECT * FROM users WHERE id IN (${userPlaceholders})`)
+          .all(...userIds)
       : [];
     const userMap = new Map(users.map((u) => [u.id, u]));
 
-    const attachments = getAttachmentsForPostIds(articles.map((item) => item.id));
+    const attachments = getAttachmentsForPostIds(
+      articles.map((item) => item.id)
+    );
     const attachmentsMap = new Map();
     attachments.forEach((attachment) => {
       if (!attachmentsMap.has(attachment.post_id)) {
@@ -261,7 +265,10 @@ export default new Elysia({ prefix: "/articles" })
 
     return {
       articles: attachArticleExtras(articles, attachmentsMap, userMap),
-      next: articles.length === 10 ? articles[articles.length - 1].created_at : null,
+      next:
+        articles.length === 10
+          ? articles[articles.length - 1].created_at
+          : null,
     };
   })
   .get("/:id", async ({ jwt, headers, params }) => {
@@ -308,7 +315,9 @@ export default new Elysia({ prefix: "/articles" })
       : [];
     const replyUserMap = new Map(replyUsers.map((u) => [u.id, u]));
 
-    const replyAttachments = getAttachmentsForPostIds(replies.map((reply) => reply.id));
+    const replyAttachments = getAttachmentsForPostIds(
+      replies.map((reply) => reply.id)
+    );
     const replyAttachmentMap = new Map();
     replyAttachments.forEach((attachment) => {
       if (!replyAttachmentMap.has(attachment.post_id)) {
@@ -329,7 +338,8 @@ export default new Elysia({ prefix: "/articles" })
         author: serializeUser(author),
         attachments,
         cover:
-          attachments.find((item) => item.file_type.startsWith("image/")) || null,
+          attachments.find((item) => item.file_type.startsWith("image/")) ||
+          null,
         excerpt: article.content || buildExcerpt(article.article_body_markdown),
       },
       replies: serializedReplies,

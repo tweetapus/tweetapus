@@ -1,6 +1,7 @@
 import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
+import { isAlgorithmAvailable, rankTweets } from "../algo/algorithm.js";
 import db from "./../db.js";
 import ratelimit from "../helpers/ratelimit.js";
 
@@ -45,6 +46,16 @@ const getFollowingTimelinePostsBefore = db.query(`
 `);
 
 const getUserByUsername = db.query("SELECT * FROM users WHERE username = ?");
+
+const getSeenTweetIds = db.query(`
+  SELECT tweet_id FROM seen_tweets 
+  WHERE user_id = ? AND seen_at > datetime('now', '-7 days')
+`);
+
+const markTweetsAsSeen = db.prepare(`
+  INSERT OR IGNORE INTO seen_tweets (id, user_id, tweet_id)
+  VALUES (?, ?, ?)
+`);
 
 const getPollByPostId = db.query(`
   SELECT * FROM polls WHERE post_id = ?
@@ -206,9 +217,19 @@ export default new Elysia({ prefix: "/timeline" })
     }
 
     const beforeId = query.before;
-    const posts = beforeId
+    let posts = beforeId
       ? getTimelinePostsBefore.all(user.id, beforeId)
       : getTimelinePosts.all(user.id);
+
+    if (user.use_c_algorithm && isAlgorithmAvailable()) {
+      const seenTweets = getSeenTweetIds.all(user.id);
+      const seenIds = new Set(seenTweets.map((s) => s.tweet_id));
+      posts = rankTweets(posts, seenIds);
+
+      for (const post of posts.slice(0, 10)) {
+        markTweetsAsSeen.run(Bun.randomUUIDv7(), user.id, post.id);
+      }
+    }
 
     const userIds = [...new Set(posts.map((post) => post.user_id))];
 
@@ -246,16 +267,18 @@ export default new Elysia({ prefix: "/timeline" })
       const placeholders = ids.map(() => "?").join(",");
       const articles = db
         .query(
-          `SELECT * FROM posts WHERE id IN (${placeholders}) AND is_article = TRUE`,
+          `SELECT * FROM posts WHERE id IN (${placeholders}) AND is_article = TRUE`
         )
         .all(...ids);
-      const articleUserIds = [...new Set(articles.map((article) => article.user_id))];
+      const articleUserIds = [
+        ...new Set(articles.map((article) => article.user_id)),
+      ];
       const articleUsers = articleUserIds.length
         ? db
             .query(
               `SELECT * FROM users WHERE id IN (${articleUserIds
                 .map(() => "?")
-                .join(",")})`,
+                .join(",")})`
             )
             .all(...articleUserIds)
         : [];
@@ -263,7 +286,7 @@ export default new Elysia({ prefix: "/timeline" })
       const attachmentPlaceholders = ids.map(() => "?").join(",");
       const articleAttachments = db
         .query(
-          `SELECT * FROM attachments WHERE post_id IN (${attachmentPlaceholders})`,
+          `SELECT * FROM attachments WHERE post_id IN (${attachmentPlaceholders})`
         )
         .all(...ids);
       const attachmentMap = new Map();
@@ -284,12 +307,12 @@ export default new Elysia({ prefix: "/timeline" })
               attachments: attachmentsForArticle,
               cover:
                 attachmentsForArticle.find((item) =>
-                  item.file_type.startsWith("image/"),
+                  item.file_type.startsWith("image/")
                 ) || null,
               excerpt: summarizeArticle(article),
             },
           ];
-        }),
+        })
       );
     }
 
@@ -379,12 +402,22 @@ export default new Elysia({ prefix: "/timeline" })
     }
 
     const beforeId = query.before;
-    const posts = beforeId
+    let posts = beforeId
       ? getFollowingTimelinePostsBefore.all(user.id, user.id, beforeId)
       : getFollowingTimelinePosts.all(user.id, user.id);
 
     if (posts.length === 0) {
       return { timeline: [] };
+    }
+
+    if (user.use_c_algorithm && isAlgorithmAvailable()) {
+      const seenTweets = getSeenTweetIds.all(user.id);
+      const seenIds = new Set(seenTweets.map((s) => s.tweet_id));
+      posts = rankTweets(posts, seenIds);
+
+      for (const post of posts.slice(0, 10)) {
+        markTweetsAsSeen.run(Bun.randomUUIDv7(), user.id, post.id);
+      }
     }
 
     const userIds = [...new Set(posts.map((post) => post.user_id))];
@@ -423,16 +456,18 @@ export default new Elysia({ prefix: "/timeline" })
       const placeholders = ids.map(() => "?").join(",");
       const articles = db
         .query(
-          `SELECT * FROM posts WHERE id IN (${placeholders}) AND is_article = TRUE`,
+          `SELECT * FROM posts WHERE id IN (${placeholders}) AND is_article = TRUE`
         )
         .all(...ids);
-      const articleUserIds = [...new Set(articles.map((article) => article.user_id))];
+      const articleUserIds = [
+        ...new Set(articles.map((article) => article.user_id)),
+      ];
       const articleUsers = articleUserIds.length
         ? db
             .query(
               `SELECT * FROM users WHERE id IN (${articleUserIds
                 .map(() => "?")
-                .join(",")})`,
+                .join(",")})`
             )
             .all(...articleUserIds)
         : [];
@@ -440,7 +475,7 @@ export default new Elysia({ prefix: "/timeline" })
       const attachmentPlaceholders = ids.map(() => "?").join(",");
       const articleAttachments = db
         .query(
-          `SELECT * FROM attachments WHERE post_id IN (${attachmentPlaceholders})`,
+          `SELECT * FROM attachments WHERE post_id IN (${attachmentPlaceholders})`
         )
         .all(...ids);
       const attachmentMap = new Map();
@@ -461,12 +496,12 @@ export default new Elysia({ prefix: "/timeline" })
               attachments: attachmentsForArticle,
               cover:
                 attachmentsForArticle.find((item) =>
-                  item.file_type.startsWith("image/"),
+                  item.file_type.startsWith("image/")
                 ) || null,
               excerpt: summarizeArticle(article),
             },
           ];
-        }),
+        })
       );
     }
 

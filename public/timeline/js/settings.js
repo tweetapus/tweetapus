@@ -54,6 +54,11 @@ const settingsPages = [
     title: "Scheduled",
     content: () => createScheduledContent(),
   },
+  {
+    key: "experiments",
+    title: "Experiments",
+    content: () => createExperimentsContent(),
+  },
   { key: "other", title: "Other", content: () => createOtherContent() },
 ];
 
@@ -564,6 +569,115 @@ const createPrivacyContent = () => {
       } catch {
         e.target.checked = !enabled;
         toastQueue.add(`<h1>Failed to update ghost mode</h1>`);
+      }
+    });
+  }, 100);
+
+  return section;
+};
+
+const createExperimentsContent = () => {
+  const section = document.createElement("div");
+  section.className = "settings-section";
+
+  const h1 = document.createElement("h1");
+  h1.textContent = "Experiments";
+  section.appendChild(h1);
+
+  const disclaimer = document.createElement("p");
+  disclaimer.style.cssText = `
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary);
+  `;
+  disclaimer.textContent =
+    "These are experimental features that may change or be removed. Use at your own risk.";
+  section.appendChild(disclaimer);
+
+  const group = document.createElement("div");
+  group.className = "setting-group";
+
+  const h2 = document.createElement("h2");
+  h2.textContent = "Timeline";
+  group.appendChild(h2);
+
+  const cAlgoItem = document.createElement("div");
+  cAlgoItem.className = "setting-item";
+
+  const cAlgoLabel = document.createElement("div");
+  cAlgoLabel.className = "setting-label";
+  const cAlgoTitle = document.createElement("div");
+  cAlgoTitle.className = "setting-title";
+  cAlgoTitle.textContent = "C Algorithm";
+  const cAlgoDesc = document.createElement("div");
+  cAlgoDesc.className = "setting-description";
+  cAlgoDesc.textContent = "The algorithm but in C";
+  cAlgoLabel.appendChild(cAlgoTitle);
+  cAlgoLabel.appendChild(cAlgoDesc);
+
+  const cAlgoControl = document.createElement("div");
+  cAlgoControl.className = "setting-control";
+
+  const cAlgoToggle = document.createElement("label");
+  cAlgoToggle.className = "toggle-switch";
+  cAlgoToggle.innerHTML = `
+    <input type="checkbox" id="c-algorithm-toggle" />
+    <span class="toggle-slider"></span>
+  `;
+
+  cAlgoControl.appendChild(cAlgoToggle);
+  cAlgoItem.appendChild(cAlgoLabel);
+  cAlgoItem.appendChild(cAlgoControl);
+  group.appendChild(cAlgoItem);
+
+  section.appendChild(group);
+
+  setTimeout(async () => {
+    const checkbox = document.getElementById("c-algorithm-toggle");
+
+    try {
+      const data = await query("/auth/me");
+      if (data.user?.use_c_algorithm) {
+        checkbox.checked = true;
+      }
+    } catch (error) {
+      console.error("Failed to load C algorithm setting:", error);
+    }
+
+    checkbox.addEventListener("change", async (e) => {
+      const enabled = e.target.checked;
+      try {
+        const result = await query("/profile/settings/c-algorithm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ enabled }),
+        });
+
+        if (result.success) {
+          toastQueue.add(
+            `<h1>C Algorithm ${enabled ? "Enabled" : "Disabled"}</h1><p>${
+              enabled
+                ? "Timeline will now use the C-based ranking algorithm"
+                : "Timeline will use chronological sorting"
+            }</p>`
+          );
+
+          if (window.location.pathname === "/") {
+            window.location.reload();
+          }
+        } else {
+          e.target.checked = !enabled;
+          toastQueue.add(`<h1>Failed to update setting</h1>`);
+        }
+      } catch {
+        e.target.checked = !enabled;
+        toastQueue.add(`<h1>Failed to update setting</h1>`);
       }
     });
   }, 100);

@@ -10,6 +10,7 @@ export function createPopup(options) {
   const popupContent = document.createElement("div");
   popupContent.className = "popup-content";
 
+  // Build options
   items.forEach((item) => {
     const button = document.createElement("button");
     button.className = "popup-option";
@@ -19,18 +20,18 @@ export function createPopup(options) {
 
     const icon = document.createElement("div");
     icon.className = "popup-option-icon";
-    icon.innerHTML = item.icon;
+    icon.innerHTML = item.icon || "";
 
     const content = document.createElement("div");
     content.className = "popup-option-content";
 
     const title = document.createElement("div");
     title.className = "popup-option-title";
-    title.textContent = item.title;
+    title.textContent = item.title || "";
 
     const description = document.createElement("div");
     description.className = "popup-option-description";
-    description.textContent = item.description;
+    description.textContent = item.description || "";
 
     content.appendChild(title);
     content.appendChild(description);
@@ -51,116 +52,76 @@ export function createPopup(options) {
   document.body.appendChild(overlay);
 
   requestAnimationFrame(() => {
-    // compute after DOM render to get correct popup size
-    const rect = triggerElement?.getBoundingClientRect?.();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
     popup.style.position = "fixed";
+    popup.style.left = "-9999px";
+    popup.style.top = "-9999px";
 
-    if (triggerElement) {
-      // Robustly obtain a usable rect for the trigger element. Some elements (svg, virtual
-      // nodes) may report zero sizes; try getClientRects as a fallback.
-      let usableRect = rect;
-      try {
-        if (
-          !usableRect ||
-          (usableRect.width === 0 && usableRect.height === 0)
-        ) {
-          const clientRects = triggerElement.getClientRects?.();
-          if (clientRects && clientRects.length > 0)
-            usableRect = clientRects[0];
-          else usableRect = triggerElement.getBoundingClientRect?.();
+    requestAnimationFrame(() => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const popupRect = popup.getBoundingClientRect();
+
+      let triggerRect = null;
+      if (triggerElement) {
+        triggerRect = triggerElement.getBoundingClientRect();
+        if (triggerRect.width === 0 && triggerRect.height === 0) {
+          const rects = triggerElement.getClientRects();
+          if (rects.length > 0) {
+            triggerRect = rects[0];
+          }
         }
-      } catch (_) {
-        usableRect = null;
       }
 
-      if (usableRect) {
-        // initial placement below the trigger (viewport coordinates)
-        let top = usableRect.bottom + 8;
-        let left = usableRect.left;
+      if (triggerRect && (triggerRect.width > 0 || triggerRect.height > 0)) {
+        let left = triggerRect.left;
+        let top = triggerRect.bottom + 8;
         let transformOriginX = "left";
         let transformOriginY = "top";
 
-        // position off-screen first so popup can size itself, then adjust
-        popup.style.left = "-9999px";
-        popup.style.top = "-9999px";
-
-        // force layout to get actual popup size
-        const popupRect = popup.getBoundingClientRect();
-
-        // If popup would overflow to the right, align to the right edge of trigger
         if (left + popupRect.width > viewportWidth - 12) {
-          left = usableRect.right - popupRect.width;
+          left = triggerRect.right - popupRect.width;
           transformOriginX = "right";
         }
 
-        // If popup would overflow bottom, place above the trigger
         if (top + popupRect.height > viewportHeight - 12) {
-          top = usableRect.top - popupRect.height - 8;
+          top = triggerRect.top - popupRect.height - 8;
           transformOriginY = "bottom";
         }
 
-        // keep within viewport margins (allow fractional pixels)
-        left = Math.min(
-          Math.max(12, left),
-          viewportWidth - popupRect.width - 12
+        left = Math.max(
+          12,
+          Math.min(left, viewportWidth - popupRect.width - 12)
         );
-        top = Math.min(
-          Math.max(12, top),
-          viewportHeight - popupRect.height - 12
+        top = Math.max(
+          12,
+          Math.min(top, viewportHeight - popupRect.height - 12)
         );
 
         popup.style.left = `${left}px`;
         popup.style.top = `${top}px`;
         popup.style.transformOrigin = `${transformOriginX} ${transformOriginY}`;
       } else {
-        // If we couldn't determine a rect, fall back to centering
-        const vw = Math.max(
-          document.documentElement.clientWidth || 0,
-          window.innerWidth || 0
-        );
-        const vh = Math.max(
-          document.documentElement.clientHeight || 0,
-          window.innerHeight || 0
-        );
-        const left = Math.round(vw / 2 - popup.offsetWidth / 2);
-        const top = Math.round(vh / 2 - popup.offsetHeight / 2);
-        popup.style.left = `${Math.max(
+        const left = Math.max(
           12,
-          Math.min(left, vw - popup.offsetWidth - 12)
-        )}px`;
-        popup.style.top = `${Math.max(
+          Math.min(
+            (viewportWidth - popupRect.width) / 2,
+            viewportWidth - popupRect.width - 12
+          )
+        );
+        const top = Math.max(
           12,
-          Math.min(top, vh - popup.offsetHeight - 12)
-        )}px`;
-        popup.style.transformOrigin = `center center`;
+          Math.min(
+            (viewportHeight - popupRect.height) / 2,
+            viewportHeight - popupRect.height - 12
+          )
+        );
+        popup.style.left = `${left}px`;
+        popup.style.top = `${top}px`;
+        popup.style.transformOrigin = "center center";
       }
-    } else {
-      // center fallback using precise pixel coordinates
-      const vw = Math.max(
-        document.documentElement.clientWidth || 0,
-        window.innerWidth || 0
-      );
-      const vh = Math.max(
-        document.documentElement.clientHeight || 0,
-        window.innerHeight || 0
-      );
-      const left = Math.round(vw / 2 - popup.offsetWidth / 2);
-      const top = Math.round(vh / 2 - popup.offsetHeight / 2);
-      popup.style.left = `${Math.max(
-        12,
-        Math.min(left, vw - popup.offsetWidth - 12)
-      )}px`;
-      popup.style.top = `${Math.max(
-        12,
-        Math.min(top, vh - popup.offsetHeight - 12)
-      )}px`;
-      popup.style.transformOrigin = `center center`;
-    }
 
-    overlay.classList.add("visible");
+      overlay.classList.add("visible");
+    });
   });
 
   const closePopup = () => {

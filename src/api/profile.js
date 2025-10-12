@@ -1260,6 +1260,30 @@ export default new Elysia({ prefix: "/profile" })
       console.error("Unpin tweet error:", error);
       return { error: "Failed to unpin tweet" };
     }
+  })
+  .post("/settings/c-algorithm", async ({ jwt, headers, body }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
+
+    try {
+      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+      if (!payload) return { error: "Invalid token" };
+
+      const currentUser = getUserByUsername.get(payload.username);
+      if (!currentUser) return { error: "User not found" };
+
+      const { enabled } = body;
+
+      db.query("UPDATE users SET use_c_algorithm = ? WHERE id = ?").run(
+        enabled ? 1 : 0,
+        currentUser.id
+      );
+
+      return { success: true };
+    } catch (error) {
+      console.error("Update C algorithm setting error:", error);
+      return { error: "Failed to update setting" };
+    }
   });
 
 export const avatarRoutes = new Elysia({ prefix: "/avatars" }).get(

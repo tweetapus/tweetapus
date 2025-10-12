@@ -1286,20 +1286,20 @@ nav {
     }
   }
 
-/* When viewing a profile that blocked the viewer, visually mute and disable interactions */
-.tweet.blocked-by-profile .tweet-interactions {
-  opacity: 0.6;
-  pointer-events: none;
-}
+  /* When viewing a profile that blocked the viewer, visually mute and disable interactions */
+  .tweet.blocked-by-profile .tweet-interactions {
+    opacity: 0.6;
+    pointer-events: none;
+  }
 
-.tweet.blocked-by-profile .tweet-interactions button {
-  cursor: not-allowed;
-}
+  .tweet.blocked-by-profile .tweet-interactions button {
+    cursor: not-allowed;
+  }
 
-.tweet-interactions button.blocked-interaction {
-  opacity: 0.6;
-  filter: grayscale(30%);
-}
+  .tweet-interactions button.blocked-interaction {
+    opacity: 0.6;
+    filter: grayscale(30%);
+  }
 
   .tweet-attachments {
     border-radius: 16px;

@@ -1,6 +1,7 @@
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import admin from "./api/admin.js";
+import articles from "./api/articles.js";
 import auth from "./api/auth.js";
 import blocking from "./api/blocking.js";
 import bookmarks from "./api/bookmarks.js";
@@ -15,7 +16,6 @@ import tenor from "./api/tenor.js";
 import timeline from "./api/timeline.js";
 import tweet from "./api/tweet.js";
 import upload, { uploadRoutes } from "./api/upload.js";
-import articles from "./api/articles.js";
 import db from "./db.js";
 import ratelimit from "./helpers/ratelimit.js";
 
