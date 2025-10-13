@@ -1221,9 +1221,10 @@ class AdminPanel {
   async postTweetOnBehalf() {
     const userId = document.getElementById("tweetUserId").value;
     const content = document.getElementById("tweetContent").value;
-  const replyTo = document.getElementById("tweetReplyTo").value || null;
-  // Admin panel: unlimited by default
-  const noCharLimit = true;
+    const replyToRaw = document.getElementById("tweetReplyTo")?.value;
+    const replyTo = replyToRaw && replyToRaw.trim() ? replyToRaw.trim() : undefined;
+    // Admin panel: unlimited by default
+    const noCharLimit = true;
 
     if (!content.trim()) {
       this.showError("Tweet content cannot be empty");
@@ -1231,14 +1232,17 @@ class AdminPanel {
     }
 
     try {
+      // Build payload, omitting replyTo when not provided to avoid sending null
+      const payload = {
+        content: content.trim(),
+        userId,
+        noCharLimit,
+      };
+      if (replyTo !== undefined) payload.replyTo = replyTo;
+
       await this.apiCall("/api/admin/tweets", {
         method: "POST",
-        body: JSON.stringify({
-          content: content.trim(),
-          userId,
-          replyTo,
-          noCharLimit,
-        }),
+        body: JSON.stringify(payload),
       });
 
       bootstrap.Modal.getInstance(
