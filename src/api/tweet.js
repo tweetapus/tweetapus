@@ -618,6 +618,8 @@ export default new Elysia({ prefix: "/tweets" })
       return { error: "Tweet not found" };
     }
 
+    db.query("UPDATE posts SET view_count = view_count + 1 WHERE id = ?").run(id);
+
     const threadPosts = getTweetWithThread.all(id);
     const replies = getTweetReplies.all(id);
 

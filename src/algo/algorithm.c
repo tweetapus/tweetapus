@@ -91,7 +91,11 @@ double calculate_score(
     int content_repeats,
     double novelty_factor,
     double random_factor,
-    int all_seen_flag
+    int all_seen_flag,
+    int position_in_feed,
+    int user_verified,
+    int user_gold,
+    int follower_count
 ) {
     if (created_at < 0) created_at = 0;
     if (like_count < 0) like_count = 0;
@@ -107,6 +111,10 @@ double calculate_score(
     if (!isfinite(random_factor) || random_factor < 0.0) random_factor = 0.0;
     if (random_factor > 1.0) random_factor = 1.0;
     if (all_seen_flag != 0) all_seen_flag = 1;
+    if (position_in_feed < 0) position_in_feed = 0;
+    if (user_verified < 0) user_verified = 0;
+    if (user_gold < 0) user_gold = 0;
+    if (follower_count < 0) follower_count = 0;
     
     time_t now = time(NULL);
     double age_hours = (double)(now - created_at) / 3600.0;
@@ -126,9 +134,9 @@ double calculate_score(
     double virality_boost = calculate_virality_boost(like_count, retweet_count, age_hours);
     
     double base_score = safe_log(like_count + 1) * 2.0 +
-                       safe_log(retweet_count + 1) * 3.0 +
-                       safe_log(reply_count + 1) * 1.5 +
-                       safe_log(quote_count + 1) * 2.5;
+                       safe_log(retweet_count + 1) * 1.2 +
+                       safe_log(reply_count + 1) * 0.8 +
+                       safe_log(quote_count + 1) * 1.0;
     
     double diversity_bonus = 1.0;
     int engagement_types = 0;
@@ -176,6 +184,17 @@ double calculate_score(
     double content_penalty = 1.0 / (1.0 + (double)content_repeats * 1.5);
     if (content_penalty < 0.08) content_penalty = 0.08;
 
+    double position_penalty = 1.0;
+    if (position_in_feed < 5) {
+        double penalty_strength = (5.0 - (double)position_in_feed) / 5.0;
+        if (author_repeats > 0) {
+            position_penalty *= (1.0 - penalty_strength * 0.4);
+        }
+        if (content_repeats > 0) {
+            position_penalty *= (1.0 - penalty_strength * 0.5);
+        }
+    }
+
     double recency_adjust = 1.0;
     if (age_hours < 0.5) {
         recency_adjust = 1.12;
@@ -203,10 +222,32 @@ double calculate_score(
     if (novelty_boost < 0.75) novelty_boost = 0.75;
     if (novelty_boost > 1.5) novelty_boost = 1.5;
 
+    double diversity_penalty = 1.0;
+    if (author_repeats > 2 || content_repeats > 1) {
+        diversity_penalty = 0.6 + random_factor * 0.35;
+    }
+
+    double verified_boost = 1.0;
+    if (user_gold) {
+        double engagement_multiplier = safe_log(like_count + retweet_count + reply_count + quote_count + 1) * 0.1;
+        double follower_multiplier = safe_log(follower_count + 1) * 0.05;
+        verified_boost = 1.7 + engagement_multiplier + follower_multiplier;
+        if (verified_boost > 2.2) verified_boost = 2.2;
+    } else if (user_verified) {
+        double engagement_multiplier = safe_log(like_count + retweet_count + reply_count + quote_count + 1) * 0.05;
+        double follower_multiplier = safe_log(follower_count + 1) * 0.03;
+        verified_boost = 1.3 + engagement_multiplier + follower_multiplier;
+        if (verified_boost > 1.6) verified_boost = 1.6;
+    }
+
     double random_span = all_seen_flag ? 1.8 : 0.04;
     double random_offset = all_seen_flag ? 0.5 : 0.02;
     double random_component = random_offset + random_factor * random_span;
     double random_multiplier = all_seen_flag ? (1.0 + random_component * 0.35) : (1.0 + random_component * 0.08);
+    
+    if (author_repeats > 3 || content_repeats > 2) {
+        random_multiplier *= (1.0 + random_factor * 0.5);
+    }
     
     double final_score = base_score * 
                         time_decay * 
@@ -217,9 +258,12 @@ double calculate_score(
                         seen_penalty *
                         author_penalty *
                         content_penalty *
+                        position_penalty *
                         recency_adjust *
                         discussion_boost *
                         novelty_boost *
+                        diversity_penalty *
+                        verified_boost *
                         random_multiplier;
 
     if (all_seen_flag) {
@@ -266,12 +310,41 @@ void rank_tweets(Tweet *tweets, size_t count) {
             tweets[i].content_repeats,
             tweets[i].novelty_factor,
             tweets[i].random_factor,
-            tweets[i].all_seen_flag
+            tweets[i].all_seen_flag,
+            0,
+            tweets[i].user_verified,
+            tweets[i].user_gold,
+            tweets[i].follower_count
         );
 
         tweets[i].score = base_score;
     }
     
+    qsort(tweets, count, sizeof(Tweet), compare_tweets);
+
+    for (size_t i = 0; i < count && i < 10; i++) {
+        double adjusted_score = calculate_score(
+            tweets[i].created_at,
+            tweets[i].like_count,
+            tweets[i].retweet_count,
+            tweets[i].reply_count,
+            tweets[i].quote_count,
+            tweets[i].has_media,
+            tweets[i].hours_since_seen,
+            tweets[i].author_repeats,
+            tweets[i].content_repeats,
+            tweets[i].novelty_factor,
+            tweets[i].random_factor,
+            tweets[i].all_seen_flag,
+            (int)i,
+            tweets[i].user_verified,
+            tweets[i].user_gold,
+            tweets[i].follower_count
+        );
+
+        tweets[i].score = adjusted_score;
+    }
+
     qsort(tweets, count, sizeof(Tweet), compare_tweets);
 }
 

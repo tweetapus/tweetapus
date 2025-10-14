@@ -155,7 +155,7 @@ const adminQueries = {
     "INSERT INTO posts (id, user_id, content, reply_to, created_at) VALUES (?, ?, ?, ?, datetime('now'))"
   ),
   updateUser: db.query(
-    "UPDATE users SET username = ?, name = ?, bio = ?, verified = ?, admin = ?, gold = ? WHERE id = ?"
+    "UPDATE users SET username = ?, name = ?, bio = ?, verified = ?, admin = ?, gold = ?, follower_count = ?, following_count = ? WHERE id = ?"
   ),
 
   // DM Management queries
@@ -741,6 +741,10 @@ export default new Elysia({ prefix: "/admin" })
         changes.gold = { old: user.gold, new: body.gold };
       if (body.admin !== undefined && body.admin !== user.admin)
         changes.admin = { old: user.admin, new: body.admin };
+      if (body.follower_count !== undefined && body.follower_count !== user.follower_count)
+        changes.follower_count = { old: user.follower_count, new: body.follower_count };
+      if (body.following_count !== undefined && body.following_count !== user.following_count)
+        changes.following_count = { old: user.following_count, new: body.following_count };
 
       let newVerified =
         body.verified !== undefined
@@ -762,6 +766,8 @@ export default new Elysia({ prefix: "/admin" })
         newVerified,
         body.admin !== undefined ? body.admin : user.admin,
         newGold,
+        body.follower_count !== undefined ? body.follower_count : user.follower_count,
+        body.following_count !== undefined ? body.following_count : user.following_count,
         params.id
       );
 
@@ -783,6 +789,8 @@ export default new Elysia({ prefix: "/admin" })
         verified: t.Optional(t.Boolean()),
         gold: t.Optional(t.Boolean()),
         admin: t.Optional(t.Boolean()),
+        follower_count: t.Optional(t.Number()),
+        following_count: t.Optional(t.Number()),
       }),
     }
   )

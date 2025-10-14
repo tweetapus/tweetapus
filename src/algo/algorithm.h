@@ -18,6 +18,9 @@ typedef struct {
     double novelty_factor;
     double random_factor;
     int all_seen_flag;
+    int user_verified;
+    int user_gold;
+    int follower_count;
     double score;
 } Tweet;
 
@@ -38,7 +41,11 @@ double calculate_score(
     int content_repeats,
     double novelty_factor,
     double random_factor,
-    int all_seen_flag
+    int all_seen_flag,
+    int position_in_feed,
+    int user_verified,
+    int user_gold,
+    int follower_count
 );
 
 void rank_tweets(Tweet *tweets, size_t count);

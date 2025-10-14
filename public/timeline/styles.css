@@ -1250,8 +1250,35 @@ nav {
     display: flex;
     gap: 20px;
     user-select: none;
+    align-items: center;
 
-    /* When profile has blocked the viewer, visually disable interactions */
+    .tweet-interactions-right {
+      margin-left: auto;
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .views-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: default;
+      pointer-events: none;
+      opacity: 0.7;
+
+      svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      }
+
+      .view-number {
+      font-size: 13px;
+      color: var(--text-secondary);
+      }
+    }
 
     button {
       padding: 0px;

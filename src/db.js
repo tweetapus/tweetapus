@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS posts (
   like_count INTEGER DEFAULT 0,
   reply_count INTEGER DEFAULT 0,
   retweet_count INTEGER DEFAULT 0,
+  view_count INTEGER DEFAULT 0,
   source TEXT DEFAULT NULL,
   poll_id TEXT DEFAULT NULL,
   quote_tweet_id TEXT DEFAULT NULL,
@@ -106,6 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
 CREATE INDEX IF NOT EXISTS idx_posts_reply_to ON posts(reply_to);
 CREATE INDEX IF NOT EXISTS idx_posts_pinned ON posts(pinned);
+CREATE INDEX IF NOT EXISTS idx_posts_view_count ON posts(view_count);
 
 CREATE TABLE IF NOT EXISTS likes (
   id TEXT PRIMARY KEY,

@@ -241,8 +241,19 @@ export default new Elysia({ prefix: "/timeline" })
           attachmentMap.get(attachment.post_id).push(attachment);
         });
 
+        const userIds = [...new Set(posts.map((p) => p.user_id))];
+        const userPlaceholders = userIds.map(() => "?").join(",");
+        const postUsers = db.query(`SELECT id, verified, gold, follower_count FROM users WHERE id IN (${userPlaceholders})`).all(...userIds);
+        const userDataMap = new Map(postUsers.map(u => [u.id, u]));
+
         posts.forEach((post) => {
           post.attachments = attachmentMap.get(post.id) || [];
+          const userData = userDataMap.get(post.user_id);
+          if (userData) {
+            post.verified = userData.verified;
+            post.gold = userData.gold;
+            post.follower_count = userData.follower_count;
+          }
         });
       }
 
@@ -454,8 +465,19 @@ export default new Elysia({ prefix: "/timeline" })
           attachmentMap.get(attachment.post_id).push(attachment);
         });
 
+        const userIds = [...new Set(posts.map((p) => p.user_id))];
+        const userPlaceholders = userIds.map(() => "?").join(",");
+        const postUsers = db.query(`SELECT id, verified, gold, follower_count FROM users WHERE id IN (${userPlaceholders})`).all(...userIds);
+        const userDataMap = new Map(postUsers.map(u => [u.id, u]));
+
         posts.forEach((post) => {
           post.attachments = attachmentMap.get(post.id) || [];
+          const userData = userDataMap.get(post.user_id);
+          if (userData) {
+            post.verified = userData.verified;
+            post.gold = userData.gold;
+            post.follower_count = userData.follower_count;
+          }
         });
       }
 

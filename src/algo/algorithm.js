@@ -23,6 +23,10 @@ if (existsSync(libPath)) {
           FFIType.double,
           FFIType.double,
           FFIType.i32,
+          FFIType.i32,
+          FFIType.i32,
+          FFIType.i32,
+          FFIType.i32,
         ],
         returns: FFIType.double,
       },
@@ -49,7 +53,11 @@ export const calculateScore = (
   content_repeats = 0,
   novelty_factor = 1,
   random_factor = Math.random(),
-  is_all_seen = 0
+  is_all_seen = 0,
+  position_in_feed = 0,
+  user_verified = 0,
+  user_gold = 0,
+  follower_count = 0
 ) => {
   if (!lib) {
     return 0;
@@ -72,7 +80,11 @@ export const calculateScore = (
     content_repeats,
     novelty_factor,
     random_factor,
-    is_all_seen
+    is_all_seen,
+    position_in_feed,
+    user_verified,
+    user_gold,
+    follower_count
   );
 };
 
@@ -175,6 +187,10 @@ export const rankTweets = (tweets, seenInput = new Map()) => {
 
     const randomFactor = Math.random();
 
+    const userVerified = tweet.verified || tweet.author?.verified ? 1 : 0;
+    const userGold = tweet.gold || tweet.author?.gold ? 1 : 0;
+    const followerCount = tweet.follower_count || tweet.author?.follower_count || 0;
+
     const score = calculateScore(
       timestamp,
       tweet.like_count || 0,
@@ -187,7 +203,11 @@ export const rankTweets = (tweets, seenInput = new Map()) => {
       Math.max(0, contentCount - 1),
       noveltyFactor,
       randomFactor,
-      allSeen ? 1 : 0
+      allSeen ? 1 : 0,
+      0,
+      userVerified,
+      userGold,
+      followerCount
     );
 
     return { ...tweet, _score: score };

@@ -1692,8 +1692,26 @@ export const createTweetElement = (tweet, config = {}) => {
   tweetInteractionsEl.appendChild(tweetInteractionsLikeEl);
   tweetInteractionsEl.appendChild(tweetInteractionsRetweetEl);
   tweetInteractionsEl.appendChild(tweetInteractionsReplyEl);
-  tweetInteractionsEl.appendChild(tweetInteractionsBookmarkEl);
-  tweetInteractionsEl.appendChild(tweetInteractionsShareEl);
+
+  const tweetInteractionsRightEl = document.createElement("div");
+  tweetInteractionsRightEl.className = "tweet-interactions-right";
+
+  const tweetInteractionsViewsEl = document.createElement("span");
+  tweetInteractionsViewsEl.className = "engagement views-count";
+  tweetInteractionsViewsEl.innerHTML = `
+    <svg width="19" height="19" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 5C5 5 2 10 2 10s3 5 8 5 8-5 8-5-3-5-8-5z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+    </svg>
+    <span>${tweet.view_count > 0 ? tweet.view_count : ""}</span>`;
+  tweetInteractionsViewsEl.style.setProperty("--color", "119, 119, 119");
+  tweetInteractionsViewsEl.title = `${tweet.view_count || 0} views`;
+
+  tweetInteractionsRightEl.appendChild(tweetInteractionsViewsEl);
+  tweetInteractionsRightEl.appendChild(tweetInteractionsBookmarkEl);
+  tweetInteractionsRightEl.appendChild(tweetInteractionsShareEl);
+
+  tweetInteractionsEl.appendChild(tweetInteractionsRightEl);
 
   if (size !== "preview") {
     tweetEl.appendChild(tweetInteractionsEl);

@@ -739,13 +739,13 @@ class AdminPanel {
                   <label class="form-label">Followers</label>
                   <input type="number" class="form-control" id="editProfileFollowers" value="${
                     user.actual_follower_count
-                  }" readonly>
+                  }">
                 </div>
                 <div class="col-md-6 mb-3">
                   <label class="form-label">Following</label>
                   <input type="number" class="form-control" id="editProfileFollowing" value="${
                     user.actual_following_count
-                  }" readonly>
+                  }">
                 </div>
               </div>
               <div class="form-check form-switch mb-3">
@@ -981,6 +981,8 @@ class AdminPanel {
       verified: document.getElementById("editProfileVerified").checked,
       gold: document.getElementById("editProfileGold").checked,
       admin: document.getElementById("editProfileAdmin").checked,
+      follower_count: parseInt(document.getElementById("editProfileFollowers").value) || 0,
+      following_count: parseInt(document.getElementById("editProfileFollowing").value) || 0,
     };
 
     try {
