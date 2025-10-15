@@ -142,8 +142,7 @@ export default new Elysia({ prefix: "/notifications" })
         return enhanced;
       });
 
-      const hasMoreNotifications =
-        notifications.length === parseInt(limit);
+      const hasMoreNotifications = notifications.length === parseInt(limit);
 
       return {
         notifications: enhancedNotifications,
