@@ -311,6 +311,182 @@ export const useComposer = (
     }
   });
 
+  // Mention autocomplete
+  // create or reuse a single popup element appended to body so suggestions act like a popup
+  let mentionBox = document.querySelector("#mention-suggestions-popup");
+  if (!mentionBox) {
+    mentionBox = document.createElement("div");
+    mentionBox.id = "mention-suggestions-popup";
+    mentionBox.className = "mention-suggestions popup";
+    mentionBox.style.display = "none";
+    mentionBox.style.position = "absolute";
+    mentionBox.style.zIndex = 10000;
+    document.body.appendChild(mentionBox);
+  }
+  let mentionCandidates = [];
+  let mentionIndex = -1;
+  let mentionQuery = "";
+  let mentionDebounce;
+
+  const closeMentions = () => {
+    mentionCandidates = [];
+    mentionIndex = -1;
+    mentionQuery = "";
+    if (mentionBox) mentionBox.style.display = "none";
+  };
+
+  const renderMentions = () => {
+    if (!mentionBox) return;
+    if (!mentionCandidates) mentionCandidates = [];
+    // show 'No results' message when empty
+    if (mentionCandidates.length === 0) {
+      const rect = textarea.getBoundingClientRect();
+      mentionBox.style.left = `${rect.left + window.scrollX}px`;
+      mentionBox.style.top = `${rect.bottom + window.scrollY + 6}px`;
+      mentionBox.style.minWidth = `${Math.max(220, rect.width)}px`;
+      mentionBox.innerHTML = `<div class="no-results">No users found</div>`;
+      mentionBox.style.display = "block";
+      return;
+    }
+    // position popup near textarea
+    const rect = textarea.getBoundingClientRect();
+    mentionBox.style.left = `${rect.left + window.scrollX}px`;
+    mentionBox.style.top = `${rect.bottom + window.scrollY + 6}px`;
+    mentionBox.style.minWidth = `${Math.max(220, rect.width)}px`;
+    mentionBox.style.maxWidth = `420px`;
+    mentionBox.innerHTML = "";
+    mentionCandidates.forEach((user, i) => {
+      const div = document.createElement("button");
+      div.type = "button";
+      div.className =
+        "mention-suggestion" + (i === mentionIndex ? " selected" : "");
+      div.innerHTML = `
+        <img class="mention-avatar" src="${
+          user.avatar || "/public/shared/default-avatar.png"
+        }" alt="" />
+        <div class="mention-info">
+          <div class="mention-name">${user.name}</div>
+          <div class="mention-username">@${user.username}</div>
+        </div>
+      `;
+      div.addEventListener("mousedown", (ev) => {
+        // prevent blur on textarea
+        ev.preventDefault();
+        selectMention(i);
+      });
+      mentionBox.appendChild(div);
+    });
+    mentionBox.style.display = "block";
+  };
+
+  const selectMention = (i) => {
+    const user = mentionCandidates[i];
+    if (!user) return;
+
+    // replace the @query at the caret with the full handle
+    const value = textarea.value;
+    const selStart = textarea.selectionStart;
+    // find the last '@' before selStart that starts a mention
+    const upto = value.slice(0, selStart);
+    const atMatch = upto.match(/@([\w\d_\-.]{0,64})$/);
+    if (!atMatch) return closeMentions();
+
+    const prefixStart = selStart - atMatch[0].length;
+    const before = value.slice(0, prefixStart);
+    const after = value.slice(selStart);
+    const insert = `@${user.username} `;
+    const newPos = before.length + insert.length;
+    textarea.value = before + insert + after;
+    textarea.focus();
+    textarea.setSelectionRange(newPos, newPos);
+    updateCharacterCount();
+    closeMentions();
+  };
+
+  const searchMentions = async (q) => {
+    if (!q || q.trim().length === 0) {
+      mentionCandidates = [];
+      renderMentions();
+      return;
+    }
+
+    // call existing query helper for /search/users?q=
+    try {
+      const { users, error } = await query(
+        `/search/users?q=${encodeURIComponent(q)}`
+      );
+      if (error) {
+        mentionCandidates = [];
+      } else {
+        // filter by prefix match on username or name starting with q (case-insensitive)
+        const lower = q.toLowerCase();
+        const filtered = (users || []).filter((u) => {
+          if (!u) return false;
+          // exclude suspended accounts
+          if (u.suspended) return false;
+          const uname = (u.username || "").toLowerCase();
+          const name = (u.name || "").toLowerCase();
+          return (
+            uname.startsWith(lower) ||
+            name.startsWith(lower) ||
+            uname.includes(lower) ||
+            name.includes(lower)
+          );
+        });
+        mentionCandidates = filtered.slice(0, 8);
+      }
+    } catch {
+      mentionCandidates = [];
+    }
+    mentionIndex = 0;
+    renderMentions();
+  };
+
+  textarea.addEventListener("input", () => {
+    const selStart = textarea.selectionStart;
+    const upto = textarea.value.slice(0, selStart);
+    const match = upto.match(/@([\w\d_\-.]{0,64})$/);
+    if (!match) {
+      closeMentions();
+      return;
+    }
+
+    mentionQuery = match[1];
+    clearTimeout(mentionDebounce);
+    mentionDebounce = setTimeout(() => searchMentions(mentionQuery), 200);
+  });
+
+  textarea.addEventListener("keydown", (e) => {
+    if (!mentionBox || mentionBox.style.display === "none") return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      mentionIndex = (mentionIndex + 1) % mentionCandidates.length;
+      renderMentions();
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      mentionIndex =
+        (mentionIndex - 1 + mentionCandidates.length) %
+        mentionCandidates.length;
+      renderMentions();
+    } else if (e.key === "Enter" || e.key === "Tab") {
+      // if mention visible, select
+      if (mentionCandidates.length > 0) {
+        e.preventDefault();
+        selectMention(mentionIndex >= 0 ? mentionIndex : 0);
+      }
+    } else if (e.key === "Escape") {
+      closeMentions();
+    }
+  });
+
+  // click outside to close
+  document.addEventListener("click", (e) => {
+    if (!mentionBox) return;
+    if (!element.contains(e.target) && e.target !== mentionBox) {
+      closeMentions();
+    }
+  });
+
   const handleDragOver = (e) => {
     e.preventDefault();
     textarea.classList.add("drag-over");

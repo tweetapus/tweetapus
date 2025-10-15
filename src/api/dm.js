@@ -2,6 +2,7 @@ import { jwt } from "@elysiajs/jwt";
 import { Elysia, t } from "elysia";
 import db from "../db.js";
 import { addNotification } from "./notifications.js";
+import { generateAIDMResponse } from "../helpers/ai-assistant.js";
 
 let broadcastToUser, sendUnreadCounts;
 try {
@@ -88,7 +89,9 @@ const getConversationMessages = db.query(`
     u.username,
     u.name,
     u.avatar,
-    u.verified
+    u.verified,
+    u.avatar_radius,
+    u.gold
   FROM dm_messages dm
   JOIN users u ON dm.sender_id = u.id
   WHERE dm.conversation_id = ?
@@ -101,8 +104,8 @@ const getMessageAttachments = db.query(`
 `);
 
 const createMessage = db.query(`
-  INSERT INTO dm_messages (id, conversation_id, sender_id, content, message_type)
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO dm_messages (id, conversation_id, sender_id, content, message_type, reply_to)
+  VALUES (?, ?, ?, ?, ?, ?)
   RETURNING *
 `);
 
@@ -142,6 +145,42 @@ const removeParticipant = db.query(`
 const updateConversationTitle = db.query(`
   UPDATE conversations SET title = ?, updated_at = datetime('now', 'utc') 
   WHERE id = ?
+`);
+
+const getMessageReactions = db.query(`
+  SELECT 
+    dr.emoji,
+    COUNT(*) as count,
+    GROUP_CONCAT(u.username) as usernames,
+    GROUP_CONCAT(u.name) as names
+  FROM dm_reactions dr
+  JOIN users u ON dr.user_id = u.id
+  WHERE dr.message_id = ?
+  GROUP BY dr.emoji
+`);
+
+const getUserReactionForMessage = db.query(`
+  SELECT emoji FROM dm_reactions WHERE message_id = ? AND user_id = ?
+`);
+
+const addReaction = db.query(`
+  INSERT INTO dm_reactions (id, message_id, user_id, emoji)
+  VALUES (?, ?, ?, ?)
+`);
+
+const removeReaction = db.query(`
+  DELETE FROM dm_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?
+`);
+
+const getReplyMessage = db.query(`
+  SELECT 
+    dm.*,
+    u.username,
+    u.name,
+    u.avatar
+  FROM dm_messages dm
+  JOIN users u ON dm.sender_id = u.id
+  WHERE dm.id = ?
 `);
 
 export default new Elysia({ prefix: "/dm" })
@@ -230,7 +269,26 @@ export default new Elysia({ prefix: "/dm" })
 
       const enhancedMessages = messages.map((message) => {
         const attachments = getMessageAttachments.all(message.id);
-        return { ...message, attachments };
+        const reactions = getMessageReactions.all(message.id);
+        const userReactions = getUserReactionForMessage.all(message.id, user.id);
+        
+        let replyToMessage = null;
+        if (message.reply_to) {
+          replyToMessage = getReplyMessage.get(message.reply_to);
+        }
+        
+        return { 
+          ...message, 
+          attachments,
+          reactions: reactions.map(r => ({
+            emoji: r.emoji,
+            count: r.count,
+            usernames: r.usernames?.split(',') || [],
+            names: r.names?.split(',') || []
+          })),
+          user_reacted: userReactions.map(r => r.emoji),
+          reply_to_message: replyToMessage
+        };
       });
 
       updateLastReadAt.run(id, user.id);
@@ -338,7 +396,7 @@ export default new Elysia({ prefix: "/dm" })
         if (!user) return { error: "User not found" };
 
         const { id } = params;
-        const { content, files } = body;
+        const { content, files, replyTo } = body;
 
         const conversation = getConversationById.get(id);
         if (!conversation) return { error: "Conversation not found" };
@@ -371,7 +429,8 @@ export default new Elysia({ prefix: "/dm" })
           id,
           user.id,
           content || "",
-          messageType
+          messageType,
+          replyTo || null
         );
 
         const attachments = [];
@@ -392,6 +451,11 @@ export default new Elysia({ prefix: "/dm" })
         }
 
         updateConversationTimestamp.run(id);
+        
+        let replyToMessage = null;
+        if (replyTo) {
+          replyToMessage = getReplyMessage.get(replyTo);
+        }
 
         const recipients = getConversationParticipants
           .all(id)
@@ -406,10 +470,66 @@ export default new Elysia({ prefix: "/dm" })
               name: user.name,
               avatar: user.avatar,
               verified: user.verified,
+              avatar_radius: user.avatar_radius,
+              gold: user.gold,
               attachments,
+              reactions: [],
+              user_reacted: [],
+              reply_to_message: replyToMessage
             },
           });
           sendUnreadCounts(participant.user_id);
+        }
+
+        const aiUser = getUserByUsername.get("h");
+        const hasAIInConversation = getConversationParticipants.all(id).some(p => p.user_id === aiUser?.id);
+        const mentionsAI = content && (content.includes("@h") || content.toLowerCase().includes("happy robot"));
+        
+        if (aiUser && (hasAIInConversation || mentionsAI) && user.id !== aiUser.id) {
+          (async () => {
+            try {
+              const aiResponse = await generateAIDMResponse(id, content, db);
+              if (aiResponse) {
+                const aiMessageId = Bun.randomUUIDv7();
+                const aiMessage = createMessage.get(
+                  aiMessageId,
+                  id,
+                  aiUser.id,
+                  aiResponse,
+                  "text",
+                  null
+                );
+
+                updateConversationTimestamp.run(id);
+
+                const allParticipants = getConversationParticipants.all(id);
+                for (const participant of allParticipants) {
+                  if (participant.user_id !== aiUser.id) {
+                    broadcastToUser(participant.user_id, {
+                      type: "m",
+                      conversationId: id,
+                      message: {
+                        ...aiMessage,
+                        username: aiUser.username,
+                        name: aiUser.name,
+                        avatar: aiUser.avatar,
+                        verified: aiUser.verified,
+                        avatar_radius: aiUser.avatar_radius,
+                        gold: aiUser.gold,
+                        attachments: [],
+                        reactions: [],
+                        user_reacted: [],
+                        reply_to_message: null
+                      },
+                    });
+                    sendUnreadCounts(participant.user_id);
+                  }
+                }
+              }
+            } catch (error) {
+              console.error("Failed to generate AI DM response:", error);
+            }
+          })();
         }
 
         return {
@@ -419,7 +539,12 @@ export default new Elysia({ prefix: "/dm" })
             name: user.name,
             avatar: user.avatar,
             verified: user.verified,
+            avatar_radius: user.avatar_radius,
+            gold: user.gold,
             attachments,
+            reactions: [],
+            user_reacted: [],
+            reply_to_message: replyToMessage
           },
         };
       } catch (error) {
@@ -430,6 +555,7 @@ export default new Elysia({ prefix: "/dm" })
     {
       body: t.Object({
         content: t.Optional(t.String()),
+        replyTo: t.Optional(t.Union([t.String(), t.Null()])),
         files: t.Optional(
           t.Array(
             t.Object({
@@ -611,6 +737,109 @@ export default new Elysia({ prefix: "/dm" })
     {
       body: t.Object({
         title: t.Union([t.String(), t.Null()]),
+      }),
+    }
+  )
+
+  .post(
+    "/messages/:messageId/reactions",
+    ({ params, body, headers }) => {
+      try {
+        const token = headers.authorization?.replace("Bearer ", "");
+        if (!token) return { error: "Unauthorized" };
+
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        const user = getUserByUsername.get(payload.username);
+        if (!user) return { error: "User not found" };
+
+        const { messageId } = params;
+        const { emoji } = body;
+
+        const message = db.query("SELECT * FROM dm_messages WHERE id = ?").get(messageId);
+        if (!message) return { error: "Message not found" };
+
+        const participant = checkParticipant.get(message.conversation_id, user.id);
+        if (!participant) return { error: "Access denied" };
+
+        const existingReaction = getUserReactionForMessage.get(messageId, user.id);
+        
+        if (existingReaction?.emoji === emoji) {
+          removeReaction.run(messageId, user.id, emoji);
+          
+          const reactions = getMessageReactions.all(messageId);
+          const recipients = getConversationParticipants
+            .all(message.conversation_id)
+            .filter((p) => p.user_id !== user.id);
+          
+          for (const participant of recipients) {
+            broadcastToUser(participant.user_id, {
+              type: "reaction",
+              messageId,
+              conversationId: message.conversation_id,
+              reactions: reactions.map(r => ({
+                emoji: r.emoji,
+                count: r.count,
+                usernames: r.usernames?.split(',') || [],
+                names: r.names?.split(',') || []
+              }))
+            });
+          }
+          
+          return { 
+            success: true, 
+            removed: true,
+            reactions: reactions.map(r => ({
+              emoji: r.emoji,
+              count: r.count,
+              usernames: r.usernames?.split(',') || [],
+              names: r.names?.split(',') || []
+            }))
+          };
+        }
+
+        if (existingReaction) {
+          removeReaction.run(messageId, user.id, existingReaction.emoji);
+        }
+
+        const reactionId = Bun.randomUUIDv7();
+        addReaction.run(reactionId, messageId, user.id, emoji);
+
+        const reactions = getMessageReactions.all(messageId);
+        const recipients = getConversationParticipants
+          .all(message.conversation_id)
+          .filter((p) => p.user_id !== user.id);
+        
+        for (const participant of recipients) {
+          broadcastToUser(participant.user_id, {
+            type: "reaction",
+            messageId,
+            conversationId: message.conversation_id,
+            reactions: reactions.map(r => ({
+              emoji: r.emoji,
+              count: r.count,
+              usernames: r.usernames?.split(',') || [],
+              names: r.names?.split(',') || []
+            }))
+          });
+        }
+
+        return { 
+          success: true,
+          reactions: reactions.map(r => ({
+            emoji: r.emoji,
+            count: r.count,
+            usernames: r.usernames?.split(',') || [],
+            names: r.names?.split(',') || []
+          }))
+        };
+      } catch (error) {
+        console.error("Error adding reaction:", error);
+        return { error: "Internal server error" };
+      }
+    },
+    {
+      body: t.Object({
+        emoji: t.String(),
       }),
     }
   );

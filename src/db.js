@@ -228,10 +228,12 @@ CREATE TABLE IF NOT EXISTS dm_messages (
   sender_id TEXT NOT NULL,
   content TEXT NOT NULL,
   message_type TEXT DEFAULT 'text',
+  reply_to TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   edited_at TIMESTAMP DEFAULT NULL,
   FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE,
-  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE
+  FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (reply_to) REFERENCES dm_messages(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS dm_attachments (
@@ -245,6 +247,20 @@ CREATE TABLE IF NOT EXISTS dm_attachments (
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (message_id) REFERENCES dm_messages(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS dm_reactions (
+  id TEXT PRIMARY KEY,
+  message_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  emoji TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (message_id) REFERENCES dm_messages(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(message_id, user_id, emoji)
+);
+
+CREATE INDEX IF NOT EXISTS idx_dm_reactions_message_id ON dm_reactions(message_id);
+CREATE INDEX IF NOT EXISTS idx_dm_reactions_user_id ON dm_reactions(user_id);
 
 CREATE TABLE IF NOT EXISTS blocks (
   id TEXT PRIMARY KEY,

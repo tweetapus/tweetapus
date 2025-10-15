@@ -25,6 +25,25 @@ async function getConversationContext(tweetId, db) {
   return context;
 }
 
+async function getDMConversationContext(conversationId, db) {
+  const getMessages = db.query(`
+    SELECT dm.*, u.username, u.name
+    FROM dm_messages dm
+    JOIN users u ON dm.sender_id = u.id
+    WHERE dm.conversation_id = ?
+    ORDER BY dm.created_at DESC
+    LIMIT 15
+  `);
+
+  const messages = getMessages.all(conversationId);
+  
+  return messages.reverse().map(msg => ({
+    author: msg.name || msg.username,
+    content: msg.content,
+    created_at: msg.created_at
+  }));
+}
+
 const tools = [
   {
     type: "function",
@@ -195,6 +214,48 @@ export async function generateAIResponse(tweetId, mentionContent, db) {
       content: mentionContent,
     });
 
+    return await callOpenAI(messages, db);
+  } catch (error) {
+    console.error("AI response generation error:", error);
+    return null;
+  }
+}
+
+export async function generateAIDMResponse(conversationId, messageContent, db) {
+  try {
+    const context = await getDMConversationContext(conversationId, db);
+
+    const messages = [
+      {
+        role: "system",
+        content:
+          "You are @h, also known as Happy Robot, a helpful and friendly AI assistant on tweetapus (a twitter-like platform). You're having a direct message conversation. Be helpful, friendly, and conversational. Keep your responses natural and engaging, but don't make them too long. You can answer questions, provide information, or have friendly discussions. You have access to tools to search tweets, view profiles, and get tweet details. Use them when relevant to provide accurate information.",
+      },
+    ];
+
+    if (context.length > 0) {
+      messages.push({
+        role: "system",
+        content: `Here's the conversation context:\n${context
+          .map((c) => `${c.author}: ${c.content}`)
+          .join("\n")}`,
+      });
+    }
+
+    messages.push({
+      role: "user",
+      content: messageContent,
+    });
+
+    return await callOpenAI(messages, db);
+  } catch (error) {
+    console.error("AI DM response generation error:", error);
+    return null;
+  }
+}
+
+async function callOpenAI(messages, db) {
+  try {
     let response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -263,7 +324,7 @@ export async function generateAIResponse(tweetId, mentionContent, db) {
 
     return assistantMessage?.content?.trim() || null;
   } catch (error) {
-    console.error("AI response generation error:", error);
+    console.error("OpenAI API call error:", error);
     return null;
   }
 }

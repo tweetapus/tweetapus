@@ -86,8 +86,18 @@ export default async function openTweet(
             showStats: reply.id === tweet.id,
             extendedStats: reply.id === tweet.id ? tweet.extendedStats : null,
           });
+          if (reply.id === tweet.id) {
+            postEl.setAttribute('data-main-tweet', 'true');
+          }
           composer.insertAdjacentElement("beforebegin", postEl);
         });
+        
+        setTimeout(() => {
+          const mainTweet = page.querySelector('[data-main-tweet="true"]');
+          if (mainTweet) {
+            mainTweet.scrollIntoView({ block: 'center' });
+          }
+        }, 100);
       }
 
       repliesCache.forEach((reply) => {

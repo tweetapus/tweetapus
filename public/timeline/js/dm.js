@@ -17,6 +17,7 @@ let selectedUsers = [];
 let pendingFiles = [];
 let sseConnectTimeout = null;
 let lastSSEConnect = 0;
+let replyingTo = null;
 
 function connectSSE() {
   const now = Date.now();
@@ -44,6 +45,8 @@ function connectSSE() {
       const data = JSON.parse(event.data);
       if (data.type === "m") {
         handleNewMessage(data);
+      } else if (data.type === "reaction") {
+        handleReactionUpdate(data);
       } else if (data.type === "u") {
         if (data.notifications !== undefined) {
           displayNotificationCount(data.notifications);
@@ -74,6 +77,18 @@ function handleNewMessage(data) {
   }
 
   loadConversations();
+}
+
+function handleReactionUpdate(data) {
+  const { messageId, reactions, conversationId } = data;
+  
+  if (currentConversation && currentConversation.id === conversationId) {
+    const message = currentMessages.find(m => m.id === messageId);
+    if (message) {
+      message.reactions = reactions;
+      renderMessages();
+    }
+  }
 }
 
 function displayDMCount(count) {
@@ -377,14 +392,69 @@ function createMessageElement(message, currentUser) {
   `
       : "";
 
+  const replyHtml = message.reply_to_message
+    ? `
+    <div class="dm-reply-preview">
+      <div class="dm-reply-line"></div>
+      <div class="dm-reply-content">
+        <span class="dm-reply-author">${sanitizeHTML(message.reply_to_message.name || message.reply_to_message.username)}</span>
+        <span class="dm-reply-text">${sanitizeHTML((message.reply_to_message.content || "").substring(0, 50))}${message.reply_to_message.content?.length > 50 ? '...' : ''}</span>
+      </div>
+    </div>
+  `
+    : "";
+
+  const reactionsHtml =
+    message.reactions?.length > 0
+      ? `
+    <div class="dm-reactions">
+      ${message.reactions
+        .map(
+          (reaction) => {
+            const hasReacted = message.user_reacted?.includes(reaction.emoji);
+            return `
+        <button class="dm-reaction ${hasReacted ? 'reacted' : ''}" 
+                onclick="toggleReaction('${message.id}', '${reaction.emoji}')" 
+                title="${reaction.names?.join(', ') || ''}">
+          <span class="dm-reaction-emoji">${reaction.emoji}</span>
+          <span class="dm-reaction-count">${reaction.count}</span>
+        </button>
+      `;
+          }
+        )
+        .join("")}
+      <button class="dm-add-reaction" onclick="showReactionPicker('${message.id}')" title="Add reaction">
+        <span>+</span>
+      </button>
+    </div>
+  `
+      : `
+    <div class="dm-reactions">
+      <button class="dm-add-reaction" onclick="showReactionPicker('${message.id}')" title="Add reaction">
+        <span>+</span>
+      </button>
+    </div>
+  `;
+
   return `
-		<div class="dm-message ${isOwn ? "own" : ""}">
+		<div class="dm-message ${isOwn ? "own" : ""}" data-message-id="${message.id}">
 			<img src="${avatar}" alt="${sanitizedName}" class="dm-message-avatar" style="border-radius: ${radius};" />
-			<div class="dm-message-content">
-				${sanitizedContent ? `<p class="dm-message-text">${sanitizedContent}</p>` : ""}
-				${attachmentsHtml}
+			<div class="dm-message-wrapper">
+				<div class="dm-message-content">
+					${replyHtml}
+					${sanitizedContent ? `<p class="dm-message-text">${sanitizedContent}</p>` : ""}
+					${attachmentsHtml}
+				</div>
+				${reactionsHtml}
+				<div class="dm-message-actions">
+					<button class="dm-message-action-btn" onclick="replyToMessage('${message.id}', '${sanitizedName}', '${sanitizedContent.substring(0, 50).replaceAll("'", "\\'").replaceAll('"', '&quot;')}')" title="Reply">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/>
+						</svg>
+					</button>
+					<span class="dm-message-time">${time}</span>
+				</div>
 			</div>
-			<div class="dm-message-time">${time}</div>
 		</div>
 	`;
 }
@@ -406,6 +476,10 @@ async function sendMessage() {
       requestBody.files = pendingFiles;
     }
 
+    if (replyingTo) {
+      requestBody.replyTo = replyingTo.id;
+    }
+
     const data = await query(
       `/dm/conversations/${currentConversation.id}/messages`,
       {
@@ -424,7 +498,9 @@ async function sendMessage() {
 
     input.value = "";
     pendingFiles = [];
+    replyingTo = null;
     renderAttachmentPreviews();
+    renderReplyPreview();
     updateSendButton();
 
     currentMessages.push(data.message);
@@ -1246,6 +1322,128 @@ async function openOrCreateConversation(username) {
 
 window.goBackToDMList = goBackToDMList;
 window.openGroupSettings = openGroupSettings;
+
+async function toggleReaction(messageId, emoji) {
+  try {
+    const data = await query(`/dm/messages/${messageId}/reactions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ emoji }),
+    });
+
+    if (data.error) {
+      toastQueue.add(data.error);
+      return;
+    }
+
+    const message = currentMessages.find(m => m.id === messageId);
+    if (message) {
+      message.reactions = data.reactions;
+      if (data.removed) {
+        message.user_reacted = message.user_reacted?.filter(e => e !== emoji) || [];
+      } else {
+        message.user_reacted = [...(message.user_reacted || []).filter(e => e !== emoji), emoji];
+      }
+      renderMessages();
+    }
+  } catch (error) {
+    console.error("Failed to toggle reaction:", error);
+    toastQueue.add("Failed to add reaction");
+  }
+}
+
+function showReactionPicker(messageId) {
+  const commonEmojis = ["❤️", "👍", "😂", "😮", "😢", "🙏", "🎉", "🔥"];
+  
+  const existingPicker = document.getElementById("reactionPicker");
+  if (existingPicker) {
+    existingPicker.remove();
+  }
+
+  const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+  if (!messageEl) return;
+
+  const picker = document.createElement("div");
+  picker.id = "reactionPicker";
+  picker.className = "dm-reaction-picker";
+  picker.innerHTML = commonEmojis.map(emoji => 
+    `<button class="dm-reaction-picker-emoji" onclick="toggleReaction('${messageId}', '${emoji}')">${emoji}</button>`
+  ).join("");
+
+  messageEl.appendChild(picker);
+
+  const closePicker = (e) => {
+    if (!picker.contains(e.target)) {
+      picker.remove();
+      document.removeEventListener("click", closePicker);
+    }
+  };
+  
+  setTimeout(() => {
+    document.addEventListener("click", closePicker);
+  }, 10);
+}
+
+function replyToMessage(messageId, authorName, messagePreview) {
+  replyingTo = {
+    id: messageId,
+    authorName,
+    messagePreview: messagePreview.replace(/&quot;/g, '"').replace(/\\'/g, "'")
+  };
+  
+  renderReplyPreview();
+  
+  const input = document.getElementById("dmMessageInput");
+  if (input) {
+    input.focus();
+  }
+}
+
+function cancelReply() {
+  replyingTo = null;
+  renderReplyPreview();
+}
+
+function renderReplyPreview() {
+  const composerElement = document.querySelector(".dm-composer");
+  if (!composerElement) return;
+
+  let replyPreviewEl = document.getElementById("dmReplyPreview");
+  
+  if (!replyingTo) {
+    if (replyPreviewEl) {
+      replyPreviewEl.remove();
+    }
+    return;
+  }
+
+  if (!replyPreviewEl) {
+    replyPreviewEl = document.createElement("div");
+    replyPreviewEl.id = "dmReplyPreview";
+    replyPreviewEl.className = "dm-reply-preview-composer";
+    composerElement.insertBefore(replyPreviewEl, composerElement.firstChild);
+  }
+
+  replyPreviewEl.innerHTML = `
+    <div class="dm-reply-preview-line"></div>
+    <div class="dm-reply-preview-content">
+      <span class="dm-reply-preview-label">Replying to ${sanitizeHTML(replyingTo.authorName)}</span>
+      <span class="dm-reply-preview-text">${sanitizeHTML(replyingTo.messagePreview)}</span>
+    </div>
+    <button class="dm-reply-preview-cancel" onclick="cancelReply()" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+    </button>
+  `;
+}
+
+window.toggleReaction = toggleReaction;
+window.showReactionPicker = showReactionPicker;
+window.replyToMessage = replyToMessage;
+window.cancelReply = cancelReply;
 
 export default {
   loadConversations,
