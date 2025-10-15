@@ -36,11 +36,11 @@ async function getDMConversationContext(conversationId, db) {
   `);
 
   const messages = getMessages.all(conversationId);
-  
-  return messages.reverse().map(msg => ({
+
+  return messages.reverse().map((msg) => ({
     author: msg.name || msg.username,
     content: msg.content,
-    created_at: msg.created_at
+    created_at: msg.created_at,
   }));
 }
 

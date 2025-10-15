@@ -1,8 +1,8 @@
 import { jwt } from "@elysiajs/jwt";
 import { Elysia, t } from "elysia";
 import db from "../db.js";
-import { addNotification } from "./notifications.js";
 import { generateAIDMResponse } from "../helpers/ai-assistant.js";
+import { addNotification } from "./notifications.js";
 
 let broadcastToUser, sendUnreadCounts;
 try {
@@ -270,24 +270,27 @@ export default new Elysia({ prefix: "/dm" })
       const enhancedMessages = messages.map((message) => {
         const attachments = getMessageAttachments.all(message.id);
         const reactions = getMessageReactions.all(message.id);
-        const userReactions = getUserReactionForMessage.all(message.id, user.id);
-        
+        const userReactions = getUserReactionForMessage.all(
+          message.id,
+          user.id
+        );
+
         let replyToMessage = null;
         if (message.reply_to) {
           replyToMessage = getReplyMessage.get(message.reply_to);
         }
-        
-        return { 
-          ...message, 
+
+        return {
+          ...message,
           attachments,
-          reactions: reactions.map(r => ({
+          reactions: reactions.map((r) => ({
             emoji: r.emoji,
             count: r.count,
-            usernames: r.usernames?.split(',') || [],
-            names: r.names?.split(',') || []
+            usernames: r.usernames?.split(",") || [],
+            names: r.names?.split(",") || [],
           })),
-          user_reacted: userReactions.map(r => r.emoji),
-          reply_to_message: replyToMessage
+          user_reacted: userReactions.map((r) => r.emoji),
+          reply_to_message: replyToMessage,
         };
       });
 
@@ -451,7 +454,7 @@ export default new Elysia({ prefix: "/dm" })
         }
 
         updateConversationTimestamp.run(id);
-        
+
         let replyToMessage = null;
         if (replyTo) {
           replyToMessage = getReplyMessage.get(replyTo);
@@ -475,17 +478,26 @@ export default new Elysia({ prefix: "/dm" })
               attachments,
               reactions: [],
               user_reacted: [],
-              reply_to_message: replyToMessage
+              reply_to_message: replyToMessage,
             },
           });
           sendUnreadCounts(participant.user_id);
         }
 
         const aiUser = getUserByUsername.get("h");
-        const hasAIInConversation = getConversationParticipants.all(id).some(p => p.user_id === aiUser?.id);
-        const mentionsAI = content && (content.includes("@h") || content.toLowerCase().includes("happy robot"));
-        
-        if (aiUser && (hasAIInConversation || mentionsAI) && user.id !== aiUser.id) {
+        const hasAIInConversation = getConversationParticipants
+          .all(id)
+          .some((p) => p.user_id === aiUser?.id);
+        const mentionsAI =
+          content &&
+          (content.includes("@h") ||
+            content.toLowerCase().includes("happy robot"));
+
+        if (
+          aiUser &&
+          (hasAIInConversation || mentionsAI) &&
+          user.id !== aiUser.id
+        ) {
           (async () => {
             try {
               const aiResponse = await generateAIDMResponse(id, content, db);
@@ -519,7 +531,7 @@ export default new Elysia({ prefix: "/dm" })
                         attachments: [],
                         reactions: [],
                         user_reacted: [],
-                        reply_to_message: null
+                        reply_to_message: null,
                       },
                     });
                     sendUnreadCounts(participant.user_id);
@@ -544,7 +556,7 @@ export default new Elysia({ prefix: "/dm" })
             attachments,
             reactions: [],
             user_reacted: [],
-            reply_to_message: replyToMessage
+            reply_to_message: replyToMessage,
           },
         };
       } catch (error) {
@@ -755,45 +767,53 @@ export default new Elysia({ prefix: "/dm" })
         const { messageId } = params;
         const { emoji } = body;
 
-        const message = db.query("SELECT * FROM dm_messages WHERE id = ?").get(messageId);
+        const message = db
+          .query("SELECT * FROM dm_messages WHERE id = ?")
+          .get(messageId);
         if (!message) return { error: "Message not found" };
 
-        const participant = checkParticipant.get(message.conversation_id, user.id);
+        const participant = checkParticipant.get(
+          message.conversation_id,
+          user.id
+        );
         if (!participant) return { error: "Access denied" };
 
-        const existingReaction = getUserReactionForMessage.get(messageId, user.id);
-        
+        const existingReaction = getUserReactionForMessage.get(
+          messageId,
+          user.id
+        );
+
         if (existingReaction?.emoji === emoji) {
           removeReaction.run(messageId, user.id, emoji);
-          
+
           const reactions = getMessageReactions.all(messageId);
           const recipients = getConversationParticipants
             .all(message.conversation_id)
             .filter((p) => p.user_id !== user.id);
-          
+
           for (const participant of recipients) {
             broadcastToUser(participant.user_id, {
               type: "reaction",
               messageId,
               conversationId: message.conversation_id,
-              reactions: reactions.map(r => ({
+              reactions: reactions.map((r) => ({
                 emoji: r.emoji,
                 count: r.count,
-                usernames: r.usernames?.split(',') || [],
-                names: r.names?.split(',') || []
-              }))
+                usernames: r.usernames?.split(",") || [],
+                names: r.names?.split(",") || [],
+              })),
             });
           }
-          
-          return { 
-            success: true, 
+
+          return {
+            success: true,
             removed: true,
-            reactions: reactions.map(r => ({
+            reactions: reactions.map((r) => ({
               emoji: r.emoji,
               count: r.count,
-              usernames: r.usernames?.split(',') || [],
-              names: r.names?.split(',') || []
-            }))
+              usernames: r.usernames?.split(",") || [],
+              names: r.names?.split(",") || [],
+            })),
           };
         }
 
@@ -808,29 +828,29 @@ export default new Elysia({ prefix: "/dm" })
         const recipients = getConversationParticipants
           .all(message.conversation_id)
           .filter((p) => p.user_id !== user.id);
-        
+
         for (const participant of recipients) {
           broadcastToUser(participant.user_id, {
             type: "reaction",
             messageId,
             conversationId: message.conversation_id,
-            reactions: reactions.map(r => ({
+            reactions: reactions.map((r) => ({
               emoji: r.emoji,
               count: r.count,
-              usernames: r.usernames?.split(',') || [],
-              names: r.names?.split(',') || []
-            }))
+              usernames: r.usernames?.split(",") || [],
+              names: r.names?.split(",") || [],
+            })),
           });
         }
 
-        return { 
+        return {
           success: true,
-          reactions: reactions.map(r => ({
+          reactions: reactions.map((r) => ({
             emoji: r.emoji,
             count: r.count,
-            usernames: r.usernames?.split(',') || [],
-            names: r.names?.split(',') || []
-          }))
+            usernames: r.usernames?.split(",") || [],
+            names: r.names?.split(",") || [],
+          })),
         };
       } catch (error) {
         console.error("Error adding reaction:", error);

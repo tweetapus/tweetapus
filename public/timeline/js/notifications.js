@@ -5,6 +5,9 @@ import switchPage, { addRoute } from "./pages.js";
 import { createTweetElement } from "./tweets.js";
 
 let currentNotifications = [];
+let isLoadingMoreNotifications = false;
+let hasMoreNotifications = true;
+let oldestNotificationId = null;
 
 function displayUnreadCount(count) {
   const countElement = document.getElementById("notificationCount");
@@ -37,6 +40,10 @@ async function loadNotifications() {
     listElement.innerHTML = "";
   }
 
+  isLoadingMoreNotifications = false;
+  hasMoreNotifications = true;
+  oldestNotificationId = null;
+
   try {
     const data = await query("/notifications/");
 
@@ -49,6 +56,12 @@ async function loadNotifications() {
     });
 
     currentNotifications = notifications;
+    hasMoreNotifications = data.hasMoreNotifications || false;
+
+    if (notifications.length > 0) {
+      oldestNotificationId = notifications[notifications.length - 1].id;
+    }
+
     renderNotifications();
   } catch (error) {
     console.error("Failed to load notifications:", error);
@@ -266,6 +279,53 @@ document
 document
   .getElementById("markAllReadBtn")
   ?.addEventListener("click", markAllAsRead);
+
+window.addEventListener("scroll", async () => {
+  const notificationsPage = document.querySelector(".notifications");
+  if (!notificationsPage || notificationsPage.style.display === "none") return;
+
+  if (isLoadingMoreNotifications || !hasMoreNotifications) return;
+
+  const scrollPosition = window.innerHeight + window.scrollY;
+  const threshold = document.documentElement.scrollHeight - 800;
+
+  if (scrollPosition >= threshold) {
+    isLoadingMoreNotifications = true;
+
+    try {
+      const data = await query(
+        `/notifications/?before=${oldestNotificationId}&limit=20`
+      );
+
+      const newNotifications = (data.notifications || []).map(
+        (notification) => {
+          if (notification.tweet?.user) {
+            notification.tweet.author = notification.tweet.user;
+            delete notification.tweet.user;
+          }
+          return notification;
+        }
+      );
+
+      if (newNotifications.length > 0) {
+        currentNotifications.push(...newNotifications);
+        const listElement = document.getElementById("notificationsList");
+
+        newNotifications.forEach((notification) => {
+          const notificationEl = createNotificationElement(notification);
+          listElement.appendChild(notificationEl);
+        });
+
+        oldestNotificationId = newNotifications[newNotifications.length - 1].id;
+        hasMoreNotifications = data.hasMoreNotifications || false;
+      }
+    } catch (error) {
+      console.error("Error loading more notifications:", error);
+    } finally {
+      isLoadingMoreNotifications = false;
+    }
+  }
+});
 
 addRoute((pathname) => pathname === "/notifications", openNotifications);
 

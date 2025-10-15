@@ -81,9 +81,9 @@ function handleNewMessage(data) {
 
 function handleReactionUpdate(data) {
   const { messageId, reactions, conversationId } = data;
-  
+
   if (currentConversation && currentConversation.id === conversationId) {
-    const message = currentMessages.find(m => m.id === messageId);
+    const message = currentMessages.find((m) => m.id === messageId);
     if (message) {
       message.reactions = reactions;
       renderMessages();
@@ -397,8 +397,12 @@ function createMessageElement(message, currentUser) {
     <div class="dm-reply-preview">
       <div class="dm-reply-line"></div>
       <div class="dm-reply-content">
-        <span class="dm-reply-author">${sanitizeHTML(message.reply_to_message.name || message.reply_to_message.username)}</span>
-        <span class="dm-reply-text">${sanitizeHTML((message.reply_to_message.content || "").substring(0, 50))}${message.reply_to_message.content?.length > 50 ? '...' : ''}</span>
+        <span class="dm-reply-author">${sanitizeHTML(
+          message.reply_to_message.name || message.reply_to_message.username
+        )}</span>
+        <span class="dm-reply-text">${sanitizeHTML(
+          (message.reply_to_message.content || "").substring(0, 50)
+        )}${message.reply_to_message.content?.length > 50 ? "..." : ""}</span>
       </div>
     </div>
   `
@@ -409,21 +413,21 @@ function createMessageElement(message, currentUser) {
       ? `
     <div class="dm-reactions">
       ${message.reactions
-        .map(
-          (reaction) => {
-            const hasReacted = message.user_reacted?.includes(reaction.emoji);
-            return `
-        <button class="dm-reaction ${hasReacted ? 'reacted' : ''}" 
+        .map((reaction) => {
+          const hasReacted = message.user_reacted?.includes(reaction.emoji);
+          return `
+        <button class="dm-reaction ${hasReacted ? "reacted" : ""}" 
                 onclick="toggleReaction('${message.id}', '${reaction.emoji}')" 
-                title="${reaction.names?.join(', ') || ''}">
+                title="${reaction.names?.join(", ") || ""}">
           <span class="dm-reaction-emoji">${reaction.emoji}</span>
           <span class="dm-reaction-count">${reaction.count}</span>
         </button>
       `;
-          }
-        )
+        })
         .join("")}
-      <button class="dm-add-reaction" onclick="showReactionPicker('${message.id}')" title="Add reaction">
+      <button class="dm-add-reaction" onclick="showReactionPicker('${
+        message.id
+      }')" title="Add reaction">
         <span>+</span>
       </button>
     </div>
@@ -447,7 +451,12 @@ function createMessageElement(message, currentUser) {
 				</div>
 				${reactionsHtml}
 				<div class="dm-message-actions">
-					<button class="dm-message-action-btn" onclick="replyToMessage('${message.id}', '${sanitizedName}', '${sanitizedContent.substring(0, 50).replaceAll("'", "\\'").replaceAll('"', '&quot;')}')" title="Reply">
+					<button class="dm-message-action-btn" onclick="replyToMessage('${
+            message.id
+          }', '${sanitizedName}', '${sanitizedContent
+    .substring(0, 50)
+    .replaceAll("'", "\\'")
+    .replaceAll('"', "&quot;")}')" title="Reply">
 						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 							<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2z"/>
 						</svg>
@@ -1338,13 +1347,17 @@ async function toggleReaction(messageId, emoji) {
       return;
     }
 
-    const message = currentMessages.find(m => m.id === messageId);
+    const message = currentMessages.find((m) => m.id === messageId);
     if (message) {
       message.reactions = data.reactions;
       if (data.removed) {
-        message.user_reacted = message.user_reacted?.filter(e => e !== emoji) || [];
+        message.user_reacted =
+          message.user_reacted?.filter((e) => e !== emoji) || [];
       } else {
-        message.user_reacted = [...(message.user_reacted || []).filter(e => e !== emoji), emoji];
+        message.user_reacted = [
+          ...(message.user_reacted || []).filter((e) => e !== emoji),
+          emoji,
+        ];
       }
       renderMessages();
     }
@@ -1356,7 +1369,7 @@ async function toggleReaction(messageId, emoji) {
 
 function showReactionPicker(messageId) {
   const commonEmojis = ["❤️", "👍", "😂", "😮", "😢", "🙏", "🎉", "🔥"];
-  
+
   const existingPicker = document.getElementById("reactionPicker");
   if (existingPicker) {
     existingPicker.remove();
@@ -1368,9 +1381,12 @@ function showReactionPicker(messageId) {
   const picker = document.createElement("div");
   picker.id = "reactionPicker";
   picker.className = "dm-reaction-picker";
-  picker.innerHTML = commonEmojis.map(emoji => 
-    `<button class="dm-reaction-picker-emoji" onclick="toggleReaction('${messageId}', '${emoji}')">${emoji}</button>`
-  ).join("");
+  picker.innerHTML = commonEmojis
+    .map(
+      (emoji) =>
+        `<button class="dm-reaction-picker-emoji" onclick="toggleReaction('${messageId}', '${emoji}')">${emoji}</button>`
+    )
+    .join("");
 
   messageEl.appendChild(picker);
 
@@ -1380,7 +1396,7 @@ function showReactionPicker(messageId) {
       document.removeEventListener("click", closePicker);
     }
   };
-  
+
   setTimeout(() => {
     document.addEventListener("click", closePicker);
   }, 10);
@@ -1390,11 +1406,11 @@ function replyToMessage(messageId, authorName, messagePreview) {
   replyingTo = {
     id: messageId,
     authorName,
-    messagePreview: messagePreview.replace(/&quot;/g, '"').replace(/\\'/g, "'")
+    messagePreview: messagePreview.replace(/&quot;/g, '"').replace(/\\'/g, "'"),
   };
-  
+
   renderReplyPreview();
-  
+
   const input = document.getElementById("dmMessageInput");
   if (input) {
     input.focus();
@@ -1411,7 +1427,7 @@ function renderReplyPreview() {
   if (!composerElement) return;
 
   let replyPreviewEl = document.getElementById("dmReplyPreview");
-  
+
   if (!replyingTo) {
     if (replyPreviewEl) {
       replyPreviewEl.remove();
@@ -1429,8 +1445,12 @@ function renderReplyPreview() {
   replyPreviewEl.innerHTML = `
     <div class="dm-reply-preview-line"></div>
     <div class="dm-reply-preview-content">
-      <span class="dm-reply-preview-label">Replying to ${sanitizeHTML(replyingTo.authorName)}</span>
-      <span class="dm-reply-preview-text">${sanitizeHTML(replyingTo.messagePreview)}</span>
+      <span class="dm-reply-preview-label">Replying to ${sanitizeHTML(
+        replyingTo.authorName
+      )}</span>
+      <span class="dm-reply-preview-text">${sanitizeHTML(
+        replyingTo.messagePreview
+      )}</span>
     </div>
     <button class="dm-reply-preview-cancel" onclick="cancelReply()" type="button">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

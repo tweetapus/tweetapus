@@ -80,6 +80,15 @@ const getTweetReplies = db.query(`
   FROM posts
   WHERE reply_to = ?
   ORDER BY created_at ASC
+  LIMIT ?
+`);
+
+const getTweetRepliesBefore = db.query(`
+  SELECT *
+  FROM posts
+  WHERE reply_to = ? AND created_at < (SELECT created_at FROM posts WHERE id = ?)
+  ORDER BY created_at ASC
+  LIMIT ?
 `);
 
 const createTweet = db.query(`
@@ -662,8 +671,9 @@ export default new Elysia({ prefix: "/tweets" })
       return { error: "Failed to create tweet" };
     }
   })
-  .get("/:id", async ({ params, jwt, headers }) => {
+  .get("/:id", async ({ params, jwt, headers, query }) => {
     const { id } = params;
+    const { before, limit = 20 } = query;
 
     const tweet = getTweetById.get(id);
     if (!tweet) {
@@ -675,7 +685,9 @@ export default new Elysia({ prefix: "/tweets" })
     );
 
     const threadPosts = getTweetWithThread.all(id);
-    const replies = getTweetReplies.all(id);
+    const replies = before
+      ? getTweetRepliesBefore.all(id, before, parseInt(limit))
+      : getTweetReplies.all(id, parseInt(limit));
 
     let currentUser;
     const authorization = headers.authorization;
@@ -834,6 +846,8 @@ export default new Elysia({ prefix: "/tweets" })
       quotes: getTweetQuotes.all(tweet.id),
     };
 
+    const hasMoreReplies = replies.length === parseInt(limit);
+
     return {
       tweet: {
         ...tweet,
@@ -848,6 +862,7 @@ export default new Elysia({ prefix: "/tweets" })
       threadPosts: processedThreadPosts,
       replies: processedReplies,
       extendedStats,
+      hasMoreReplies,
     };
   })
   .post("/:id/like", async ({ jwt, headers, params }) => {

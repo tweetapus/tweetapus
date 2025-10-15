@@ -19,6 +19,14 @@ const getNotifications = db.prepare(`
   LIMIT ?
 `);
 
+const getNotificationsBefore = db.prepare(`
+  SELECT id, type, content, related_id, read, created_at
+  FROM notifications 
+  WHERE user_id = ? AND created_at < (SELECT created_at FROM notifications WHERE id = ?)
+  ORDER BY created_at DESC 
+  LIMIT ?
+`);
+
 const getTweetById = db.prepare(`
   SELECT 
     p.*,
@@ -81,7 +89,7 @@ export function addNotification(userId, type, content, relatedId = null) {
 }
 
 export default new Elysia({ prefix: "/notifications" })
-  .get("/", ({ headers, query: { limit = 20 } }) => {
+  .get("/", ({ headers, query: { limit = 20, before } }) => {
     try {
       const token = headers.authorization?.replace("Bearer ", "");
       if (!token) return { error: "Unauthorized" };
@@ -90,7 +98,9 @@ export default new Elysia({ prefix: "/notifications" })
       const user = getUserByUsername.get(payload.username);
       if (!user) return { error: "User not found" };
 
-      const notifications = getNotifications.all(user.id, parseInt(limit));
+      const notifications = before
+        ? getNotificationsBefore.all(user.id, before, parseInt(limit))
+        : getNotifications.all(user.id, parseInt(limit));
 
       const enhancedNotifications = notifications.map((notification) => {
         const enhanced = { ...notification };
@@ -132,7 +142,13 @@ export default new Elysia({ prefix: "/notifications" })
         return enhanced;
       });
 
-      return { notifications: enhancedNotifications };
+      const hasMoreNotifications =
+        notifications.length === parseInt(limit);
+
+      return {
+        notifications: enhancedNotifications,
+        hasMoreNotifications,
+      };
     } catch (error) {
       console.error("Error fetching notifications:", error);
       return { error: "Failed to fetch notifications" };

@@ -3437,7 +3437,7 @@ nav {
 
     .dm-conversation-names {
       min-width: 0;
-      
+
       h2 {
         margin: 0;
         font-size: 16px;
@@ -3476,20 +3476,20 @@ nav {
   position: relative;
   transition: background-color 0.1s ease;
   border-radius: 4px;
-  
+
   &:hover {
     background-color: rgba(var(--primary-rgb), 0.02);
-    
+
     .dm-message-actions {
       opacity: 1;
     }
   }
-  
+
   &.own {
     .dm-message-wrapper {
       align-items: flex-start;
     }
-    
+
     .dm-reactions {
       justify-content: flex-start;
     }
@@ -3504,7 +3504,7 @@ nav {
     background-color: var(--bg-tertiary);
     margin-top: 2px;
   }
-  
+
   .dm-message-wrapper {
     display: flex;
     flex-direction: column;
@@ -3540,14 +3540,14 @@ nav {
       }
     }
   }
-  
+
   .dm-reply-preview {
     padding: 6px 8px;
     margin-bottom: 4px;
     border-left: 2px solid var(--text-secondary);
     background: rgba(var(--primary-rgb), 0.05);
     border-radius: 4px;
-    
+
     .dm-reply-author {
       font-size: 12px;
       font-weight: 600;
@@ -3555,7 +3555,7 @@ nav {
       display: block;
       margin-bottom: 2px;
     }
-    
+
     .dm-reply-text {
       font-size: 12px;
       color: var(--text-secondary);
@@ -3565,14 +3565,14 @@ nav {
       white-space: nowrap;
     }
   }
-  
+
   .dm-reactions {
     display: flex;
     gap: 2px;
     flex-wrap: wrap;
     align-items: center;
     margin-top: 2px;
-    
+
     .dm-reaction {
       display: flex;
       align-items: center;
@@ -3584,28 +3584,28 @@ nav {
       font-size: 13px;
       cursor: pointer;
       transition: all 0.15s ease;
-      
+
       &:hover {
         background: rgba(var(--primary-rgb), 0.12);
         transform: scale(1.05);
       }
-      
+
       &.reacted {
         background: rgba(var(--primary-rgb), 0.2);
         border-color: rgba(var(--primary-rgb), 0.3);
       }
-      
+
       .dm-reaction-emoji {
         font-size: 13px;
       }
-      
+
       .dm-reaction-count {
         font-size: 11px;
         font-weight: 600;
         color: var(--text-primary);
       }
     }
-    
+
     .dm-add-reaction {
       display: flex;
       align-items: center;
@@ -3620,7 +3620,7 @@ nav {
       cursor: pointer;
       transition: all 0.15s ease;
       opacity: 0.6;
-      
+
       &:hover {
         background: rgba(var(--primary-rgb), 0.1);
         color: var(--text-primary);
@@ -3628,7 +3628,7 @@ nav {
       }
     }
   }
-  
+
   .dm-reaction-picker {
     position: absolute;
     bottom: 100%;
@@ -3642,7 +3642,7 @@ nav {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 1000;
     margin-bottom: 4px;
-    
+
     .dm-reaction-picker-emoji {
       width: 32px;
       height: 32px;
@@ -3652,14 +3652,14 @@ nav {
       cursor: pointer;
       border-radius: 6px;
       transition: all 0.15s ease;
-      
+
       &:hover {
         background: rgba(var(--primary-rgb), 0.1);
         transform: scale(1.15);
       }
     }
   }
-  
+
   .dm-message-actions {
     display: flex;
     align-items: center;
@@ -3667,7 +3667,7 @@ nav {
     margin-top: 0;
     opacity: 0;
     transition: opacity 0.15s ease;
-    
+
     .dm-message-action-btn {
       background: transparent;
       border: none;
@@ -3679,18 +3679,18 @@ nav {
       justify-content: center;
       border-radius: 3px;
       transition: all 0.15s ease;
-      
+
       &:hover {
         background: rgba(var(--primary-rgb), 0.1);
         color: var(--text-primary);
       }
-      
+
       svg {
         width: 14px;
         height: 14px;
       }
     }
-    
+
     .dm-message-time {
       font-size: 11px;
       color: var(--text-secondary);
@@ -3702,7 +3702,7 @@ nav {
 .dm-composer {
   border-top: 1px solid var(--border-primary);
   background-color: var(--bg-primary);
-  
+
   .dm-reply-preview-composer {
     padding: 12px 16px;
     background: var(--bg-secondary);
@@ -3710,7 +3710,7 @@ nav {
     display: flex;
     align-items: center;
     gap: 12px;
-    
+
     .dm-reply-preview-line {
       width: 3px;
       height: 32px;
@@ -3718,19 +3718,19 @@ nav {
       border-radius: 2px;
       flex-shrink: 0;
     }
-    
+
     .dm-reply-preview-content {
       flex: 1;
       display: flex;
       flex-direction: column;
       gap: 2px;
-      
+
       .dm-reply-preview-label {
         font-size: 12px;
         font-weight: 600;
         color: var(--primary);
       }
-      
+
       .dm-reply-preview-text {
         font-size: 12px;
         color: var(--text-secondary);
@@ -3739,7 +3739,7 @@ nav {
         white-space: nowrap;
       }
     }
-    
+
     .dm-reply-preview-cancel {
       background: transparent;
       border: none;
@@ -3752,7 +3752,7 @@ nav {
       border-radius: 4px;
       transition: all 0.2s ease;
       flex-shrink: 0;
-      
+
       &:hover {
         background: var(--bg-tertiary);
         color: var(--text-primary);

@@ -14,10 +14,12 @@ export default async function openTweet(
   if (!tweet?.author) {
     const apiOutput = await query(`/tweets/${tweet.id}`);
     tweet = apiOutput.tweet;
-    threadPostsCache = apiOutput?.threadPosts || [{
-      ...tweet,
-      content: "failed to load xeet. it might have been deleted",
-    }];
+    threadPostsCache = apiOutput?.threadPosts || [
+      {
+        ...tweet,
+        content: "failed to load xeet. it might have been deleted",
+      },
+    ];
     repliesCache = apiOutput?.replies || [];
     tweet.extendedStats = apiOutput?.extendedStats || [];
 
@@ -29,6 +31,10 @@ export default async function openTweet(
       return;
     }
   }
+
+  let isLoadingMoreReplies = false;
+  let hasMoreReplies = true;
+  let oldestReplyId = null;
 
   switchPage("tweet", {
     path: `/tweet/${tweet.id}`,
@@ -67,6 +73,7 @@ export default async function openTweet(
         tweet = apiOutput.tweet;
         threadPostsCache = apiOutput.threadPosts;
         repliesCache = apiOutput.replies;
+        hasMoreReplies = apiOutput.hasMoreReplies || false;
         tweet.extendedStats = apiOutput.extendedStats;
       }
 
@@ -87,24 +94,65 @@ export default async function openTweet(
             extendedStats: reply.id === tweet.id ? tweet.extendedStats : null,
           });
           if (reply.id === tweet.id) {
-            postEl.setAttribute('data-main-tweet', 'true');
+            postEl.setAttribute("data-main-tweet", "true");
           }
           composer.insertAdjacentElement("beforebegin", postEl);
         });
-        
+
         setTimeout(() => {
           const mainTweet = page.querySelector('[data-main-tweet="true"]');
           if (mainTweet) {
-            mainTweet.scrollIntoView({ block: 'center' });
+            mainTweet.scrollIntoView({ block: "center" });
           }
         }, 100);
       }
+
+      const repliesContainer = document.createElement("div");
+      repliesContainer.className = "tweet-replies-container";
 
       repliesCache.forEach((reply) => {
         const replyEl = createTweetElement(reply, {
           clickToOpen: true,
         });
-        page.appendChild(replyEl);
+        replyEl.setAttribute("data-reply-id", reply.id);
+        repliesContainer.appendChild(replyEl);
+        oldestReplyId = reply.id;
+      });
+
+      page.appendChild(repliesContainer);
+
+      window.addEventListener("scroll", async () => {
+        if (isLoadingMoreReplies || !hasMoreReplies) return;
+
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const threshold = document.documentElement.scrollHeight - 800;
+
+        if (scrollPosition >= threshold) {
+          isLoadingMoreReplies = true;
+
+          try {
+            const apiOutput = await query(
+              `/tweets/${tweet.id}?before=${oldestReplyId}&limit=20`
+            );
+
+            if (apiOutput.replies && apiOutput.replies.length > 0) {
+              apiOutput.replies.forEach((reply) => {
+                const replyEl = createTweetElement(reply, {
+                  clickToOpen: true,
+                });
+                replyEl.setAttribute("data-reply-id", reply.id);
+                repliesContainer.appendChild(replyEl);
+                oldestReplyId = reply.id;
+              });
+
+              hasMoreReplies = apiOutput.hasMoreReplies || false;
+            }
+          } catch (error) {
+            console.error("Error loading more replies:", error);
+          } finally {
+            isLoadingMoreReplies = false;
+          }
+        }
       });
     },
   });
