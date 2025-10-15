@@ -2,10 +2,10 @@ import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
+import { generateAIResponse } from "../helpers/ai-assistant.js";
 import ratelimit from "../helpers/ratelimit.js";
 import { extractAndSaveHashtags } from "./hashtags.js";
 import { addNotification } from "./notifications.js";
-import { generateAIResponse } from "../helpers/ai-assistant.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -544,12 +544,14 @@ export default new Elysia({ prefix: "/tweets" })
 
       const shouldTriggerAI = mentions.has("h") || mentions.has("H");
       let isReplyToAIThread = false;
-      
+
       if (!shouldTriggerAI && reply_to) {
         const aiUser = getUserByUsername.get("h");
         if (aiUser) {
           const threadPosts = getTweetWithThread.all(reply_to);
-          isReplyToAIThread = threadPosts.some(post => post.user_id === aiUser.id);
+          isReplyToAIThread = threadPosts.some(
+            (post) => post.user_id === aiUser.id
+          );
         }
       }
 
@@ -558,7 +560,11 @@ export default new Elysia({ prefix: "/tweets" })
         if (aiUser) {
           (async () => {
             try {
-              const aiResponse = await generateAIResponse(tweetId, trimmedContent, db);
+              const aiResponse = await generateAIResponse(
+                tweetId,
+                trimmedContent,
+                db
+              );
               if (aiResponse) {
                 const aiTweetId = Bun.randomUUIDv7();
                 createTweet.get(
@@ -664,7 +670,9 @@ export default new Elysia({ prefix: "/tweets" })
       return { error: "Tweet not found" };
     }
 
-    db.query("UPDATE posts SET view_count = view_count + 1 WHERE id = ?").run(id);
+    db.query("UPDATE posts SET view_count = view_count + 1 WHERE id = ?").run(
+      id
+    );
 
     const threadPosts = getTweetWithThread.all(id);
     const replies = getTweetReplies.all(id);

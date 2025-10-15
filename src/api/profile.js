@@ -658,14 +658,22 @@ export default new Elysia({ prefix: "/profile" })
       }
 
       // Get file extension based on MIME type first
+      // By default only WebP is allowed. GIF uploads are allowed only for gold accounts.
       const allowedTypes = {
         "image/webp": ".webp",
       };
 
+      if (currentUser.gold) {
+        // Allow GIF uploads for gold users (so animated avatars are possible)
+        allowedTypes["image/gif"] = ".gif";
+      }
+
       const fileExtension = allowedTypes[avatar.type];
       if (!fileExtension) {
         return {
-          error: "Invalid file type. Only WebP images are allowed for avatars.",
+          error: currentUser.gold
+            ? "Invalid file type. Only WebP images (and GIF for Gold accounts) are allowed for avatars."
+            : "Invalid file type. Only WebP images are allowed for avatars.",
         };
       }
 
@@ -679,6 +687,35 @@ export default new Elysia({ prefix: "/profile" })
 
       // Calculate secure hash for filename
       const arrayBuffer = await avatar.arrayBuffer();
+
+      // Detect animated WebP (contains 'ANIM' chunk) and only allow it for gold users
+      if (avatar.type === "image/webp") {
+        try {
+          const bytes = new Uint8Array(arrayBuffer);
+          let hasANIM = false;
+          for (let i = 0; i < bytes.length - 3; i++) {
+            if (
+              bytes[i] === 0x41 &&
+              bytes[i + 1] === 0x4e &&
+              bytes[i + 2] === 0x49 &&
+              bytes[i + 3] === 0x4d
+            ) {
+              hasANIM = true;
+              break;
+            }
+          }
+
+          if (hasANIM && !currentUser.gold) {
+            return {
+              error:
+                "Animated WebP avatars are allowed for Gold accounts only.",
+            };
+          }
+        } catch {
+          // If detection fails, fall back to conservative behavior (disallow animated webp for non-gold)
+        }
+      }
+
       const hasher = new Bun.CryptoHasher("sha256");
       hasher.update(arrayBuffer);
       const fileHash = hasher.digest("hex");

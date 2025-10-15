@@ -1106,9 +1106,20 @@ export const createTweetElement = (tweet, config = {}) => {
 
     const rawContent = tweet.content ? tweet.content.trim() : "";
 
+    const tweetLinkRegex = /https?:\/\/(?:www\.)?(?:localhost:3000|tweetapus\.com)\/tweet\/([a-zA-Z0-9_-]+)/g;
+    let contentWithoutLinks = rawContent;
+    const extractedTweetIds = [];
+    let match = tweetLinkRegex.exec(rawContent);
+    
+    while (match !== null) {
+      extractedTweetIds.push(match[1]);
+      contentWithoutLinks = contentWithoutLinks.replace(match[0], '').trim();
+      match = tweetLinkRegex.exec(rawContent);
+    }
+
     const isExpandedView = Boolean(showStats) || clickToOpen === false;
     const shouldTrim =
-      rawContent.length > 300 &&
+      contentWithoutLinks.length > 300 &&
       !isExpandedView &&
       !tweet.extended &&
       !tweet.isExpanded;
@@ -1118,7 +1129,7 @@ export const createTweetElement = (tweet, config = {}) => {
     };
 
     if (shouldTrim) {
-      let trimmed = rawContent.slice(0, 300);
+      let trimmed = contentWithoutLinks.slice(0, 300);
       const lastSpace = Math.max(
         trimmed.lastIndexOf(" "),
         trimmed.lastIndexOf("\n")
@@ -1135,7 +1146,7 @@ export const createTweetElement = (tweet, config = {}) => {
       ellipsis.tabIndex = 0;
 
       const expand = () => {
-        applyLinkified(rawContent);
+        applyLinkified(contentWithoutLinks);
         ellipsis.remove();
 
         const collapse = document.createElement("button");
@@ -1167,7 +1178,7 @@ export const createTweetElement = (tweet, config = {}) => {
 
       tweetContentEl.appendChild(ellipsis);
     } else {
-      applyLinkified(rawContent);
+      applyLinkified(contentWithoutLinks);
     }
 
     tweetContentEl.addEventListener("click", (e) => {
@@ -1182,6 +1193,37 @@ export const createTweetElement = (tweet, config = {}) => {
     });
 
     tweetEl.appendChild(tweetContentEl);
+    
+    if (extractedTweetIds.length > 0 && !tweet.quoted_tweet) {
+      const tweetId = extractedTweetIds[0];
+      query(`/tweets/${tweetId}`)
+        .then(response => {
+          if (response?.tweet) {
+            const quotedTweetEl = createTweetElement(response.tweet, {
+              size: "preview",
+              clickToOpen: true,
+            });
+            quotedTweetEl.classList.add("tweet-preview");
+            
+            const existingQuote = tweetEl.querySelector('.tweet-preview');
+            if (!existingQuote) {
+              const pollEl = tweetEl.querySelector('.poll-container');
+              const attachmentsEl = tweetEl.querySelector('.tweet-attachments');
+              
+              if (pollEl) {
+                tweetEl.insertBefore(quotedTweetEl, pollEl);
+              } else if (attachmentsEl) {
+                tweetEl.insertBefore(quotedTweetEl, attachmentsEl);
+              } else {
+                tweetEl.appendChild(quotedTweetEl);
+              }
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Failed to load embedded tweet:', err);
+        });
+    }
   }
 
   if (tweet.poll) {
