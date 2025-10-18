@@ -5,6 +5,7 @@ import articles from "./api/articles.js";
 import auth from "./api/auth.js";
 import blocking from "./api/blocking.js";
 import bookmarks from "./api/bookmarks.js";
+import communities from "./api/communities.js";
 import dm from "./api/dm.js";
 import hashtags from "./api/hashtags.js";
 import notifications from "./api/notifications.js";
@@ -81,6 +82,7 @@ export default new Elysia({
   .use(admin)
   .use(blocking)
   .use(bookmarks)
+  .use(communities)
   .use(tweet)
   .use(articles)
   .use(profile)

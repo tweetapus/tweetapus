@@ -52,9 +52,9 @@ const getUserConversations = db.query(`
     GROUP_CONCAT(DISTINCT u.avatar) as participant_avatars,
     GROUP_CONCAT(DISTINCT u.id) as participant_ids,
     COUNT(DISTINCT cp.user_id) as participant_count,
-    (SELECT COUNT(*) FROM dm_messages dm 
+    (SELECT COUNT(DISTINCT dm.id) FROM dm_messages dm 
      WHERE dm.conversation_id = c.id 
-     AND dm.created_at > COALESCE(my_cp.last_read_at, '1970-01-01')
+     AND dm.created_at > COALESCE(my_cp.last_read_at, c.created_at)
      AND dm.sender_id != ?) as unread_count,
     (SELECT dm.content FROM dm_messages dm 
      WHERE dm.conversation_id = c.id 
@@ -121,7 +121,14 @@ const updateConversationTimestamp = db.query(`
 
 const updateLastReadAt = db.query(`
   UPDATE conversation_participants 
-  SET last_read_at = datetime('now', 'utc')
+  SET last_read_at = (
+    SELECT COALESCE(
+      (SELECT dm.created_at FROM dm_messages dm 
+       WHERE dm.conversation_id = ? 
+       ORDER BY dm.created_at DESC LIMIT 1),
+      datetime('now', 'utc')
+    )
+  )
   WHERE conversation_id = ? AND user_id = ?
 `);
 
@@ -260,6 +267,8 @@ export default new Elysia({ prefix: "/dm" })
       const participant = checkParticipant.get(id, user.id);
       if (!participant) return { error: "Access denied" };
 
+      updateLastReadAt.run(id, id, user.id);
+
       const participants = getConversationParticipants.all(id);
       const messages = getConversationMessages.all(
         id,
@@ -293,8 +302,6 @@ export default new Elysia({ prefix: "/dm" })
           reply_to_message: replyToMessage,
         };
       });
-
-      updateLastReadAt.run(id, user.id);
 
       return {
         conversation: {
@@ -597,7 +604,7 @@ export default new Elysia({ prefix: "/dm" })
       const participant = checkParticipant.get(id, user.id);
       if (!participant) return { error: "Access denied" };
 
-      updateLastReadAt.run(id, user.id);
+      updateLastReadAt.run(id, id, user.id);
       sendUnreadCounts(user.id);
 
       return { success: true };

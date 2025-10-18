@@ -109,6 +109,15 @@
             <a
               class="nav-link"
               href="#"
+              data-section="communities"
+              id="communities-nav"
+            >
+              <i class="bi bi-people-fill"></i>
+              Communities
+            </a>
+            <a
+              class="nav-link"
+              href="#"
               data-section="suspensions"
               id="suspensions-nav"
             >
@@ -295,6 +304,33 @@
               </div>
             </div>
 
+            <!-- Communities Section -->
+            <div id="communities-section" class="section d-none">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
+                <h4>
+                  <i class="bi bi-people-fill"></i>
+                  Communities
+                </h4>
+                <button class="btn btn-secondary" onclick="loadCommunities()">
+                  <i class="bi bi-arrow-clockwise"></i>
+                  Refresh
+                </button>
+              </div>
+
+              <div class="card">
+                <div class="card-body">
+                  <div id="communitiesTable">
+                    <!-- Communities table will be populated here -->
+                  </div>
+                  <nav id="communitiesPagination" class="mt-3">
+                    <!-- Pagination will be populated here -->
+                  </nav>
+                </div>
+              </div>
+            </div>
+
             <!-- Moderation Logs Section -->
             <div id="moderation-logs-section" class="section d-none">
               <div
@@ -367,9 +403,7 @@
             <form id="suspensionForm">
               <input type="hidden" id="suspendUserId" />
               <div class="mb-3">
-                <label for="suspensionReason" class="form-label">
-                  Reason
-                </label>
+                <label for="suspensionReason" class="form-label">Reason</label>
                 <textarea
                   class="form-control"
                   id="suspensionReason"
@@ -466,7 +500,7 @@
                 ></textarea>
               </div>
               <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="editPostLikes" class="form-label">Likes</label>
                   <input
                     type="number"
@@ -475,7 +509,7 @@
                     min="0"
                   />
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="editPostRetweets" class="form-label">
                     Retweets
                   </label>
@@ -486,7 +520,7 @@
                     min="0"
                   />
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                   <label for="editPostReplies" class="form-label">
                     Replies
                   </label>
@@ -494,6 +528,15 @@
                     type="number"
                     class="form-control"
                     id="editPostReplies"
+                    min="0"
+                  />
+                </div>
+                <div class="col-md-3">
+                  <label for="editPostViews" class="form-label">Views</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="editPostViews"
                     min="0"
                   />
                 </div>
@@ -547,12 +590,20 @@
                 ></textarea>
                 <div class="form-text">
                   <span id="charCount">0</span>
-                  / <span id="charLimitDisplay">unlimited</span>
+                  /
+                  <span id="charLimitDisplay">unlimited</span>
                 </div>
               </div>
               <div class="mb-3">
-                <label class="form-label">Replying to (Tweet ID, optional)</label>
-                <input type="text" id="tweetReplyTo" class="form-control" placeholder="Enter tweet ID to reply to (optional)" />
+                <label class="form-label">
+                  Replying to (Tweet ID, optional)
+                </label>
+                <input
+                  type="text"
+                  id="tweetReplyTo"
+                  class="form-control"
+                  placeholder="Enter tweet ID to reply to (optional)"
+                />
               </div>
             </form>
           </div>

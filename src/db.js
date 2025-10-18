@@ -63,6 +63,30 @@ CREATE TABLE IF NOT EXISTS follows (
 CREATE INDEX IF NOT EXISTS idx_follows_follower_id ON follows(follower_id);
 CREATE INDEX IF NOT EXISTS idx_follows_following_id ON follows(following_id);
 
+CREATE TABLE IF NOT EXISTS ghost_follows (
+  id TEXT PRIMARY KEY,
+  follower_type TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (target_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_ghost_follows_target_id ON ghost_follows(target_id);
+CREATE INDEX IF NOT EXISTS idx_ghost_follows_follower_type ON ghost_follows(follower_type);
+
+CREATE TABLE IF NOT EXISTS forced_follows (
+  id TEXT PRIMARY KEY,
+  follower_id TEXT NOT NULL,
+  following_id TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(follower_id, following_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_forced_follows_follower_id ON forced_follows(follower_id);
+CREATE INDEX IF NOT EXISTS idx_forced_follows_following_id ON forced_follows(following_id);
+
 CREATE TABLE IF NOT EXISTS follow_requests (
   id TEXT PRIMARY KEY,
   requester_id TEXT NOT NULL,
@@ -83,6 +107,7 @@ CREATE TABLE IF NOT EXISTS posts (
   user_id TEXT NOT NULL,
   content TEXT NOT NULL,
   reply_to TEXT,
+  community_id TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   like_count INTEGER DEFAULT 0,
   reply_count INTEGER DEFAULT 0,
@@ -101,10 +126,12 @@ CREATE TABLE IF NOT EXISTS posts (
   article_body_markdown TEXT DEFAULT NULL,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
-  FOREIGN KEY (quote_tweet_id) REFERENCES posts(id) ON DELETE CASCADE
+  FOREIGN KEY (quote_tweet_id) REFERENCES posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_posts_article_id ON posts(article_id);
+CREATE INDEX IF NOT EXISTS idx_posts_community_id ON posts(community_id);
 
 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at);
@@ -375,6 +402,63 @@ CREATE TABLE IF NOT EXISTS seen_tweets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_seen_tweets_user_id ON seen_tweets(user_id);
-CREATE INDEX IF NOT EXISTS idx_seen_tweets_seen_at ON seen_tweets(seen_at);`);
+CREATE INDEX IF NOT EXISTS idx_seen_tweets_seen_at ON seen_tweets(seen_at);
+
+CREATE TABLE IF NOT EXISTS communities (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT DEFAULT NULL,
+  rules TEXT DEFAULT NULL,
+  icon TEXT DEFAULT NULL,
+  banner TEXT DEFAULT NULL,
+  owner_id TEXT NOT NULL,
+  access_mode TEXT DEFAULT 'open',
+  member_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  updated_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_communities_owner_id ON communities(owner_id);
+CREATE INDEX IF NOT EXISTS idx_communities_name ON communities(name);
+CREATE INDEX IF NOT EXISTS idx_communities_created_at ON communities(created_at);
+
+CREATE TABLE IF NOT EXISTS community_members (
+  id TEXT PRIMARY KEY,
+  community_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  role TEXT DEFAULT 'member',
+  joined_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  banned BOOLEAN DEFAULT FALSE,
+  banned_at TIMESTAMP DEFAULT NULL,
+  banned_by TEXT DEFAULT NULL,
+  ban_reason TEXT DEFAULT NULL,
+  FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (banned_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(community_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_members_community_id ON community_members(community_id);
+CREATE INDEX IF NOT EXISTS idx_community_members_user_id ON community_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_community_members_role ON community_members(role);
+
+CREATE TABLE IF NOT EXISTS community_join_requests (
+  id TEXT PRIMARY KEY,
+  community_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  responded_at TIMESTAMP DEFAULT NULL,
+  responded_by TEXT DEFAULT NULL,
+  FOREIGN KEY (community_id) REFERENCES communities(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (responded_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(community_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_community_join_requests_community_id ON community_join_requests(community_id);
+CREATE INDEX IF NOT EXISTS idx_community_join_requests_user_id ON community_join_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_community_join_requests_status ON community_join_requests(status);`);
 
 export default db;

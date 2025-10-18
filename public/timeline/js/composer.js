@@ -251,6 +251,8 @@ export const useComposer = (
 
       pendingFiles.push(fileData);
       displayAttachmentPreview(fileData);
+      // ensure the tweet button updates immediately when files are added
+      updateCharacterCount();
       return fileData;
     } catch (error) {
       console.error("File processing error:", error);
@@ -283,6 +285,8 @@ export const useComposer = (
       ?.addEventListener("click", () => {
         pendingFiles = pendingFiles.filter((f) => f.tempId !== fileData.tempId);
         previewEl.remove();
+        // update button state after removing an attachment
+        updateCharacterCount();
       });
 
     attachmentPreview.appendChild(previewEl);
@@ -615,7 +619,8 @@ export const useComposer = (
             previewEl.className = "attachment-preview-item";
             previewEl.innerHTML = `
               <img src="${gifUrl}" alt="Selected GIF" />
-              <button type="button" class="remove-attachment">×</button>
+              <button type="button" class="remove-attachment">
+</button>
             `;
 
             previewEl
@@ -623,11 +628,15 @@ export const useComposer = (
               .addEventListener("click", () => {
                 selectedGif = null;
                 previewEl.remove();
+                // update button state after removing the GIF
+                updateCharacterCount();
               });
 
             attachmentPreview.appendChild(previewEl);
             gifPicker.style.display = "none";
             gifSearchInput.value = "";
+            // update button state after selecting a GIF
+            updateCharacterCount();
           });
 
           gifResults.appendChild(gifEl);
@@ -728,8 +737,13 @@ export const useComposer = (
 
   tweetButton.addEventListener("click", async () => {
     const content = textarea.value.trim();
+    const hasExtras =
+      (pendingFiles && pendingFiles.length > 0) ||
+      !!selectedGif ||
+      pollEnabled ||
+      !!article;
 
-    if (!content || content.length > maxChars) {
+    if ((content.length === 0 && !hasExtras) || content.length > maxChars) {
       toastQueue.add(
         `<h1>Invalid tweet</h1><p>Make sure your tweet is 1 to ${maxChars} characters long.</p>`
       );

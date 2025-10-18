@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Communities - tweetapus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="icon"
+      href="/public/shared/assets/favicon.svg"
+      type="image/svg+xml"
+    />
+    <link rel="stylesheet" href="/public/communities/styles.css" />
+    <link rel="stylesheet" href="/public/shared/base.css" />
+    <link rel="stylesheet" href="/public/shared/toasts.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1>Communities</h1>
+        <button class="btn-primary" id="createCommunityBtn">
+          Create Community
+        </button>
+      </header>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="all">All Communities</button>
+        <button class="tab-btn" data-tab="my">My Communities</button>
+      </div>
+
+      <div class="tab-content" id="allTab">
+        <div class="communities-list" id="communitiesList"></div>
+      </div>
+
+      <div class="tab-content hidden" id="myTab">
+        <div class="communities-list" id="myCommunitiesList"></div>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="createCommunityModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Create Community</h2>
+          <button class="modal-close" id="closeCreateModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="createCommunityForm">
+            <div class="form-group">
+              <label for="communityName">Community Name *</label>
+              <input type="text" id="communityName" maxlength="50" required />
+            </div>
+            <div class="form-group">
+              <label for="communityDescription">Description</label>
+              <textarea id="communityDescription" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="communityRules">Rules</label>
+              <textarea id="communityRules" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="accessMode">Access Mode</label>
+              <select id="accessMode">
+                <option value="open">Open - Anyone can join instantly</option>
+                <option value="locked">
+                  Locked - Requires approval to join
+                </option>
+              </select>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" id="cancelCreateBtn">
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">Create</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="communityModal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h2 id="communityModalTitle"></h2>
+          <button class="modal-close" id="closeCommunityModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="community-header" id="communityHeader"></div>
+          <div class="community-tabs">
+            <button class="tab-btn active" data-tab="about">About</button>
+            <button class="tab-btn" data-tab="members">Members</button>
+            <button class="tab-btn hidden" data-tab="requests" id="requestsTab">
+              Join Requests
+            </button>
+            <button class="tab-btn hidden" data-tab="settings" id="settingsTab">
+              Settings
+            </button>
+          </div>
+          <div class="community-tab-content">
+            <div class="tab-content" id="aboutContent"></div>
+            <div class="tab-content hidden" id="membersContent"></div>
+            <div class="tab-content hidden" id="requestsContent"></div>
+            <div class="tab-content hidden" id="settingsContent"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal hidden" id="editCommunityModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Edit Community</h2>
+          <button class="modal-close" id="closeEditModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="editCommunityForm">
+            <div class="form-group">
+              <label for="editCommunityName">Community Name *</label>
+              <input
+                type="text"
+                id="editCommunityName"
+                maxlength="50"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="editCommunityDescription">Description</label>
+              <textarea id="editCommunityDescription" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="editCommunityRules">Rules</label>
+              <textarea id="editCommunityRules" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+              <label>Community Icon</label>
+              <input
+                type="file"
+                id="iconUpload"
+                accept="image/webp,image/png,image/jpeg,image/jpg"
+              />
+              <div class="icon-preview" id="iconPreview"></div>
+            </div>
+            <div class="form-group">
+              <label>Community Banner</label>
+              <input
+                type="file"
+                id="bannerUpload"
+                accept="image/webp,image/png,image/jpeg,image/jpg"
+              />
+              <div class="banner-preview" id="bannerPreview"></div>
+            </div>
+            <div class="modal-actions">
+              <button type="button" class="btn-secondary" id="cancelEditBtn">
+                Cancel
+              </button>
+              <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/public/shared/toasts.js"></script>
+    <script type="module" src="/public/shared/darkmode.js"></script>
+    <script type="module" src="/public/shared/image-utils.js"></script>
+    <script type="module" src="/public/communities/script.js"></script>
+  </body>
+</html>

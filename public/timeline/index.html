@@ -45,6 +45,15 @@
         </svg>
         <span class="nav-label">Search</span>
       </button>
+      <button class="communities-btn" id="communitiesBtn">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M7 4V2H9V4H15V2H17V4H20C20.5523 4 21 4.44772 21 5V9C21 9.55228 20.5523 10 20 10H19V20C19 20.5523 18.5523 21 18 21H6C5.44772 21 5 20.5523 5 20V10H4C3.44772 10 3 9.55228 3 9V5C3 4.44772 3.44772 4 4 4H7ZM5 6V8H19V6H5ZM7 10V19H17V10H7ZM9 12H11V14H9V12ZM13 12H15V14H13V12ZM9 16H11V18H9V16ZM13 16H15V18H13V16Z"
+            fill="currentColor"
+          />
+        </svg>
+        <span class="nav-label">Communities</span>
+      </button>
       <button class="notifications-btn" id="notificationsBtn">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
           <path
@@ -258,6 +267,98 @@
         </div>
 
         <div class="notifications-list" id="notificationsList"></div>
+      </div>
+
+      <div class="communities-page">
+        <div class="communities-header">
+          <div class="communities-header-info">
+            <h1>Communities</h1>
+            <button class="create-community-btn" id="createCommunityBtn">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Create
+            </button>
+          </div>
+        </div>
+
+        <div class="communities-tabs">
+          <button class="communities-tab active" data-tab="all">
+            All Communities
+          </button>
+          <button class="communities-tab" data-tab="my">My Communities</button>
+        </div>
+
+        <div class="communities-content">
+          <div class="communities-list" id="communitiesList"></div>
+          <div class="communities-list hidden" id="myCommunitiesList"></div>
+        </div>
+      </div>
+
+      <div class="community-detail-page">
+        <div class="community-detail-header">
+          <button class="back-button" onclick="history.back()" type="button">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.25"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m12 19-7-7 7-7" />
+              <path d="M19 12H5" />
+            </svg>
+          </button>
+          <div class="community-detail-header-info">
+            <h1 id="communityDetailTitle"></h1>
+          </div>
+        </div>
+
+        <div class="community-detail-banner" id="communityDetailBanner"></div>
+
+        <div class="community-detail-content">
+          <div class="community-detail-tabs">
+            <button class="community-detail-tab active" data-tab="about">
+              About
+            </button>
+            <button class="community-detail-tab" data-tab="members">
+              Members
+            </button>
+            <button
+              class="community-detail-tab hidden"
+              data-tab="requests"
+              id="requestsTab"
+            >
+              Requests
+            </button>
+            <button
+              class="community-detail-tab hidden"
+              data-tab="settings"
+              id="settingsTab"
+            >
+              Settings
+            </button>
+          </div>
+
+          <div class="community-detail-tab-content">
+            <div id="aboutContent"></div>
+            <div id="membersContent" class="hidden"></div>
+            <div id="requestsContent" class="hidden"></div>
+            <div id="settingsContent" class="hidden"></div>
+          </div>
+        </div>
       </div>
 
       <div class="direct-messages">
@@ -647,7 +748,6 @@
             </div>
           </div>
 
-          <!-- Banner shown when the viewed profile has blocked the current user -->
           <div
             id="profileBlockedBanner"
             class="profile-block-banner"
@@ -950,6 +1050,104 @@
             >
               Save
             </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="createCommunityModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Create Community</h2>
+            <button class="modal-close" id="closeCreateModal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="createCommunityForm">
+              <div class="form-group">
+                <label for="communityName">Community Name *</label>
+                <input type="text" id="communityName" maxlength="50" required />
+              </div>
+              <div class="form-group">
+                <label for="communityDescription">Description</label>
+                <textarea id="communityDescription" rows="4"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="communityRules">Rules</label>
+                <textarea id="communityRules" rows="4"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="accessMode">Access Mode</label>
+                <select id="accessMode">
+                  <option value="open">Open - Anyone can join instantly</option>
+                  <option value="locked">
+                    Locked - Requires approval to join
+                  </option>
+                </select>
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="profile-btn" id="cancelCreateBtn">
+                  Cancel
+                </button>
+                <button type="submit" class="profile-btn profile-btn-primary">
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal hidden" id="editCommunityModal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Edit Community</h2>
+            <button class="modal-close" id="closeEditModal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <form id="editCommunityForm">
+              <div class="form-group">
+                <label for="editCommunityName">Community Name *</label>
+                <input
+                  type="text"
+                  id="editCommunityName"
+                  maxlength="50"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="editCommunityDescription">Description</label>
+                <textarea id="editCommunityDescription" rows="4"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="editCommunityRules">Rules</label>
+                <textarea id="editCommunityRules" rows="4"></textarea>
+              </div>
+              <div class="form-group">
+                <label>Community Icon</label>
+                <input
+                  type="file"
+                  id="iconUpload"
+                  accept="image/webp,image/png,image/jpeg,image/jpg"
+                />
+                <div class="icon-preview" id="iconPreview"></div>
+              </div>
+              <div class="form-group">
+                <label>Community Banner</label>
+                <input
+                  type="file"
+                  id="bannerUpload"
+                  accept="image/webp,image/png,image/jpeg,image/jpg"
+                />
+                <div class="banner-preview" id="bannerPreview"></div>
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="profile-btn" id="cancelEditBtn">
+                  Cancel
+                </button>
+                <button type="submit" class="profile-btn profile-btn-primary">
+                  Save Changes
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       </div>

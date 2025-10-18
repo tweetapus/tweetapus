@@ -645,11 +645,15 @@ export const createTweetElement = (tweet, config = {}) => {
     tweet.author.avatar_radius !== null &&
     tweet.author.avatar_radius !== undefined
   ) {
-    tweetHeaderAvatarEl.style.borderRadius = `${tweet.author.avatar_radius}px`;
+    tweetHeaderAvatarEl.style.setProperty(
+      "border-radius",
+      `${tweet.author.avatar_radius}px`,
+      "important"
+    );
   } else if (tweet.author.gold) {
-    tweetHeaderAvatarEl.style.borderRadius = "4px";
+    tweetHeaderAvatarEl.style.setProperty("border-radius", "4px", "important");
   } else {
-    tweetHeaderAvatarEl.style.borderRadius = "50px";
+    tweetHeaderAvatarEl.style.setProperty("border-radius", "50px", "important");
   }
   tweetHeaderAvatarEl.loading = "lazy";
   tweetHeaderAvatarEl.addEventListener("click", (e) => {

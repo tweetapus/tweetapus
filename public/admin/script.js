@@ -7,6 +7,7 @@ class AdminPanel {
     this.currentPage = {
       users: 1,
       posts: 1,
+      communities: 1,
       suspensions: 1,
       dms: 1,
       moderationLogs: 1,
@@ -106,6 +107,9 @@ class AdminPanel {
         break;
       case "posts":
         this.loadPosts();
+        break;
+      case "communities":
+        this.loadCommunities();
         break;
       case "suspensions":
         this.loadSuspensions();
@@ -745,17 +749,36 @@ class AdminPanel {
               </div>
               <div class="row">
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Followers</label>
-                  <input type="number" class="form-control" id="editProfileFollowers" value="${
+                  <label class="form-label">Real Followers</label>
+                  <input type="number" class="form-control" value="${
                     user.actual_follower_count
-                  }">
+                  }" readonly>
+                  <small class="text-muted">Actual follows (read-only)</small>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label class="form-label">Following</label>
-                  <input type="number" class="form-control" id="editProfileFollowing" value="${
-                    user.actual_following_count
-                  }">
+                  <label class="form-label">Ghost Followers</label>
+                  <input type="number" class="form-control" id="editProfileGhostFollowers" value="0" min="0">
+                  <small class="text-muted">Add invisible ghost followers</small>
                 </div>
+              </div>
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Real Following</label>
+                  <input type="number" class="form-control" value="${
+                    user.actual_following_count
+                  }" readonly>
+                  <small class="text-muted">Actual follows (read-only)</small>
+                </div>
+                <div class="col-md-6 mb-3">
+                  <label class="form-label">Ghost Following</label>
+                  <input type="number" class="form-control" id="editProfileGhostFollowing" value="0" min="0">
+                  <small class="text-muted">Add invisible ghost following</small>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Force User to Follow (comma-separated usernames)</label>
+                <input type="text" class="form-control" id="editProfileForceFollow" placeholder="user1,user2,user3">
+                <small class="text-muted">Make this user automatically follow specified users (creates real follows, works even if target doesn't exist yet)</small>
               </div>
               <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" id="editProfileVerified" ${
@@ -1007,11 +1030,27 @@ class AdminPanel {
       verified: document.getElementById("editProfileVerified").checked,
       gold: document.getElementById("editProfileGold").checked,
       admin: document.getElementById("editProfileAdmin").checked,
-      follower_count:
-        parseInt(document.getElementById("editProfileFollowers").value) || 0,
-      following_count:
-        parseInt(document.getElementById("editProfileFollowing").value) || 0,
     };
+
+    const ghostFollowersInput = document.getElementById(
+      "editProfileGhostFollowers"
+    );
+    if (ghostFollowersInput?.value) {
+      const count = parseInt(ghostFollowersInput.value) || 0;
+      if (count > 0) {
+        payload.ghost_followers = count;
+      }
+    }
+
+    const ghostFollowingInput = document.getElementById(
+      "editProfileGhostFollowing"
+    );
+    if (ghostFollowingInput?.value) {
+      const count = parseInt(ghostFollowingInput.value) || 0;
+      if (count > 0) {
+        payload.ghost_following = count;
+      }
+    }
 
     const characterLimitInput = document.getElementById(
       "editProfileCharacterLimit"
@@ -1023,6 +1062,17 @@ class AdminPanel {
       }
     } else {
       payload.character_limit = null;
+    }
+
+    const forceFollowInput = document.getElementById("editProfileForceFollow");
+    if (forceFollowInput?.value?.trim()) {
+      const usernames = forceFollowInput.value
+        .split(",")
+        .map((u) => u.trim())
+        .filter((u) => u.length > 0);
+      if (usernames.length > 0) {
+        payload.force_follow_usernames = usernames;
+      }
     }
 
     try {
@@ -1188,6 +1238,7 @@ class AdminPanel {
       document.getElementById("editPostRetweets").value =
         post.retweet_count || 0;
       document.getElementById("editPostReplies").value = post.reply_count || 0;
+      document.getElementById("editPostViews").value = post.view_count || 0;
 
       const modal = new bootstrap.Modal(
         document.getElementById("editPostModal")
@@ -1206,6 +1257,7 @@ class AdminPanel {
       parseInt(document.getElementById("editPostRetweets").value) || 0;
     const replies =
       parseInt(document.getElementById("editPostReplies").value) || 0;
+    const views = parseInt(document.getElementById("editPostViews").value) || 0;
 
     if (!content.trim()) {
       this.showError("Post content cannot be empty");
@@ -1220,6 +1272,7 @@ class AdminPanel {
           likes,
           retweets,
           replies,
+          views,
         }),
       });
 
@@ -1919,6 +1972,486 @@ class AdminPanel {
       this.loadModerationLogs(page)
     );
   }
+
+  async loadCommunities(page = 1) {
+    const limit = 20;
+    const offset = (page - 1) * limit;
+
+    try {
+      const response = await fetch(
+        `/api/communities?limit=${limit}&offset=${offset}`,
+        {
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to load communities");
+
+      const data = await response.json();
+      this.currentPage.communities = page;
+      this.displayCommunities(data.communities || [], {
+        currentPage: page,
+        totalPages: Math.ceil((data.communities?.length || 0) / limit),
+        totalItems: data.communities?.length || 0,
+      });
+    } catch (error) {
+      console.error("Error loading communities:", error);
+      document.getElementById("communitiesTable").innerHTML = `
+        <div class="alert alert-danger">Failed to load communities: ${error.message}</div>
+      `;
+    }
+  }
+
+  displayCommunities(communities, pagination) {
+    const tableContainer = document.getElementById("communitiesTable");
+
+    if (!communities || communities.length === 0) {
+      tableContainer.innerHTML = `
+        <div class="alert alert-info">No communities found</div>
+      `;
+      return;
+    }
+
+    tableContainer.innerHTML = `
+      <div class="mb-3">
+        <button class="btn btn-success" onclick="adminPanel.showCreateCommunityModal()">
+          <i class="bi bi-plus-circle"></i> Create Community
+        </button>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-dark table-striped">
+          <thead>
+            <tr>
+              <th>Community</th>
+              <th>Description</th>
+              <th>Access</th>
+              <th>Members</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${communities
+              .map((community) => {
+                const accessIcon =
+                  community.access_mode === "locked" ? "🔒" : "🔓";
+                return `
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center">
+                      ${
+                        community.icon
+                          ? `<img src="/api/uploads/${community.icon}.webp" width="40" height="40" class="rounded me-2" />`
+                          : `<div style="width:40px;height:40px;background:#495057;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-right:8px;font-weight:bold;">${community.name[0].toUpperCase()}</div>`
+                      }
+                      <div>
+                        <strong>${this.escapeHtml(community.name)}</strong>
+                        <br>
+                        <small class="text-muted font-monospace">${this.escapeHtml(
+                          community.id.substring(0, 8)
+                        )}...</small>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="max-width: 200px;">
+                    <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                      ${this.escapeHtml(
+                        community.description || "No description"
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    ${accessIcon} ${
+                  community.access_mode === "locked" ? "Locked" : "Open"
+                }
+                  </td>
+                  <td>${community.member_count || 0}</td>
+                  <td>
+                    <small>${new Date(
+                      community.created_at
+                    ).toLocaleDateString()}</small>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-info" onclick="adminPanel.viewCommunity('${
+                      community.id
+                    }')">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="adminPanel.showEditCommunityModal('${
+                      community.id
+                    }')">
+                      <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="adminPanel.manageCommunityMembers('${
+                      community.id
+                    }')">
+                      <i class="bi bi-people"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="adminPanel.deleteCommunity('${
+                      community.id
+                    }')">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              `;
+              })
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    if (pagination && pagination.totalPages > 1) {
+      this.renderPagination("communitiesPagination", pagination, (page) =>
+        this.loadCommunities(page)
+      );
+    } else {
+      document.getElementById("communitiesPagination").innerHTML = "";
+    }
+  }
+
+  async viewCommunity(communityId) {
+    window.open(`/communities/${communityId}`, "_blank");
+  }
+
+  async deleteCommunity(communityId) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this community? This action cannot be undone."
+      )
+    )
+      return;
+
+    try {
+      const response = await fetch(`/api/communities/${communityId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to delete community");
+
+      alert("Community deleted successfully");
+      this.loadCommunities(this.currentPage.communities || 1);
+    } catch (error) {
+      console.error("Error deleting community:", error);
+      alert("Failed to delete community");
+    }
+  }
+
+  showCreateCommunityModal() {
+    const modalHTML = `
+      <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);" id="createCommunityAdminModal">
+        <div class="modal-dialog">
+          <div class="modal-content bg-dark text-light">
+            <div class="modal-header">
+              <h5 class="modal-title">Create Community</h5>
+              <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('createCommunityAdminModal').remove()"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label class="form-label">Community Name *</label>
+                <input type="text" class="form-control" id="adminCommunityName" maxlength="50" required />
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Description</label>
+                <textarea class="form-control" id="adminCommunityDescription" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Rules</label>
+                <textarea class="form-control" id="adminCommunityRules" rows="3"></textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Access Mode</label>
+                <select class="form-select" id="adminAccessMode">
+                  <option value="open">Open - Anyone can join instantly</option>
+                  <option value="locked">Locked - Requires approval</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Owner Username (optional)</label>
+                <input type="text" class="form-control" id="adminCommunityOwner" placeholder="Leave empty for no owner" />
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" onclick="document.getElementById('createCommunityAdminModal').remove()">Cancel</button>
+              <button type="button" class="btn btn-primary" onclick="adminPanel.createCommunity()">Create</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML("beforeend", modalHTML);
+  }
+
+  async createCommunity() {
+    const name = document.getElementById("adminCommunityName").value.trim();
+    const description = document
+      .getElementById("adminCommunityDescription")
+      .value.trim();
+    const rules = document.getElementById("adminCommunityRules").value.trim();
+    const accessMode = document.getElementById("adminAccessMode").value;
+    const ownerUsername = document
+      .getElementById("adminCommunityOwner")
+      .value.trim();
+
+    if (!name) {
+      alert("Community name is required");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/communities", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          rules,
+          access_mode: accessMode,
+          owner_username: ownerUsername || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to create community");
+      }
+
+      alert("Community created successfully");
+      document.getElementById("createCommunityAdminModal").remove();
+      this.loadCommunities(1);
+    } catch (error) {
+      console.error("Error creating community:", error);
+      alert("Failed to create community: " + error.message);
+    }
+  }
+
+  async showEditCommunityModal(communityId) {
+    try {
+      const response = await fetch(`/api/communities/${communityId}`, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch community");
+
+      const data = await response.json();
+      const community = data.community;
+
+      const modalHTML = `
+        <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);" id="editCommunityAdminModal">
+          <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light">
+              <div class="modal-header">
+                <h5 class="modal-title">Edit Community</h5>
+                <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('editCommunityAdminModal').remove()"></button>
+              </div>
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="form-label">Community Name *</label>
+                  <input type="text" class="form-control" id="adminEditCommunityName" maxlength="50" value="${this.escapeHtml(
+                    community.name
+                  )}" required />
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Description</label>
+                  <textarea class="form-control" id="adminEditCommunityDescription" rows="3">${this.escapeHtml(
+                    community.description || ""
+                  )}</textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Rules</label>
+                  <textarea class="form-control" id="adminEditCommunityRules" rows="3">${this.escapeHtml(
+                    community.rules || ""
+                  )}</textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label">Access Mode</label>
+                  <select class="form-select" id="adminEditAccessMode">
+                    <option value="open" ${
+                      community.access_mode === "open" ? "selected" : ""
+                    }>Open - Anyone can join instantly</option>
+                    <option value="locked" ${
+                      community.access_mode === "locked" ? "selected" : ""
+                    }>Locked - Requires approval</option>
+                  </select>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('editCommunityAdminModal').remove()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="adminPanel.updateCommunity('${communityId}')">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML("beforeend", modalHTML);
+    } catch (error) {
+      console.error("Error loading community:", error);
+      alert("Failed to load community details");
+    }
+  }
+
+  async updateCommunity(communityId) {
+    const name = document.getElementById("adminEditCommunityName").value.trim();
+    const description = document
+      .getElementById("adminEditCommunityDescription")
+      .value.trim();
+    const rules = document
+      .getElementById("adminEditCommunityRules")
+      .value.trim();
+    const accessMode = document.getElementById("adminEditAccessMode").value;
+
+    if (!name) {
+      alert("Community name is required");
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/communities/${communityId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: JSON.stringify({
+          name,
+          description,
+          rules,
+          access_mode: accessMode,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update community");
+      }
+
+      alert("Community updated successfully");
+      document.getElementById("editCommunityAdminModal").remove();
+      this.loadCommunities(this.currentPage.communities || 1);
+    } catch (error) {
+      console.error("Error updating community:", error);
+      alert("Failed to update community: " + error.message);
+    }
+  }
+
+  async manageCommunityMembers(communityId) {
+    try {
+      const response = await fetch(`/api/communities/${communityId}/members`, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to fetch members");
+
+      const data = await response.json();
+      const members = data.members || [];
+
+      const modalHTML = `
+        <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);" id="manageMembersModal">
+          <div class="modal-dialog modal-lg">
+            <div class="modal-content bg-dark text-light">
+              <div class="modal-header">
+                <h5 class="modal-title">Manage Community Members</h5>
+                <button type="button" class="btn-close btn-close-white" onclick="document.getElementById('manageMembersModal').remove()"></button>
+              </div>
+              <div class="modal-body">
+                <table class="table table-dark table-sm">
+                  <thead>
+                    <tr>
+                      <th>User</th>
+                      <th>Role</th>
+                      <th>Joined</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${members
+                      .map(
+                        (m) => `
+                      <tr>
+                        <td>${this.escapeHtml(m.username)}</td>
+                        <td>
+                          <span class="badge bg-${
+                            m.role === "owner"
+                              ? "warning"
+                              : m.role === "admin"
+                              ? "info"
+                              : m.role === "mod"
+                              ? "success"
+                              : "secondary"
+                          }">${m.role}</span>
+                        </td>
+                        <td><small>${new Date(
+                          m.joined_at
+                        ).toLocaleDateString()}</small></td>
+                        <td>
+                          ${
+                            m.role !== "owner"
+                              ? `
+                            <button class="btn btn-sm btn-danger" onclick="adminPanel.removeCommunityMember('${communityId}', '${m.user_id}')">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          `
+                              : '<span class="text-muted">Owner</span>'
+                          }
+                        </td>
+                      </tr>
+                    `
+                      )
+                      .join("")}
+                  </tbody>
+                </table>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('manageMembersModal').remove()">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML("beforeend", modalHTML);
+    } catch (error) {
+      console.error("Error loading members:", error);
+      alert("Failed to load community members");
+    }
+  }
+
+  async removeCommunityMember(communityId, userId) {
+    if (!confirm("Remove this member from the community?")) return;
+
+    try {
+      const response = await fetch(
+        `/api/communities/${communityId}/members/${userId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to remove member");
+
+      alert("Member removed successfully");
+      document.getElementById("manageMembersModal").remove();
+      this.manageCommunityMembers(communityId);
+    } catch (error) {
+      console.error("Error removing member:", error);
+      alert("Failed to remove member");
+    }
+  }
 }
 
 const adminPanel = new AdminPanel();
@@ -1952,6 +2485,12 @@ function loadPosts() {
 }
 
 window.loadPosts = loadPosts;
+
+function loadCommunities() {
+  adminPanel.loadCommunities();
+}
+
+window.loadCommunities = loadCommunities;
 
 function loadSuspensions() {
   adminPanel.loadSuspensions();

@@ -291,8 +291,10 @@ export default new Elysia({ prefix: "/auth" })
 
         if (!user) {
           user = db
-            .query("INSERT INTO users (id, username) VALUES (?, ?) RETURNING *")
-            .get(challengePayload.userId, username);
+            .query(
+              "INSERT INTO users (id, username, character_limit) VALUES (?, ?, ?) RETURNING *"
+            )
+            .get(challengePayload.userId, username, null);
         }
 
         savePasskey({
@@ -609,9 +611,9 @@ export default new Elysia({ prefix: "/auth" })
 
       const user = db
         .query(
-          "INSERT INTO users (id, username, password_hash) VALUES (?, ?, ?) RETURNING *"
+          "INSERT INTO users (id, username, password_hash, character_limit) VALUES (?, ?, ?, ?) RETURNING *"
         )
-        .get(userId, username, passwordHash);
+        .get(userId, username, passwordHash, null);
 
       const token = await jwt.sign({
         userId: user.id,

@@ -499,8 +499,12 @@ const showEditModal = () => {
   const radiusInput = document.getElementById("radius-input");
   const presetSquare = document.getElementById("radius-preset-square");
   const presetDefault = document.getElementById("radius-preset-default");
-
-  avatarRadiusControls.style.display = "block";
+  // Show radius controls only for gold users
+  if (profile.gold) {
+    avatarRadiusControls.style.display = "block";
+  } else {
+    avatarRadiusControls.style.display = "none";
+  }
   const currentRadius =
     profile.avatar_radius !== null && profile.avatar_radius !== undefined
       ? profile.avatar_radius
@@ -969,7 +973,22 @@ const saveProfile = async (event) => {
   const radiusInput = document.getElementById("radius-input");
   if (avatarRadiusControls && avatarRadiusControls.style.display !== "none") {
     const val = parseInt(radiusInput.value, 10);
-    if (!Number.isNaN(val)) formData.avatar_radius = val;
+    if (!Number.isNaN(val)) {
+      // Only include avatar_radius when the user actually changed it.
+      // Calculate the original radius the same way the UI displays it.
+      const origProfile = currentProfile.profile || {};
+      const originalRadius =
+        origProfile.avatar_radius !== null &&
+        origProfile.avatar_radius !== undefined
+          ? origProfile.avatar_radius
+          : origProfile.gold
+          ? 4
+          : 50;
+
+      if (val !== originalRadius) {
+        formData.avatar_radius = val;
+      }
+    }
   }
 
   try {

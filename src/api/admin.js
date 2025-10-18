@@ -148,7 +148,7 @@ const adminQueries = {
   // New queries for editing functionality
   getPostById: db.query("SELECT * FROM posts WHERE id = ?"),
   updatePost: db.query(
-    "UPDATE posts SET content = ?, like_count = ?, retweet_count = ?, reply_count = ? WHERE id = ?"
+    "UPDATE posts SET content = ?, like_count = ?, retweet_count = ?, reply_count = ?, view_count = ? WHERE id = ?"
   ),
   // now supports optional reply_to so admin can create replies on behalf of users
   createPostAsUser: db.query(
@@ -360,7 +360,7 @@ export default new Elysia({ prefix: "/admin" })
       const finalGold = gold ? 1 : 0;
 
       db.query(
-        `INSERT INTO users (id, username, name, bio, verified, admin, gold) VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO users (id, username, name, bio, verified, admin, gold, character_limit) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       ).run(
         id,
         username.trim(),
@@ -368,7 +368,8 @@ export default new Elysia({ prefix: "/admin" })
         bio || null,
         finalVerified,
         isAdmin ? 1 : 0,
-        finalGold
+        finalGold,
+        null
       );
 
       logModerationAction(moderator.id, "create_user", "user", id, {
@@ -620,12 +621,15 @@ export default new Elysia({ prefix: "/admin" })
         changes.retweets = { old: post.retweet_count, new: body.retweets };
       if (body.replies !== undefined && body.replies !== post.reply_count)
         changes.replies = { old: post.reply_count, new: body.replies };
+      if (body.views !== undefined && body.views !== post.view_count)
+        changes.views = { old: post.view_count, new: body.views };
 
       adminQueries.updatePost.run(
         body.content,
         body.likes,
         body.retweets,
         body.replies,
+        body.views,
         params.id
       );
 
@@ -642,6 +646,7 @@ export default new Elysia({ prefix: "/admin" })
         likes: t.Optional(t.Number()),
         retweets: t.Optional(t.Number()),
         replies: t.Optional(t.Number()),
+        views: t.Optional(t.Number()),
       }),
     }
   )
@@ -743,22 +748,79 @@ export default new Elysia({ prefix: "/admin" })
         changes.gold = { old: user.gold, new: body.gold };
       if (body.admin !== undefined && body.admin !== user.admin)
         changes.admin = { old: user.admin, new: body.admin };
-      if (
-        body.follower_count !== undefined &&
-        body.follower_count !== user.follower_count
-      )
-        changes.follower_count = {
-          old: user.follower_count,
-          new: body.follower_count,
-        };
-      if (
-        body.following_count !== undefined &&
-        body.following_count !== user.following_count
-      )
-        changes.following_count = {
-          old: user.following_count,
-          new: body.following_count,
-        };
+
+      if (body.ghost_followers !== undefined) {
+        const currentGhostFollowers = db
+          .query(
+            "SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ?"
+          )
+          .get(params.id).count;
+
+        if (body.ghost_followers !== currentGhostFollowers) {
+          const diff = body.ghost_followers - currentGhostFollowers;
+
+          if (diff > 0) {
+            for (let i = 0; i < diff; i++) {
+              const ghostId = Bun.randomUUIDv7();
+              db.query(
+                "INSERT INTO ghost_follows (id, follower_type, target_id) VALUES (?, 'follower', ?)"
+              ).run(ghostId, params.id);
+            }
+          } else if (diff < 0) {
+            const toRemove = Math.abs(diff);
+            const ghostFollowers = db
+              .query(
+                "SELECT id FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ? LIMIT ?"
+              )
+              .all(params.id, toRemove);
+            for (const ghost of ghostFollowers) {
+              db.query("DELETE FROM ghost_follows WHERE id = ?").run(ghost.id);
+            }
+          }
+
+          changes.ghost_followers = {
+            old: currentGhostFollowers,
+            new: body.ghost_followers,
+          };
+        }
+      }
+
+      if (body.ghost_following !== undefined) {
+        const currentGhostFollowing = db
+          .query(
+            "SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'following' AND target_id = ?"
+          )
+          .get(params.id).count;
+
+        if (body.ghost_following !== currentGhostFollowing) {
+          const diff = body.ghost_following - currentGhostFollowing;
+
+          if (diff > 0) {
+            for (let i = 0; i < diff; i++) {
+              const ghostId = Bun.randomUUIDv7();
+              db.query(
+                "INSERT INTO ghost_follows (id, follower_type, target_id) VALUES (?, 'following', ?)"
+              ).run(ghostId, params.id);
+            }
+          } else if (diff < 0) {
+            const toRemove = Math.abs(diff);
+            const ghostFollowing = db
+              .query(
+                "SELECT id FROM ghost_follows WHERE follower_type = 'following' AND target_id = ? LIMIT ?"
+              )
+              .all(params.id, toRemove);
+            for (const ghost of ghostFollowing) {
+              db.query("DELETE FROM ghost_follows WHERE id = ?").run(ghost.id);
+            }
+          }
+
+          changes.ghost_following = {
+            old: currentGhostFollowing,
+            new: body.ghost_following,
+          };
+        }
+      }
+
       if (
         body.character_limit !== undefined &&
         body.character_limit !== user.character_limit
@@ -767,6 +829,68 @@ export default new Elysia({ prefix: "/admin" })
           old: user.character_limit,
           new: body.character_limit,
         };
+
+      if (
+        body.force_follow_usernames &&
+        Array.isArray(body.force_follow_usernames)
+      ) {
+        const followedUsers = [];
+        const pendingUsers = [];
+        const failedUsers = [];
+
+        for (const username of body.force_follow_usernames) {
+          const targetUser = db
+            .query("SELECT id FROM users WHERE username = ?")
+            .get(username);
+
+          if (!targetUser) {
+            const forcedId = Bun.randomUUIDv7();
+            db.query(
+              "INSERT INTO forced_follows (id, follower_id, following_id) VALUES (?, ?, ?)"
+            ).run(forcedId, params.id, username);
+            pendingUsers.push(username);
+            continue;
+          }
+
+          if (targetUser.id === params.id) {
+            failedUsers.push(`${username} (cannot follow self)`);
+            continue;
+          }
+
+          const blocked = db
+            .query(
+              "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)"
+            )
+            .get(params.id, targetUser.id, targetUser.id, params.id);
+
+          if (blocked) {
+            failedUsers.push(`${username} (blocked)`);
+            continue;
+          }
+
+          const existing = db
+            .query(
+              "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?"
+            )
+            .get(params.id, targetUser.id);
+
+          if (!existing) {
+            const followId = Bun.randomUUIDv7();
+            db.query(
+              "INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)"
+            ).run(followId, params.id, targetUser.id);
+            followedUsers.push(username);
+          }
+        }
+
+        if (followedUsers.length > 0 || pendingUsers.length > 0) {
+          changes.forced_follows = {
+            added: followedUsers.length > 0 ? followedUsers : undefined,
+            pending: pendingUsers.length > 0 ? pendingUsers : undefined,
+            failed: failedUsers.length > 0 ? failedUsers : undefined,
+          };
+        }
+      }
 
       let newVerified =
         body.verified !== undefined
@@ -781,19 +905,15 @@ export default new Elysia({ prefix: "/admin" })
       if (newGold) newVerified = 0;
       if (newVerified) newGold = 0;
 
-      adminQueries.updateUser.run(
+      db.query(
+        "UPDATE users SET username = ?, name = ?, bio = ?, verified = ?, admin = ?, gold = ?, character_limit = ? WHERE id = ?"
+      ).run(
         body.username || user.username,
         body.name !== undefined ? body.name : user.name,
         body.bio !== undefined ? body.bio : user.bio,
         newVerified,
         body.admin !== undefined ? body.admin : user.admin,
         newGold,
-        body.follower_count !== undefined
-          ? body.follower_count
-          : user.follower_count,
-        body.following_count !== undefined
-          ? body.following_count
-          : user.following_count,
         body.character_limit !== undefined
           ? body.character_limit
           : user.character_limit,
@@ -818,9 +938,10 @@ export default new Elysia({ prefix: "/admin" })
         verified: t.Optional(t.Boolean()),
         gold: t.Optional(t.Boolean()),
         admin: t.Optional(t.Boolean()),
-        follower_count: t.Optional(t.Number()),
-        following_count: t.Optional(t.Number()),
+        ghost_followers: t.Optional(t.Number()),
+        ghost_following: t.Optional(t.Number()),
         character_limit: t.Optional(t.Union([t.Number(), t.Null()])),
+        force_follow_usernames: t.Optional(t.Array(t.String())),
       }),
     }
   )

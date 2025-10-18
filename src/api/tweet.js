@@ -92,8 +92,8 @@ const getTweetRepliesBefore = db.query(`
 `);
 
 const createTweet = db.query(`
-	INSERT INTO posts (id, user_id, content, reply_to, source, poll_id, quote_tweet_id, reply_restriction, article_id) 
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	INSERT INTO posts (id, user_id, content, reply_to, source, poll_id, quote_tweet_id, reply_restriction, article_id, community_id) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	RETURNING *
 `);
 
@@ -357,6 +357,7 @@ export default new Elysia({ prefix: "/tweets" })
         reply_restriction,
         gif_url,
         article_id,
+        community_id,
       } = body;
       const tweetContent = typeof content === "string" ? content : "";
       const trimmedContent = tweetContent.trim();
@@ -364,6 +365,19 @@ export default new Elysia({ prefix: "/tweets" })
       const hasBody = trimmedContent.length > 0;
       const targetArticleId = article_id ? String(article_id) : null;
 
+      if (community_id) {
+        const isMember = db
+          .query(
+            "SELECT 1 FROM community_members WHERE community_id = ? AND user_id = ? AND banned = FALSE"
+          )
+          .get(community_id, user.id);
+
+        if (!isMember) {
+          return { error: "You must be a community member to post here" };
+        }
+      }
+
+      // Require at least one of: non-empty content, attachments, gif, poll, or article
       if (
         !hasBody &&
         !hasAttachments &&
@@ -497,7 +511,8 @@ export default new Elysia({ prefix: "/tweets" })
         pollId,
         quote_tweet_id || null,
         replyRestriction,
-        targetArticleId
+        targetArticleId,
+        community_id || null
       );
 
       if (trimmedContent.length > 0) {
@@ -590,6 +605,7 @@ export default new Elysia({ prefix: "/tweets" })
                   null,
                   null,
                   "everyone",
+                  null,
                   null
                 );
                 updatePostCounts.run(tweetId);

@@ -7,11 +7,14 @@ const pages = {
   bookmarks: document.querySelector(".bookmarks-page"),
   "direct-messages": document.querySelector(".direct-messages"),
   "dm-conversation": document.querySelector(".dm-conversation"),
+  communities: document.querySelector(".communities-page"),
+  "community-detail": document.querySelector(".community-detail-page"),
   settings: null,
 };
 const states = {};
 const lazyInitializers = {
   search: false,
+  communities: false,
 };
 
 function showPage(page, options = {}) {
@@ -48,6 +51,15 @@ function showPage(page, options = {}) {
         .then(({ initializeSearchPage }) => initializeSearchPage())
         .catch((error) =>
           console.error("Failed to initialize search page:", error)
+        );
+    }
+
+    if (page === "communities" && !lazyInitializers.communities) {
+      lazyInitializers.communities = true;
+      import("./communities.js")
+        .then(({ initializeCommunitiesPage }) => initializeCommunitiesPage())
+        .catch((error) =>
+          console.error("Failed to initialize communities page:", error)
         );
     }
   } else if (page === "settings") {

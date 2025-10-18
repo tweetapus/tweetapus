@@ -149,8 +149,8 @@ const getPendingFollowRequests = db.query(`
 
 const getFollowCounts = db.query(`
 	SELECT 
-		(SELECT COUNT(*) FROM follows WHERE follower_id = ?) AS following_count,
-		(SELECT COUNT(*) FROM follows WHERE following_id = ?) AS follower_count,
+		((SELECT COUNT(*) FROM follows WHERE follower_id = ?) + (SELECT COUNT(*) FROM ghost_follows WHERE follower_type = 'following' AND target_id = ?)) AS following_count,
+		((SELECT COUNT(*) FROM follows WHERE following_id = ?) + (SELECT COUNT(*) FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ?)) AS follower_count,
 		(SELECT COUNT(*) FROM posts WHERE user_id = ? AND reply_to IS NULL) AS post_count
 `);
 
@@ -273,7 +273,13 @@ export default new Elysia({ prefix: "/profile" })
       const userPosts = getUserPosts.all(user.id);
       const userRetweets = getUserRetweets.all(user.id);
       const replies = getUserReplies.all(user.id);
-      const counts = getFollowCounts.get(user.id, user.id, user.id);
+      const counts = getFollowCounts.get(
+        user.id,
+        user.id,
+        user.id,
+        user.id,
+        user.id
+      );
 
       const profile = {
         ...user,
@@ -595,6 +601,15 @@ export default new Elysia({ prefix: "/profile" })
 
     if (currentUser.id === targetUser.id) {
       return { error: "You cannot follow yourself" };
+    }
+
+    const blocked = db
+      .query(
+        "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)"
+      )
+      .get(currentUser.id, targetUser.id, targetUser.id, currentUser.id);
+    if (blocked) {
+      return { error: "Cannot follow this user" };
     }
 
     const existingFollow = getFollowStatus.get(currentUser.id, targetUser.id);

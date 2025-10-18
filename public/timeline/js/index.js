@@ -162,6 +162,13 @@ window.onunhandledrejection = (event) => {
     });
   }
 
+  const communitiesBtn = document.getElementById("communitiesBtn");
+  if (communitiesBtn) {
+    communitiesBtn.addEventListener("click", () => {
+      switchPage("communities", { path: "/communities" });
+    });
+  }
+
   const handleUrlParams = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const tweetId = urlParams.get("tweet");
@@ -216,6 +223,23 @@ addRoute(
 addRoute(
   (pathname) => pathname === "/search",
   () => showPage("search")
+);
+
+addRoute(
+  (pathname) => pathname === "/communities",
+  () => showPage("communities")
+);
+
+addRoute(
+  (pathname) =>
+    pathname.startsWith("/communities/") && pathname.split("/").length === 3,
+  (pathname) => {
+    const communityId = pathname.split("/")[2];
+    showPage("community-detail");
+    import("./communities.js").then(({ loadCommunityDetail }) => {
+      loadCommunityDetail(communityId);
+    });
+  }
 );
 
 addRoute(

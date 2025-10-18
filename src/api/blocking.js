@@ -35,120 +35,127 @@ const isUserBlocked = db.query(`
 `);
 
 export default new Elysia({ prefix: "/blocking" })
-	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
-	.use(
-		rateLimit({
-			duration: 10_000,
-			max: 30,
-			scoping: "scoped",
-			generator: ratelimit,
-		}),
-	)
-	.post("/block", async ({ jwt, headers, body }) => {
-		const authorization = headers.authorization;
-		if (!authorization) return { error: "Authentication required" };
+  .use(jwt({ name: "jwt", secret: JWT_SECRET }))
+  .use(
+    rateLimit({
+      duration: 10_000,
+      max: 30,
+      scoping: "scoped",
+      generator: ratelimit,
+    })
+  )
+  .post("/block", async ({ jwt, headers, body }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
 
-		try {
-			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-			if (!payload) return { error: "Invalid token" };
+    try {
+      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+      if (!payload) return { error: "Invalid token" };
 
-			const user = getUserByUsername.get(payload.username);
-			if (!user) return { error: "User not found" };
+      const user = getUserByUsername.get(payload.username);
+      if (!user) return { error: "User not found" };
 
-			const { userId } = body;
-			if (!userId) return { error: "User ID is required" };
+      const { userId } = body;
+      if (!userId) return { error: "User ID is required" };
 
-			if (userId === user.id) {
-				return { error: "You cannot block yourself" };
-			}
+      if (userId === user.id) {
+        return { error: "You cannot block yourself" };
+      }
 
-			const targetUser = getUserById.get(userId);
-			if (!targetUser) return { error: "Target user not found" };
+      const targetUser = getUserById.get(userId);
+      if (!targetUser) return { error: "Target user not found" };
 
-			const existingBlock = checkBlockExists.get(user.id, userId);
-			if (existingBlock) {
-				return { error: "User is already blocked" };
-			}
+      const existingBlock = checkBlockExists.get(user.id, userId);
+      if (existingBlock) {
+        return { error: "User is already blocked" };
+      }
 
-			const blockId = Bun.randomUUIDv7();
-			addBlock.run(blockId, user.id, userId);
+      const blockId = Bun.randomUUIDv7();
+      addBlock.run(blockId, user.id, userId);
 
-			return { success: true, blocked: true };
-		} catch (error) {
-			console.error("Block user error:", error);
-			return { error: "Failed to block user" };
-		}
-	})
-	.post("/unblock", async ({ jwt, headers, body }) => {
-		const authorization = headers.authorization;
-		if (!authorization) return { error: "Authentication required" };
+      db.query(
+        "DELETE FROM follows WHERE (follower_id = ? AND following_id = ?) OR (follower_id = ? AND following_id = ?)"
+      ).run(user.id, userId, userId, user.id);
+      db.query(
+        "DELETE FROM follow_requests WHERE (requester_id = ? AND target_id = ?) OR (requester_id = ? AND target_id = ?)"
+      ).run(user.id, userId, userId, user.id);
 
-		try {
-			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-			if (!payload) return { error: "Invalid token" };
+      return { success: true, blocked: true };
+    } catch (error) {
+      console.error("Block user error:", error);
+      return { error: "Failed to block user" };
+    }
+  })
+  .post("/unblock", async ({ jwt, headers, body }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
 
-			const user = getUserByUsername.get(payload.username);
-			if (!user) return { error: "User not found" };
+    try {
+      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+      if (!payload) return { error: "Invalid token" };
 
-			const { userId } = body;
-			if (!userId) return { error: "User ID is required" };
+      const user = getUserByUsername.get(payload.username);
+      if (!user) return { error: "User not found" };
 
-			const existingBlock = checkBlockExists.get(user.id, userId);
-			if (!existingBlock) {
-				return { error: "User is not blocked" };
-			}
+      const { userId } = body;
+      if (!userId) return { error: "User ID is required" };
 
-			removeBlock.run(user.id, userId);
+      const existingBlock = checkBlockExists.get(user.id, userId);
+      if (!existingBlock) {
+        return { error: "User is not blocked" };
+      }
 
-			return { success: true, blocked: false };
-		} catch (error) {
-			console.error("Unblock user error:", error);
-			return { error: "Failed to unblock user" };
-		}
-	})
-	.get("/", async ({ jwt, headers, query }) => {
-		const authorization = headers.authorization;
-		if (!authorization) return { error: "Authentication required" };
+      removeBlock.run(user.id, userId);
 
-		try {
-			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-			if (!payload) return { error: "Invalid token" };
+      return { success: true, blocked: false };
+    } catch (error) {
+      console.error("Unblock user error:", error);
+      return { error: "Failed to unblock user" };
+    }
+  })
+  .get("/", async ({ jwt, headers, query }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
 
-			const user = getUserByUsername.get(payload.username);
-			if (!user) return { error: "User not found" };
+    try {
+      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+      if (!payload) return { error: "Invalid token" };
 
-			const { limit = 20 } = query;
-			const blockedUsers = getBlockedUsers.all(user.id, parseInt(limit));
+      const user = getUserByUsername.get(payload.username);
+      if (!user) return { error: "User not found" };
 
-			return {
-				success: true,
-				users: blockedUsers,
-			};
-		} catch (error) {
-			console.error("Get blocked users error:", error);
-			return { error: "Failed to get blocked users" };
-		}
-	})
-	.get("/check/:userId", async ({ jwt, headers, params }) => {
-		const authorization = headers.authorization;
-		if (!authorization) return { error: "Authentication required" };
+      const { limit = 20 } = query;
+      const blockedUsers = getBlockedUsers.all(user.id, parseInt(limit));
 
-		try {
-			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-			if (!payload) return { error: "Invalid token" };
+      return {
+        success: true,
+        users: blockedUsers,
+      };
+    } catch (error) {
+      console.error("Get blocked users error:", error);
+      return { error: "Failed to get blocked users" };
+    }
+  })
+  .get("/check/:userId", async ({ jwt, headers, params }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
 
-			const user = getUserByUsername.get(payload.username);
-			if (!user) return { error: "User not found" };
+    try {
+      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+      if (!payload) return { error: "Invalid token" };
 
-			const { userId } = params;
-			const isBlocked = isUserBlocked.get(user.id, userId);
+      const user = getUserByUsername.get(payload.username);
+      if (!user) return { error: "User not found" };
 
-			return {
-				success: true,
-				blocked: !!isBlocked,
-			};
-		} catch (error) {
-			console.error("Check block status error:", error);
-			return { error: "Failed to check block status" };
-		}
-	});
+      const { userId } = params;
+      const isBlocked = isUserBlocked.get(user.id, userId);
+
+      return {
+        success: true,
+        blocked: !!isBlocked,
+      };
+    } catch (error) {
+      console.error("Check block status error:", error);
+      return { error: "Failed to check block status" };
+    }
+  });
