@@ -1639,7 +1639,8 @@ nav {
         font-size: 14px;
         font-weight: 500;
         font-family: inherit;
-        transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease, width 0.2s ease;
+        transition: background-color 0.15s ease, color 0.15s ease,
+          border-color 0.15s ease, width 0.2s ease;
 
         &#profileDmBtn {
           width: 40px;
@@ -3515,7 +3516,7 @@ nav {
 
   &.own {
     justify-content: flex-end;
-    
+
     .dm-message-avatar {
       display: none;
     }
@@ -3632,26 +3633,27 @@ nav {
     align-items: center;
     margin-top: 2px;
 
-      .dm-reaction {
-        display: flex;
-        align-items: center;
-        gap: 3px;
-        padding: 1px 6px;
-        border-radius: 8px;
-        border: 1px solid transparent;
-        background: rgba(var(--primary-rgb), 0.08);
-        font-size: 13px;
-        cursor: pointer;
-        transition: background-color 0.1s ease, border-color 0.1s ease;
+    .dm-reaction {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: rgba(var(--primary-rgb), 0.08);
+      font-size: 13px;
+      cursor: pointer;
+      transition: background-color 0.1s ease, border-color 0.1s ease;
 
-        &:hover {
-          background: rgba(var(--primary-rgb), 0.12);
-        }
+      &:hover {
+        background: rgba(var(--primary-rgb), 0.12);
+      }
 
-        &.reacted {
-          background: rgba(var(--primary-rgb), 0.2);
-          border-color: rgba(var(--primary-rgb), 0.3);
-        }      .dm-reaction-emoji {
+      &.reacted {
+        background: rgba(var(--primary-rgb), 0.2);
+        border-color: rgba(var(--primary-rgb), 0.3);
+      }
+      .dm-reaction-emoji {
         font-size: 13px;
       }
 

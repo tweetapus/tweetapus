@@ -19,6 +19,9 @@ let pendingFiles = [];
 let sseConnectTimeout = null;
 let lastSSEConnect = 0;
 let replyingTo = null;
+let messageOffset = 0;
+let isLoadingMoreMessages = false;
+let hasMoreMessages = true;
 
 function connectSSE() {
   const now = Date.now();
@@ -73,6 +76,7 @@ function handleNewMessage(data) {
 
   if (currentConversation && currentConversation.id === conversationId) {
     currentMessages.push(message);
+    messageOffset += 1;
     renderMessages();
     scrollToBottom();
   }
@@ -131,14 +135,14 @@ async function loadConversations() {
     }
 
     currentConversations = data.conversations || [];
-    renderConversations();
+    renderConversationsList();
   } catch (error) {
     console.error("Failed to load conversations:", error);
     toastQueue.add("Failed to load conversations");
   }
 }
 
-function renderConversations() {
+function renderConversationsList() {
   const listElement = document.getElementById("dmConversationsList");
   if (!listElement) return;
 
@@ -258,13 +262,17 @@ async function openConversation(conversationId) {
     }
 
     currentConversation = data.conversation;
-    currentMessages = data.messages || [];
+    currentMessages = (data.messages || []).reverse();
+    messageOffset = currentMessages.length;
+    hasMoreMessages = true;
+    isLoadingMoreMessages = false;
 
     switchPage("dm-conversation", { path: `/dm/${conversationId}` });
     renderConversationHeader();
     renderMessages();
     scrollToBottom();
     markConversationAsRead(conversationId);
+    setupInfiniteScroll();
   } catch (error) {
     console.error("Failed to open conversation:", error);
     toastQueue.add("Failed to open conversation");
@@ -514,6 +522,7 @@ async function sendMessage() {
     updateSendButton();
 
     currentMessages.push(data.message);
+    messageOffset += 1;
     renderMessages();
     scrollToBottom();
     loadConversations();
@@ -539,6 +548,66 @@ function scrollToBottom() {
   const messagesElement = document.getElementById("dmMessages");
   if (messagesElement) {
     messagesElement.scrollTop = messagesElement.scrollHeight;
+  }
+}
+
+function setupInfiniteScroll() {
+  const messagesElement = document.getElementById("dmMessages");
+  if (!messagesElement) return;
+
+  messagesElement.removeEventListener("scroll", handleScroll);
+  messagesElement.addEventListener("scroll", handleScroll);
+}
+
+async function handleScroll(event) {
+  const messagesElement = event.target;
+  const scrollTop = messagesElement.scrollTop;
+  const threshold = 300;
+
+  if (scrollTop < threshold && !isLoadingMoreMessages && hasMoreMessages) {
+    await loadMoreMessages();
+  }
+}
+
+async function loadMoreMessages() {
+  if (!currentConversation || isLoadingMoreMessages || !hasMoreMessages) return;
+
+  isLoadingMoreMessages = true;
+
+  try {
+    const data = await query(
+      `/dm/conversations/${currentConversation.id}?limit=50&offset=${messageOffset}`
+    );
+
+    if (data.error) {
+      toastQueue.add(data.error);
+      isLoadingMoreMessages = false;
+      return;
+    }
+
+    const newMessages = data.messages || [];
+
+    if (newMessages.length === 0) {
+      hasMoreMessages = false;
+      isLoadingMoreMessages = false;
+      return;
+    }
+
+    const messagesElement = document.getElementById("dmMessages");
+    const scrollHeightBefore = messagesElement.scrollHeight;
+
+    currentMessages = [...newMessages.reverse(), ...currentMessages];
+    messageOffset += newMessages.length;
+    renderMessages();
+
+    const scrollHeightAfter = messagesElement.scrollHeight;
+    const heightDifference = scrollHeightAfter - scrollHeightBefore;
+    messagesElement.scrollTop = heightDifference;
+
+    isLoadingMoreMessages = false;
+  } catch (error) {
+    console.error("Failed to load more messages:", error);
+    isLoadingMoreMessages = false;
   }
 }
 
@@ -605,6 +674,9 @@ function openNewMessageModal() {
 function goBackToDMList() {
   currentConversation = null;
   currentMessages = [];
+  messageOffset = 0;
+  isLoadingMoreMessages = false;
+  hasMoreMessages = true;
 
   switchPage("direct-messages", { path: "/dm" });
 
@@ -1463,6 +1535,7 @@ window.toggleReaction = toggleReaction;
 window.showReactionPicker = showReactionPicker;
 window.replyToMessage = replyToMessage;
 window.cancelReply = cancelReply;
+window.setupInfiniteScroll = setupInfiniteScroll;
 
 export default {
   loadConversations,

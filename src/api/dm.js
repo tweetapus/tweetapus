@@ -95,7 +95,7 @@ const getConversationMessages = db.query(`
   FROM dm_messages dm
   JOIN users u ON dm.sender_id = u.id
   WHERE dm.conversation_id = ?
-  ORDER BY dm.created_at ASC
+  ORDER BY dm.created_at DESC
   LIMIT ? OFFSET ?
 `);
 
