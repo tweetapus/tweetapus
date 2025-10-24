@@ -7,6 +7,50 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Suspended profile styles: centralized rules when #profileContainer has .suspended */
+#profileContainer.suspended .profile-banner {
+  background-image: none !important;
+  background-color: #2b2b2b !important;
+  height: 200px !important;
+}
+
+#profileContainer.suspended #profileAvatar[data-suspended="true"] {
+  background-color: var(--suspended-avatar-bg, #bdbdbd) !important;
+  background-image: none !important;
+  object-fit: cover !important;
+  pointer-events: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+  border-radius: 50% !important;
+}
+
+#profileContainer.suspended .profile-tab-nav {
+  display: none !important;
+}
+
+#profileContainer.suspended #profileFollowersLink,
+#profileContainer.suspended #profileFollowingLink {
+  display: none !important;
+}
+
+/* Hide interactive action buttons on suspended profiles */
+#profileContainer.suspended #followBtn,
+#profileContainer.suspended #profileDmBtn,
+#profileContainer.suspended #editProfileBtn,
+#profileContainer.suspended #profileDropdown {
+  display: none !important;
+}
+
+/* Suspension notice styling */
+#profileSuspendedNotice {
+  display: none;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
 .tweet-preview.unavailable-quote {
   padding: 16px;
   border: 1px solid var(--border-color);
@@ -179,9 +223,11 @@ nav {
 
 .icon {
   display: block;
-  margin-bottom: 12px;
-  color: var(--primary);
-  fill: var(--primary);
+
+  &.logo {
+    color: var(--primary);
+    fill: var(--primary);
+  }
 }
 
 .timeline > h1 {
@@ -335,7 +381,7 @@ nav {
 }
 
 .compose-tweet {
-  margin-bottom: 12px;
+  margin-bottom: 24px; /* Tr Happies */
   width: 100%;
   border-bottom: 1px solid var(--border-primary);
   padding-bottom: 12px;
@@ -367,10 +413,11 @@ nav {
         font-size: 16px;
         line-height: 1.5;
         resize: none;
-        min-height: 25px;
+        min-height: 42px;
         max-height: 250px;
         height: 0px;
         padding: 6px 0;
+        padding-top: 0px;
         margin: 0;
         background-color: transparent;
         color: var(--text-primary);
@@ -412,18 +459,14 @@ nav {
 
           button {
             background-color: transparent;
-            color: var(--primary);
+            color: var(--text-secondary);
             border: none;
             padding: 0px;
             cursor: pointer;
-            transition: opacity 0.2s, transform 0.2s, backgrou;
+            transition: filter .2s;
 
             &:hover {
-              opacity: 0.8;
-            }
-
-            &:active {
-              transform: scale(0.98);
+              filter: brightness(1.5);
             }
 
             svg {
@@ -973,8 +1016,9 @@ nav {
   display: flex;
   flex-direction: column;
   gap: 16px;
+
   & > .tweet {
-    margin-bottom: 0;
+    margin-bottom: 14px;
   }
 }
 
@@ -2590,7 +2634,6 @@ nav {
   padding-top: 4px;
   padding-bottom: 4px;
   gap: 6px;
-  margin-bottom: 14px;
 
   .tweet-header img {
     width: 32px;

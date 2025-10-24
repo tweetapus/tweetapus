@@ -30,17 +30,20 @@ export default async function openProfile(username) {
       if (data.error) {
         // If the user is suspended, render a minimal suspended profile view
         if (data.error === "User is suspended") {
+          // If the server included a partial profile object alongside the error,
+          // prefer those real fields (display name, avatar, banner) when available.
+          const pd = data.profile || {};
           const suspendedData = {
             profile: {
               username,
-              name: username,
-              avatar: null,
-              banner: null,
+              name: pd.name || username,
+              avatar: pd.avatar || null,
+              banner: pd.banner || null,
               suspended: true,
-              created_at: null,
-              post_count: 0,
-              following_count: 0,
-              follower_count: 0,
+              created_at: pd.created_at || null,
+              post_count: pd.post_count || 0,
+              following_count: pd.following_count || 0,
+              follower_count: pd.follower_count || 0,
             },
             posts: [],
             replies: [],
@@ -197,318 +200,318 @@ const switchTab = async (tabName) => {
 const renderProfile = (data) => {
   const { profile, posts, isFollowing, isOwnProfile } = data;
 
-  document.getElementById("profileHeaderName").textContent =
-    profile.name || profile.username;
-  document.getElementById("profileHeaderPostCount").textContent = `${
-    profile.post_count || 0
-  } posts`;
-
-  const bannerElement = document.querySelector(".profile-banner");
   const suspended = !!profile.suspended;
 
-  // Banner: hide for suspended accounts, otherwise show if available
-  if (suspended) {
-    // show a muted dark-gray banner rectangle for suspended accounts
+  // Header: name and post count
+  const headerNameEl = document.getElementById("profileHeaderName");
+  const headerCountEl = document.getElementById("profileHeaderPostCount");
+  if (headerNameEl) headerNameEl.textContent = profile.name || profile.username;
+  // Also update the main profile display name (h2) if present
+  const displayNameEl = document.getElementById("profileDisplayName");
+  if (displayNameEl)
+    displayNameEl.textContent = profile.name || profile.username;
+  if (headerCountEl)
+    headerCountEl.textContent = `${profile.post_count || 0} posts`;
+
+  // Toggle suspended class on container so CSS can handle visuals
+  const profileContainerEl = document.getElementById("profileContainer");
+  if (profileContainerEl)
+    profileContainerEl.classList.toggle("suspended", suspended);
+
+  // Banner handling: only set inline background if there's a real banner and not suspended
+  const bannerElement = document.querySelector(".profile-banner");
+  if (bannerElement) {
     bannerElement.style.display = "block";
-    bannerElement.style.backgroundImage = "none";
-    bannerElement.style.backgroundColor = "var(--suspended-banner, #2f2f2f)";
-    bannerElement.style.height = "200px";
-  } else if (profile.banner) {
-    bannerElement.style.display = "block";
-    bannerElement.style.backgroundImage = `url(${profile.banner})`;
-    bannerElement.style.backgroundSize = "cover";
-    bannerElement.style.backgroundPosition = "center";
-    bannerElement.style.backgroundRepeat = "no-repeat";
-  } else {
-    bannerElement.style.display = "block";
-    bannerElement.style.backgroundImage = "none";
-    bannerElement.style.backgroundColor = "var(--bg-secondary)";
+    if (profile.banner && !suspended) {
+      bannerElement.style.backgroundImage = `url(${profile.banner})`;
+      bannerElement.style.backgroundSize = "cover";
+      bannerElement.style.backgroundPosition = "center";
+      bannerElement.style.backgroundRepeat = "no-repeat";
+      bannerElement.style.height = "200px";
+    } else {
+      bannerElement.style.backgroundImage = "none";
+      bannerElement.style.height = "200px";
+    }
   }
 
+  // Avatar: for suspended, use transparent src and mark dataset; visuals driven by CSS
   const avatarImg = document.getElementById("profileAvatar");
-  if (suspended) {
-    // Show a view-only pure gray circle (use a transparent src so no embedded text shows)
-    avatarImg.style.display = "block";
-    avatarImg.src = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="; // 1x1 transparent GIF
-    avatarImg.alt = "";
-    avatarImg.style.backgroundImage = "none";
-    avatarImg.style.backgroundColor = "var(--suspended-avatar-bg, #bdbdbd)";
-    avatarImg.style.objectFit = "cover";
-    avatarImg.style.pointerEvents = "none";
-    avatarImg.style.opacity = "1";
-    avatarImg.dataset.suspended = "true";
-    // keep rounded shape
-    if (profile.avatar_radius !== null && profile.avatar_radius !== undefined) {
-      avatarImg.style.borderRadius = `${profile.avatar_radius}px`;
-    } else if (profile.gold) {
-      avatarImg.style.borderRadius = "4px";
+  if (avatarImg) {
+    if (suspended) {
+      avatarImg.src =
+        "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+      avatarImg.alt = "";
+      avatarImg.dataset.suspended = "true";
+      avatarImg.style.pointerEvents = "none";
+      avatarImg.style.objectFit = "cover";
+      avatarImg.style.opacity = "1";
+      // keep rounded shape based on profile hint or default to circle
+      if (
+        profile.avatar_radius !== null &&
+        profile.avatar_radius !== undefined
+      ) {
+        avatarImg.style.borderRadius = `${profile.avatar_radius}px`;
+      } else if (profile.gold) {
+        avatarImg.style.borderRadius = "4px";
+      } else {
+        avatarImg.style.borderRadius = "50%";
+      }
     } else {
-      avatarImg.style.borderRadius = "50px";
-    }
-
-    // Hide the followers/following links on suspended profiles
-    const followersLink = document.getElementById("profileFollowersLink");
-    const followingLink = document.getElementById("profileFollowingLink");
-    if (followersLink) followersLink.style.display = "none";
-    if (followingLink) followingLink.style.display = "none";
-  } else {
-    // Restore non-suspended avatar behavior
-    delete avatarImg.dataset.suspended;
-    avatarImg.style.display = "block";
-    avatarImg.src = profile.avatar || `/public/shared/default-avatar.png`;
-    avatarImg.alt = profile.name || profile.username;
-    avatarImg.style.filter = "";
-    avatarImg.style.backgroundColor = "";
-    avatarImg.style.objectFit = "cover";
-    avatarImg.style.pointerEvents = "";
-    avatarImg.style.opacity = "";
-    if (profile.avatar_radius !== null && profile.avatar_radius !== undefined) {
-      avatarImg.style.borderRadius = `${profile.avatar_radius}px`;
-    } else if (profile.gold) {
-      avatarImg.style.borderRadius = "4px";
-    } else {
-      avatarImg.style.borderRadius = "50px";
-    }
-
-    // Restore followers/following links visibility
-    const followersLink = document.getElementById("profileFollowersLink");
-    const followingLink = document.getElementById("profileFollowingLink");
-    if (followersLink) followersLink.style.display = "";
-    if (followingLink) followingLink.style.display = "";
-  }
-    avatarImg.style.display = "block";
-    avatarImg.src = profile.avatar || `/public/shared/default-avatar.png`;
-    avatarImg.alt = profile.name || profile.username;
-    if (profile.avatar_radius !== null && profile.avatar_radius !== undefined) {
-      avatarImg.style.borderRadius = `${profile.avatar_radius}px`;
-    } else if (profile.gold) {
-      avatarImg.style.borderRadius = "4px";
-    } else {
-      avatarImg.style.borderRadius = "50px";
-    }
-  }
-
-  const profileNameEl = document.getElementById("profileDisplayName");
-  profileNameEl.textContent = profile.name || profile.username;
-
-  if (profile.verified || profile.gold) {
-    const existingBadge = profileNameEl.querySelector(".verification-badge");
-
-    if (!existingBadge) {
-      const verificationBadge = document.createElement("span");
-      verificationBadge.className = "verification-badge";
-      const badgeColor = profile.gold ? "#D4AF37" : "#1185FE";
-      verificationBadge.innerHTML = `
-				<svg
-					width="20"
-					height="20"
-					viewBox="0 0 16 16"
-					fill="none"
-					xmlns="http://www.w3.org/2000/svg"
-					title="Verified Account"
-				>
-					<path
-						d="M2.56667 5.74669C2.46937 5.30837 2.48431 4.85259 2.61011 4.42158C2.73591 3.99058 2.9685 3.59832 3.28632 3.28117C3.60413 2.96402 3.99688 2.73225 4.42814 2.60735C4.85941 2.48245 5.31523 2.46847 5.75334 2.56669C5.99448 2.18956 6.32668 1.8792 6.71931 1.66421C7.11194 1.44923 7.55237 1.33655 8.00001 1.33655C8.44764 1.33655 8.88807 1.44923 9.28071 1.66421C9.67334 1.8792 10.0055 2.18956 10.2467 2.56669C10.6855 2.46804 11.1421 2.48196 11.574 2.60717C12.006 2.73237 12.3992 2.96478 12.7172 3.28279C13.0352 3.6008 13.2677 3.99407 13.3929 4.42603C13.5181 4.85798 13.532 5.31458 13.4333 5.75336C13.8105 5.9945 14.1208 6.32669 14.3358 6.71933C14.5508 7.11196 14.6635 7.55239 14.6635 8.00002C14.6635 8.44766 14.5508 8.88809 14.3358 9.28072C14.1208 9.67336 13.8105 10.0056 13.4333 10.2467C13.5316 10.6848 13.5176 11.1406 13.3927 11.5719C13.2678 12.0032 13.036 12.3959 12.7189 12.7137C12.4017 13.0315 12.0094 13.2641 11.5784 13.3899C11.1474 13.5157 10.6917 13.5307 10.2533 13.4334C10.0125 13.8119 9.68006 14.1236 9.28676 14.3396C8.89346 14.5555 8.45202 14.6687 8.00334 14.6687C7.55466 14.6687 7.11322 14.5555 6.71992 14.3396C6.32662 14.1236 5.99417 13.8119 5.75334 13.4334C5.31523 13.5316 4.85941 13.5176 4.42814 13.3927C3.99688 13.2678 3.60413 13.036 3.28632 12.7189C2.9685 12.4017 2.73591 12.0095 2.61011 11.5785C2.48431 11.1475 2.46937 10.6917 2.56667 10.2534C2.18664 10.0129 1.87362 9.68014 1.65671 9.28617C1.4398 8.8922 1.32605 8.44976 1.32605 8.00002C1.32605 7.55029 1.4398 7.10785 1.65671 6.71388C1.87362 6.31991 2.18664 5.9872 2.56667 5.74669Z"
-						fill="${badgeColor}"
-					/>
-					<path
-						d="M6 8.00002L7.33333 9.33335L10 6.66669"
-						stroke="white"
-						stroke-width="1.5"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					/>
-				</svg>
-			`;
-      profileNameEl.appendChild(verificationBadge);
-    } else {
-      const badgeColor = profile.gold ? "#D4AF37" : "#1185FE";
-      const pathElement = existingBadge.querySelector("path");
-      if (pathElement) {
-        pathElement.setAttribute("fill", badgeColor);
+      delete avatarImg.dataset.suspended;
+      avatarImg.src = profile.avatar || "/public/shared/default-avatar.png";
+      avatarImg.alt = profile.name || profile.username;
+      avatarImg.style.pointerEvents = "";
+      avatarImg.style.objectFit = "cover";
+      avatarImg.style.opacity = "";
+      if (
+        profile.avatar_radius !== null &&
+        profile.avatar_radius !== undefined
+      ) {
+        avatarImg.style.borderRadius = `${profile.avatar_radius}px`;
+      } else if (profile.gold) {
+        avatarImg.style.borderRadius = "4px";
+      } else {
+        avatarImg.style.borderRadius = "50%";
       }
     }
-  } else {
+  }
+
+  // Profile name and verification badge
+  const profileNameEl = document.getElementById("profileHeaderName");
+  if (profileNameEl) {
+    profileNameEl.textContent = profile.name || profile.username;
+    // verification badge
     const existingBadge = profileNameEl.querySelector(".verification-badge");
-    if (existingBadge) {
+    if (profile.verified || profile.gold) {
+      const badgeColor = profile.gold ? "#D4AF37" : "#1185FE";
+      if (!existingBadge) {
+        const verificationBadge = document.createElement("span");
+        verificationBadge.className = "verification-badge";
+        verificationBadge.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2.566 5.747C2.469 5.308 2.484 4.853 2.61 4.422C2.736 3.991 2.968 3.598 3.286 3.281C3.604 2.964 3.997 2.732 4.428 2.607C4.859 2.482 5.315 2.468 5.753 2.567C5.994 2.19 6.327 1.879 6.719 1.664C7.112 1.449 7.552 1.337 8.000 1.337C8.448 1.337 8.888 1.449 9.281 1.664C9.673 1.879 10.005 2.19 10.246 2.567C10.685 2.468 11.142 2.482 11.574 2.607C12.006 2.732 12.399 2.965 12.717 3.283C13.035 3.601 13.268 3.994 13.393 4.426C13.518 4.858 13.532 5.314 13.433 5.753C13.811 5.994 14.121 6.327 14.336 6.719C14.551 7.112 14.664 7.552 14.664 8.000C14.664 8.448 14.551 8.888 14.336 9.281C14.121 9.673 13.811 10.006 13.433 10.247C13.532 10.685 13.518 11.141 13.393 11.572C13.268 12.003 13.036 12.396 12.719 12.714C12.402 13.032 12.009 13.264 11.578 13.39C11.147 13.516 10.692 13.531 10.253 13.434C10.012 13.812 9.68 14.124 9.287 14.34C8.893 14.556 8.452 14.669 8.003 14.669C7.555 14.669 7.113 14.556 6.72 14.34C6.327 14.124 5.994 13.812 5.753 13.434C5.315 13.532 4.859 13.518 4.428 13.393C3.997 13.268 3.604 13.036 3.286 12.719C2.968 12.401 2.736 12.009 2.61 11.578C2.484 11.147 2.469 10.692 2.567 10.253C2.187 10.013 1.874 9.68 1.657 9.286C1.44 8.892 1.326 8.45 1.326 8.000C1.326 7.55 1.44 7.108 1.657 6.714C1.874 6.32 2.187 5.987 2.567 5.747Z" fill="${badgeColor}"/>
+            <path d="M6 8L7.333 9.333L10 6.667" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `;
+        profileNameEl.appendChild(verificationBadge);
+      } else {
+        // update color if needed
+        const pathEl = existingBadge.querySelector("path");
+        if (pathEl) pathEl.setAttribute("fill", badgeColor);
+      }
+    } else if (existingBadge) {
       existingBadge.remove();
     }
   }
 
+  // Username and labels
   const usernameEl = document.getElementById("profileUsername");
-  usernameEl.textContent = `@${profile.username}`;
-
-  if (profile.label_type) {
-    const labelEl = document.createElement("span");
-    labelEl.className = `profile-label label-${profile.label_type}`;
-    const labelText =
-      profile.label_type.charAt(0).toUpperCase() + profile.label_type.slice(1);
-    labelEl.textContent = labelText;
-    usernameEl.appendChild(labelEl);
-  }
-
-  if (profile.label_automated) {
-    const automatedEl = document.createElement("span");
-    automatedEl.className = "profile-label label-automated";
-    automatedEl.textContent = "Automated";
-    usernameEl.appendChild(automatedEl);
+  if (usernameEl) {
+    usernameEl.textContent = `@${profile.username}`;
+    // clear existing labels
+    const existingLabels = usernameEl.querySelectorAll(".profile-label");
+    existingLabels.forEach((l) => l.remove());
+    // Only show account labels for non-suspended profiles
+    if (!suspended) {
+      if (profile.label_type) {
+        const labelEl = document.createElement("span");
+        labelEl.className = `profile-label label-${profile.label_type}`;
+        labelEl.textContent =
+          profile.label_type.charAt(0).toUpperCase() +
+          profile.label_type.slice(1);
+        usernameEl.appendChild(labelEl);
+      }
+      if (profile.label_automated) {
+        const automatedEl = document.createElement("span");
+        automatedEl.className = "profile-label label-automated";
+        automatedEl.textContent = "Automated";
+        usernameEl.appendChild(automatedEl);
+      }
+    }
   }
 
   // expose current profile username on the container for other modules
-  const profileContainerEl2 = document.getElementById("profileContainer");
-  if (profileContainerEl2)
-    profileContainerEl2.dataset.profileUsername = profile.username;
+  if (profileContainerEl)
+    profileContainerEl.dataset.profileUsername = profile.username;
 
   // show blocked banner if this profile has blocked the current viewer
   const blockedBanner = document.getElementById("profileBlockedBanner");
   if (blockedBanner) {
     if (profile.blockedByProfile) {
       blockedBanner.style.display = "flex";
-      profileContainerEl2.dataset.blockedByProfile = "true";
+      if (profileContainerEl)
+        profileContainerEl.dataset.blockedByProfile = "true";
     } else {
       blockedBanner.style.display = "none";
-      if (profileContainerEl2)
-        delete profileContainerEl2.dataset.blockedByProfile;
+      if (profileContainerEl)
+        delete profileContainerEl.dataset.blockedByProfile;
     }
   }
 
   // Hide tab navigation (posts/replies switch) for suspended accounts
   const tabNav = document.querySelector(".profile-tab-nav");
-  if (tabNav) {
-    if (suspended) tabNav.style.display = "none";
-    else tabNav.style.display = "flex";
-  }
+  if (tabNav) tabNav.style.display = suspended ? "none" : "flex";
 
-  if (currentProfile.followsMe && !isOwnProfile) {
+  // Show follows-me badge where appropriate
+  if (currentProfile?.followsMe && !isOwnProfile) {
     const followsBadge = document.createElement("span");
     followsBadge.className = "follows-me-badge";
     followsBadge.textContent = "Follows you";
     followsBadge.style.cssText =
       "margin-left: 8px; padding: 2px 8px; background: rgba(var(--primary-rgb), 0.1); color: rgb(var(--primary-rgb)); border-radius: 4px; font-size: 12px; font-weight: 500;";
-    usernameEl.appendChild(followsBadge);
+    const targetHeader = document.getElementById("profileHeaderName");
+    if (targetHeader && !targetHeader.querySelector(".follows-me-badge"))
+      targetHeader.appendChild(followsBadge);
   }
 
-  document.getElementById("profilePronouns").textContent =
-    profile.pronouns || "";
-  document.getElementById("profilePronouns").style.display = profile.pronouns
-    ? "block"
-    : "none";
-  // When suspended, hide bio and meta and show suspension notice
+  // Pronouns
+  const pronounsEl = document.getElementById("profilePronouns");
+  if (pronounsEl) {
+    pronounsEl.textContent = profile.pronouns || "";
+    pronounsEl.style.display = profile.pronouns ? "block" : "none";
+  }
+
+  // When suspended, hide bio/meta and show suspension notice
   const bioEl = document.getElementById("profileBio");
   const metaEl = document.getElementById("profileMeta");
   const suspendedNotice = document.getElementById("profileSuspendedNotice");
-
   if (suspended) {
-    bioEl.textContent = "";
-    bioEl.style.display = "none";
-    metaEl.innerHTML = "";
-    if (suspendedNotice) {
-      suspendedNotice.style.display = "block";
+    if (bioEl) {
+      bioEl.textContent = "";
+      bioEl.style.display = "none";
     }
+    if (metaEl) metaEl.innerHTML = "";
+    if (suspendedNotice) suspendedNotice.style.display = "block";
   } else {
-    bioEl.textContent = profile.bio || "";
-    bioEl.style.display = profile.bio ? "block" : "none";
+    if (bioEl) {
+      bioEl.textContent = profile.bio || "";
+      bioEl.style.display = profile.bio ? "block" : "none";
+    }
     if (suspendedNotice) suspendedNotice.style.display = "none";
   }
-  document.getElementById("profileFollowingCount").textContent =
-    profile.following_count || 0;
-  document.getElementById("profileFollowerCount").textContent =
-    profile.follower_count || 0;
 
-  document.getElementById("profileFollowersLink").onclick = () => {
-    showFollowersList(profile.username, "followers");
-  };
-  document.getElementById("profileFollowingLink").onclick = () => {
-    showFollowersList(profile.username, "following");
-  };
+  // Followers/following counts and links: hide links for suspended
+  const followersCountEl = document.getElementById("profileFollowerCount");
+  const followingCountEl = document.getElementById("profileFollowingCount");
+  if (followersCountEl)
+    followersCountEl.textContent = profile.follower_count || 0;
+  if (followingCountEl)
+    followingCountEl.textContent = profile.following_count || 0;
 
+  const followersLink = document.getElementById("profileFollowersLink");
+  const followingLink = document.getElementById("profileFollowingLink");
+  if (suspended) {
+    if (followersLink) followersLink.style.display = "none";
+    if (followingLink) followingLink.style.display = "none";
+  } else {
+    if (followersLink) {
+      followersLink.style.display = "inline-block";
+      followersLink.onclick = () =>
+        showFollowersList(profile.username, "followers");
+    }
+    if (followingLink) {
+      followingLink.style.display = "inline-block";
+      followingLink.onclick = () =>
+        showFollowersList(profile.username, "following");
+    }
+  }
+
+  // Meta items: location / website / joined
   const meta = [];
-  // Only include location/website/joined when not suspended
   if (!suspended) {
     if (profile.location)
       meta.push(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHTML(
+        `<span class="meta-item-location">${escapeHTML(
           profile.location
-        )}`
+        )}</span>`
       );
     if (profile.website) {
       const url = profile.website.startsWith("http")
         ? profile.website
         : `https://${profile.website}`;
       meta.push(
-        `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-icon lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> <a href="${escapeHTML(
+        `<span class="meta-item-website"><a href="${escapeHTML(
           url
         )}" target="_blank" rel="noopener noreferrer">${escapeHTML(
           profile.website
-        )}</a>`
+        )}</a></span>`
       );
     }
-    // Add joined date only if it's present and valid
     try {
       if (profile.created_at) {
         const joinedDate = new Date(profile.created_at);
         if (!Number.isNaN(joinedDate.getTime())) {
           meta.push(
-            `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-icon lucide-calendar"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg> Joined ${joinedDate.toLocaleDateString(
+            `<span class="meta-item-joined"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg> Joined ${joinedDate.toLocaleDateString(
               "en-US",
-              {
-                month: "long",
-                year: "numeric",
-              }
-            )}`
+              { month: "long", year: "numeric" }
+            )}</span>`
           );
         }
       }
     } catch (_) {}
   }
+  if (metaEl)
+    metaEl.innerHTML = meta
+      .map((item) => `<div class="profile-meta-item">${item}</div>`)
+      .join("");
 
-  document.getElementById("profileMeta").innerHTML = meta
-    .map((item) => `<div class="profile-meta-item">${item}</div>`)
-    .join("");
-
+  // Action buttons
   if (isOwnProfile) {
-    document.getElementById("editProfileBtn").style.display = "block";
-    document.getElementById("followBtn").style.display = "none";
-    document.getElementById("profileDmBtn").style.display = "none";
-    document.getElementById("profileDropdown").style.display = "none";
+    const editBtn = document.getElementById("editProfileBtn");
+    const followBtn = document.getElementById("followBtn");
+    const dmBtn = document.getElementById("profileDmBtn");
+    const dropdown = document.getElementById("profileDropdown");
+    if (editBtn) editBtn.style.display = "block";
+    if (followBtn) followBtn.style.display = "none";
+    if (dmBtn) dmBtn.style.display = "none";
+    if (dropdown) dropdown.style.display = "none";
   } else if (authToken) {
-    document.getElementById("editProfileBtn").style.display = "none";
-    document.getElementById("followBtn").style.display = "block";
-    document.getElementById("profileDmBtn").style.display = "flex";
-    document.getElementById("profileDropdown").style.display = "block";
+    const editBtn = document.getElementById("editProfileBtn");
+    const followBtn = document.getElementById("followBtn");
+    const dmBtn = document.getElementById("profileDmBtn");
+    const dropdown = document.getElementById("profileDropdown");
+    if (editBtn) editBtn.style.display = "none";
+    if (followBtn) followBtn.style.display = "block";
+    if (dmBtn) dmBtn.style.display = "flex";
+    if (dropdown) dropdown.style.display = "block";
     updateFollowButton(isFollowing);
     setupDmButton(profile.username);
-
-    // If profile has blocked the current viewer, disable DM button and annotate it
     try {
-      const dmBtn = document.getElementById("profileDmBtn");
+      const dmBtnCheck = document.getElementById("profileDmBtn");
       const pc = document.getElementById("profileContainer");
       const isBlocked = pc?.dataset?.blockedByProfile === "true";
-      if (dmBtn) {
+      if (dmBtnCheck) {
         if (isBlocked) {
-          dmBtn.disabled = true;
-          dmBtn.setAttribute("aria-disabled", "true");
-          dmBtn.classList.add("blocked-interaction");
-          dmBtn.title = "You have been blocked by this user";
+          dmBtnCheck.disabled = true;
+          dmBtnCheck.setAttribute("aria-disabled", "true");
+          dmBtnCheck.classList.add("blocked-interaction");
+          dmBtnCheck.title = "You have been blocked by this user";
         } else {
-          dmBtn.disabled = false;
-          dmBtn.removeAttribute("aria-disabled");
-          dmBtn.classList.remove("blocked-interaction");
-          dmBtn.title = "";
+          dmBtnCheck.disabled = false;
+          dmBtnCheck.removeAttribute("aria-disabled");
+          dmBtnCheck.classList.remove("blocked-interaction");
+          dmBtnCheck.title = "";
         }
       }
     } catch (_) {}
   } else {
-    document.getElementById("profileDmBtn").style.display = "flex";
-    document.getElementById("profileDropdown").style.display = "none";
+    const dmBtn = document.getElementById("profileDmBtn");
+    const dropdown = document.getElementById("profileDropdown");
+    if (dmBtn) dmBtn.style.display = "flex";
+    if (dropdown) dropdown.style.display = "none";
   }
 
-  // If suspended, ensure interactive buttons are hidden/disabled
+  // If suspended, ensure interactive buttons are hidden
   if (suspended) {
-    document.getElementById("editProfileBtn").style.display = "none";
-    document.getElementById("followBtn").style.display = "none";
-    document.getElementById("profileDmBtn").style.display = "none";
-    document.getElementById("profileDropdown").style.display = "none";
+    const editBtn = document.getElementById("editProfileBtn");
+    const followBtn = document.getElementById("followBtn");
+    const dmBtn = document.getElementById("profileDmBtn");
+    const dropdown = document.getElementById("profileDropdown");
+    if (editBtn) editBtn.style.display = "none";
+    if (followBtn) followBtn.style.display = "none";
+    if (dmBtn) dmBtn.style.display = "none";
+    if (dropdown) dropdown.style.display = "none";
   }
 
   currentPosts = posts;
@@ -517,15 +520,16 @@ const renderProfile = (data) => {
   document
     .querySelectorAll(".profile-tab-btn")
     .forEach((btn) => btn.classList.remove("active"));
-  document
-    .querySelector('.profile-tab-btn[data-tab="posts"]')
-    .classList.add("active");
+  const postTabBtn = document.querySelector(
+    '.profile-tab-btn[data-tab="posts"]'
+  );
+  if (postTabBtn) postTabBtn.classList.add("active");
 
   renderPosts(posts);
-  document.getElementById("profileContainer").style.display = "block";
+  if (profileContainerEl) profileContainerEl.style.display = "block";
 };
 
-const updateFollowButton = (isFollowing) => {
+function updateFollowButton(isFollowing) {
   const btn = document.getElementById("followBtn");
   if (isFollowing) {
     btn.textContent = "Following";
@@ -580,7 +584,7 @@ const updateFollowButton = (isFollowing) => {
       count.textContent = parseInt(count.textContent) + 1;
     };
   }
-};
+}
 
 // Dismiss blocked banner
 document
@@ -590,7 +594,7 @@ document
     if (b) b.style.display = "none";
   });
 
-const setupDmButton = (username) => {
+function setupDmButton(username) {
   const btn = document.getElementById("profileDmBtn");
   btn.onclick = async () => {
     try {
@@ -605,7 +609,7 @@ const setupDmButton = (username) => {
     const { openOrCreateConversation } = await import("./dm.js");
     openOrCreateConversation(username);
   };
-};
+}
 
 const showEditModal = () => {
   if (!currentProfile) return;

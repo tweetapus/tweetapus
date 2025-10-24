@@ -265,14 +265,8 @@ export default new Elysia({ prefix: "/profile" })
         return { error: "User not found" };
       }
 
-      const isSuspended = isSuspendedQuery.get(user.id);
-      if (isSuspended) {
-        return { error: "User is suspended" };
-      }
-
-      const userPosts = getUserPosts.all(user.id);
-      const userRetweets = getUserRetweets.all(user.id);
-      const replies = getUserReplies.all(user.id);
+      // Gather follow/post counts early so we can surface minimal profile
+      // information even when an account is suspended.
       const counts = getFollowCounts.get(
         user.id,
         user.id,
@@ -280,6 +274,28 @@ export default new Elysia({ prefix: "/profile" })
         user.id,
         user.id
       );
+
+      const isSuspended = isSuspendedQuery.get(user.id);
+      if (isSuspended) {
+        // Return an error but include minimal public profile fields so the
+        // frontend can render the display name / avatar for suspended users.
+        const minimalProfile = {
+          username: user.username,
+          name: user.name,
+          avatar: user.avatar || null,
+          banner: user.banner || null,
+          created_at: user.created_at || null,
+          following_count: counts?.following_count || 0,
+          follower_count: counts?.follower_count || 0,
+          post_count: counts?.post_count || 0,
+        };
+
+        return { error: "User is suspended", profile: minimalProfile };
+      }
+
+      const userPosts = getUserPosts.all(user.id);
+      const userRetweets = getUserRetweets.all(user.id);
+      const replies = getUserReplies.all(user.id);
 
       const profile = {
         ...user,
