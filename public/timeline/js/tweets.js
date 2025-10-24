@@ -1360,9 +1360,24 @@ export const createTweetElement = (tweet, config = {}) => {
       attachmentEl.className = "tweet-attachment";
 
       if (attachment.file_type.startsWith("image/")) {
-        attachmentEl.innerHTML = `<img src="${attachment.file_url}" alt="${attachment.file_name}" loading="lazy" />`;
+        const img = document.createElement("img");
+        img.src = attachment.file_url;
+        img.alt = attachment.file_name;
+        img.loading = "lazy";
+        img.addEventListener("click", async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const { openImageFullscreen } = await import(
+            "../../shared/image-viewer.js"
+          );
+          openImageFullscreen(attachment.file_url, attachment.file_name);
+        });
+        attachmentEl.appendChild(img);
       } else if (attachment.file_type === "video/mp4") {
-        attachmentEl.innerHTML = `<video src="${attachment.file_url}" controls></video>`;
+        const video = document.createElement("video");
+        video.src = attachment.file_url;
+        video.controls = true;
+        attachmentEl.appendChild(video);
       }
 
       attachmentsEl.appendChild(attachmentEl);

@@ -1,4 +1,5 @@
 import { showEmojiPickerPopup } from "../../shared/emoji-picker.js";
+import { openImageFullscreen } from "../../shared/image-viewer.js";
 import toastQueue from "../../shared/toasts.js";
 import query from "./api.js";
 import { authToken } from "./auth.js";
@@ -367,6 +368,25 @@ function renderMessages() {
   messagesElement.innerHTML = currentMessages
     .map((message) => createMessageElement(message, currentUser))
     .join("");
+
+  setupAttachmentClickHandlers();
+}
+
+function setupAttachmentClickHandlers() {
+  const messagesElement = document.getElementById("dmMessages");
+  if (!messagesElement) return;
+
+  messagesElement.querySelectorAll(".dm-attachment-img").forEach((img) => {
+    img.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const url = img.dataset.url;
+      const name = img.dataset.name;
+      if (url) {
+        openImageFullscreen(url, name);
+      }
+    });
+  });
 }
 
 function createMessageElement(message, currentUser) {
@@ -391,9 +411,11 @@ function createMessageElement(message, currentUser) {
           (att) => `
         <img src="${sanitizeHTML(att.file_url)}" alt="${sanitizeHTML(
             att.file_name
-          )}" onclick="window.open('${sanitizeHTML(
+          )}" data-url="${sanitizeHTML(
             att.file_url
-          )}', '_blank')" />
+          )}" data-name="${sanitizeHTML(
+            att.file_name
+          )}" class="dm-attachment-img" />
       `
         )
         .join("")}
