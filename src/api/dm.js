@@ -501,9 +501,11 @@ export default new Elysia({ prefix: "/dm" })
             content.toLowerCase().includes("happy robot"));
 
         const isGroupChat = conversation.type === "group";
-        const shouldAIRespond = aiUser &&
+        const shouldAIRespond =
+          aiUser &&
           user.id !== aiUser.id &&
-          ((isGroupChat && mentionsAI) || (!isGroupChat && hasAIInConversation));
+          ((isGroupChat && mentionsAI) ||
+            (!isGroupChat && hasAIInConversation));
 
         if (shouldAIRespond) {
           (async () => {

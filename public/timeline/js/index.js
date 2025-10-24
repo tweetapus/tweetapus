@@ -112,7 +112,9 @@ window.onunhandledrejection = (event) => {
 
         if (timeline.length < BATCH_SIZE) {
           hasMoreTweets = false;
-          console.log("[LoadTimeline] Less than batch size, marking as no more tweets");
+          console.log(
+            "[LoadTimeline] Less than batch size, marking as no more tweets"
+          );
         }
       }
     } catch (error) {
@@ -165,8 +167,10 @@ window.onunhandledrejection = (event) => {
 
     const scrollPosition = window.innerHeight + window.scrollY;
     const threshold = document.documentElement.scrollHeight - 800;
-    
-    console.log(`[Scroll] pos: ${scrollPosition}, threshold: ${threshold}, hasMore: ${hasMoreTweets}, isLoading: ${isLoading}`);
+
+    console.log(
+      `[Scroll] pos: ${scrollPosition}, threshold: ${threshold}, hasMore: ${hasMoreTweets}, isLoading: ${isLoading}`
+    );
 
     if (scrollPosition >= threshold) {
       console.log("[Scroll] Loading more tweets");
