@@ -62,14 +62,27 @@ export const initializeSearchPage = () => {
       let users = [];
       let posts = [];
 
+      // Defensive handling: the API wrapper can return an { error } object
+      // when auth or network issues occur. Check for that before using
+      // .users/.posts to avoid runtime errors that make the search silently fail.
+      if (results.some((r) => r?.error)) {
+        console.error(
+          "Search API error:",
+          results.map((r) => r?.error || null)
+        );
+        // Show no results (preserve existing UX) or show empty state.
+        showNoResultsState();
+        return;
+      }
+
       if (currentFilter === "all") {
         const [usersData, postsData] = results;
-        users = usersData.users;
-        posts = postsData.posts;
+        users = usersData?.users || [];
+        posts = postsData?.posts || [];
       } else if (currentFilter === "users") {
-        users = results[0].users;
+        users = results[0]?.users || [];
       } else if (currentFilter === "tweets") {
-        posts = results[0].posts;
+        posts = results[0]?.posts || [];
       }
 
       displayResults(users, posts);

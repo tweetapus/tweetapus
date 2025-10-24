@@ -144,19 +144,22 @@ export default new Elysia({ prefix: "/search" })
     })
   )
   .get("/users", async ({ query: { q }, jwt, headers }) => {
+    // Allow unauthenticated searches: if an Authorization header is
+    // present, try to resolve the user for enrichment purposes. If it
+    // fails (expired token), continue and return results anyway.
     const authorization = headers.authorization;
-    if (!authorization) return { error: "Authentication required" };
-    let user;
+    let user = null;
 
-    try {
-      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-      if (!payload) return { error: "Invalid token" };
-
-      user = getUserByUsername.get(payload.username);
-      if (!user) return { error: "User not found" };
-    } catch (e) {
-      console.error(e);
-      return { error: "Authentication failed" };
+    if (authorization) {
+      try {
+        const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+        if (payload) {
+          user = getUserByUsername.get(payload.username) || null;
+        }
+      } catch (e) {
+        console.error("Search users: JWT verify failed", e);
+        user = null;
+      }
     }
 
     if (!q || q.trim().length === 0) return { users: [] };
@@ -167,19 +170,21 @@ export default new Elysia({ prefix: "/search" })
     return { users };
   })
   .get("/posts", async ({ query: { q }, jwt, headers }) => {
+    // Allow unauthenticated searches: try to resolve the user if an
+    // Authorization header exists, but continue even if verification fails.
     const authorization = headers.authorization;
-    if (!authorization) return { error: "Authentication required" };
-    let user;
+    let user = null;
 
-    try {
-      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-      if (!payload) return { error: "Invalid token" };
-
-      user = getUserByUsername.get(payload.username);
-      if (!user) return { error: "User not found" };
-    } catch (e) {
-      console.error(e);
-      return { error: "Authentication failed" };
+    if (authorization) {
+      try {
+        const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+        if (payload) {
+          user = getUserByUsername.get(payload.username) || null;
+        }
+      } catch (e) {
+        console.error("Search posts: JWT verify failed", e);
+        user = null;
+      }
     }
 
     if (!q || q.trim().length === 0) return { posts: [] };
@@ -199,30 +204,37 @@ export default new Elysia({ prefix: "/search" })
     const users = getUsersQuery.all(...userIds);
 
     const userMap = {};
-    users.forEach((user) => {
-      userMap[user.id] = user;
+    users.forEach((u) => {
+      userMap[u.id] = u;
     });
 
     const postIds = posts.map((post) => post.id);
     const likePlaceholders = postIds.map(() => "?").join(",");
-    const getUserLikesQuery = db.query(
-      `SELECT post_id FROM likes WHERE user_id = ? AND post_id IN (${likePlaceholders})`
-    );
 
-    const userLikes = getUserLikesQuery.all(user.id, ...postIds);
-    const userLikedPosts = new Set(userLikes.map((like) => like.post_id));
+    // Only fetch likes/retweets if we have an authenticated user.
+    let userLikedPosts = new Set();
+    let userRetweetedPosts = new Set();
 
-    const getUserRetweetsQuery = db.query(
-      `SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${likePlaceholders})`
-    );
+    if (user && user.id) {
+      const getUserLikesQuery = db.query(
+        `SELECT post_id FROM likes WHERE user_id = ? AND post_id IN (${likePlaceholders})`
+      );
 
-    const userRetweets = getUserRetweetsQuery.all(user.id, ...postIds);
-    const userRetweetedPosts = new Set(
-      userRetweets.map((retweet) => retweet.post_id)
-    );
+      const userLikes = getUserLikesQuery.all(user.id, ...postIds);
+      userLikedPosts = new Set(userLikes.map((like) => like.post_id));
+
+      const getUserRetweetsQuery = db.query(
+        `SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${likePlaceholders})`
+      );
+
+      const userRetweets = getUserRetweetsQuery.all(user.id, ...postIds);
+      userRetweetedPosts = new Set(
+        userRetweets.map((retweet) => retweet.post_id)
+      );
+    }
 
     const enrichedPosts = posts.map((post) => {
-      const topReply = getTopReplyData(post.id, user.id);
+      const topReply = getTopReplyData(post.id, user ? user.id : null);
       const shouldShowTopReply =
         topReply &&
         post.like_count > 0 &&
@@ -238,8 +250,11 @@ export default new Elysia({ prefix: "/search" })
         author: userMap[post.user_id],
         liked_by_user: userLikedPosts.has(post.id),
         retweeted_by_user: userRetweetedPosts.has(post.id),
-        poll: getPollDataForTweet(post.id, user.id),
-        quoted_tweet: getQuotedTweetData(post.quote_tweet_id, user.id),
+        poll: getPollDataForTweet(post.id, user ? user.id : null),
+        quoted_tweet: getQuotedTweetData(
+          post.quote_tweet_id,
+          user ? user.id : null
+        ),
         top_reply: shouldShowTopReply ? topReply : null,
         attachments: getTweetAttachments(post.id),
       };
