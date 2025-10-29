@@ -344,7 +344,10 @@ export default new Elysia()
           ownerMember.user_id,
           "community_join_request",
           `${user.username} requested to join ${community.name}`,
-          params.id
+          params.id,
+          user.userId,
+          user.username,
+          user.name || user.username
         );
       }
 
@@ -441,7 +444,10 @@ export default new Elysia()
           params.userId,
           "community_role_change",
           `You are now a ${role} in ${community.name}`,
-          params.id
+          params.id,
+          user.userId,
+          user.username,
+          user.name || user.username
         );
 
         return { success: true };
@@ -454,7 +460,10 @@ export default new Elysia()
           params.userId,
           "community_role_change",
           `You are now a ${role} in ${community.name}`,
-          params.id
+          params.id,
+          user.userId,
+          user.username,
+          user.name || user.username
         );
 
         return { success: true };
@@ -520,7 +529,10 @@ export default new Elysia()
         params.userId,
         "community_ban",
         `You have been banned from ${community.name}`,
-        params.id
+        params.id,
+        user.userId,
+        user.username,
+        user.name || user.username
       );
 
       return { success: true };
@@ -561,7 +573,10 @@ export default new Elysia()
         params.userId,
         "community_unban",
         `You have been unbanned from ${community.name}`,
-        params.id
+        params.id,
+        user.userId,
+        user.username,
+        user.name || user.username
       );
 
       return { success: true };
@@ -668,7 +683,10 @@ export default new Elysia()
         request.user_id,
         "community_join_approved",
         `Your request to join ${community.name} was approved`,
-        params.id
+        params.id,
+        user.userId,
+        user.username,
+        user.name || user.username
       );
 
       return { success: true };
@@ -713,7 +731,10 @@ export default new Elysia()
         request.user_id,
         "community_join_rejected",
         `Your request to join ${community.name} was rejected`,
-        params.id
+        params.id,
+        user.userId,
+        user.username,
+        user.name || user.username
       );
 
       return { success: true };

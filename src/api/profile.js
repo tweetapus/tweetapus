@@ -653,7 +653,10 @@ export default new Elysia({ prefix: "/profile" })
         targetUser.id,
         "follow_request",
         `@${currentUser.username} requested to follow you`,
-        currentUser.username
+        currentUser.username,
+        currentUser.id,
+        currentUser.username,
+        currentUser.name || currentUser.username
       );
 
       return { success: true, requestSent: true };
@@ -666,7 +669,10 @@ export default new Elysia({ prefix: "/profile" })
         targetUser.id,
         "follow",
         `@${currentUser.username} started following you`,
-        currentUser.username
+        currentUser.username,
+        currentUser.id,
+        currentUser.username,
+        currentUser.name || currentUser.username
       );
 
       return { success: true, requestSent: false };
@@ -1159,7 +1165,10 @@ export default new Elysia({ prefix: "/profile" })
             requester.id,
             "follow_approved",
             `@${currentUser.username} approved your follow request`,
-            currentUser.username
+            currentUser.username,
+            currentUser.id,
+            currentUser.username,
+            currentUser.name || currentUser.username
           );
         }
 

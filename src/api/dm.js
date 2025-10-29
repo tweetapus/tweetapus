@@ -662,7 +662,10 @@ export default new Elysia({ prefix: "/dm" })
             newUser.id,
             "group_invite",
             `${user.name || user.username} added you to a group chat`,
-            id
+            id,
+            user.id,
+            user.username,
+            user.name || user.username
           );
         }
 

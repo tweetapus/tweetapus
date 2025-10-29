@@ -216,6 +216,9 @@ CREATE TABLE IF NOT EXISTS notifications (
   type TEXT NOT NULL,
   content TEXT NOT NULL,
   related_id TEXT,
+  actor_id TEXT DEFAULT NULL,
+  actor_username TEXT DEFAULT NULL,
+  actor_name TEXT DEFAULT NULL,
   read BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

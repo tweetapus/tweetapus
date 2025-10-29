@@ -1,3 +1,4 @@
+import { showEmojiPickerPopup } from "../../shared/emoji-picker.js";
 import { isConvertibleImage } from "../../shared/image-utils.js";
 import toastQueue from "../../shared/toasts.js";
 import query from "./api.js";
@@ -30,6 +31,7 @@ export const useComposer = (
   const gifSearchInput = element.querySelector("#gif-search-input");
   const gifResults = element.querySelector("#gif-results");
   const gifPickerClose = element.querySelector("#gif-picker-close");
+  const emojiBtn = element.querySelector("#emoji-btn");
   const replyRestrictionBtn = element.querySelector("#reply-restriction-btn");
   const replyRestrictionSelect = element.querySelector(
     "#reply-restriction-select"
@@ -662,6 +664,29 @@ export const useComposer = (
     });
   }
 
+  if (emojiBtn) {
+    emojiBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const rect = emojiBtn.getBoundingClientRect();
+      const picker = await showEmojiPickerPopup(null, {
+        x: rect.left,
+        y: rect.bottom + 8,
+      });
+
+      picker.addEventListener("emoji-click", (event) => {
+        const emoji = event.detail.unicode;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const text = textarea.value;
+        textarea.value = text.substring(0, start) + emoji + text.substring(end);
+        textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
+        textarea.focus();
+        updateCharacterCount();
+        picker.remove();
+      });
+    });
+  }
+
   if (scheduleBtn && scheduleModal && scheduleModalClose) {
     if (replyTo) {
       scheduleBtn.style.display = "none";
@@ -1140,6 +1165,9 @@ export const createComposer = async ({
                 <input type="file" id="file-input" multiple accept="image/png,image/webp,image/avif,image/jpeg,image/jpg,image/gif,video/mp4" style="display: none;" title="Images: max 10MB, Videos: max 100MB (auto-compressed if needed)">
                 <button type="button" id="gif-btn" title="Add GIF">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 256 256"><path d="M144,72V184a8,8,0,0,1-16,0V72a8,8,0,0,1,16,0Zm88-8H176a8,8,0,0,0-8,8V184a8,8,0,0,0,16,0V136h40a8,8,0,0,0,0-16H184V80h48a8,8,0,0,0,0-16ZM96,120H72a8,8,0,0,0,0,16H88v16a24,24,0,0,1-48,0V104A24,24,0,0,1,64,80c11.19,0,21.61,7.74,24.25,18a8,8,0,0,0,15.5-4C99.27,76.62,82.56,64,64,64a40,40,0,0,0-40,40v48a40,40,0,0,0,80,0V128A8,8,0,0,0,96,120Z"></path></svg>
+                </button>
+                <button type="button" id="emoji-btn" title="Add emoji">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" x2="9.01" y1="9" y2="9"/><line x1="15" x2="15.01" y1="9" y2="9"/></svg>
                 </button>
                 <button type="button" id="poll-toggle"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chart-bar-big-icon lucide-chart-bar-big"><path d="M3 3v16a2 2 0 0 0 2 2h16"></path><rect x="7" y="13" width="9" height="4" rx="1"></rect><rect x="7" y="5" width="12" height="4" rx="1"></rect></svg></button>
                 <button type="button" id="schedule-btn" title="Schedule tweet">

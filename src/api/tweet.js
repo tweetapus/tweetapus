@@ -555,7 +555,10 @@ export default new Elysia({ prefix: "/tweets" })
             originalTweet.user_id,
             "reply",
             `${user.name || user.username} replied to your tweet`,
-            tweetId
+            tweetId,
+            user.id,
+            user.username,
+            user.name || user.username
           );
         }
       }
@@ -567,7 +570,10 @@ export default new Elysia({ prefix: "/tweets" })
             quotedTweet.user_id,
             "quote",
             `${user.name || user.username} quoted your tweet`,
-            tweetId
+            tweetId,
+            user.id,
+            user.username,
+            user.name || user.username
           );
         }
       }
@@ -594,7 +600,10 @@ export default new Elysia({ prefix: "/tweets" })
             mentionedUser.id,
             "mention",
             `${user.name || user.username} mentioned you in a tweet`,
-            tweetId
+            tweetId,
+            user.id,
+            user.username,
+            user.name || user.username
           );
         }
       }
@@ -642,7 +651,10 @@ export default new Elysia({ prefix: "/tweets" })
                   user.id,
                   "reply",
                   `${aiUser.name || aiUser.username} replied to your tweet`,
-                  aiTweetId
+                  aiTweetId,
+                  aiUser.id,
+                  aiUser.username,
+                  aiUser.name || aiUser.username
                 );
               }
             } catch (error) {
@@ -769,7 +781,10 @@ export default new Elysia({ prefix: "/tweets" })
             tweet.user_id,
             "reaction",
             `${user.name || user.username} reacted to your tweet`,
-            tweetId
+            tweetId,
+            user.id,
+            user.username,
+            user.name || user.username
           );
         }
 
@@ -1043,7 +1058,10 @@ export default new Elysia({ prefix: "/tweets" })
             tweet.user_id,
             "like",
             `${user.name || user.username} liked your tweet`,
-            id
+            id,
+            user.id,
+            user.username,
+            user.name || user.username
           );
         }
 
@@ -1094,7 +1112,10 @@ export default new Elysia({ prefix: "/tweets" })
             tweet.user_id,
             "retweet",
             `${user.name || user.username} retweeted your tweet`,
-            id
+            id,
+            user.id,
+            user.username,
+            user.name || user.username
           );
         }
 

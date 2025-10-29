@@ -120,6 +120,20 @@ function createNotificationElement(notification) {
   const isUnread = !notification.read;
 
   const icons = {
+    default: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22c1.1046 0 2-.8954 2-2h-4c0 1.1046.8954 2 2 2z"/><path d="M18.364 16.364A9 9 0 1 0 5.636 16.364L6 15.999V11a6 6 0 1 1 12 0v4.999l.364.365z"/></svg>`,
+    // colorful emoji-style reaction icon (smiley) — uses explicit fills so it looks like an emoji
+    reaction: `<svg width="16" height="16" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#fff176"/>
+          <stop offset="1" stop-color="#ffd54f"/>
+        </linearGradient>
+      </defs>
+      <circle cx="32" cy="32" r="30" fill="url(#g1)" stroke="#f9a825" stroke-width="2" />
+      <circle cx="22" cy="26" r="4" fill="#333" />
+      <circle cx="42" cy="26" r="4" fill="#333" />
+      <path d="M22 40c3 3 7 5 10 5s7-2 10-5" stroke="#333" stroke-width="3" stroke-linecap="round" fill="none" />
+    </svg>`,
     like: `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
 			<path d="M5.00002 2.54822C8.00003 2.09722 9.58337 4.93428 10 5.87387C10.4167 4.93428 12 2.09722 15 2.54822C18 2.99923 18.75 5.66154 18.75 7.05826C18.75 9.28572 18.1249 10.9821 16.2499 13.244C14.3749 15.506 10 18.3333 10 18.3333C10 18.3333 5.62498 15.506 3.74999 13.244C1.875 10.9821 1.25 9.28572 1.25 7.05826C1.25 5.66154 2 2.99923 5.00002 2.54822Z"/>
 		</svg>`,
@@ -139,15 +153,30 @@ function createNotificationElement(notification) {
     mention: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
 			<path d="M18.6471 15.3333V18.6667M18.6471 18.6667L18.6471 22M18.6471 18.6667H22M18.6471 18.6667H15.2941M3 22C3 17.7044 6.69722 14.2222 11.258 14.2222C12.0859 14.2222 12.8854 14.3369 13.6394 14.5505M16.4118 6.44444C16.4118 8.89904 14.4102 10.8889 11.9412 10.8889C9.47214 10.8889 7.47059 8.89904 7.47059 6.44444C7.47059 3.98985 9.47214 2 11.9412 2C14.4102 2 16.4118 3.98985 16.4118 6.44444Z"/>
 		</svg>`,
+    // community related icons
+    community_join_request: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 6 6 .5-4.5 3 1.5 6L12 14l-6 4 1.5-6L3 8.5 9 8 12 2z"/></svg>`,
+    community_join_approved: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6L9 17l-5-5"/></svg>`,
+    community_join_rejected: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>`,
+    community_role_change: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l4 4-4 4-4-4 4-4z"/><path d="M6 14v6h12v-6"/></svg>`,
+    community_ban: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0z"/><path d="M9 9l6 6"/></svg>`,
+    community_unban: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M8 12h8"/></svg>`,
   };
 
   const iconClasses = {
+    default: "default-icon",
+    reaction: "reaction-icon",
     like: "like-icon",
     retweet: "retweet-icon",
     reply: "reply-icon",
     follow: "follow-icon",
     quote: "quote-icon",
     mention: "mention-icon",
+    community_join_request: "community-join-request-icon",
+    community_join_approved: "community-join-approved-icon",
+    community_join_rejected: "community-join-rejected-icon",
+    community_role_change: "community-role-change-icon",
+    community_ban: "community-ban-icon",
+    community_unban: "community-unban-icon",
   };
 
   const notificationEl = document.createElement("div");
@@ -158,15 +187,66 @@ function createNotificationElement(notification) {
 
   const iconEl = document.createElement("div");
   iconEl.className = `notification-icon ${
-    iconClasses[notification.type] || "follow-icon"
+    iconClasses[notification.type] || "default-icon"
   }`;
-  iconEl.innerHTML = icons[notification.type] || icons.like;
+  iconEl.innerHTML = icons[notification.type] || icons.default;
 
   const contentEl = document.createElement("div");
   contentEl.className = "notification-content";
 
   const contentP = document.createElement("p");
-  contentP.innerHTML = `${notification.content} <span class="notification-time">· ${timeAgo}</span>`;
+
+  // Use actor display name (if available) and make it a clickable link to the profile.
+  // Fallback to username or a generic label.
+  const actorName =
+    notification.actor_name ||
+    notification.actor_username ||
+    notification.actor_id ||
+    "Someone";
+  const actorUsername = notification.actor_username || "";
+
+  // Helper to safely escape regex special chars when removing username from content text
+  function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  // Prepare the remaining text by removing any @username occurrences so we don't duplicate.
+  let remainingText = notification.content || "";
+  if (actorUsername) {
+    try {
+      const re = new RegExp(`@?${escapeRegExp(actorUsername)}`, "gi");
+      remainingText = remainingText.replace(re, "").trim();
+    } catch (e) {
+      // fall back to original content on any error
+      remainingText = notification.content || "";
+    }
+  }
+
+  // Build DOM: <a class='notification-actor-link'>Actor Name</a> <span class='notification-rest'>rest of text · time</span>
+  const actorLink = document.createElement("a");
+  actorLink.className = "notification-actor-link";
+  actorLink.href = actorUsername ? `/@${actorUsername}` : "#";
+  actorLink.textContent = actorName;
+  actorLink.addEventListener("click", (ev) => {
+    // stop outer click handler and navigate to profile
+    ev.stopPropagation();
+    ev.preventDefault();
+    if (actorUsername) {
+      window.location.href = `/@${actorUsername}`;
+    }
+  });
+
+  const restSpan = document.createElement("span");
+  restSpan.className = "notification-rest";
+  restSpan.textContent = remainingText ? ` ${remainingText} ` : " ";
+
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "notification-time";
+  timeSpan.textContent = `· ${timeAgo}`;
+
+  contentP.appendChild(actorLink);
+  contentP.appendChild(restSpan);
+  contentP.appendChild(timeSpan);
 
   contentEl.appendChild(contentP);
 

@@ -3149,6 +3149,39 @@ nav {
     color: #1d9bf0;
   }
 
+  &.reaction-icon {
+    color: #8a3ffc; /* purple for reactions */
+  }
+
+  /* Community related notification colors */
+  &.community-join-request-icon {
+    color: #ff8c42; /* orange - request */
+  }
+
+  &.community-join-approved-icon {
+    color: #00ba7c; /* green - approved */
+  }
+
+  &.community-join-rejected-icon {
+    color: #ff4d4f; /* red - rejected */
+  }
+
+  &.community-role-change-icon {
+    color: #0aa3b5; /* teal - role change */
+  }
+
+  &.community-ban-icon {
+    color: #c0392b; /* darker red - ban */
+  }
+
+  &.community-unban-icon {
+    color: #7dd36e; /* light green - unban */
+  }
+
+  &.default-icon {
+    color: #6c757d; /* neutral gray for unknown types */
+  }
+
   svg {
     width: 26px;
     height: 26px;
@@ -3176,6 +3209,17 @@ nav {
     font-size: 13px;
     font-weight: 400;
   }
+}
+
+.notification-actor-link {
+  color: var(--text-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.notification-actor-link:hover {
+  text-decoration: underline;
+  color: var(--primary);
 }
 
 .notification-tweet-preview {
@@ -6503,4 +6547,23 @@ label[for*="radio"] {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+emoji-picker {
+  --border-radius: 12px;
+  --border-color: var(--border-primary);
+  --background: var(--bg-primary);
+  --category-emoji-size: 1.25rem;
+  --emoji-size: 1.5rem;
+  --input-border-color: var(--border-primary);
+  --input-font-color: var(--text-primary);
+  --input-placeholder-color: var(--text-secondary);
+  --num-columns: 8;
+  --outline-color: var(--primary);
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+emoji-picker.emoji-picker-popup {
+  position: fixed;
 }

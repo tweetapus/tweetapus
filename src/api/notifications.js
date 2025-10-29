@@ -12,7 +12,7 @@ try {
 const getUserByUsername = db.query("SELECT id FROM users WHERE username = ?");
 
 const getNotifications = db.prepare(`
-  SELECT id, type, content, related_id, read, created_at
+  SELECT id, type, content, related_id, actor_id, actor_username, actor_name, read, created_at
   FROM notifications 
   WHERE user_id = ? 
   ORDER BY created_at DESC 
@@ -20,7 +20,7 @@ const getNotifications = db.prepare(`
 `);
 
 const getNotificationsBefore = db.prepare(`
-  SELECT id, type, content, related_id, read, created_at
+  SELECT id, type, content, related_id, actor_id, actor_username, actor_name, read, created_at
   FROM notifications 
   WHERE user_id = ? AND created_at < (SELECT created_at FROM notifications WHERE id = ?)
   ORDER BY created_at DESC 
@@ -78,14 +78,31 @@ const getUnreadCount = db.prepare(`
 `);
 
 const createNotification = db.prepare(`
-  INSERT INTO notifications (id, user_id, type, content, related_id) 
-  VALUES (?, ?, ?, ?, ?)
+  INSERT INTO notifications (id, user_id, type, content, related_id, actor_id, actor_username, actor_name) 
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 `);
 
-export function addNotification(userId, type, content, relatedId = null) {
+export function addNotification(
+  userId,
+  type,
+  content,
+  relatedId = null,
+  actorId = null,
+  actorUsername = null,
+  actorName = null
+) {
   const id = Bun.randomUUIDv7();
 
-  createNotification.run(id, userId, type, content, relatedId);
+  createNotification.run(
+    id,
+    userId,
+    type,
+    content,
+    relatedId,
+    actorId,
+    actorUsername,
+    actorName
+  );
   sendUnreadCounts(userId);
   return id;
 }
