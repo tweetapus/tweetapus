@@ -1,7 +1,10 @@
 body {
   display: flex;
+  gap: 18px;
   min-height: 100vh;
-  margin: 0px;
+  max-width: calc(600px + 240px);
+  width: 100%;
+  margin: 0px auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scrollbar-gutter: stable;
@@ -95,7 +98,7 @@ body {
   flex: 1;
   min-width: 0;
   max-width: 600px;
-  margin: 0 auto;
+  margin: 0px;
   padding: 12px;
 }
 
@@ -113,7 +116,7 @@ nav {
   flex-direction: column;
   gap: 4px;
   z-index: 20;
-  padding-top: 70px;
+  padding-top: 44px;
 
   button {
     background-color: transparent;
@@ -126,7 +129,7 @@ nav {
     gap: 12px;
     color: inherit;
     border-radius: 9999px;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition: background-color 0.15s, color 0.15s, transform 0.15s;
     font-size: 20px;
     font-weight: 400;
     justify-content: flex-start;
@@ -137,7 +140,7 @@ nav {
     }
 
     &:active {
-      background-color: rgba(var(--primary-rgb), 0.12);
+      transform: scale(0.97);
     }
 
     svg {
@@ -199,6 +202,7 @@ nav {
     transition: background-color 0.2s ease;
     gap: 4px;
     width: fit-content;
+    margin-bottom: 12px;
 
     &:hover {
       background-color: rgba(var(--primary-rgb), 0.1);
@@ -227,6 +231,8 @@ nav {
   &.logo {
     color: var(--primary);
     fill: var(--primary);
+    margin-left: 14px;
+    margin-bottom: 14px;
   }
 }
 
@@ -2819,7 +2825,7 @@ nav {
     border-color: var(--border-primary);
   }
 
-    /* Previous visual override for gold avatars removed. Avatar-radius scaling
+  /* Previous visual override for gold avatars removed. Avatar-radius scaling
        is handled in JS so user-configured pixel radii scale proportionally
        across avatar sizes (profile vs smaller contexts). */
 
