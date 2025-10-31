@@ -5133,6 +5133,10 @@ nav {
     justify-content: space-around;
     align-items: center;
 
+    .logo {
+      display: none;
+    }
+
     button {
       padding: 8px;
       width: auto;
@@ -5154,6 +5158,7 @@ nav {
       width: auto;
       flex: 1;
       padding: 8px;
+      margin-bottom: 0px;
       justify-content: center;
 
       img {
