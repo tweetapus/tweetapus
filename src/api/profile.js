@@ -192,6 +192,10 @@ const getAttachmentsByPostId = db.query(`
 const isSuspendedQuery = db.query(`
   SELECT * FROM suspensions WHERE user_id = ? AND status = 'active' AND (expires_at IS NULL OR expires_at > datetime('now'))
 `);
+// Helper to check the users.suspended flag (legacy or quick lookup)
+const getUserSuspendedFlag = db.query(`
+  SELECT suspended FROM users WHERE id = ?
+`);
 
 const getTweetAttachments = (tweetId) => {
   return getAttachmentsByPostId.all(tweetId);
@@ -202,6 +206,20 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 
   const quotedTweet = getQuotedTweet.get(quoteTweetId);
   if (!quotedTweet) return null;
+
+  // Check whether the quoted tweet's author is suspended (either active suspension or users.suspended flag)
+  const suspensionRow = isSuspendedQuery.get(quotedTweet.user_id);
+  const userSuspendedFlag = getUserSuspendedFlag.get(quotedTweet.user_id);
+  const authorSuspended = !!suspensionRow || !!(userSuspendedFlag && userSuspendedFlag.suspended);
+
+  if (authorSuspended) {
+    // Return a placeholder object indicating the quoted tweet exists but the author is suspended.
+    return {
+      id: quotedTweet.id,
+      unavailable_reason: "suspended",
+      created_at: quotedTweet.created_at,
+    };
+  }
 
   return {
     ...quotedTweet,
@@ -275,7 +293,10 @@ export default new Elysia({ prefix: "/profile" })
         user.id
       );
 
-      const isSuspended = isSuspendedQuery.get(user.id);
+      const suspensionRow = isSuspendedQuery.get(user.id);
+      const userSuspendedFlag = getUserSuspendedFlag.get(user.id);
+      const isSuspended = !!suspensionRow || !!(userSuspendedFlag && userSuspendedFlag.suspended);
+
       if (isSuspended) {
         // Return an error but include minimal public profile fields so the
         // frontend can render the display name / avatar for suspended users.

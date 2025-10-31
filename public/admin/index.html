@@ -133,6 +133,15 @@
               <i class="bi bi-journal-text"></i>
               Moderation Logs
             </a>
+            <a
+              class="nav-link"
+              href="#"
+              data-section="clone-profile"
+              id="clone-profile-nav"
+            >
+              <i class="bi bi-files"></i>
+              Clone Profile
+            </a>
           </nav>
         </div>
 
@@ -357,6 +366,153 @@
                   <nav id="moderationLogsPagination" class="mt-3">
                     <!-- Pagination will be populated here -->
                   </nav>
+                </div>
+              </div>
+            </div>
+            <!-- Clone Profile Section -->
+            <div id="clone-profile-section" class="section d-none">
+              <div class="card">
+                <div class="card-header">
+                  <h5>
+                    <i class="bi bi-files"></i>
+                    Clone User Profile
+                  </h5>
+                </div>
+                <div class="card-body">
+                  <form id="cloneForm">
+                    <div class="mb-3">
+                      <label class="form-label">Username (required)</label>
+                      <input
+                        id="sourceId"
+                        type="text"
+                        class="form-control"
+                        placeholder="source username"
+                        required
+                      />
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">New Username (required)</label>
+                      <input
+                        id="newUsername"
+                        type="text"
+                        class="form-control"
+                        placeholder="new-username"
+                        required
+                      />
+                    </div>
+
+                    <div class="mb-3">
+                      <label class="form-label">
+                        New Display Name (optional)
+                      </label>
+                      <input
+                        id="newDisplayName"
+                        type="text"
+                        class="form-control"
+                        placeholder="Display name (leave blank to keep original)"
+                      />
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneRelations"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">
+                        Clone Followers & Following (real follows)
+                      </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneGhosts"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">
+                        Clone Ghost Followers/Following
+                      </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneTweets"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">Clone Tweets</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneReplies"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">Clone Replies</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneRetweets"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">Clone Retweets</label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneReactions"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">
+                        Clone Reactions (likes & emoji)
+                      </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneCommunities"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">
+                        Clone Community Memberships
+                      </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                      <input
+                        id="cloneMedia"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">
+                        Clone Media Attachments (images/videos)
+                      </label>
+                    </div>
+
+                    <div>
+                      <button type="submit" class="btn btn-primary">
+                        Clone Profile
+                      </button>
+                      <div class="mt-2">
+                        <span id="result" class="success"></span>
+                      </div>
+                    </div>
+                  </form>
                 </div>
               </div>
             </div>

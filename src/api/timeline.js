@@ -5,6 +5,15 @@ import { isAlgorithmAvailable, rankTweets } from "../algo/algorithm.js";
 import db from "./../db.js";
 import ratelimit from "../helpers/ratelimit.js";
 
+const normalizeContent = (value) => {
+  if (typeof value !== "string") return "";
+  return value
+    .toLowerCase()
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+};
+
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const getTimelinePosts = db.query(`
@@ -12,7 +21,7 @@ const getTimelinePosts = db.query(`
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
   WHERE posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.community_only = FALSE
-  ORDER BY posts.created_at DESC 
+  ORDER BY posts.created_at DESC, posts.id DESC
   LIMIT ?
 `);
 
@@ -20,8 +29,9 @@ const getTimelinePostsBefore = db.query(`
   SELECT posts.* FROM posts 
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
-  WHERE posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.id < ? AND posts.community_only = FALSE
-  ORDER BY posts.created_at DESC 
+  WHERE posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.community_only = FALSE
+  AND (posts.created_at < ? OR (posts.created_at = ? AND posts.id < ?))
+  ORDER BY posts.created_at DESC, posts.id DESC
   LIMIT ?
 `);
 
@@ -31,7 +41,7 @@ const getFollowingTimelinePosts = db.query(`
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
   WHERE follows.follower_id = ? AND posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.community_only = FALSE
-  ORDER BY posts.created_at DESC 
+  ORDER BY posts.created_at DESC, posts.id DESC
   LIMIT ?
 `);
 
@@ -40,10 +50,14 @@ const getFollowingTimelinePostsBefore = db.query(`
   JOIN follows ON posts.user_id = follows.following_id
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
-  WHERE follows.follower_id = ? AND posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.id < ? AND posts.community_only = FALSE
-  ORDER BY posts.created_at DESC 
+  WHERE follows.follower_id = ? AND posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.community_only = FALSE
+  AND (posts.created_at < ? OR (posts.created_at = ? AND posts.id < ?))
+  ORDER BY posts.created_at DESC, posts.id DESC
   LIMIT ?
 `);
+
+// Helper to lookup a post's created_at for composite cursor pagination
+const getPostCreatedAt = db.query(`SELECT created_at FROM posts WHERE id = ?`);
 
 const getUserByUsername = db.query("SELECT * FROM users WHERE username = ?");
 
@@ -113,7 +127,7 @@ const getTopReply = db.query(`
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.reply_to = ?
-  ORDER BY posts.like_count DESC
+  ORDER BY posts.like_count DESC, posts.retweet_count DESC, posts.created_at ASC
   LIMIT 1
 `);
 
@@ -237,9 +251,38 @@ export default new Elysia({ prefix: "/timeline" })
 
     const beforeId = query.before;
     const limit = Math.min(Math.max(parseInt(query.limit) || 10, 1), 50);
-    let posts = beforeId
-      ? getTimelinePostsBefore.all(user.id, beforeId, limit)
-      : getTimelinePosts.all(user.id, limit);
+    let posts = [];
+    if (beforeId) {
+      // Fetch the cursor post's created_at so we can paginate using a
+      // composite cursor (created_at + id). This keeps the frontend
+      // unchanged while ensuring deterministic ordering.
+      const cursor = getPostCreatedAt.get(beforeId);
+      if (!cursor) {
+        posts = [];
+      } else {
+        posts = getTimelinePostsBefore.all(
+          user.id,
+          cursor.created_at,
+          cursor.created_at,
+          beforeId,
+          limit
+        );
+      }
+    } else {
+      posts = getTimelinePosts.all(user.id, limit);
+    }
+
+    // Compute per-batch author/content repeat counts to aid debugging
+    const authorCounts = new Map();
+    const contentCounts = new Map();
+    posts.forEach((p) => {
+      const aKey = p.user_id || p.user?.id || p.author?.id || p.author_id;
+      if (aKey) authorCounts.set(aKey, (authorCounts.get(aKey) || 0) + 1);
+
+      const cKey = normalizeContent(p.content || "");
+      if (cKey) contentCounts.set(cKey, (contentCounts.get(cKey) || 0) + 1);
+      p._normalized_content = cKey; // keep for debugging later
+    });
 
     if (user.use_c_algorithm && isAlgorithmAvailable()) {
       const postIds = posts.map((p) => p.id);
@@ -405,7 +448,7 @@ export default new Elysia({ prefix: "/timeline" })
       userBookmarks.map((bookmark) => bookmark.post_id)
     );
 
-    const timeline = posts
+    let timeline = posts
       .map((post) => {
         const topReply = getTopReplyData(post.id, user.id);
         const shouldShowTopReply =
@@ -442,7 +485,17 @@ export default new Elysia({ prefix: "/timeline" })
             : null,
         };
       })
-      .filter(Boolean); // Remove null entries
+      .filter(Boolean);
+
+    if (!user.use_c_algorithm) {
+      timeline.sort((a, b) => {
+        const timeA = Number(new Date(a.created_at));
+        const timeB = Number(new Date(b.created_at));
+        const diff = timeB - timeA;
+        if (diff !== 0) return diff;
+        return b.id.localeCompare(a.id);
+      });
+    }
 
     return { timeline };
   })
@@ -464,9 +517,35 @@ export default new Elysia({ prefix: "/timeline" })
 
     const beforeId = query.before;
     const limit = Math.min(Math.max(parseInt(query.limit) || 10, 1), 50);
-    let posts = beforeId
-      ? getFollowingTimelinePostsBefore.all(user.id, user.id, beforeId, limit)
-      : getFollowingTimelinePosts.all(user.id, user.id, limit);
+    let posts = [];
+    if (beforeId) {
+      const cursor = getPostCreatedAt.get(beforeId);
+      if (!cursor) {
+        posts = [];
+      } else {
+        posts = getFollowingTimelinePostsBefore.all(
+          user.id,
+          user.id,
+          cursor.created_at,
+          cursor.created_at,
+          beforeId,
+          limit
+        );
+      }
+    } else {
+      posts = getFollowingTimelinePosts.all(user.id, user.id, limit);
+    }
+
+    const authorCounts = new Map();
+    const contentCounts = new Map();
+    posts.forEach((p) => {
+      const aKey = p.user_id || p.user?.id || p.author?.id || p.author_id;
+      if (aKey) authorCounts.set(aKey, (authorCounts.get(aKey) || 0) + 1);
+
+      const cKey = normalizeContent(p.content || "");
+      if (cKey) contentCounts.set(cKey, (contentCounts.get(cKey) || 0) + 1);
+      p._normalized_content = cKey;
+    });
 
     if (posts.length === 0) {
       return { timeline: [] };
@@ -514,6 +593,23 @@ export default new Elysia({ prefix: "/timeline" })
       const seenMeta = new Map(
         seenTweets.map((row) => [row.tweet_id, row.seen_at])
       );
+
+      // Non-destructive suppression: for posts that are part of a
+      // repeated-content cluster (e.g. content_repeat_count >= 3), mark
+      // them as "seen" in the in-memory seenMeta used for ranking so
+      // the ranking algorithm will tend to deprioritize them for this
+      // request. This does not modify DB state or the C algorithm.
+      const CLUSTER_SUPPRESS_THRESHOLD = 3;
+      for (const post of posts) {
+        const c = post._normalized_content || "";
+        if (c && contentCounts.get(c) >= CLUSTER_SUPPRESS_THRESHOLD) {
+          // Only set if not already present in seenMeta
+          if (!seenMeta.has(post.id)) {
+            seenMeta.set(post.id, new Date().toISOString());
+          }
+        }
+      }
+
       posts = rankTweets(posts, seenMeta);
 
       for (const post of posts.slice(0, 10)) {
@@ -636,7 +732,7 @@ export default new Elysia({ prefix: "/timeline" })
       userBookmarks.map((bookmark) => bookmark.post_id)
     );
 
-    const timeline = posts
+    let timeline = posts
       .map((post) => {
         const topReply = getTopReplyData(post.id, user.id);
         const shouldShowTopReply =

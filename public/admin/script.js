@@ -45,6 +45,12 @@ class AdminPanel {
       this.currentUser = user;
       this.setupEventListeners();
       this.loadDashboard();
+      // Setup clone form if present on the page
+      try {
+        this.setupCloneForm();
+      } catch (_e) {
+        // noop
+      }
     } catch {
       location.href = "/";
     }
@@ -703,19 +709,24 @@ class AdminPanel {
           ? "4px"
           : "50%"
       };" alt="Avatar">
-            <h4>@${user.username}</h4>
-            <p class="text-muted">${user.name || ""}</p>
+            <h4>
+              ${this.escapeHtml(user.name || "")}
+              ${
+                !user.suspended
+                  ? `${
+                      this.isFlagSet(user.verified)
+                        ? '<i class="bi bi-patch-check-fill text-primary ms-2" title="Verified"></i>'
+                        : ""
+                    }${
+                      this.isFlagSet(user.gold)
+                        ? '<i class="bi bi-award-fill text-warning ms-1" title="Gold"></i>'
+                        : ""
+                    }`
+                  : ""
+              }
+            </h4>
+            <p class="text-muted">@${user.username}</p>
             <div class="d-flex justify-content-center gap-2 mb-3">
-              ${
-                this.isFlagSet(user.verified)
-                  ? '<span class="badge bg-success">Verified</span>'
-                  : ""
-              }
-              ${
-                this.isFlagSet(user.gold)
-                  ? '<span class="badge bg-warning text-dark">Gold</span>'
-                  : ""
-              }
               ${user.admin ? '<span class="badge bg-primary">Admin</span>' : ""}
               ${
                 user.suspended
@@ -1877,6 +1888,83 @@ class AdminPanel {
     } catch (err) {
       this.showError(err.message || "Failed to create user");
     }
+  }
+
+  // Clone profile UI integration -------------------------------------------------
+  setupCloneForm() {
+    const form = document.getElementById("cloneForm");
+    if (!form) return; // nothing to do on pages without the clone form
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const sourceId = document.getElementById("sourceId")?.value?.trim();
+      const username = document.getElementById("newUsername")?.value?.trim();
+      const name = document.getElementById("newDisplayName")?.value?.trim();
+      const cloneRelations =
+        !!document.getElementById("cloneRelations")?.checked;
+      const cloneGhosts = !!document.getElementById("cloneGhosts")?.checked;
+      const cloneTweets = !!document.getElementById("cloneTweets")?.checked;
+      const cloneReplies = !!document.getElementById("cloneReplies")?.checked;
+      const cloneRetweets = !!document.getElementById("cloneRetweets")?.checked;
+      const cloneReactions =
+        !!document.getElementById("cloneReactions")?.checked;
+      const cloneCommunities =
+        !!document.getElementById("cloneCommunities")?.checked;
+      const cloneMedia = !!document.getElementById("cloneMedia")?.checked;
+      const resultEl = document.getElementById("result");
+
+      if (!sourceId) {
+        if (resultEl) resultEl.textContent = "Source username is required";
+        return;
+      }
+      if (!username) {
+        if (resultEl) resultEl.textContent = "New username is required";
+        return;
+      }
+
+      try {
+        const payload = { username };
+        if (name) payload.name = name;
+        // Include boolean flags only when explicitly set to allow server defaults
+        payload.cloneRelations = cloneRelations;
+        payload.cloneGhosts = cloneGhosts;
+        payload.cloneTweets = cloneTweets;
+        payload.cloneReplies = cloneReplies;
+        payload.cloneRetweets = cloneRetweets;
+        payload.cloneReactions = cloneReactions;
+        payload.cloneCommunities = cloneCommunities;
+        payload.cloneMedia = cloneMedia;
+
+        const data = await this.apiCall(
+          `/api/admin/users/${encodeURIComponent(sourceId)}/clone`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          }
+        );
+
+        if (resultEl) {
+          resultEl.className = "success";
+          // Prefer server-returned username; fall back to the requested username
+          const createdUsername = data?.username || username || data?.id || "";
+          resultEl.textContent = `Cloned user created: @${createdUsername}`;
+          const a = document.createElement("a");
+          // Link to canonical username URL (/@username)
+          a.href = `/@${encodeURIComponent(createdUsername)}`;
+          a.textContent = " Open profile";
+          a.style.marginLeft = "8px";
+          resultEl.appendChild(a);
+        }
+      } catch (err) {
+        if (resultEl) {
+          resultEl.className = "error";
+          resultEl.textContent = err?.message || "Failed to clone user";
+        } else {
+          this.showError(err?.message || "Failed to clone user");
+        }
+      }
+    });
   }
 
   async loadModerationLogs(page = 1) {

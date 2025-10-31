@@ -67,6 +67,17 @@ const getQuotedTweet = db.query(`
   WHERE posts.id = ?
 `);
 
+const isSuspendedQuery = db.query(
+	"SELECT 1 FROM suspensions WHERE user_id = ? AND status = 'active' AND (expires_at IS NULL OR expires_at > datetime('now'))"
+);
+const getUserSuspendedFlag = db.query("SELECT suspended FROM users WHERE id = ?");
+const isUserSuspendedById = (userId) => {
+	const s = isSuspendedQuery.get(userId);
+	if (s) return true;
+	const f = getUserSuspendedFlag.get(userId);
+	return !!f?.suspended;
+};
+
 const getPollDataForTweet = (tweetId, userId) => {
 	const poll = getPollByPostId.get(tweetId);
 	if (!poll) return null;
@@ -140,6 +151,11 @@ export default new Elysia({ prefix: "/bookmarks" })
 
 			const tweet = getTweetById.get(postId);
 			if (!tweet) return { error: "Tweet not found" };
+
+			// block bookmarking tweets whose author is suspended
+			if (isUserSuspendedById(tweet.user_id)) {
+				return { error: "Tweet not found" };
+			}
 
 			const existingBookmark = checkBookmarkExists.get(user.id, postId);
 			if (existingBookmark) {

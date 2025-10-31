@@ -64,7 +64,7 @@ const getTopReply = db.query(`
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.reply_to = ?
-  ORDER BY posts.like_count DESC
+  ORDER BY posts.like_count DESC, posts.retweet_count DESC, posts.created_at ASC
   LIMIT 1
 `);
 
@@ -160,7 +160,8 @@ export default new Elysia({ prefix: "/search" })
     if (!q || q.trim().length === 0) return { users: [] };
 
     const raw = q.trim();
-    const searchTerm = raw.length < 3 ? `${raw}%` : `%${raw}%`;
+    // Always use a contains match so short queries behave like normal searches
+    const searchTerm = `%${raw}%`;
     const users = searchUsersQuery.all(searchTerm, searchTerm);
 
     return { users };
@@ -184,9 +185,8 @@ export default new Elysia({ prefix: "/search" })
     if (!q || q.trim().length === 0) return { posts: [] };
 
     const raw = q.trim();
-    // Use prefix match for short queries to reduce noisy results, full
-    // contains match for longer queries.
-    const searchTerm = raw.length < 3 ? `${raw}%` : `%${raw}%`;
+    // Always use a contains match so short queries behave like normal searches
+    const searchTerm = `%${raw}%`;
     const posts = searchPostsQuery.all(searchTerm);
 
     if (posts.length === 0) return { posts: [] };

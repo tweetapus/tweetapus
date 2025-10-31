@@ -4,6 +4,7 @@ import toastQueue from "../../shared/toasts.js";
 import { createModal, createPopup } from "../../shared/ui-utils.js";
 import query from "./api.js";
 import getUser from "./auth.js";
+import switchPage from "./pages.js";
 import openTweet from "./tweet.js";
 
 // Avatar radius handling:
@@ -750,6 +751,11 @@ export const createTweetElement = (tweet, config = {}) => {
   tweetHeaderAvatarEl.loading = "lazy";
   tweetHeaderAvatarEl.addEventListener("click", (e) => {
     e.stopPropagation();
+    // If the author is suspended, send user back to timeline instead of opening profile.
+    if (tweet.author?.suspended) {
+      switchPage("timeline", { path: "/" });
+      return;
+    }
     import("./profile.js").then(({ default: openProfile }) => {
       openProfile(tweet.author.username);
     });
@@ -766,6 +772,10 @@ export const createTweetElement = (tweet, config = {}) => {
   tweetHeaderNameEl.classList.add("tweet-header-name");
   tweetHeaderNameEl.addEventListener("click", (e) => {
     e.stopPropagation();
+    if (tweet.author?.suspended) {
+      switchPage("timeline", { path: "/" });
+      return;
+    }
     import("./profile.js").then(({ default: openProfile }) => {
       openProfile(tweet.author.username);
     });
@@ -850,6 +860,7 @@ export const createTweetElement = (tweet, config = {}) => {
   const source_icons = {
     desktop_web: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tweet-source-icon lucide lucide-monitor-icon lucide-monitor"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`,
     mobile_web: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tweet-source-icon lucide lucide-smartphone-icon lucide-smartphone"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></svg>`,
+    scheduled: `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>`
   };
 
   const tweetHeaderUsernameEl = document.createElement("p");
@@ -858,6 +869,10 @@ export const createTweetElement = (tweet, config = {}) => {
   tweetHeaderUsernameEl.classList.add("tweet-header-username");
   tweetHeaderUsernameEl.addEventListener("click", (e) => {
     e.stopPropagation();
+    if (tweet.author?.suspended) {
+      switchPage("timeline", { path: "/" });
+      return;
+    }
     import("./profile.js").then(({ default: openProfile }) => {
       openProfile(tweet.author.username);
     });
@@ -1176,10 +1191,30 @@ export const createTweetElement = (tweet, config = {}) => {
   }
 
   if (tweet.quoted_tweet) {
-    if (!tweet.quoted_tweet.author) {
+    // Handle quoted tweets that are unavailable due to suspension specially.
+    if (tweet.quoted_tweet.unavailable_reason === "suspended") {
+      const suspendedQuoteEl = document.createElement("div");
+      suspendedQuoteEl.className =
+        "tweet-preview unavailable-quote suspended-quote";
+      suspendedQuoteEl.textContent = "This tweet is from a suspended account.";
+      // Prevent clicks on the placeholder from bubbling up and triggering
+      // the parent tweet's click handler (which would redirect to the
+      // timeline). The placeholder should be inert.
+      suspendedQuoteEl.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+      });
+      suspendedQuoteEl.style.cursor = "default";
+      tweetEl.appendChild(suspendedQuoteEl);
+    } else if (!tweet.quoted_tweet.author) {
       const unavailableQuoteEl = document.createElement("div");
       unavailableQuoteEl.className = "tweet-preview unavailable-quote";
       unavailableQuoteEl.textContent = "Quote tweet unavailable";
+      unavailableQuoteEl.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+      });
+      unavailableQuoteEl.style.cursor = "default";
       tweetEl.appendChild(unavailableQuoteEl);
     } else {
       const quotedTweetEl = createTweetElement(tweet.quoted_tweet, {
@@ -1226,15 +1261,6 @@ export const createTweetElement = (tweet, config = {}) => {
     }
 
     try {
-      // Prevent like if blocked by author
-      const current = await getUser();
-      if (current && tweet.author && tweet.author.id) {
-        const profileResp = await query(`/profile/${tweet.author.username}`);
-        if (profileResp?.profile?.blockedByProfile) {
-          toastQueue.add(`<h1>You have been blocked by this user</h1>`);
-          return;
-        }
-      }
       const result = await query(`/tweets/${tweet.id}/like`, {
         method: "POST",
       });
@@ -1296,16 +1322,6 @@ export const createTweetElement = (tweet, config = {}) => {
       return;
     }
 
-    // Check if blocked by author before opening composer
-    const current = await getUser();
-    if (current && tweet.author && tweet.author.username) {
-      const profileResp = await query(`/profile/${tweet.author.username}`);
-      if (profileResp?.profile?.blockedByProfile) {
-        toastQueue.add(`<h1>You have been blocked by this user</h1>`);
-        return;
-      }
-    }
-
     await openTweet(tweet);
 
     requestAnimationFrame(() => {
@@ -1357,16 +1373,6 @@ export const createTweetElement = (tweet, config = {}) => {
             if (isBlockedByProfile) {
               toastQueue.add(`<h1>You have been blocked by this user</h1>`);
               return;
-            }
-            const current = await getUser();
-            if (current && tweet.author && tweet.author.username) {
-              const profileResp = await query(
-                `/profile/${tweet.author.username}`
-              );
-              if (profileResp?.profile?.blockedByProfile) {
-                toastQueue.add(`<h1>You have been blocked by this user</h1>`);
-                return;
-              }
             }
             const result = await query(`/tweets/${tweet.id}/retweet`, {
               method: "POST",
@@ -2004,30 +2010,6 @@ export const createTweetElement = (tweet, config = {}) => {
     });
   }
 
-  (async () => {
-    try {
-      if (!isBlockedByProfile) {
-        const authorBlocked = await checkAuthorBlockedByProfile(
-          tweet.author.username
-        );
-        if (authorBlocked) {
-          [
-            tweetInteractionsLikeEl,
-            tweetInteractionsRetweetEl,
-            tweetInteractionsReplyEl,
-          ].forEach((btn) => {
-            try {
-              btn.disabled = true;
-              btn.setAttribute("aria-disabled", "true");
-              btn.classList.add("blocked-interaction");
-            } catch (_) {}
-          });
-          tweetEl.classList.add("blocked-by-profile");
-        }
-      }
-    } catch (_) {}
-  })();
-
   const replyRestriction = tweet.reply_restriction || "everyone";
   let restrictionEl = null;
 
@@ -2283,6 +2265,11 @@ export const createTweetElement = (tweet, config = {}) => {
       }
       if (size === "preview") {
         e.stopPropagation();
+      }
+      // If tweet's author is suspended, redirect to timeline instead of opening the tweet.
+      if (tweet.author?.suspended) {
+        switchPage("timeline", { path: "/" });
+        return;
       }
       openTweet(tweet);
     });

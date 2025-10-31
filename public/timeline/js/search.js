@@ -40,9 +40,10 @@ export const initializeSearchPage = () => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
       const query = searchPageInput.value.trim();
-      // If the query is empty or too short, show the empty state and
-      // cancel any in-flight search requests to avoid stale results.
-      if (!query || query.length < 3) {
+      // If the query is empty, show the empty state and cancel any in-flight
+      // search requests to avoid stale results. Allow short queries (1-2
+      // characters) to perform normal searches.
+      if (!query) {
         // Cancel any inflight request
         if (currentAbortController) {
           try {
@@ -76,9 +77,15 @@ export const initializeSearchPage = () => {
     try {
       const promises = [];
 
+      // Add a cache-buster for single-character queries so the browser
+      // doesn't reuse cached responses and each one-char input issues
+      // a fresh network request.
+      const encoded = encodeURIComponent(q);
+      const cacheBuster = q.length === 1 ? `&_=${Date.now()}` : "";
+
       if (currentFilter === "all" || currentFilter === "users") {
         promises.push(
-          query(`/search/users?q=${encodeURIComponent(q)}`, {
+          query(`/search/users?q=${encoded}${cacheBuster}`, {
             signal: controller.signal,
           })
         );
@@ -86,7 +93,7 @@ export const initializeSearchPage = () => {
 
       if (currentFilter === "all" || currentFilter === "tweets") {
         promises.push(
-          query(`/search/posts?q=${encodeURIComponent(q)}`, {
+          query(`/search/posts?q=${encoded}${cacheBuster}`, {
             signal: controller.signal,
           })
         );

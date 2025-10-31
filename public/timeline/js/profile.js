@@ -276,13 +276,13 @@ const renderProfile = (data) => {
     }
   }
 
-  // Profile name and verification badge
+  // Profile name and verification badge (show only for non-suspended profiles)
   const profileNameEl = document.getElementById("profileHeaderName");
   if (profileNameEl) {
     profileNameEl.textContent = profile.name || profile.username;
-    // verification badge
+    // verification badge (only if not suspended)
     const existingBadge = profileNameEl.querySelector(".verification-badge");
-    if (profile.verified || profile.gold) {
+    if (!suspended && (profile.verified || profile.gold)) {
       const badgeColor = profile.gold ? "#D4AF37" : "#1185FE";
       if (!existingBadge) {
         const verificationBadge = document.createElement("span");
@@ -301,6 +301,43 @@ const renderProfile = (data) => {
       }
     } else if (existingBadge) {
       existingBadge.remove();
+    }
+  }
+
+  // Also add a verification badge to the main display name (h2) for non-suspended verified/gold users
+  const mainDisplayNameEl = document.getElementById("profileDisplayName");
+  if (mainDisplayNameEl) {
+    // ensure we don't show badge on suspended profiles
+    const existingMainBadge = mainDisplayNameEl.querySelector(
+      ".verification-badge"
+    );
+    if (!suspended && (profile.verified || profile.gold)) {
+      const badgeColor = profile.gold ? "#D4AF37" : "#1185FE";
+      if (!existingMainBadge) {
+        const verificationBadge = document.createElement("span");
+        verificationBadge.className = "verification-badge";
+        verificationBadge.innerHTML = `
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M2.566 5.747C2.469 5.308 2.484 4.853 2.61 4.422C2.736 3.991 2.968 3.598 3.286 3.281C3.604 2.964 3.997 2.732 4.428 2.607C4.859 2.482 5.315 2.468 5.753 2.567C5.994 2.19 6.327 1.879 6.719 1.664C7.112 1.449 7.552 1.337 8.000 1.337C8.448 1.337 8.888 1.449 9.281 1.664C9.673 1.879 10.005 2.19 10.246 2.567C10.685 2.468 11.142 2.482 11.574 2.607C12.006 2.732 12.399 2.965 12.717 3.283C13.035 3.601 13.268 3.994 13.393 4.426C13.518 4.858 13.532 5.314 13.433 5.753C13.811 5.994 14.121 6.327 14.336 6.719C14.551 7.112 14.664 7.552 14.664 8.000C14.664 8.448 14.551 8.888 14.336 9.281C14.121 9.673 13.811 10.006 13.433 10.247C13.532 10.685 13.518 11.141 13.393 11.572C13.268 12.003 13.036 12.396 12.719 12.714C12.402 13.032 12.009 13.264 11.578 13.39C11.147 13.516 10.692 13.531 10.253 13.434C10.012 13.812 9.68 14.124 9.287 14.34C8.893 14.556 8.452 14.669 8.003 14.669C7.555 14.669 7.113 14.556 6.72 14.34C6.327 14.124 5.994 13.812 5.753 13.434C5.315 13.532 4.859 13.518 4.428 13.393C3.997 13.268 3.604 13.036 3.286 12.719C2.968 12.401 2.736 12.009 2.61 11.578C2.484 11.147 2.469 10.692 2.567 10.253C2.187 10.013 1.874 9.68 1.657 9.286C1.44 8.892 1.326 8.45 1.326 8.000C1.326 7.55 1.44 7.108 1.657 6.714C1.874 6.32 2.187 5.987 2.567 5.747Z" fill="${badgeColor}"/>
+            <path d="M6 8L7.333 9.333L10 6.667" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        `;
+        // If a follows-me badge exists, insert the verification badge before it so it does NOT appear after follows-me-badge
+        const followsBadge =
+          mainDisplayNameEl.querySelector(".follows-me-badge");
+        if (followsBadge) {
+          mainDisplayNameEl.insertBefore(verificationBadge, followsBadge);
+        } else {
+          mainDisplayNameEl.appendChild(verificationBadge);
+        }
+      } else {
+        // update color if needed
+        const pathEl = existingMainBadge.querySelector("path");
+        if (pathEl)
+          pathEl.setAttribute("fill", profile.gold ? "#D4AF37" : "#1185FE");
+      }
+    } else if (existingMainBadge) {
+      existingMainBadge.remove();
     }
   }
 

@@ -522,6 +522,401 @@ export default new Elysia({ prefix: "/admin" })
     return { success: true };
   })
 
+  // Clone a user's profile (admin only)
+  .post(
+    "/users/:id/clone",
+    async ({ params, body, user: moderator }) => {
+      // Accept either internal id or username in the URL segment.
+      let sourceUser = adminQueries.findUserById.get(params.id);
+      if (!sourceUser) {
+        // try username lookup when an id lookup fails
+        sourceUser = adminQueries.findUserByUsername.get(params.id);
+      }
+
+      if (!sourceUser) return { error: "Source user not found" };
+
+      const username = body.username?.trim();
+      const name = body.name !== undefined ? body.name : sourceUser.name;
+      const cloneRelations =
+        body.cloneRelations === undefined ? true : !!body.cloneRelations;
+      const cloneGhosts =
+        body.cloneGhosts === undefined ? true : !!body.cloneGhosts;
+      const cloneTweets =
+        body.cloneTweets === undefined ? true : !!body.cloneTweets;
+      const cloneReplies =
+        body.cloneReplies === undefined ? true : !!body.cloneReplies;
+      const cloneRetweets =
+        body.cloneRetweets === undefined ? true : !!body.cloneRetweets;
+      const cloneReactions =
+        body.cloneReactions === undefined ? true : !!body.cloneReactions;
+      const cloneCommunities =
+        body.cloneCommunities === undefined ? true : !!body.cloneCommunities;
+      const cloneMedia =
+        body.cloneMedia === undefined ? false : !!body.cloneMedia;
+
+      if (!username) return { error: "Username is required" };
+
+      const existing = adminQueries.findUserByUsername.get(username);
+      if (existing) return { error: "Username already taken" };
+
+      const newId = Bun.randomUUIDv7();
+
+      try {
+        db.transaction(() => {
+          // Create the new user - copy public profile fields but do not grant admin rights
+          db.query(
+            `INSERT INTO users (id, username, name, bio, avatar, verified, admin, gold, character_limit, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).run(
+            newId,
+            username,
+            name || null,
+            sourceUser.bio || null,
+            sourceUser.avatar || null,
+            sourceUser.verified ? 1 : 0,
+            0, // admin = false for cloned accounts
+            sourceUser.gold ? 1 : 0,
+            sourceUser.character_limit || null,
+            new Date().toISOString()
+          );
+
+          // Clone real followers (people who follow the source) -> they should follow the new user
+          if (cloneRelations) {
+            const followers = db
+              .query("SELECT follower_id FROM follows WHERE following_id = ?")
+              .all(sourceUser.id);
+
+            for (const f of followers) {
+              if (!f || !f.follower_id) continue;
+              // avoid self-follow and duplicates
+              if (f.follower_id === newId) continue;
+              const exists = db
+                .query(
+                  "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?"
+                )
+                .get(f.follower_id, newId);
+              if (!exists) {
+                db.query(
+                  "INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)"
+                ).run(Bun.randomUUIDv7(), f.follower_id, newId);
+              }
+            }
+
+            // Clone followings (accounts the source follows) -> new user follows same accounts
+            const following = db
+              .query("SELECT following_id FROM follows WHERE follower_id = ?")
+              .all(sourceUser.id);
+
+            for (const f of following) {
+              if (!f || !f.following_id) continue;
+              if (f.following_id === newId) continue;
+              const exists = db
+                .query(
+                  "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?"
+                )
+                .get(newId, f.following_id);
+              if (!exists) {
+                db.query(
+                  "INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)"
+                ).run(Bun.randomUUIDv7(), newId, f.following_id);
+              }
+            }
+          }
+
+          // Clone ghost follows (both follower and following types)
+          if (cloneGhosts) {
+            const ghosts = db
+              .query(
+                "SELECT follower_type FROM ghost_follows WHERE target_id = ?"
+              )
+              .all(sourceUser.id);
+
+            for (const g of ghosts) {
+              if (!g || !g.follower_type) continue;
+              db.query(
+                "INSERT INTO ghost_follows (id, follower_type, target_id) VALUES (?, ?, ?)"
+              ).run(Bun.randomUUIDv7(), g.follower_type, newId);
+            }
+          }
+
+          // Clone tweets (posts) - preserve replies/quotes mapping when requested
+          if (cloneTweets) {
+            const posts = db
+              .query(
+                "SELECT id, content, reply_to, quote_tweet_id, created_at, community_id, pinned FROM posts WHERE user_id = ? ORDER BY created_at ASC"
+              )
+              .all(sourceUser.id);
+
+            // map original post id -> new post id
+            const postIdMap = new Map();
+            const clonedPosts = [];
+
+            // First pass: create posts without reply_to/quote filled (we'll map them in second pass)
+            for (const p of posts) {
+              const newPostId = Bun.randomUUIDv7();
+              const communityIdToUse = cloneCommunities ? p.community_id : null;
+
+              db.query(
+                "INSERT INTO posts (id, user_id, content, reply_to, quote_tweet_id, community_id, created_at, pinned) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+              ).run(
+                newPostId,
+                newId,
+                p.content,
+                null,
+                null,
+                communityIdToUse,
+                p.created_at || new Date().toISOString(),
+                p.pinned ? 1 : 0
+              );
+
+              postIdMap.set(p.id, newPostId);
+              clonedPosts.push({
+                origId: p.id,
+                newId: newPostId,
+                reply_to: p.reply_to,
+                quote_tweet_id: p.quote_tweet_id,
+                created_at: p.created_at,
+                pinned: p.pinned,
+                community_id: p.community_id,
+              });
+            }
+
+            // Second pass: update reply_to and quote_tweet_id on cloned posts and adjust counts
+            for (const cp of clonedPosts) {
+              // Preserve replies on cloned posts. If the parent post was cloned,
+              // map to the new post id. If the parent was not cloned, keep the
+              // original `reply_to` id so the cloned post remains a reply
+              // (avoids converting replies into top-level tweets).
+              let mappedReplyTo = null;
+              if (cloneReplies && cp.reply_to) {
+                mappedReplyTo = postIdMap.has(cp.reply_to)
+                  ? postIdMap.get(cp.reply_to)
+                  : cp.reply_to;
+              }
+
+              let mappedQuoteId = null;
+              if (cp.quote_tweet_id) {
+                mappedQuoteId = postIdMap.has(cp.quote_tweet_id)
+                  ? postIdMap.get(cp.quote_tweet_id)
+                  : cp.quote_tweet_id;
+              }
+
+              db.query(
+                "UPDATE posts SET reply_to = ?, quote_tweet_id = ? WHERE id = ?"
+              ).run(mappedReplyTo, mappedQuoteId, cp.newId);
+
+              // If we set a reply_to, increment the reply_count on the parent
+              if (mappedReplyTo) {
+                db.query(
+                  "UPDATE posts SET reply_count = COALESCE(reply_count,0) + 1 WHERE id = ?"
+                ).run(mappedReplyTo);
+              }
+
+              // If we set a quote_tweet_id, increment quote_count on target
+              if (mappedQuoteId) {
+                db.query(
+                  "UPDATE posts SET quote_count = COALESCE(quote_count,0) + 1 WHERE id = ?"
+                ).run(mappedQuoteId);
+              }
+            }
+
+            // Clone attachments/media for each post when requested
+            if (cloneMedia) {
+              const getAttachments = db.query(
+                "SELECT id, file_hash, file_name, file_type, file_size, file_url, is_spoiler, created_at FROM attachments WHERE post_id = ?"
+              );
+
+              for (const cp of clonedPosts) {
+                try {
+                  const atts = getAttachments.all(cp.origId);
+                  for (const a of atts) {
+                    const newAttId = Bun.randomUUIDv7();
+                    db.query(
+                      `INSERT INTO attachments (id, post_id, file_hash, file_name, file_type, file_size, file_url, is_spoiler, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                    ).run(
+                      newAttId,
+                      cp.newId,
+                      a.file_hash,
+                      a.file_name,
+                      a.file_type,
+                      a.file_size,
+                      a.file_url,
+                      a.is_spoiler ? 1 : 0,
+                      a.created_at || new Date().toISOString()
+                    );
+                  }
+                } catch (e) {
+                  // don't abort entire clone on attachment copy failure; just continue
+                  console.error(
+                    "Failed to clone attachments for post",
+                    cp.origId,
+                    e
+                  );
+                }
+              }
+            }
+
+            // Clone retweets made by the source user (new user retweets same posts)
+            if (cloneRetweets) {
+              const sourceRetweets = db
+                .query(
+                  "SELECT post_id, created_at FROM retweets WHERE user_id = ?"
+                )
+                .all(sourceUser.id);
+
+              for (const r of sourceRetweets) {
+                const targetPostId = postIdMap.has(r.post_id)
+                  ? postIdMap.get(r.post_id)
+                  : r.post_id;
+                const exists = db
+                  .query(
+                    "SELECT 1 FROM retweets WHERE user_id = ? AND post_id = ?"
+                  )
+                  .get(newId, targetPostId);
+                if (!exists) {
+                  db.query(
+                    "INSERT INTO retweets (id, user_id, post_id, created_at) VALUES (?, ?, ?, ?)"
+                  ).run(
+                    Bun.randomUUIDv7(),
+                    newId,
+                    targetPostId,
+                    r.created_at || new Date().toISOString()
+                  );
+                  db.query(
+                    "UPDATE posts SET retweet_count = COALESCE(retweet_count,0) + 1 WHERE id = ?"
+                  ).run(targetPostId);
+                }
+              }
+            }
+
+            // Clone likes/reactions performed by the source user
+            if (cloneReactions) {
+              const sourceLikes = db
+                .query(
+                  "SELECT post_id, created_at FROM likes WHERE user_id = ?"
+                )
+                .all(sourceUser.id);
+              for (const l of sourceLikes) {
+                const targetPostId = postIdMap.has(l.post_id)
+                  ? postIdMap.get(l.post_id)
+                  : l.post_id;
+                const exists = db
+                  .query(
+                    "SELECT 1 FROM likes WHERE user_id = ? AND post_id = ?"
+                  )
+                  .get(newId, targetPostId);
+                if (!exists) {
+                  db.query(
+                    "INSERT INTO likes (id, user_id, post_id, created_at) VALUES (?, ?, ?, ?)"
+                  ).run(
+                    Bun.randomUUIDv7(),
+                    newId,
+                    targetPostId,
+                    l.created_at || new Date().toISOString()
+                  );
+                  db.query(
+                    "UPDATE posts SET like_count = COALESCE(like_count,0) + 1 WHERE id = ?"
+                  ).run(targetPostId);
+                }
+              }
+
+              // post_reactions (emoji reactions)
+              const sourceReacts = db
+                .query(
+                  "SELECT post_id, emoji, created_at FROM post_reactions WHERE user_id = ?"
+                )
+                .all(sourceUser.id);
+              for (const r of sourceReacts) {
+                const targetPostId = postIdMap.has(r.post_id)
+                  ? postIdMap.get(r.post_id)
+                  : r.post_id;
+                const exists = db
+                  .query(
+                    "SELECT 1 FROM post_reactions WHERE user_id = ? AND post_id = ? AND emoji = ?"
+                  )
+                  .get(newId, targetPostId, r.emoji);
+                if (!exists) {
+                  db.query(
+                    "INSERT INTO post_reactions (id, post_id, user_id, emoji, created_at) VALUES (?, ?, ?, ?, ?)"
+                  ).run(
+                    Bun.randomUUIDv7(),
+                    targetPostId,
+                    newId,
+                    r.emoji,
+                    r.created_at || new Date().toISOString()
+                  );
+                }
+              }
+            }
+
+            // Clone community memberships (if requested)
+            if (cloneCommunities) {
+              const memberships = db
+                .query(
+                  "SELECT community_id, role, joined_at FROM community_members WHERE user_id = ?"
+                )
+                .all(sourceUser.id);
+              for (const m of memberships) {
+                const exists = db
+                  .query(
+                    "SELECT 1 FROM community_members WHERE user_id = ? AND community_id = ?"
+                  )
+                  .get(newId, m.community_id);
+                if (!exists) {
+                  db.query(
+                    "INSERT INTO community_members (id, community_id, user_id, role, joined_at) VALUES (?, ?, ?, ?, ?)"
+                  ).run(
+                    Bun.randomUUIDv7(),
+                    m.community_id,
+                    newId,
+                    m.role || "member",
+                    m.joined_at || new Date().toISOString()
+                  );
+                  db.query(
+                    "UPDATE communities SET member_count = COALESCE(member_count,0) + 1 WHERE id = ?"
+                  ).run(m.community_id);
+                }
+              }
+            }
+          }
+        })();
+
+        logModerationAction(moderator.id, "clone_user", "user", newId, {
+          source: sourceUser.username,
+          username,
+          options: {
+            cloneRelations,
+            cloneGhosts,
+            cloneTweets,
+            cloneReplies,
+            cloneRetweets,
+            cloneReactions,
+            cloneCommunities,
+            cloneMedia,
+          },
+        });
+
+        return { success: true, id: newId, username };
+      } catch (e) {
+        console.error("Failed to clone user:", e);
+        return { error: "Failed to clone user" };
+      }
+    },
+    {
+      body: t.Object({
+        username: t.String(),
+        name: t.Optional(t.String()),
+        cloneRelations: t.Optional(t.Boolean()),
+        cloneGhosts: t.Optional(t.Boolean()),
+        cloneTweets: t.Optional(t.Boolean()),
+        cloneReplies: t.Optional(t.Boolean()),
+        cloneRetweets: t.Optional(t.Boolean()),
+        cloneReactions: t.Optional(t.Boolean()),
+        cloneCommunities: t.Optional(t.Boolean()),
+        cloneMedia: t.Optional(t.Boolean()),
+      }),
+    }
+  )
+
   // Post management
   .get("/posts", async ({ query }) => {
     const page = parseInt(query.page) || 1;

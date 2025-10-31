@@ -13,6 +13,18 @@ export default async function openTweet(
 
   if (!tweet?.author) {
     const apiOutput = await query(`/tweets/${tweet.id}`);
+
+    // If the API didn't return a tweet (for example: the tweet was deleted
+    // or the author is suspended and the server returns not-found), bail out
+    // early and show the standard "not found" UI.
+    if (!apiOutput || !apiOutput.tweet) {
+      switchPage("timeline");
+      toastQueue.add(
+        `<h1>Tweet not found</h1><p>It might have been deleted</p>`
+      );
+      return;
+    }
+
     tweet = apiOutput.tweet;
     threadPostsCache = apiOutput?.threadPosts || [
       {
@@ -22,14 +34,6 @@ export default async function openTweet(
     ];
     repliesCache = apiOutput?.replies || [];
     tweet.extendedStats = apiOutput?.extendedStats || [];
-
-    if (!tweet) {
-      switchPage("timeline");
-      toastQueue.add(
-        `<h1>Tweet not found</h1><p>It might have been deleted</p>`
-      );
-      return;
-    }
   }
 
   let isLoadingMoreReplies = false;

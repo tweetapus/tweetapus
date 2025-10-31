@@ -49,6 +49,20 @@ const getTweetById = db.query(`
   WHERE posts.id = ?
 `);
 
+const isSuspendedQuery = db.query(`
+  SELECT * FROM suspensions WHERE user_id = ? AND status = 'active' AND (expires_at IS NULL OR expires_at > datetime('now'))
+`);
+
+const getUserSuspendedFlag = db.query(`
+  SELECT suspended FROM users WHERE id = ?
+`);
+
+const isUserSuspendedById = (userId) => {
+  const suspensionRow = isSuspendedQuery.get(userId);
+  const userSuspFlag = getUserSuspendedFlag.get(userId);
+  return !!suspensionRow || !!(userSuspFlag?.suspended);
+};
+
 const getArticlePreviewById = db.query(`
 	SELECT *
 	FROM posts
@@ -247,6 +261,18 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 
   const quotedTweet = getQuotedTweet.get(quoteTweetId);
   if (!quotedTweet) return null;
+
+  // If the quoted tweet's author is suspended, return a placeholder so the
+  // frontend can show an appropriate 'suspended' message instead of the full
+  // quoted tweet content.
+  const authorSuspended = isUserSuspendedById(quotedTweet.user_id);
+  if (authorSuspended) {
+    return {
+      id: quotedTweet.id,
+      unavailable_reason: "suspended",
+      created_at: quotedTweet.created_at,
+    };
+  }
 
   return {
     ...quotedTweet,
@@ -488,7 +514,10 @@ export default new Elysia({ prefix: "/tweets" })
         if (!originalTweet) {
           return { error: "Original tweet not found" };
         }
-
+        // If the original tweet's author is suspended, do not allow replies.
+        if (isUserSuspendedById(originalTweet.user_id)) {
+          return { error: "Tweet not found" };
+        }
         const originalAuthor = db
           .query("SELECT * FROM users WHERE id = ?")
           .get(originalTweet.user_id);
@@ -572,18 +601,21 @@ export default new Elysia({ prefix: "/tweets" })
         }
       }
       if (quote_tweet_id) {
-        updateQuoteCount.run(1, quote_tweet_id);
+        // If the quoted tweet's author is suspended, do not update counts or notify.
         const quotedTweet = getTweetById.get(quote_tweet_id);
-        if (quotedTweet && quotedTweet.user_id !== user.id) {
-          addNotification(
-            quotedTweet.user_id,
-            "quote",
-            `${user.name || user.username} quoted your tweet`,
-            tweetId,
-            user.id,
-            user.username,
-            user.name || user.username
-          );
+        if (quotedTweet && !isUserSuspendedById(quotedTweet.user_id)) {
+          updateQuoteCount.run(1, quote_tweet_id);
+          if (quotedTweet.user_id !== user.id) {
+            addNotification(
+              quotedTweet.user_id,
+              "quote",
+              `${user.name || user.username} quoted your tweet`,
+              tweetId,
+              user.id,
+              user.username,
+              user.name || user.username
+            );
+          }
         }
       }
 
@@ -764,6 +796,10 @@ export default new Elysia({ prefix: "/tweets" })
 
       const tweet = getTweetById.get(tweetId);
       if (!tweet) return { error: "Tweet not found" };
+        // Block interactions on tweets whose author is suspended.
+        if (isUserSuspendedById(tweet.user_id)) {
+          return { error: "Tweet not found" };
+        }
 
       const blockCheck = db
         .query(
@@ -854,6 +890,11 @@ export default new Elysia({ prefix: "/tweets" })
 
     const tweet = getTweetById.get(id);
     if (!tweet) {
+      return { error: "Tweet not found" };
+    }
+
+    // If the tweet's author is suspended, hide the tweet completely.
+    if (isUserSuspendedById(tweet.user_id)) {
       return { error: "Tweet not found" };
     }
 
@@ -1054,20 +1095,24 @@ export default new Elysia({ prefix: "/tweets" })
       if (!user) return { error: "User not found" };
 
       const { id } = params;
+      const tweet = getTweetById.get(id);
+      if (!tweet) return { error: "Tweet not found" };
+
+      // Block interactions on tweets whose author is suspended.
+      if (isUserSuspendedById(tweet.user_id)) {
+        return { error: "Tweet not found" };
+      }
+
       // Prevent liking if either party has blocked the other (blocker cannot be interacted with)
       const blockCheck = db
         .query(
           "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) "
         )
-        .get(
-          user.id,
-          (await getTweetById.get(id)).user_id,
-          (await getTweetById.get(id)).user_id,
-          user.id
-        );
+        .get(user.id, tweet.user_id, tweet.user_id, user.id);
       if (blockCheck) {
         return { error: "You cannot interact with this user" };
       }
+
       const existingLike = checkLikeExists.get(user.id, id);
 
       if (existingLike) {
@@ -1113,6 +1158,10 @@ export default new Elysia({ prefix: "/tweets" })
       const { id } = params;
       const tweet = getTweetById.get(id);
       if (!tweet) return { error: "Tweet not found" };
+        // Block interactions on tweets whose author is suspended.
+        if (isUserSuspendedById(tweet.user_id)) {
+          return { error: "Tweet not found" };
+        }
 
       const blockCheck = db
         .query(
@@ -1178,11 +1227,16 @@ export default new Elysia({ prefix: "/tweets" })
 
       // Prevent voting if blocked by the tweet author or vice versa
       const tweet = getTweetById.get(tweetId);
-      const blockCheck = db
-        .query(
-          "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) "
-        )
-        .get(user.id, tweet.user_id, tweet.user_id, user.id);
+        if (!tweet) return { error: "Tweet not found" };
+        // Block interactions on tweets whose author is suspended.
+        if (isUserSuspendedById(tweet.user_id)) {
+          return { error: "Tweet not found" };
+        }
+        const blockCheck = db
+          .query(
+            "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) "
+          )
+          .get(user.id, tweet.user_id, tweet.user_id, user.id);
       if (blockCheck) {
         return { error: "You cannot interact with this user" };
       }
@@ -1242,6 +1296,10 @@ export default new Elysia({ prefix: "/tweets" })
 
       const tweet = getTweetById.get(id);
       if (!tweet) return { error: "Tweet not found" };
+        // If the tweet's author is suspended, hide replies/can-reply info.
+        if (isUserSuspendedById(tweet.user_id)) {
+          return { canReply: false, error: "Tweet not found" };
+        }
 
       const likers = getTweetLikers.all(id, parseInt(limit));
 
