@@ -187,7 +187,7 @@ function displayNotificationCount(count) {
   if (countElement) {
     if (count > 0) {
       countElement.textContent = count > 99 ? "99+" : count.toString();
-      countElement.style.display = "block";
+      countElement.style.display = "flex";
     } else {
       countElement.style.display = "none";
     }
