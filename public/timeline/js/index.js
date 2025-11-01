@@ -139,6 +139,7 @@ window.onunhandledrejection = (event) => {
       await handleArticlesScroll();
       return;
     }
+    if (document.querySelector(".tweetPage").style.display === "flex") return;
 
     if (!hasMoreTweets || isLoading) return;
 
@@ -244,7 +245,7 @@ addRoute(
   (pathname) => pathname.startsWith("/@"),
   (pathname) => {
     const username = pathname.slice(2);
-    
+
     (async () => {
       const { openProfile } = await import("./profile.js");
       openProfile(username);
