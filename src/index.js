@@ -106,17 +106,13 @@ new Elysia()
         const notifResult = getUnreadNotificationsCount.get(userId);
         const dmResult = getUnreadDMCount.get(userId, userId);
 
-        try {
-          controller.enqueue(
-            `data: ${JSON.stringify({
-              type: "u",
-              notifications: notifResult?.count || 0,
-              dms: dmResult?.count || 0,
-            })}\n\n`
-          );
-        } catch (error) {
-          console.error("Error sending initial unread counts:", error);
-        }
+        controller.enqueue(
+          `data: ${JSON.stringify({
+            type: "u",
+            notifications: notifResult?.count || 0,
+            dms: dmResult?.count || 0,
+          })}\n\n`
+        );
 
         const keepAlive = setInterval(() => {
           try {
@@ -150,31 +146,6 @@ new Elysia()
       headers: set.headers,
     });
   })
-  .ws("/ws", {
-    open: async (ws) => {
-      const { token } = ws.data.query;
-
-      if (!token) ws.close();
-
-      const payload = await ws.data.jwt.verify(token);
-      if (!payload) ws.close();
-
-      ws.data.userId = payload.userId;
-      ws.data.username = payload.username;
-      if (!connectedUsers.has(payload.userId)) {
-        connectedUsers.set(payload.userId, new Set());
-      }
-      connectedUsers.get(payload.userId).add(ws);
-    },
-    close: (ws) => {
-      if (ws.data.userId && connectedUsers.has(ws.data.userId)) {
-        connectedUsers.get(ws.data.userId).delete(ws);
-        if (connectedUsers.get(ws.data.userId).size === 0) {
-          connectedUsers.delete(ws.data.userId);
-        }
-      }
-    },
-  })
   .get("/account", () => file("./public/account/index.html"))
   .get("/admin", () => file("./public/admin/index.html"))
   .get("/communities", () => file("./public/timeline/index.html"))
@@ -190,17 +161,19 @@ new Elysia()
       : redirect("/account");
   })
   .use(api)
-  .listen({ port: process.env.PORT || 3000, idleTimeout: 255 }, () => {console.log(
-  `\x1b[38;2;29;161;242m __    _                     _
+  .listen({ port: process.env.PORT || 3000, idleTimeout: 255 }, () => {
+    console.log(
+      `\x1b[38;2;29;161;242m __    _                     _
  \\ \\  | |___      _____  ___| |_ __ _ _ __  _   _ ___
   \\ \\ | __\\ \\ /\\ / / _ \\/ _ \\ __/ _\` | '_ \\| | | / __|
   / / | |_ \\ V  V /  __/  __/ || (_| | |_) | |_| \\__ \\
  /_/   \\__| \\_/\\_/ \\___|\\___|\\__\\__,_| .__/ \\__,_|___/
                                      |_|\x1b[0m
 
-Happies tweetapus app is running on \x1b[38;2;29;161;242m\x1b[1m\x1b[4mhttp://localhost:${process.env.PORT || 3000}\x1b[0m`
-);
-
+Happies tweetapus app is running on \x1b[38;2;29;161;242m\x1b[1m\x1b[4mhttp://localhost:${
+        process.env.PORT || 3000
+      }\x1b[0m`
+    );
 
     setInterval(() => {
       processScheduledPosts().catch((error) => {
