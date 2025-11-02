@@ -12,6 +12,26 @@ class AdminPanel {
       dms: 1,
       moderationLogs: 1,
     };
+    this.emojiProcessedFile = null;
+    this.emojiPreviewUrl = null;
+    this.pendingEmojiFile = null;
+    this.emojiCropper = null;
+    this.emojiCropModal = null;
+    this.emojiCropperInitialized = false;
+    this.previousEmojiFile = null;
+    this.supportedEmojiTypes = new Set([
+      "image/webp",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "image/gif",
+      "image/bmp",
+      "image/svg+xml",
+      "image/heic",
+      "image/heif",
+      "image/avif",
+      "image/tiff",
+    ]);
 
     this.init();
   }
@@ -201,35 +221,35 @@ class AdminPanel {
 
     const fileInput = document.getElementById("emojiFileInput");
     const preview = document.getElementById("emojiPreview");
+    this.emojiFileInput = fileInput;
+    this.emojiPreviewEl = preview;
+    this.initEmojiCropper();
+
+    form.addEventListener("reset", () => {
+      this.clearEmojiSelection();
+    });
 
     if (fileInput) {
       fileInput.addEventListener("change", (e) => {
         const f = e.target?.files?.[0];
-        if (f) {
-          const url = URL.createObjectURL(f);
-          preview.src = url;
-          preview.style.display = "";
-        } else {
-          preview.src = "";
-          preview.style.display = "none";
-        }
+        this.handleEmojiFileSelection(f);
       });
     }
+
+    // remember whether the file input was originally required so we can
+    // temporarily bypass native validation when we store a processed file
+    this.emojiFileInitiallyRequired = !!fileInput?.hasAttribute?.("required");
 
     form.addEventListener("submit", async (ev) => {
       ev.preventDefault();
       const name = document.getElementById("emojiName")?.value?.trim();
-      const file = document.getElementById("emojiFileInput")?.files?.[0];
+      const file = this.emojiProcessedFile;
       if (!name) {
         this.showError("Emoji name is required");
         return;
       }
       if (!file) {
-        this.showError("Please choose a WebP image file");
-        return;
-      }
-      if (file.type !== "image/webp") {
-        this.showError("Only WebP images are accepted");
+        this.showError("Please select and crop an image before uploading");
         return;
       }
 
@@ -266,14 +286,367 @@ class AdminPanel {
 
         this.showSuccess("Emoji uploaded");
         form.reset();
-        preview.src = "";
-        preview.style.display = "none";
+        this.clearEmojiSelection();
         await this.loadEmojis();
       } catch (_err) {
         console.error(_err);
         this.showError("Failed to upload emoji");
       }
     });
+  }
+
+  initEmojiCropper() {
+    if (this.emojiCropperInitialized) return;
+    const modalEl = document.getElementById("emojiCropModal");
+    const canvas = document.getElementById("emojiCropCanvas");
+    const zoom = document.getElementById("emojiCropZoom");
+    const applyBtn = document.getElementById("emojiCropApply");
+    const cancelBtn = document.getElementById("emojiCropCancel");
+    if (!modalEl || !canvas || !zoom || !applyBtn || !cancelBtn) return;
+
+    this.emojiCropperInitialized = true;
+    const ratio = window.devicePixelRatio || 1;
+    const size = 300;
+    canvas.width = size * ratio;
+    canvas.height = size * ratio;
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
+
+    this.emojiCropper = {
+      canvas,
+      ctx: canvas.getContext("2d"),
+      zoom,
+      applyBtn,
+      cancelBtn,
+      modalEl,
+      size,
+      ratio,
+      image: null,
+      scale: 1,
+      minScale: 1,
+      maxScale: 4,
+      offsetX: 0,
+      offsetY: 0,
+      isDragging: false,
+      lastClientX: 0,
+      lastClientY: 0,
+    };
+
+    this.emojiCropModal = new bootstrap.Modal(modalEl, {
+      backdrop: "static",
+      keyboard: false,
+    });
+
+    zoom.addEventListener("input", (event) => {
+      const value = parseFloat(event.target.value);
+      if (!Number.isFinite(value)) return;
+      this.updateEmojiScale(value);
+    });
+
+    applyBtn.addEventListener("click", () => {
+      this.applyEmojiCrop();
+    });
+
+    cancelBtn.addEventListener("click", () => {
+      this.cancelEmojiCrop();
+    });
+
+    modalEl.addEventListener("hidden.bs.modal", () => {
+      if (this.emojiCropper) {
+        this.emojiCropper.image = null;
+        this.emojiCropper.isDragging = false;
+      }
+      this.pendingEmojiFile = null;
+    });
+
+    canvas.addEventListener("pointerdown", (event) =>
+      this.startEmojiDrag(event)
+    );
+    window.addEventListener(
+      "pointermove",
+      (event) => this.moveEmojiDrag(event),
+      {
+        passive: false,
+      }
+    );
+    window.addEventListener("pointerup", () => this.endEmojiDrag());
+    window.addEventListener("pointercancel", () => this.endEmojiDrag());
+  }
+
+  handleEmojiFileSelection(file) {
+    if (!this.emojiCropperInitialized) this.initEmojiCropper();
+    if (!this.emojiCropper || !this.emojiCropModal) {
+      this.showError("Emoji cropping is unavailable right now");
+      if (this.emojiFileInput) this.emojiFileInput.value = "";
+      return;
+    }
+    this.previousEmojiFile = this.emojiProcessedFile;
+    if (this.emojiPreviewUrl) {
+      URL.revokeObjectURL(this.emojiPreviewUrl);
+      this.emojiPreviewUrl = null;
+    }
+    if (this.emojiPreviewEl) {
+      this.emojiPreviewEl.src = "";
+      this.emojiPreviewEl.style.display = "none";
+    }
+    this.emojiProcessedFile = null;
+    if (!file) {
+      this.pendingEmojiFile = null;
+      return;
+    }
+
+    const type = file.type?.toLowerCase();
+    if (!type || !this.supportedEmojiTypes.has(type)) {
+      this.showError(
+        "Unsupported image type. Please select PNG, JPG, WebP, or a similar format."
+      );
+      if (this.emojiFileInput) this.emojiFileInput.value = "";
+      this.pendingEmojiFile = null;
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.showError("Image too large. Maximum size is 5MB.");
+      if (this.emojiFileInput) this.emojiFileInput.value = "";
+      this.pendingEmojiFile = null;
+      return;
+    }
+
+    this.pendingEmojiFile = file;
+    this.openEmojiCropper(file);
+  }
+
+  openEmojiCropper(file) {
+    if (!this.emojiCropper || !this.emojiCropModal) return;
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const crop = this.emojiCropper;
+      crop.image = img;
+      const canvasSize = crop.size * crop.ratio;
+      const minScale = Math.max(
+        canvasSize / img.width,
+        canvasSize / img.height
+      );
+      const maxScale = Math.max(minScale * 6, minScale + 0.5);
+      crop.minScale = minScale;
+      crop.maxScale = maxScale;
+      crop.scale = minScale;
+      crop.offsetX = (canvasSize - img.width * crop.scale) / 2;
+      crop.offsetY = (canvasSize - img.height * crop.scale) / 2;
+      crop.zoom.min = `${minScale}`;
+      crop.zoom.max = `${maxScale}`;
+      crop.zoom.step = Math.max(minScale / 100, 0.01);
+      crop.zoom.value = `${minScale}`;
+      this.drawEmojiCrop();
+      this.emojiCropModal.show();
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      this.showError("Failed to load image for cropping");
+      if (this.emojiFileInput) this.emojiFileInput.value = "";
+      this.pendingEmojiFile = null;
+    };
+    img.src = objectUrl;
+  }
+
+  updateEmojiScale(newScale) {
+    const crop = this.emojiCropper;
+    if (!crop || !crop.image) return;
+    const clamped = Math.max(crop.minScale, Math.min(crop.maxScale, newScale));
+    const canvasSize = crop.size * crop.ratio;
+    const centerX = canvasSize / 2;
+    const centerY = canvasSize / 2;
+    const relX = centerX - crop.offsetX;
+    const relY = centerY - crop.offsetY;
+    const ratio = clamped / crop.scale;
+    crop.offsetX = centerX - relX * ratio;
+    crop.offsetY = centerY - relY * ratio;
+    crop.scale = clamped;
+    this.constrainEmojiOffsets();
+    this.drawEmojiCrop();
+  }
+
+  startEmojiDrag(event) {
+    const crop = this.emojiCropper;
+    if (!crop || !crop.image) return;
+    crop.isDragging = true;
+    crop.lastClientX = event.clientX;
+    crop.lastClientY = event.clientY;
+    event.preventDefault();
+  }
+
+  moveEmojiDrag(event) {
+    const crop = this.emojiCropper;
+    if (!crop || !crop.image || !crop.isDragging) return;
+    const deltaX = (event.clientX - crop.lastClientX) * crop.ratio;
+    const deltaY = (event.clientY - crop.lastClientY) * crop.ratio;
+    crop.lastClientX = event.clientX;
+    crop.lastClientY = event.clientY;
+    crop.offsetX += deltaX;
+    crop.offsetY += deltaY;
+    this.constrainEmojiOffsets();
+    this.drawEmojiCrop();
+    event.preventDefault();
+  }
+
+  endEmojiDrag() {
+    const crop = this.emojiCropper;
+    if (!crop) return;
+    crop.isDragging = false;
+  }
+
+  constrainEmojiOffsets() {
+    const crop = this.emojiCropper;
+    if (!crop || !crop.image) return;
+    const canvasSize = crop.size * crop.ratio;
+    const scaledWidth = crop.image.width * crop.scale;
+    const scaledHeight = crop.image.height * crop.scale;
+    const minX = Math.min(0, canvasSize - scaledWidth);
+    const minY = Math.min(0, canvasSize - scaledHeight);
+
+    if (scaledWidth <= canvasSize) {
+      crop.offsetX = (canvasSize - scaledWidth) / 2;
+    } else if (crop.offsetX > 0) {
+      crop.offsetX = 0;
+    } else if (crop.offsetX < minX) {
+      crop.offsetX = minX;
+    }
+
+    if (scaledHeight <= canvasSize) {
+      crop.offsetY = (canvasSize - scaledHeight) / 2;
+    } else if (crop.offsetY > 0) {
+      crop.offsetY = 0;
+    } else if (crop.offsetY < minY) {
+      crop.offsetY = minY;
+    }
+  }
+
+  drawEmojiCrop() {
+    const crop = this.emojiCropper;
+    if (!crop || !crop.image) return;
+    const { ctx, canvas } = crop;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#1f1f1f";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(
+      crop.image,
+      crop.offsetX,
+      crop.offsetY,
+      crop.image.width * crop.scale,
+      crop.image.height * crop.scale
+    );
+  }
+
+  applyEmojiCrop() {
+    const crop = this.emojiCropper;
+    if (!crop || !crop.image || !this.pendingEmojiFile) return;
+    crop.applyBtn.disabled = true;
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = crop.size;
+    exportCanvas.height = crop.size;
+    const exportCtx = exportCanvas.getContext("2d");
+    exportCtx.imageSmoothingEnabled = true;
+    exportCtx.imageSmoothingQuality = "high";
+    const scaleAdjustment = crop.scale / crop.ratio;
+    exportCtx.drawImage(
+      crop.image,
+      crop.offsetX / crop.ratio,
+      crop.offsetY / crop.ratio,
+      crop.image.width * scaleAdjustment,
+      crop.image.height * scaleAdjustment
+    );
+
+    exportCanvas.toBlob(
+      (blob) => {
+        crop.applyBtn.disabled = false;
+        if (!blob) {
+          this.showError("Failed to generate cropped image");
+          return;
+        }
+        const base = this.pendingEmojiFile.name
+          ?.replace(/\.[^/.]+$/, "")
+          ?.replace(/[^a-z0-9_-]+/gi, "")
+          ?.toLowerCase();
+        const fileName =
+          base && base.length > 0 ? `${base}.webp` : `emoji-${Date.now()}.webp`;
+        const webpFile = new File([blob], fileName, {
+          type: "image/webp",
+          lastModified: Date.now(),
+        });
+        this.emojiProcessedFile = webpFile;
+        this.previousEmojiFile = null;
+        this.updateEmojiPreview(webpFile);
+        if (this.emojiCropModal) this.emojiCropModal.hide();
+        this.pendingEmojiFile = null;
+        // clear the native file input so it shows "No file selected" visually,
+        // but remove the required attribute when we have a processed file so
+        // native browser validation does not block form submission
+        if (this.emojiFileInput) {
+          this.emojiFileInput.value = "";
+          if (this.emojiFileInitiallyRequired)
+            this.emojiFileInput.removeAttribute("required");
+        }
+      },
+      "image/webp",
+      0.9
+    );
+  }
+
+  cancelEmojiCrop() {
+    if (this.emojiCropModal) this.emojiCropModal.hide();
+    if (this.emojiCropper) this.emojiCropper.applyBtn.disabled = false;
+    if (this.emojiFileInput) {
+      this.emojiFileInput.value = "";
+    }
+    this.pendingEmojiFile = null;
+    if (this.previousEmojiFile) {
+      this.emojiProcessedFile = this.previousEmojiFile;
+      this.previousEmojiFile = null;
+      this.updateEmojiPreview(this.emojiProcessedFile);
+      // we restored a processed file from before, ensure native required is not blocking
+      if (this.emojiFileInput && this.emojiFileInitiallyRequired)
+        this.emojiFileInput.removeAttribute("required");
+    } else {
+      // no processed file available, restore original required state on the input
+      if (this.emojiFileInput && this.emojiFileInitiallyRequired)
+        this.emojiFileInput.setAttribute("required", "");
+    }
+  }
+
+  updateEmojiPreview(file) {
+    if (!this.emojiPreviewEl) return;
+    if (this.emojiPreviewUrl) {
+      URL.revokeObjectURL(this.emojiPreviewUrl);
+    }
+    const url = URL.createObjectURL(file);
+    this.emojiPreviewUrl = url;
+    this.emojiPreviewEl.src = url;
+    this.emojiPreviewEl.style.display = "";
+  }
+
+  clearEmojiSelection() {
+    this.emojiProcessedFile = null;
+    this.pendingEmojiFile = null;
+    this.previousEmojiFile = null;
+    if (this.emojiPreviewUrl) {
+      URL.revokeObjectURL(this.emojiPreviewUrl);
+      this.emojiPreviewUrl = null;
+    }
+    if (this.emojiPreviewEl) {
+      this.emojiPreviewEl.src = "";
+      this.emojiPreviewEl.style.display = "none";
+    }
+    if (this.emojiFileInput) {
+      this.emojiFileInput.value = "";
+      // restore required attribute state if it was originally present
+      if (this.emojiFileInitiallyRequired)
+        this.emojiFileInput.setAttribute("required", "");
+    }
   }
 
   async deleteEmoji(id) {

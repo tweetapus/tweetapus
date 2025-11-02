@@ -5,6 +5,37 @@ import query from "./api.js";
 import { authToken } from "./auth.js";
 import switchPage, { addRoute } from "./pages.js";
 
+// Load custom emojis once and keep a simple name->url map for rendering
+const dmEmojiMap = {};
+(async () => {
+  try {
+    const resp = await fetch("/api/emojis");
+    if (!resp.ok) return;
+    const data = await resp.json();
+    for (const e of data.emojis || []) {
+      if (e?.name && e?.file_url) dmEmojiMap[e.name] = e.file_url;
+    }
+  } catch (_err) {
+    // ignore
+  }
+})();
+
+function renderReactionEmojiHtml(emoji) {
+  if (typeof emoji === "string") {
+    const m = emoji.match(/^:([a-zA-Z0-9_+-]+):$/);
+    if (m) {
+      const name = m[1];
+      const url = dmEmojiMap[name];
+      if (url) {
+        const safeUrl = encodeURI(url);
+        const safeAlt = sanitizeHTML(emoji);
+        return `<img src="${safeUrl}" alt="${safeAlt}" class="inline-emoji" width="20" height="20" loading="lazy"/>`;
+      }
+    }
+  }
+  return sanitizeHTML(emoji);
+}
+
 function sanitizeHTML(str) {
   const div = document.createElement("div");
   div.textContent = str;
@@ -523,11 +554,16 @@ function createMessageElement(message, currentUser) {
       ${message.reactions
         .map((reaction) => {
           const hasReacted = message.user_reacted?.includes(reaction.emoji);
+          const emojiForOnclick = (reaction.emoji || "").replaceAll("'", "\\'");
+          const titleText = sanitizeHTML(
+            (reaction.names || []).join(", ") || ""
+          );
+          const emojiHtml = renderReactionEmojiHtml(reaction.emoji);
           return `
         <button class="dm-reaction ${hasReacted ? "reacted" : ""}" 
-                onclick="toggleReaction('${message.id}', '${reaction.emoji}')" 
-                title="${reaction.names?.join(", ") || ""}">
-          <span class="dm-reaction-emoji">${reaction.emoji}</span>
+                onclick="toggleReaction('${message.id}', '${emojiForOnclick}')" 
+                title="${titleText}">
+          <span class="dm-reaction-emoji">${emojiHtml}</span>
           <span class="dm-reaction-count">${reaction.count}</span>
         </button>
       `;

@@ -1,9 +1,52 @@
 async function createEmojiPicker() {
+  let mod = null;
   if (!customElements.get("emoji-picker")) {
-    await import("https://unpkg.com/emoji-picker-element");
+    try {
+      mod = await import("https://unpkg.com/emoji-picker-element");
+    } catch (_err) {
+      // fall back to element registration if import fails Tr Stuck Cursor
+    }
+  }
+
+  // Try to load custom emojis so we can initialize the picker with them if supported
+  let custom = [];
+  try {
+    const resp = await fetch("/api/emojis");
+    if (resp.ok) {
+      const data = await resp.json();
+      custom = (data.emojis || []).map((e) => ({
+        name: e.name,
+        shortcodes: [e.name],
+        url: e.file_url,
+        category: e.category || "Custom",
+      }));
+    }
+  } catch (_err) {
+    custom = [];
+  }
+
+  // If the module export provides a Picker constructor, use it so we can pass customEmoji
+  if (mod && mod.Picker) {
+    try {
+      const picker = new mod.Picker({ customEmoji: custom });
+      // mark picker as having integrated custom emoji UI
+      try {
+        picker.dataset = picker.dataset || {};
+        picker.dataset.hasCustom = "1";
+      } catch (_e) {}
+      return picker;
+    } catch (_err) {
+      // fall back to element
+    }
   }
 
   const picker = document.createElement("emoji-picker");
+  // Best-effort: if the element exposes a setter for customEmoji, assign it
+  try {
+    if (custom.length && typeof picker.setAttribute === "function") {
+      picker.customEmoji = custom;
+    }
+  } catch (_e) {}
   return picker;
 }
 
@@ -31,14 +74,10 @@ export async function showEmojiPickerPopup(onEmojiSelect, position = {}) {
   picker.style.left = `${x}px`;
   picker.style.top = `${y}px`;
 
-  // cleanup function removes picker, custom container and click handler
-  let customContainer = null;
+  // cleanup function removes picker and click handler
   const cleanup = () => {
     try {
       picker.parentNode?.removeChild(picker);
-    } catch (_e) {}
-    try {
-      customContainer?.parentNode?.removeChild(customContainer);
     } catch (_e) {}
     try {
       document.removeEventListener("click", closeOnClickOutside);
@@ -46,88 +85,27 @@ export async function showEmojiPickerPopup(onEmojiSelect, position = {}) {
   };
 
   picker.addEventListener("emoji-click", (event) => {
-    if (onEmojiSelect) {
-      onEmojiSelect(event.detail.unicode);
+    try {
+      const d = event.detail || {};
+      let out = null;
+      if (d.unicode) out = d.unicode;
+      else if (d.name) out = `:${d.name}:`;
+      else if (Array.isArray(d.shortcodes) && d.shortcodes[0])
+        out = `:${d.shortcodes[0]}:`;
+      else if (d.emoji) out = d.emoji;
+
+      if (onEmojiSelect && out) onEmojiSelect(out);
+    } catch (_err) {
+      // ignore
     }
     cleanup();
   });
 
-  // Load custom emojis (public endpoint)
-  try {
-    const resp = await fetch("/api/emojis");
-    if (resp.ok) {
-      const data = await resp.json();
-      const custom = data.emojis || [];
-      if (custom.length) {
-        customContainer = document.createElement("div");
-        customContainer.className = "emoji-picker-custom";
-        customContainer.style.position = "fixed";
-        customContainer.style.left = `${x}px`;
-        const pickerRectNow = picker.getBoundingClientRect();
-        const pickerHeight = pickerRectNow.height;
-        const pickerWidthNow = pickerRectNow.width;
-        customContainer.style.top = `${y + pickerHeight + 8}px`;
-        customContainer.style.width = `${pickerWidthNow}px`;
-        customContainer.style.boxSizing = "border-box";
-        // ensure custom container does not overflow the viewport
-        if (x + pickerWidthNow > window.innerWidth) {
-          const newLeft = Math.max(10, window.innerWidth - pickerWidthNow - 10);
-          customContainer.style.left = `${newLeft}px`;
-        }
-        customContainer.style.zIndex = 10001;
-
-        const title = document.createElement("div");
-        title.className = "emoji-picker-custom-title";
-        title.textContent = "Custom";
-        customContainer.appendChild(title);
-
-        const grid = document.createElement("div");
-        grid.className = "emoji-picker-custom-grid";
-
-        for (const e of custom) {
-          const button = document.createElement("button");
-          button.type = "button";
-          button.className = "emoji-picker-custom-item";
-
-          const img = document.createElement("img");
-          img.src = e.file_url;
-          img.alt = e.name;
-          img.title = `:${e.name}:`;
-          button.appendChild(img);
-
-          button.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            try {
-              const customEvent = new CustomEvent("emoji-click", {
-                detail: { unicode: `:${e.name}:` },
-                bubbles: true,
-                cancelable: true,
-              });
-              picker.dispatchEvent(customEvent);
-            } catch (_err) {}
-
-            if (onEmojiSelect) {
-              onEmojiSelect(`:${e.name}:`);
-            }
-
-            cleanup();
-          });
-
-          grid.appendChild(button);
-        }
-
-        customContainer.appendChild(grid);
-        document.body.appendChild(customContainer);
-      }
-    }
-  } catch (_err) {
-    // ignore failures to load custom emojis
-  }
+  // No legacy custom grid — picker is initialized with server customEmoji when supported.
 
   const closeOnClickOutside = (e) => {
     const clickedInsidePicker = picker.contains(e.target);
-    const clickedInsideCustom = customContainer?.contains(e.target);
-    if (!clickedInsidePicker && !clickedInsideCustom) {
+    if (!clickedInsidePicker) {
       cleanup();
     }
   };

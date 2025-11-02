@@ -50,6 +50,8 @@ body {
   justify-content: center;
   gap: 12px;
   min-width: 0;
+  /* allow the control area to shrink on narrow screens to avoid forcing the label to wrap */
+  flex: 0 1 auto;
 }
 
 .modal-content {
@@ -89,6 +91,9 @@ body {
   display: flex;
   gap: 12px;
   align-items: center;
+  /* allow presets to wrap on narrow viewports so control area doesn't force labels to break */
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .settings .color-option {
@@ -109,8 +114,44 @@ body {
   .settings-content {
     padding: 20px;
   }
+  /* On narrow screens, stack label and control vertically and avoid overlap.
+     Use flex column so label (title + description) can size naturally and the
+     control area flows beneath it (and can wrap its internal items). */
   .setting-item {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 16px; /* slightly larger gap to prevent visual crowding */
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .setting-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0; /* allow text to truncate/wrap without forcing parent */
+  }
+
+  .setting-title {
+    white-space: normal;
+    font-size: 15px;
+    line-height: 1.25;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .setting-description {
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .setting-control {
+    width: 100%;
+    flex: 0 1 auto;
+    /* ensure controls (dropdowns, buttons) sit below the label and don't overlap */
+    margin-top: 6px;
+    align-self: flex-start;
   }
 }
 

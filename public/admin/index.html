@@ -63,6 +63,25 @@
         border-radius: 8px;
         margin-top: 15px;
       }
+      .emoji-cropper {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        align-items: center;
+        & canvas {
+          width: 300px;
+          height: 300px;
+          border-radius: 8px;
+          background-color: #1f1f1f;
+          cursor: grab;
+        }
+        & canvas:active {
+          cursor: grabbing;
+        }
+        & .form-range {
+          width: 100%;
+        }
+      }
     </style>
   </head>
   <body data-bs-theme="dark">
@@ -665,11 +684,13 @@
                       />
                     </div>
                     <div class="mb-3">
-                      <label class="form-label">Emoji image (WebP only)</label>
+                      <label class="form-label">
+                        Emoji image (PNG, JPG, WebP, etc.)
+                      </label>
                       <input
                         type="file"
                         id="emojiFileInput"
-                        accept="image/webp"
+                        accept="image/*"
                         class="form-control"
                         required
                       />
@@ -812,6 +833,51 @@
             >
               <i class="bi bi-exclamation-triangle"></i>
               Suspend User
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Emoji Crop Modal -->
+    <div class="modal fade" id="emojiCropModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Crop Emoji</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div class="emoji-cropper">
+              <canvas id="emojiCropCanvas" width="300" height="300"></canvas>
+              <input
+                type="range"
+                id="emojiCropZoom"
+                class="form-range"
+                min="1"
+                max="4"
+                step="0.01"
+                value="1"
+              />
+            </div>
+            <p class="text-muted small mb-0">
+              Drag the image to adjust the crop. Emojis must be square.
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="emojiCropCancel"
+            >
+              Cancel
+            </button>
+            <button type="button" class="btn btn-primary" id="emojiCropApply">
+              Apply
             </button>
           </div>
         </div>

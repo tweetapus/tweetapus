@@ -668,22 +668,27 @@ export const useComposer = (
     emojiBtn.addEventListener("click", async (e) => {
       e.preventDefault();
       const rect = emojiBtn.getBoundingClientRect();
-      const picker = await showEmojiPickerPopup(null, {
-        x: rect.left,
-        y: rect.bottom + 8,
-      });
-
-      picker.addEventListener("emoji-click", (event) => {
-        const emoji = event.detail.unicode;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const text = textarea.value;
-        textarea.value = text.substring(0, start) + emoji + text.substring(end);
-        textarea.selectionStart = textarea.selectionEnd = start + emoji.length;
-        textarea.focus();
-        updateCharacterCount();
-        picker.remove();
-      });
+      // Use the popup's onEmojiSelect callback so the picker normalizes
+      // selections (unicode or :shortcode:) for us and the popup handles cleanup.
+      await showEmojiPickerPopup(
+        (emoji) => {
+          // emoji may be a unicode character (standard emoji) or a shortcode like :name:
+          if (!emoji) return;
+          const start = textarea.selectionStart;
+          const end = textarea.selectionEnd;
+          const text = textarea.value;
+          textarea.value =
+            text.substring(0, start) + emoji + text.substring(end);
+          const newPos = start + emoji.length;
+          textarea.selectionStart = textarea.selectionEnd = newPos;
+          textarea.focus();
+          updateCharacterCount();
+        },
+        {
+          x: rect.left,
+          y: rect.bottom + 8,
+        }
+      );
     });
   }
 

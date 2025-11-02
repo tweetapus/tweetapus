@@ -7267,7 +7267,7 @@ emoji-picker.emoji-picker-popup {
 
   .setting-item {
     flex-direction: column;
-    gap: 12px;
+    gap: 16px; /* increase spacing to avoid crowding/overlap on small screens */
   }
 
   .settings-content {
@@ -7276,7 +7276,10 @@ emoji-picker.emoji-picker-popup {
   }
 
   .color-presets {
-    grid-template-columns: repeat(auto-fit, 48px);
+    /* Use flex-wrap instead of grid here to avoid forcing parent widths
+       which can push .setting-description (labels) to wrap on small screens. */
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
     justify-content: center;
   }
@@ -7497,8 +7500,18 @@ emoji-picker.emoji-picker-popup {
 
   .settings-modal .setting-item {
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
     align-items: stretch;
+  }
+
+  /* allow controls in the settings modal to shrink on small screens instead
+     of forcing the label/control columns to expand and break layout */
+  .modal.settings-modal .setting-control {
+    flex: 0 1 auto;
+    width: 100%;
+    min-width: 0;
+    margin-top: 6px; /* keep small gap from label so dropdowns/buttons don't overlap descriptions */
+    align-self: flex-start;
   }
 }
 

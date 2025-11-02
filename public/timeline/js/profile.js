@@ -1,3 +1,6 @@
+import openImageCropper, {
+  CROP_CANCELLED,
+} from "../../shared/image-cropper.js";
 import {
   convertToWebPAvatar,
   convertToWebPBanner,
@@ -793,8 +796,30 @@ const handleEditBannerUpload = async (file) => {
   }
 
   try {
+    // Offer cropping UI for banners (skip for unsupported animated GIF preservation)
+    let processedFile = file;
+    try {
+      const cropResult = await openImageCropper(file, {
+        aspect: 3,
+        size: 1500,
+      });
+      if (cropResult === CROP_CANCELLED) {
+        // user cancelled cropping — do not proceed
+        if (changeBtn) {
+          changeBtn.disabled = false;
+          changeBtn.textContent = "Change Banner";
+        }
+        return;
+      }
+      processedFile = cropResult || file;
+    } catch (err) {
+      // if cropper fails, fall back to original file but continue
+      console.warn("Cropper error, using original file:", err);
+      processedFile = file;
+    }
+
     // Convert to WebP and resize to 1500x500 for banner
-    const webpFile = await convertToWebPBanner(file, 1500, 500, 0.8);
+    const webpFile = await convertToWebPBanner(processedFile, 1500, 500, 0.8);
 
     // Update progress text
     if (changeBtn) {
@@ -955,10 +980,32 @@ const handleEditAvatarUpload = async (file) => {
     // If original file is GIF and the current profile is Gold, preserve it (upload GIF)
     let uploadFile = null;
     if (file.type === "image/gif" && currentProfile?.profile?.gold) {
-      uploadFile = file; // preserve animation for gold accounts
+      // preserve GIFs for gold accounts, do not offer cropper (animated GIF cropping unsupported)
+      uploadFile = file;
     } else {
+      // Offer cropping UI for avatars where useful
+      let processedFile = file;
+      try {
+        const cropResult = await openImageCropper(file, {
+          aspect: 1,
+          size: 250,
+        });
+        if (cropResult === CROP_CANCELLED) {
+          // user cancelled cropping — do not proceed
+          if (changeBtn) {
+            changeBtn.disabled = false;
+            changeBtn.textContent = "Change Avatar";
+          }
+          return;
+        }
+        processedFile = cropResult || file;
+      } catch (err) {
+        console.warn("Cropper error, using original file:", err);
+        processedFile = file;
+      }
+
       // Convert to WebP and resize to 250x250 for non-GIF or non-gold
-      const webpFile = await convertToWebPAvatar(file, 250, 0.8);
+      const webpFile = await convertToWebPAvatar(processedFile, 250, 0.8);
       uploadFile = webpFile;
     }
 

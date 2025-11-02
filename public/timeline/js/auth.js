@@ -21,7 +21,12 @@ let _user;
 
   if (!authToken && !impersonateToken) {
     cookieStore.delete("agree");
-    window.location.href = "/";
+    // If we're already on the landing page ("/"), don't force a reload
+    // which can cause an infinite reload loop. Only navigate if we're on
+    // a different path.
+    if (window.location.pathname !== "/") {
+      window.location.href = "/";
+    }
     return;
   }
 

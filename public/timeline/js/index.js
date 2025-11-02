@@ -41,7 +41,19 @@ window.onunhandledrejection = (event) => {
 };
 
 (async () => {
-  if (!authToken) return;
+  if (!authToken) {
+    // If there's no auth token, ensure any loader UI is hidden so the
+    // page doesn't appear to load forever. The auth module handles redirects
+    // to the landing page; here we just tidy up the UI and stop initialization.
+    const loaderEl = document.querySelector(".loader");
+    if (loaderEl) {
+      loaderEl.style.opacity = "0";
+      setTimeout(() => {
+        loaderEl.style.display = "none";
+      }, 150);
+    }
+    return;
+  }
 
   let currentTimeline = "home";
 

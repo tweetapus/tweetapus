@@ -26,7 +26,7 @@ async function replaceEmojiShortcodesInElement(container) {
     const map = await emojiMapPromise;
     if (!map || Object.keys(map).length === 0) return;
 
-    const regex = /:([a-zA-Z0-9_+\-]+):/g;
+    const regex = /:([a-zA-Z0-9_+-]+):/g;
 
     const walker = document.createTreeWalker(
       container,
@@ -36,7 +36,11 @@ async function replaceEmojiShortcodesInElement(container) {
           if (!node.nodeValue || !node.nodeValue.includes(":"))
             return NodeFilter.FILTER_REJECT;
           const parentTag = node.parentNode?.nodeName?.toLowerCase();
-          if (["code", "pre", "a", "textarea", "script", "style"].includes(parentTag))
+          if (
+            ["code", "pre", "a", "textarea", "script", "style"].includes(
+              parentTag
+            )
+          )
             return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
@@ -2119,6 +2123,8 @@ export const createTweetElement = (tweet, config = {}) => {
 
     if (topReactions.length > 0) {
       topReactionsSpan.innerHTML = topReactions.map((r) => r.emoji).join("");
+      // Replace any :shortcode: text inside the top reactions with image elements
+      replaceEmojiShortcodesInElement(topReactionsSpan);
       topReactionsSpan.style.display = "inline";
     } else {
       topReactionsSpan.innerHTML = "";
@@ -2153,6 +2159,7 @@ export const createTweetElement = (tweet, config = {}) => {
         async (emoji) => {
           try {
             triggerReactionBurst(tweetInteractionsReactionEl, emoji, 6);
+            console.debug("React: sending", { tweetId: tweet.id, emoji });
 
             const result = await query(`/tweets/${tweet.id}/reaction`, {
               method: "POST",
@@ -2160,11 +2167,20 @@ export const createTweetElement = (tweet, config = {}) => {
               body: JSON.stringify({ emoji }),
             });
 
+            console.debug("React: response", result);
+
             if (result?.success) {
-              tweet.reaction_count = result.total_reactions || 0;
-              tweet.top_reactions = result.top_reactions || [];
+              // Only update counts if the server returned numeric totals
+              if (typeof result.total_reactions === "number") {
+                tweet.reaction_count = result.total_reactions;
+              }
+              if (Array.isArray(result.top_reactions)) {
+                tweet.top_reactions = result.top_reactions;
+              }
               updateReactionDisplay();
             } else {
+              // Keep the UI stable and surface the server error
+              console.warn("Reaction failed:", result);
               toastQueue.add(`<h1>${result?.error || "Failed to react"}</h1>`);
             }
           } catch (err) {
@@ -2229,6 +2245,7 @@ export const createTweetElement = (tweet, config = {}) => {
         `;
         container.appendChild(item);
       });
+      replaceEmojiShortcodesInElement(container);
     }
 
     createModal({
