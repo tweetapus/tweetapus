@@ -1,100 +1,104 @@
 :root {
   color-scheme: light;
 
-  --primary: #1185fe;
-  --primary-rgb: 17, 133, 254;
-  --primary-hover: #1076e1;
-  --primary-focus: #0f62b9;
+  --primary: #1e66f5;
+  --primary-rgb: 30, 102, 245;
+  --primary-hover: #1b5ce0;
+  --primary-focus: #174fc0;
 
-  --text-primary: #1a1a1a;
-  --text-secondary: #6b7280;
-  --text-tertiary: #9ca3af;
-  --text-placeholder: #838383;
-  --text-muted: rgba(157, 163, 175, 0.8);
-  --text-muted-hover: rgb(157, 163, 175);
+  --primary-fg: white;
 
-  --bg-primary: #ffffff;
-  --bg-rgb: 255, 255, 255;
-  --bg-secondary: #f9fafb;
-  --bg-overlay: rgba(0, 0, 0, 0.5);
-  --bg-overlay-light: rgba(0, 0, 0, 0.1);
+  --text-primary: #4c4f69;
+  --text-secondary: #5c5f77;
+  --text-tertiary: #7c7f93;
+  --text-placeholder: #8c8fa1;
+  --text-muted: #9ca0b0;
+  --text-muted-hover: #6c6f85;
 
-  --border-primary: #e3e5e7;
-  --border-secondary: #e5e7eb;
-  --border-tertiary: #d1d5db;
+  --bg-primary: #eff1f5;
+  --bg-rgb: 239, 241, 245;
+  --bg-secondary: #e6e9ef;
+  --bg-overlay: rgba(0, 0, 0, 0.05);
+  --bg-overlay-light: rgba(0, 0, 0, 0.02);
+
+  --border-primary: #ccd0da;
+  --border-secondary: #dce0e8;
+  --border-tertiary: #bcc0cc;
   --border-focus: var(--primary);
-  --border-hover: #bbb;
-  --border-input: color(display-p3 0 0 0 / 0.1922);
+  --border-hover: #acb0be;
+  --border-input: rgba(0, 0, 0, 0.12);
 
-  --btn-secondary-color: #202020;
+  --btn-secondary-color: #11111b;
   --btn-secondary-border: var(--border-input);
-  --btn-secondary-hover-bg: #f0f0f0;
+  --btn-secondary-hover-bg: #dce0e8;
   --btn-secondary-hover-border: var(--border-hover);
-  --btn-disabled-bg: #d1d5db;
-  --btn-disabled-color: #d1d5db;
+  --btn-disabled-bg: #bcc0cc;
+  --btn-disabled-color: #bcc0cc;
 
-  --error-color: #dc2626;
+  --error-color: #d20f39;
 
   --shadow-toast: rgba(0, 0, 0, 0.1);
 
   --toast-bg: var(--bg-primary);
-  --toast-border: oklch(92.2% 0 0);
-  --toast-action-bg: oklch(14.5% 0 0);
+  --toast-border: #ccd0da;
+  --toast-action-bg: #1e66f5;
   --toast-action-color: #ffffff;
-  --toast-content-color: #3f3f3f;
+  --toast-content-color: #4c4f69;
 }
 
 * {
-  scrollbar-color: #dee0e4 transparent;
+  scrollbar-color: #dce0e8 transparent;
 }
 
 .dark {
   color-scheme: dark;
 
-  --primary: #277dfd;
-  --primary-rgb: 39, 125, 253;
-  --primary-hover: #2172ed;
-  --primary-focus: #1d69da;
+  --primary: #89b4fa;
+  --primary-rgb: 137, 180, 250;
+  --primary-hover: #82aef3;
+  --primary-focus: #7aa4e8;
 
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-tertiary: #6b7280;
-  --text-placeholder: #6b7280;
-  --text-muted: rgba(157, 163, 175, 0.8);
-  --text-muted-hover: rgb(157, 163, 175);
+  --primary-fg: black;
 
-  --bg-primary: #131315;
-  --bg-rgb: 19, 19, 21;
-  --bg-secondary: #111111;
-  --bg-overlay: rgba(0, 0, 0, 0.8);
-  --bg-overlay-light: rgba(255, 255, 255, 0.1);
+  --text-primary: #cdd6f4;
+  --text-secondary: #bac2de;
+  --text-tertiary: #a6adc8;
+  --text-placeholder: #9399b2;
+  --text-muted: #bac2de;
+  --text-muted-hover: #cdd6f4;
 
-  --border-primary: #333333;
-  --border-secondary: #2a2a2a;
-  --border-tertiary: #404040;
+  --bg-primary: #181825;
+  --bg-rgb: 24, 24, 37;
+  --bg-secondary: #181825;
+  --bg-overlay: rgba(0, 0, 0, 0.6);
+  --bg-overlay-light: rgba(255, 255, 255, 0.05);
+
+  --border-primary: #313244;
+  --border-secondary: #45475a;
+  --border-tertiary: #585b70;
   --border-focus: var(--primary);
-  --border-hover: #555555;
-  --border-input: rgba(255, 255, 255, 0.2);
+  --border-hover: #6c7086;
+  --border-input: rgba(255, 255, 255, 0.1);
 
-  --btn-secondary-color: #ffffff;
+  --btn-secondary-color: #11111b;
   --btn-secondary-border: var(--border-tertiary);
-  --btn-secondary-hover-bg: #2a2a2a;
+  --btn-secondary-hover-bg: #313244;
   --btn-secondary-hover-border: var(--border-hover);
-  --btn-disabled-bg: #404040;
-  --btn-disabled-color: #666666;
+  --btn-disabled-bg: #45475a;
+  --btn-disabled-color: #6c7086;
 
-  --error-color: #ef4444;
+  --error-color: #f38ba8;
 
-  --shadow-toast: rgba(0, 0, 0, 0.5);
+  --shadow-toast: rgba(0, 0, 0, 0.4);
 
-  --toast-bg: #1a1a1a;
-  --toast-border: #333333;
-  --toast-action-bg: #ffffff;
-  --toast-action-color: #000000;
-  --toast-content-color: #cccccc;
+  --toast-bg: #181825;
+  --toast-border: #313244;
+  --toast-action-bg: #89b4fa;
+  --toast-action-color: #1e1e2e;
+  --toast-content-color: #cdd6f4;
 }
 
 .dark *,
 .dark {
-  scrollbar-color: #303339 transparent;
+  scrollbar-color: #45475a transparent;
 }

@@ -74,7 +74,7 @@ const updatePassword = db.query(`
 `);
 
 const getUserReplies = db.query(`
-  SELECT posts.*, users.username, users.name, users.verified, users.gold 
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   WHERE posts.user_id = ? AND posts.reply_to IS NOT NULL
@@ -83,7 +83,7 @@ const getUserReplies = db.query(`
 `);
 
 const getUserPosts = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   WHERE posts.user_id = ? AND posts.reply_to IS NULL AND users.suspended = 0
@@ -93,7 +93,7 @@ const getUserPosts = db.query(`
 const getUserRetweets = db.query(`
   SELECT 
     original_posts.*,
-    original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold,
+    original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold, original_users.avatar_radius,
     retweets.created_at as retweet_created_at,
     retweets.post_id as original_post_id
   FROM retweets
@@ -210,7 +210,8 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
   // Check whether the quoted tweet's author is suspended (either active suspension or users.suspended flag)
   const suspensionRow = isSuspendedQuery.get(quotedTweet.user_id);
   const userSuspendedFlag = getUserSuspendedFlag.get(quotedTweet.user_id);
-  const authorSuspended = !!suspensionRow || !!(userSuspendedFlag && userSuspendedFlag.suspended);
+  const authorSuspended =
+    !!suspensionRow || !!(userSuspendedFlag && userSuspendedFlag.suspended);
 
   if (authorSuspended) {
     // Return a placeholder object indicating the quoted tweet exists but the author is suspended.
@@ -295,7 +296,8 @@ export default new Elysia({ prefix: "/profile" })
 
       const suspensionRow = isSuspendedQuery.get(user.id);
       const userSuspendedFlag = getUserSuspendedFlag.get(user.id);
-      const isSuspended = !!suspensionRow || !!(userSuspendedFlag && userSuspendedFlag.suspended);
+      const isSuspended =
+        !!suspensionRow || !!(userSuspendedFlag && userSuspendedFlag.suspended);
 
       if (isSuspended) {
         // Return an error but include minimal public profile fields so the
@@ -395,6 +397,8 @@ export default new Elysia({ prefix: "/profile" })
             name: post.name,
             avatar: post.avatar,
             verified: post.verified || false,
+            gold: post.gold || false,
+            avatar_radius: post.avatar_radius || null,
           },
         })),
         ...userRetweets.map((retweet) => ({
@@ -407,6 +411,8 @@ export default new Elysia({ prefix: "/profile" })
             name: retweet.name,
             avatar: retweet.avatar,
             verified: retweet.verified || false,
+            gold: retweet.gold || false,
+            avatar_radius: retweet.avatar_radius || null,
           },
         })),
       ]
@@ -437,6 +443,8 @@ export default new Elysia({ prefix: "/profile" })
             name: reply.name,
             avatar: reply.avatar || null,
             verified: reply.verified || false,
+            gold: reply.gold || false,
+            avatar_radius: reply.avatar_radius || null,
           },
           poll: getPollDataForPost(reply.id, currentUserId),
           quoted_tweet: getQuotedPostData(reply.quote_tweet_id, currentUserId),

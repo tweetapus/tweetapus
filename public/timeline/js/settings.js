@@ -18,17 +18,6 @@ const hexToRgb = (hex) => {
     : null;
 };
 
-const initializeGlobalColors = () => {
-  const savedColor = localStorage.getItem("accentColor") || "#1185fe";
-  const root = document.documentElement;
-  root.style.setProperty("--primary", savedColor);
-  const rgb = hexToRgb(savedColor);
-  if (rgb)
-    root.style.setProperty("--primary-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-  root.style.setProperty("--primary-hover", adjustBrightness(savedColor, -10));
-  root.style.setProperty("--primary-focus", adjustBrightness(savedColor, -20));
-};
-
 const adjustBrightness = (hex, percent) => {
   const rgb = hexToRgb(hex);
   if (!rgb) return hex;
@@ -38,8 +27,6 @@ const adjustBrightness = (hex, percent) => {
     .toString(16)
     .padStart(2, "0")}${adjust(rgb.b).toString(16).padStart(2, "0")}`;
 };
-
-initializeGlobalColors();
 
 const settingsPages = [
   { key: "account", title: "Account", content: () => createAccountContent() },
@@ -81,6 +68,7 @@ const createThemesContent = () => {
   // Theme Mode Setting
   const themeItem = document.createElement("div");
   themeItem.className = "setting-item";
+  themeItem.classList.add("setting-item-inline");
 
   const themeLabel = document.createElement("div");
   themeLabel.className = "setting-label";
@@ -133,109 +121,6 @@ const createThemesContent = () => {
   themeItem.appendChild(themeControl);
   group.appendChild(themeItem);
 
-  const colorItem = document.createElement("div");
-  colorItem.className = "setting-item";
-
-  const colorLabel = document.createElement("div");
-  colorLabel.className = "setting-label";
-  const colorTitle = document.createElement("div");
-  colorTitle.className = "setting-title";
-  colorTitle.textContent = "Accent Color";
-  const colorDesc = document.createElement("div");
-  colorDesc.className = "setting-description";
-  colorDesc.textContent = "Customize the accent color";
-  colorLabel.appendChild(colorTitle);
-  colorLabel.appendChild(colorDesc);
-
-  const colorControl = document.createElement("div");
-  colorControl.className = "setting-control";
-
-  const accentSection = document.createElement("div");
-  accentSection.className = "accent-color-section";
-
-  const presetContainer = document.createElement("div");
-  presetContainer.className = "color-presets";
-
-  const savedColor = localStorage.getItem("accentColor") || "#1d9bf0";
-
-  const presets = [
-    { label: "Bluebird", color: "#1d9bf0" },
-    { label: "Sunshine", color: "#ffad1f" },
-    { label: "Flamingo", color: "#f91880" },
-    { label: "Lavender", color: "#7856ff" },
-    { label: "Emerald", color: "#00ba7c" },
-    { label: "Coral", color: "#ff6347" },
-    { label: "Ocean", color: "#0077be" },
-    { label: "Cherry", color: "#e60023" },
-    { label: "Forest", color: "#228b22" },
-    { label: "Violet", color: "#8a2be2" },
-    { label: "Sunset", color: "#ff4500" },
-    { label: "Mint", color: "#00d4aa" },
-    { label: "Custom", color: "custom" },
-  ];
-
-  presets.forEach((preset) => {
-    const option = document.createElement("div");
-    option.className = "color-option";
-    option.title = preset.label;
-    option.dataset.color = preset.color;
-
-    if (preset.color === "custom") {
-      option.style.background =
-        "linear-gradient(45deg, #ff0000 0%, #ff7f00 14%, #ffff00 29%, #00ff00 43%, #0000ff 57%, #4b0082 71%, #9400d3 86%, #ff0000 100%)";
-      option.setAttribute("data-is-custom", "true");
-      const picker = document.createElement("input");
-      picker.type = "color";
-      picker.id = "customColorPicker";
-      picker.className = "custom-color-picker";
-      picker.value = savedColor;
-      picker.title = "Choose custom color";
-      option.appendChild(picker);
-    } else {
-      option.style.backgroundColor = preset.color;
-    }
-
-    if (preset.color === savedColor) {
-      option.classList.add("active");
-    }
-
-    option.addEventListener("click", () => {
-      // Remove active from all options
-      document
-        .querySelectorAll(".color-option")
-        .forEach((opt) => opt.classList.remove("active"));
-
-      setTimeout(() => {
-        option.classList.add("active");
-      }, 10);
-
-      if (preset.color === "custom") {
-        const picker = option.querySelector(".custom-color-picker");
-        picker.click();
-      } else {
-        setAccentColor(preset.color);
-      }
-    });
-
-    if (preset.color === "custom") {
-      const picker = option.querySelector(".custom-color-picker");
-      picker.addEventListener("change", (e) => {
-        setAccentColor(e.target.value);
-        // replace the gradient with the chosen solid color so active checkmark is visible
-        option.style.background = e.target.value;
-      });
-    }
-
-    presetContainer.appendChild(option);
-  });
-
-  accentSection.appendChild(presetContainer);
-  colorControl.appendChild(accentSection);
-
-  colorItem.appendChild(colorLabel);
-  colorItem.appendChild(colorControl);
-  group.appendChild(colorItem);
-
   const saveItem = document.createElement("div");
   saveItem.className = "setting-item";
   const saveLabel = document.createElement("div");
@@ -245,7 +130,7 @@ const createThemesContent = () => {
   const saveBtn = document.createElement("button");
   saveBtn.className = "btn primary";
   saveBtn.id = "saveThemeBtn";
-  saveBtn.textContent = "Save to Account";
+  saveBtn.textContent = "Save to account";
   saveControl.appendChild(saveBtn);
   saveItem.appendChild(saveLabel);
   saveItem.appendChild(saveControl);
@@ -1283,7 +1168,7 @@ const saveThemeToServer = async () => {
   const accent =
     localStorage.getItem("accentColor") ||
     document.getElementById("customColorPicker")?.value ||
-    "#1185fe";
+    "var(--primary)";
 
   try {
     const data = await query(`/profile/${currentUser.username}`, {
@@ -1410,12 +1295,12 @@ const loadCurrentThemeMode = () => {
 };
 
 const loadCurrentAccentColor = () => {
-  let savedColor = "#1185fe";
+  let savedColor = "var(--primary)";
 
   if (currentUser?.accent_color) {
     savedColor = currentUser.accent_color;
   } else {
-    savedColor = localStorage.getItem("accentColor") || "#1185fe";
+    savedColor = localStorage.getItem("accentColor") || "var(--primary)";
   }
 
   setTimeout(() => {

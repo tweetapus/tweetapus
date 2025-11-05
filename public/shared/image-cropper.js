@@ -10,61 +10,46 @@ export function openImageCropper(file, options = {}) {
     const objectUrl = URL.createObjectURL(file);
 
     const overlay = document.createElement("div");
-    overlay.style.position = "fixed";
-    overlay.style.top = 0;
-    overlay.style.left = 0;
-    overlay.style.right = 0;
-    overlay.style.bottom = 0;
-    overlay.style.background = "rgba(0,0,0,0.6)";
-    overlay.style.zIndex = 99999;
-    overlay.style.display = "flex";
-    overlay.style.alignItems = "center";
-    overlay.style.justifyContent = "center";
+    overlay.className = "image-cropper-overlay";
 
     const panel = document.createElement("div");
-    panel.style.background = "var(--bg-primary, #111)";
-    panel.style.padding = "12px";
-    panel.style.borderRadius = "12px";
-    panel.style.maxWidth = "calc(100vw - 40px)";
-    panel.style.boxSizing = "border-box";
+    panel.className = "image-cropper-panel";
 
     const canvas = document.createElement("canvas");
     const displaySize = Math.min(600, Math.max(240, outSize));
     canvas.width = displaySize;
     canvas.height = displaySize / aspect;
-    canvas.style.width = `${displaySize}px`;
-    canvas.style.height = `${displaySize / aspect}px`;
-    canvas.style.background = "#222";
-    canvas.style.borderRadius = "8px";
-    canvas.style.display = "block";
+    canvas.className = "image-cropper-canvas";
 
     const controls = document.createElement("div");
-    controls.style.display = "flex";
-    controls.style.gap = "8px";
-    controls.style.marginTop = "10px";
-    controls.style.justifyContent = "flex-end";
+    controls.className = "image-cropper-controls";
 
     const zoom = document.createElement("input");
     zoom.type = "range";
-    zoom.min = 0.5;
-    zoom.max = 3;
+    zoom.min = 0;
+    zoom.max = 1;
     zoom.step = 0.01;
-    zoom.value = 1;
-    zoom.style.flex = "1";
+    zoom.value = 0;
+    zoom.className = "image-cropper-zoom";
 
     const cancelBtn = document.createElement("button");
     cancelBtn.type = "button";
     cancelBtn.textContent = "Cancel";
-    cancelBtn.style.padding = "8px 12px";
+    cancelBtn.className = "btn secondary image-cropper-cancel";
 
     const applyBtn = document.createElement("button");
     applyBtn.type = "button";
     applyBtn.textContent = "Apply";
-    applyBtn.style.padding = "8px 12px";
+    applyBtn.className = "btn primary image-cropper-apply";
 
     controls.appendChild(zoom);
-    controls.appendChild(cancelBtn);
-    controls.appendChild(applyBtn);
+
+    const actionRow = document.createElement("div");
+    actionRow.className = "image-cropper-action-row";
+    actionRow.appendChild(cancelBtn);
+    actionRow.appendChild(applyBtn);
+
+    controls.appendChild(actionRow);
 
     panel.appendChild(canvas);
     panel.appendChild(controls);
@@ -79,11 +64,16 @@ export function openImageCropper(file, options = {}) {
 
       // crop state
       let scale = 1;
+      let baseScale = 1;
       let offsetX = 0;
       let offsetY = 0;
       let dragging = false;
       let lastX = 0;
       let lastY = 0;
+
+      let maxFactor = 1;
+      const pointers = new Map();
+      let prevPinchDistance = 0;
 
       const draw = () => {
         const dw = canvas.width;
@@ -116,10 +106,13 @@ export function openImageCropper(file, options = {}) {
         lastX = ev.clientX;
         lastY = ev.clientY;
         canvas.setPointerCapture(ev.pointerId);
+        canvas.style.cursor = "grabbing";
         ev.preventDefault();
       });
 
       window.addEventListener("pointermove", (ev) => {
+        // if there are two pointers, treat move as pinch (handled elsewhere)
+        if (pointers.size === 2) return;
         if (!dragging) return;
         const dx = ev.clientX - lastX;
         const dy = ev.clientY - lastY;
@@ -133,11 +126,65 @@ export function openImageCropper(file, options = {}) {
 
       window.addEventListener("pointerup", () => {
         dragging = false;
+        canvas.style.cursor = "grab";
       });
 
+      // pointer tracking for pinch-to-zoom
+      canvas.addEventListener("pointerdown", (ev) => {
+        pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      });
+
+      canvas.addEventListener("pointermove", (ev) => {
+        if (!pointers.has(ev.pointerId)) return;
+        pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+        if (pointers.size === 2) {
+          const pts = Array.from(pointers.values());
+          const dx = pts[0].x - pts[1].x;
+          const dy = pts[0].y - pts[1].y;
+          const dist = Math.hypot(dx, dy);
+          if (prevPinchDistance && Math.abs(dist - prevPinchDistance) > 2) {
+            const ratio = dist / prevPinchDistance;
+            // convert ratio into slider delta for smoother control
+            const delta = Math.log2(ratio) * 0.25;
+            zoom.value = Math.min(
+              1,
+              Math.max(0, parseFloat(zoom.value) + delta)
+            );
+            zoom.dispatchEvent(new Event("input"));
+          }
+          prevPinchDistance = dist;
+        }
+      });
+
+      const endPointer = (ev) => {
+        pointers.delete(ev.pointerId);
+        prevPinchDistance = 0;
+      };
+
+      canvas.addEventListener("pointerup", endPointer);
+      canvas.addEventListener("pointercancel", endPointer);
+      canvas.addEventListener("pointerout", endPointer);
+      canvas.addEventListener("pointerleave", endPointer);
+
+      // wheel zooming (desktop)
+      canvas.addEventListener(
+        "wheel",
+        (ev) => {
+          ev.preventDefault();
+          const delta = ev.deltaY > 0 ? -0.03 : 0.03;
+          zoom.value = Math.min(1, Math.max(0, parseFloat(zoom.value) + delta));
+          zoom.dispatchEvent(new Event("input"));
+        },
+        { passive: false }
+      );
+
       zoom.addEventListener("input", (e) => {
-        const newScale = parseFloat(e.target.value);
-        // try to keep center stable
+        const sliderPos = Math.min(
+          1,
+          Math.max(0, parseFloat(e.target.value) || 0)
+        );
+        const factor = 1 + sliderPos * (maxFactor - 1);
+        const newScale = baseScale * factor;
         const cx = canvas.width / 2 - offsetX;
         const cy = canvas.height / 2 - offsetY;
         const relX = cx / scale;
@@ -149,13 +196,18 @@ export function openImageCropper(file, options = {}) {
         draw();
       });
 
-      // initialize scale so image covers canvas
+      // initialize scale so image never renders smaller than source bounds
       const scaleX = canvas.width / img.width;
       const scaleY = canvas.height / img.height;
-      scale = Math.max(scaleX, scaleY);
+      const coverScale = Math.max(scaleX, scaleY);
+      baseScale = Math.max(1, coverScale);
+      scale = baseScale;
       offsetX = (canvas.width - img.width * scale) / 2;
       offsetY = (canvas.height - img.height * scale) / 2;
-      zoom.value = scale;
+      // allow a much larger maximum zoom so users can zoom in further
+      const maxAbsoluteScale = Math.max(6, baseScale * 4);
+      maxFactor = Math.max(2, maxAbsoluteScale / baseScale);
+      zoom.value = 0;
       draw();
 
       cancelBtn.addEventListener("click", () => {

@@ -31,10 +31,7 @@ export default async function openProfile(username) {
       const data = await query(`/profile/${username}`);
 
       if (data.error) {
-        // If the user is suspended, render a minimal suspended profile view
         if (data.error === "User is suspended") {
-          // If the server included a partial profile object alongside the error,
-          // prefer those real fields (display name, avatar, banner) when available.
           const pd = data.profile || {};
           const suspendedData = {
             profile: {
@@ -59,7 +56,6 @@ export default async function openProfile(username) {
           return;
         }
 
-        // For other errors, show a toast as before
         toastQueue.add(`<h1>${escapeHTML(data.error)}</h1>`);
         return null;
       }
@@ -149,23 +145,19 @@ const renderProfile = (data) => {
 
   const suspended = !!profile.suspended;
 
-  // Header: name and post count
   const headerNameEl = document.getElementById("profileHeaderName");
   const headerCountEl = document.getElementById("profileHeaderPostCount");
   if (headerNameEl) headerNameEl.textContent = profile.name || profile.username;
-  // Also update the main profile display name (h2) if present
   const displayNameEl = document.getElementById("profileDisplayName");
   if (displayNameEl)
     displayNameEl.textContent = profile.name || profile.username;
   if (headerCountEl)
     headerCountEl.textContent = `${profile.post_count || 0} posts`;
 
-  // Toggle suspended class on container so CSS can handle visuals
   const profileContainerEl = document.getElementById("profileContainer");
   if (profileContainerEl)
     profileContainerEl.classList.toggle("suspended", suspended);
 
-  // Banner handling: only set inline background if there's a real banner and not suspended
   const bannerElement = document.querySelector(".profile-banner");
   if (bannerElement) {
     bannerElement.style.display = "block";
@@ -181,7 +173,6 @@ const renderProfile = (data) => {
     }
   }
 
-  // Avatar: for suspended, use transparent src and mark dataset; visuals driven by CSS
   const avatarImg = document.getElementById("profileAvatar");
   if (avatarImg) {
     if (suspended) {
@@ -192,7 +183,6 @@ const renderProfile = (data) => {
       avatarImg.style.pointerEvents = "none";
       avatarImg.style.objectFit = "cover";
       avatarImg.style.opacity = "1";
-      // keep rounded shape based on profile hint or default to circle
       if (
         profile.avatar_radius !== null &&
         profile.avatar_radius !== undefined
@@ -223,14 +213,12 @@ const renderProfile = (data) => {
     }
   }
 
-  // Profile name and verification badge (show only for non-suspended profiles)
   const profileNameEl = document.getElementById("profileHeaderName");
   if (profileNameEl) {
     profileNameEl.textContent = profile.name || profile.username;
-    // verification badge (only if not suspended)
     const existingBadge = profileNameEl.querySelector(".verification-badge");
     if (!suspended && (profile.verified || profile.gold)) {
-      const badgeColor = profile.gold ? "#D4AF37" : "#1185FE";
+      const badgeColor = profile.gold ? "#D4AF37" : "var(--primary)";
       if (!existingBadge) {
         const verificationBadge = document.createElement("span");
         verificationBadge.className = "verification-badge";
@@ -242,7 +230,6 @@ const renderProfile = (data) => {
         `;
         profileNameEl.appendChild(verificationBadge);
       } else {
-        // update color if needed
         const pathEl = existingBadge.querySelector("path");
         if (pathEl) pathEl.setAttribute("fill", badgeColor);
       }
@@ -251,15 +238,13 @@ const renderProfile = (data) => {
     }
   }
 
-  // Also add a verification badge to the main display name (h2) for non-suspended verified/gold users
   const mainDisplayNameEl = document.getElementById("profileDisplayName");
   if (mainDisplayNameEl) {
-    // ensure we don't show badge on suspended profiles
     const existingMainBadge = mainDisplayNameEl.querySelector(
       ".verification-badge"
     );
     if (!suspended && (profile.verified || profile.gold)) {
-      const badgeColor = profile.gold ? "#D4AF37" : "#1185FE";
+      const badgeColor = profile.gold ? "#D4AF37" : "var(--primary)";
       if (!existingMainBadge) {
         const verificationBadge = document.createElement("span");
         verificationBadge.className = "verification-badge";
@@ -269,7 +254,6 @@ const renderProfile = (data) => {
             <path d="M6 8L7.333 9.333L10 6.667" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         `;
-        // If a follows-me badge exists, insert the verification badge before it so it does NOT appear after follows-me-badge
         const followsBadge =
           mainDisplayNameEl.querySelector(".follows-me-badge");
         if (followsBadge) {
@@ -278,24 +262,23 @@ const renderProfile = (data) => {
           mainDisplayNameEl.appendChild(verificationBadge);
         }
       } else {
-        // update color if needed
         const pathEl = existingMainBadge.querySelector("path");
         if (pathEl)
-          pathEl.setAttribute("fill", profile.gold ? "#D4AF37" : "#1185FE");
+          pathEl.setAttribute(
+            "fill",
+            profile.gold ? "#D4AF37" : "var(--primary)"
+          );
       }
     } else if (existingMainBadge) {
       existingMainBadge.remove();
     }
   }
 
-  // Username and labels
   const usernameEl = document.getElementById("profileUsername");
   if (usernameEl) {
     usernameEl.textContent = `@${profile.username}`;
-    // clear existing labels
     const existingLabels = usernameEl.querySelectorAll(".profile-label");
     existingLabels.forEach((l) => l.remove());
-    // Only show account labels for non-suspended profiles
     if (!suspended) {
       if (profile.label_type) {
         const labelEl = document.createElement("span");
@@ -314,11 +297,9 @@ const renderProfile = (data) => {
     }
   }
 
-  // expose current profile username on the container for other modules
   if (profileContainerEl)
     profileContainerEl.dataset.profileUsername = profile.username;
 
-  // show blocked banner if this profile has blocked the current viewer
   const blockedBanner = document.getElementById("profileBlockedBanner");
   if (blockedBanner) {
     if (profile.blockedByProfile) {
@@ -332,43 +313,36 @@ const renderProfile = (data) => {
     }
   }
 
-  // Hide tab navigation (posts/replies switch) for suspended accounts
   const tabNav = document.querySelector(".profile-tab-nav");
   if (tabNav) tabNav.style.display = suspended ? "none" : "flex";
 
-  // Show follows-me badge where appropriate (header and main display name)
-  // Only show for non-suspended profiles and when viewing someone else's profile
   if (currentProfile?.followsMe && !isOwnProfile && !suspended) {
     const createFollowsBadge = () => {
       const el = document.createElement("span");
       el.className = "follows-me-badge";
       el.textContent = "Follows you";
       el.style.cssText =
-        "margin: -5px 0 4px 0; padding: 4px 10px; background: rgba(var(--primary-rgb), 0.1); color: rgb(var(--primary-rgb)); border-radius: 6px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;";
+        "margin: -5px 0; padding: 4px 10px; background: rgba(var(--primary-rgb), 0.1); color: rgb(var(--primary-rgb)); border-radius: 6px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;";
       return el;
     };
 
-    // Append to the compact header (near the back button) if missing
     const headerTarget = document.getElementById("profileHeaderName");
     if (headerTarget && !headerTarget.querySelector(".follows-me-badge")) {
       headerTarget.appendChild(createFollowsBadge());
     }
 
-    // Also append to the main display name (the visible h2 on the profile card)
     const displayNameEl = document.getElementById("profileDisplayName");
     if (displayNameEl && !displayNameEl.querySelector(".follows-me-badge")) {
       displayNameEl.appendChild(createFollowsBadge());
     }
   }
 
-  // Pronouns
   const pronounsEl = document.getElementById("profilePronouns");
   if (pronounsEl) {
     pronounsEl.textContent = profile.pronouns || "";
     pronounsEl.style.display = profile.pronouns ? "block" : "none";
   }
 
-  // When suspended, hide bio/meta and show suspension notice
   const bioEl = document.getElementById("profileBio");
   const metaEl = document.getElementById("profileMeta");
   const suspendedNotice = document.getElementById("profileSuspendedNotice");
@@ -387,7 +361,6 @@ const renderProfile = (data) => {
     if (suspendedNotice) suspendedNotice.style.display = "none";
   }
 
-  // Followers/following counts and links: hide links for suspended
   const followersCountEl = document.getElementById("profileFollowerCount");
   const followingCountEl = document.getElementById("profileFollowingCount");
   if (followersCountEl)
@@ -413,7 +386,6 @@ const renderProfile = (data) => {
     }
   }
 
-  // Meta items: location / website / joined
   const meta = [];
   if (!suspended) {
     if (profile.location)
@@ -453,7 +425,6 @@ const renderProfile = (data) => {
       .map((item) => `<div class="profile-meta-item">${item}</div>`)
       .join("");
 
-  // Action buttons
   if (isOwnProfile) {
     const editBtn = document.getElementById("editProfileBtn");
     const followBtn = document.getElementById("followBtn");
@@ -499,7 +470,6 @@ const renderProfile = (data) => {
     if (dropdown) dropdown.style.display = "none";
   }
 
-  // If suspended, ensure interactive buttons are hidden
   if (suspended) {
     const editBtn = document.getElementById("editProfileBtn");
     const followBtn = document.getElementById("followBtn");
@@ -559,7 +529,6 @@ function updateFollowButton(isFollowing) {
         return;
       }
 
-      // prevent following if this profile has blocked the current viewer
       try {
         const pc = document.getElementById("profileContainer");
         const isBlocked = pc?.dataset?.blockedByProfile === "true";
@@ -583,7 +552,6 @@ function updateFollowButton(isFollowing) {
   }
 }
 
-// Dismiss blocked banner
 document
   .getElementById("profileBlockedBannerDismiss")
   ?.addEventListener("click", () => {
@@ -621,15 +589,12 @@ const showEditModal = () => {
   document.getElementById("editLabelAutomated").checked =
     profile.label_automated || false;
 
-  // Update avatar display
   updateEditAvatarDisplay();
 
-  // Avatar radius controls
   const avatarRadiusControls = document.getElementById("avatarRadiusControls");
   const radiusInput = document.getElementById("radius-input");
   const presetSquare = document.getElementById("radius-preset-square");
   const presetDefault = document.getElementById("radius-preset-default");
-  // Show radius controls only for gold users
   if (profile.gold) {
     avatarRadiusControls.style.display = "block";
   } else {
@@ -648,7 +613,6 @@ const showEditModal = () => {
   if (avatarPreviewContainer)
     avatarPreviewContainer.style.borderRadius = `${currentRadius}px`;
 
-  // If user is not gold, disable custom editing (presets + input)
   if (!profile.gold) {
     radiusInput.disabled = true;
     presetSquare.disabled = true;
@@ -659,7 +623,6 @@ const showEditModal = () => {
     presetDefault.disabled = false;
   }
 
-  // Preset handlers
   presetSquare?.addEventListener("click", () => {
     radiusInput.value = 4;
     const avatarImg = document.getElementById("edit-current-avatar");
@@ -773,7 +736,6 @@ const updateEditBannerDisplay = () => {
 const handleEditBannerUpload = async (file) => {
   if (!file) return;
 
-  // Validate file size (10MB max for banners)
   if (file.size > 10 * 1024 * 1024) {
     toastQueue.add(
       `<h1>File too large</h1><p>Please choose an image smaller than 10MB.</p>`
@@ -781,7 +743,6 @@ const handleEditBannerUpload = async (file) => {
     return;
   }
 
-  // Check if it's a convertible image format
   if (!isConvertibleImage(file)) {
     toastQueue.add(
       `<h1>Invalid file type</h1><p>Please upload a valid image file (JPEG, PNG, GIF, WebP, etc.).</p>`
@@ -796,7 +757,6 @@ const handleEditBannerUpload = async (file) => {
   }
 
   try {
-    // Offer cropping UI for banners (skip for unsupported animated GIF preservation)
     let processedFile = file;
     try {
       const cropResult = await openImageCropper(file, {
@@ -804,7 +764,6 @@ const handleEditBannerUpload = async (file) => {
         size: 1500,
       });
       if (cropResult === CROP_CANCELLED) {
-        // user cancelled cropping — do not proceed
         if (changeBtn) {
           changeBtn.disabled = false;
           changeBtn.textContent = "Change Banner";
@@ -813,15 +772,12 @@ const handleEditBannerUpload = async (file) => {
       }
       processedFile = cropResult || file;
     } catch (err) {
-      // if cropper fails, fall back to original file but continue
       console.warn("Cropper error, using original file:", err);
       processedFile = file;
     }
 
-    // Convert to WebP and resize to 1500x500 for banner
     const webpFile = await convertToWebPBanner(processedFile, 1500, 500, 0.8);
 
-    // Update progress text
     if (changeBtn) {
       changeBtn.textContent = "Uploading...";
     }
@@ -840,7 +796,6 @@ const handleEditBannerUpload = async (file) => {
     if (result.success) {
       currentProfile.profile.banner = result.banner;
       updateEditBannerDisplay();
-      // Also update the main profile display
       const profileBanner = document.querySelector(".profile-banner");
       if (profileBanner) {
         profileBanner.style.backgroundImage = `url(${result.banner})`;
@@ -932,7 +887,6 @@ const updateEditAvatarDisplay = () => {
     avatarImg.alt = profile.name || profile.username;
   }
 
-  // Apply radius to both image and its container so preview shape updates
   if (avatarPreviewContainer) {
     if (profile.avatar_radius !== null && profile.avatar_radius !== undefined) {
       avatarPreviewContainer.style.borderRadius = `${profile.avatar_radius}px`;
@@ -962,7 +916,6 @@ const handleEditAvatarUpload = async (file) => {
     return;
   }
 
-  // Check if it's a convertible image format
   if (!isConvertibleImage(file)) {
     toastQueue.add(
       `<h1>Invalid file type</h1><p>Please upload a valid image file (JPEG, PNG, GIF, WebP, etc.).</p>`
@@ -977,13 +930,10 @@ const handleEditAvatarUpload = async (file) => {
   }
 
   try {
-    // If original file is GIF and the current profile is Gold, preserve it (upload GIF)
     let uploadFile = null;
     if (file.type === "image/gif" && currentProfile?.profile?.gold) {
-      // preserve GIFs for gold accounts, do not offer cropper (animated GIF cropping unsupported)
       uploadFile = file;
     } else {
-      // Offer cropping UI for avatars where useful
       let processedFile = file;
       try {
         const cropResult = await openImageCropper(file, {
@@ -991,7 +941,6 @@ const handleEditAvatarUpload = async (file) => {
           size: 250,
         });
         if (cropResult === CROP_CANCELLED) {
-          // user cancelled cropping — do not proceed
           if (changeBtn) {
             changeBtn.disabled = false;
             changeBtn.textContent = "Change Avatar";
@@ -1004,12 +953,10 @@ const handleEditAvatarUpload = async (file) => {
         processedFile = file;
       }
 
-      // Convert to WebP and resize to 250x250 for non-GIF or non-gold
       const webpFile = await convertToWebPAvatar(processedFile, 250, 0.8);
       uploadFile = webpFile;
     }
 
-    // Update progress text
     if (changeBtn) {
       changeBtn.textContent = "Uploading...";
     }
@@ -1028,7 +975,6 @@ const handleEditAvatarUpload = async (file) => {
     if (result.success) {
       currentProfile.profile.avatar = result.avatar;
       updateEditAvatarDisplay();
-      // Also update the main profile display
       const profileAvatar = document.getElementById("profileAvatar");
       if (profileAvatar) {
         profileAvatar.src = result.avatar;
@@ -1148,8 +1094,6 @@ const saveProfile = async (event) => {
   if (avatarRadiusControls && avatarRadiusControls.style.display !== "none") {
     const val = parseInt(radiusInput.value, 10);
     if (!Number.isNaN(val)) {
-      // Only include avatar_radius when the user actually changed it.
-      // Calculate the original radius the same way the UI displays it.
       const origProfile = currentProfile.profile || {};
       const originalRadius =
         origProfile.avatar_radius !== null &&
@@ -1266,12 +1210,11 @@ editAvatarUpload?.addEventListener("change", (e) => {
   if (file) {
     handleEditAvatarUpload(file);
   }
-  e.target.value = ""; // Reset input
+  e.target.value = "";
 });
 
 editRemoveAvatarBtn?.addEventListener("click", handleEditAvatarRemoval);
 
-// Banner upload event listeners
 const editChangeBannerBtn = document.getElementById("edit-change-banner");
 const editBannerUpload = document.getElementById("edit-banner-upload");
 const editRemoveBannerBtn = document.getElementById("edit-remove-banner");
@@ -1290,12 +1233,11 @@ editBannerUpload?.addEventListener("change", (e) => {
   if (file) {
     handleEditBannerUpload(file);
   }
-  e.target.value = ""; // Reset input
+  e.target.value = "";
 });
 
 editRemoveBannerBtn?.addEventListener("click", handleEditBannerRemoval);
 
-// Profile dropdown event listeners
 document
   .getElementById("profileDropdownBtn")
   ?.addEventListener("click", (e) => {

@@ -95,45 +95,6 @@ let _user;
     }
   }
 
-  if (user.accent_color) {
-    localStorage.setItem("accentColor", user.accent_color);
-    const root = document.documentElement;
-    root.style.setProperty("--primary", user.accent_color);
-
-    const hexToRgb = (hex) => {
-      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return result
-        ? {
-            r: parseInt(result[1], 16),
-            g: parseInt(result[2], 16),
-            b: parseInt(result[3], 16),
-          }
-        : null;
-    };
-
-    const adjustBrightness = (hex, percent) => {
-      const rgb = hexToRgb(hex);
-      if (!rgb) return hex;
-      const adjust = (color) =>
-        Math.max(0, Math.min(255, Math.round(color + (color * percent) / 100)));
-      return `#${adjust(rgb.r).toString(16).padStart(2, "0")}${adjust(rgb.g)
-        .toString(16)
-        .padStart(2, "0")}${adjust(rgb.b).toString(16).padStart(2, "0")}`;
-    };
-
-    const rgb = hexToRgb(user.accent_color);
-    if (rgb)
-      root.style.setProperty("--primary-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-    root.style.setProperty(
-      "--primary-hover",
-      adjustBrightness(user.accent_color, -10)
-    );
-    root.style.setProperty(
-      "--primary-focus",
-      adjustBrightness(user.accent_color, -20)
-    );
-  }
-
   document.querySelector(".account img").src =
     user.avatar || `/public/shared/default-avatar.png`;
 

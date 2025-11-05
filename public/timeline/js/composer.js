@@ -1017,6 +1017,7 @@ export const useComposer = (
 
         textarea.value = "";
         charCount.textContent = "0";
+        tweetButton.disabled = true;
         textarea.style.height = "25px";
 
         pendingFiles = [];
@@ -1094,6 +1095,7 @@ export const useComposer = (
       }
 
       textarea.value = "";
+      tweetButton.disabled = true;
       charCount.textContent = "0";
       textarea.style.height = "25px";
 

@@ -1,5 +1,6 @@
 @import url("../shared/variables.css");
 @import url("../shared/toasts.css");
+@import url("./image-cropper.css");
 
 * {
   box-sizing: border-box;
@@ -332,58 +333,4 @@ img {
   text-align: center;
   color: var(--text-secondary);
   font-size: 13px;
-}
-
-/* Custom emoji picker container styling */
-.emoji-picker-custom {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
-  border-radius: 14px;
-  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.12);
-}
-
-.emoji-picker-custom-title {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-
-.emoji-picker-custom-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.emoji-picker-custom-item {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: none;
-  background: transparent;
-  padding: 0;
-  cursor: pointer;
-  transition: background-color 0.12s ease, transform 0.12s ease;
-}
-
-.emoji-picker-custom-item:hover {
-  background: var(--bg-secondary);
-  transform: translateY(-1px);
-}
-
-.emoji-picker-custom-item img {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
-  background: transparent;
-  border: none;
-  pointer-events: none;
 }
