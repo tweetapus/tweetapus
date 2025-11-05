@@ -1956,10 +1956,7 @@ nav {
             color: var(--primary);
             text-decoration: underline;
             text-underline-offset: 3px;
-
-            &:hover {
-              text-decoration: none;
-            }
+            font-weight: 500;
           }
         }
       }
@@ -2176,12 +2173,6 @@ nav {
   }
 
   .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px;
-    border-bottom: 1px solid var(--border-primary);
-
     h3 {
       margin: 0;
       font-size: 18px;
@@ -4269,12 +4260,6 @@ nav {
     flex-direction: column;
 
     .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px;
-      border-bottom: 1px solid var(--border-primary);
-
       h3 {
         margin: 0;
         font-size: 18px;
@@ -4632,12 +4617,6 @@ nav {
     flex-direction: column;
 
     .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px;
-      border-bottom: 1px solid var(--border-primary);
-
       h3 {
         margin: 0;
         font-size: 18px;
@@ -4840,12 +4819,6 @@ nav {
     flex-direction: column;
 
     .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px;
-      border-bottom: 1px solid var(--border-primary);
-
       h3 {
         margin: 0;
         font-size: 18px;
@@ -5143,12 +5116,6 @@ nav {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.interactions-modal .modal-header {
-  padding: 20px 20px 0;
-  border-bottom: 1px solid var(--border-primary);
-  margin-bottom: 0;
 }
 
 .interactions-modal .modal-header h2 {
@@ -6277,11 +6244,6 @@ nav {
   }
 
   .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 20px;
-    border-bottom: 1px solid var(--border-primary);
 
     h2 {
       margin: 0;
@@ -7012,7 +6974,6 @@ emoji-picker.emoji-picker-popup {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px 0;
-  border-bottom: 1px solid var(--border-primary);
   margin-bottom: 20px;
 }
 
@@ -7292,19 +7253,12 @@ emoji-picker.emoji-picker-popup {
 
 .modal.settings-modal {
   box-sizing: border-box;
-  /* wider on large screens; keep small viewport margins */
   width: min(1400px, calc(100vw - 32px));
-  /* stable height: use the current maximum (90vh) but cap to 900px */
   height: min(90vh, 900px);
   padding: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.modal.settings-modal .modal-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border-primary);
 }
 
 .modal.settings-modal .modal-close {

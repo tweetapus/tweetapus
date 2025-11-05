@@ -497,6 +497,12 @@ async function markAllAsRead() {
   currentNotifications.forEach((notification) => {
     notification.read = true;
   });
+
+  document
+    .querySelectorAll(".notifications-list .notification-item.unread")
+    .forEach((el) => {
+      el.classList.remove("unread");
+    });
   // renderNotifications();
 }
 

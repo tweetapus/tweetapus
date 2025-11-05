@@ -569,7 +569,6 @@ input#username::placeholder {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px 16px 24px;
-  border-bottom: 1px solid var(--border-secondary);
 }
 
 .modal-header h2 {

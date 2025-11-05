@@ -567,7 +567,6 @@ const votePoll = async (tweetId, optionId, pollElement) => {
 
     if (result.success) {
       updatePollDisplay(pollElement, result.poll);
-      toastQueue.add(`<h1>Vote recorded!</h1>`);
     } else {
       toastQueue.add(`<h1>${result.error || "Failed to vote"}</h1>`);
     }
