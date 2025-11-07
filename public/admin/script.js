@@ -32,6 +32,8 @@ class AdminPanel {
       "image/avif",
       "image/tiff",
     ]);
+    this.selectedUsers = new Set();
+    this.bulkModal = null;
 
     this.init();
   }
@@ -803,6 +805,7 @@ class AdminPanel {
         <table class="table table-hover">
           <thead>
             <tr>
+              <th style="width: 60px;">Select</th>
               <th>User</th>
               <th>Stats</th>
               <th>Status</th>
@@ -815,6 +818,9 @@ class AdminPanel {
               .map(
                 (user) => `
               <tr>
+                <td>
+                  <input type="checkbox" class="form-check-input bulk-user-checkbox" value="${user.id}" onchange="adminPanel.toggleUserSelection('${user.id}', this.checked)">
+                </td>
                 <td>
                   <div class="d-flex align-items-center">
                     ${
@@ -925,6 +931,9 @@ class AdminPanel {
         </table>
       </div>
     `;
+
+    this.syncSelectedUserCheckboxes();
+    this.updateBulkEditControls();
   }
 
   async searchUsers() {
@@ -1024,6 +1033,11 @@ class AdminPanel {
                       post.id
                     }')">
                       <i class="bi bi-pencil"></i> Edit
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" onclick="adminPanel.addFactCheck('${
+                      post.id
+                    }')">
+                      <i class="bi bi-exclamation-triangle"></i> Fact-Check
                     </button>
                     <button class="btn btn-outline-danger btn-sm" onclick="adminPanel.deletePost('${
                       post.id
@@ -1842,6 +1856,31 @@ class AdminPanel {
 
       this.showSuccess("Post deleted successfully");
       this.loadPosts(this.currentPage.posts);
+    } catch (error) {
+      this.showError(error.message);
+    }
+  }
+
+  async addFactCheck(postId) {
+    const note = prompt("Enter the fact-check note:");
+    if (!note || !note.trim()) return;
+
+    const severity = prompt("Enter severity (warning/danger/info):", "warning");
+    const validSeverities = ["warning", "danger", "info"];
+    const finalSeverity = validSeverities.includes(severity) ? severity : "warning";
+
+    try {
+      const response = await this.apiCall(`/api/admin/fact-check/${postId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: note.trim(), severity: finalSeverity }),
+      });
+
+      if (response.success) {
+        this.showSuccess("Fact-check added successfully. Notifications sent to all users who interacted with this post.");
+      } else {
+        this.showError(response.error || "Failed to add fact-check");
+      }
     } catch (error) {
       this.showError(error.message);
     }

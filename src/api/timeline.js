@@ -123,7 +123,15 @@ const getTopReactionsForPost = db.query(`
   WHERE post_id = ?
   GROUP BY emoji
   ORDER BY count DESC
-  LIMIT 2
+  LIMIT 3
+`);
+
+const getFactCheckForPost = db.query(`
+  SELECT fc.*, u.username as admin_username, u.name as admin_name
+  FROM fact_checks fc
+  JOIN users u ON fc.created_by = u.id
+  WHERE fc.post_id = ?
+  LIMIT 1
 `);
 
 const getAttachmentsByPostId = db.query(`
@@ -500,6 +508,7 @@ export default new Elysia({ prefix: "/timeline" })
           article_preview: post.article_id
             ? articleMap.get(post.article_id) || null
             : null,
+          fact_check: getFactCheckForPost.get(post.id) || null,
         };
       })
       .filter(Boolean);
@@ -786,9 +795,10 @@ export default new Elysia({ prefix: "/timeline" })
           article_preview: post.article_id
             ? articleMap.get(post.article_id) || null
             : null,
+          fact_check: getFactCheckForPost.get(post.id) || null,
         };
       })
-      .filter(Boolean); // Remove null entries
+      .filter(Boolean);
 
     return { timeline };
   });

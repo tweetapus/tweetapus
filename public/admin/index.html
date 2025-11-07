@@ -243,6 +243,16 @@
                     <i class="bi bi-plus-lg"></i>
                     Create User
                   </button>
+                  <button
+                    class="btn btn-warning"
+                    id="bulkEditBtn"
+                    onclick="adminPanel.showBulkEditModal()"
+                    disabled
+                  >
+                    <i class="bi bi-pencil-square"></i>
+                    Bulk Edit
+                    <span class="badge bg-dark ms-1" id="bulkEditCount">0</span>
+                  </button>
                 </div>
               </div>
 
@@ -522,6 +532,18 @@
                       />
                       <label class="form-check-label">
                         Clone Community Memberships
+                      </label>
+                    </div>
+
+                    <div class="form-check mb-2">
+                      <input
+                        id="cloneAffiliate"
+                        class="form-check-input"
+                        type="checkbox"
+                        checked
+                      />
+                      <label class="form-check-label">
+                        Clone Affiliate Link
                       </label>
                     </div>
 
@@ -1135,6 +1157,45 @@
               onclick="adminPanel.createUser()"
             >
               Create
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bulk Edit Users Modal -->
+    <div class="modal fade" id="bulkUserModal" tabindex="-1">
+      <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Bulk Edit Users</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body" id="bulkUserModalBody">
+            <div class="text-center py-5">
+              <div class="spinner-border text-primary" role="status"></div>
+              <div class="mt-2 text-muted">Loading selection...</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              id="bulkUserSaveBtn"
+              onclick="adminPanel.saveBulkProfiles()"
+            >
+              Save Changes
             </button>
           </div>
         </div>

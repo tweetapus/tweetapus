@@ -1198,6 +1198,70 @@ nav {
     li {
       margin-bottom: 4px;
     }
+  }
+
+  .fact-check-banner {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 8px;
+    border: 2px solid;
+    background: var(--bg-secondary);
+
+    &[data-severity="warning"] {
+      border-color: #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
+
+      .fact-check-icon {
+        color: #f59e0b;
+      }
+    }
+
+    &[data-severity="danger"] {
+      border-color: #ef4444;
+      background: rgba(239, 68, 68, 0.1);
+
+      .fact-check-icon {
+        color: #ef4444;
+      }
+    }
+
+    &[data-severity="info"] {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+
+      .fact-check-icon {
+        color: #3b82f6;
+      }
+    }
+
+    .fact-check-icon {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .fact-check-content {
+      flex: 1;
+
+      strong {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.4;
+        color: var(--text-secondary);
+      }
+    }
     .tweet-mention {
       color: var(--primary);
       text-decoration: none;

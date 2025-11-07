@@ -82,6 +82,35 @@ const getUserReplies = db.query(`
   LIMIT 20
 `);
 
+const getUserRepliesPaginated = db.query(`
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+  FROM posts 
+  JOIN users ON posts.user_id = users.id 
+  WHERE posts.user_id = ? AND posts.reply_to IS NOT NULL AND posts.id < ?
+  ORDER BY posts.created_at DESC 
+  LIMIT ?
+`);
+
+const getUserMedia = db.query(`
+  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+  FROM posts 
+  JOIN users ON posts.user_id = users.id 
+  JOIN attachments ON posts.id = attachments.post_id
+  WHERE posts.user_id = ? AND users.suspended = 0
+  ORDER BY posts.created_at DESC
+  LIMIT ?
+`);
+
+const getUserMediaPaginated = db.query(`
+  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+  FROM posts 
+  JOIN users ON posts.user_id = users.id 
+  JOIN attachments ON posts.id = attachments.post_id
+  WHERE posts.user_id = ? AND posts.id < ? AND users.suspended = 0
+  ORDER BY posts.created_at DESC
+  LIMIT ?
+`);
+
 const getUserPosts = db.query(`
   SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
   FROM posts 
@@ -560,7 +589,7 @@ export default new Elysia({ prefix: "/profile" })
       return { error: "Failed to fetch profile" };
     }
   })
-  .get("/:username/replies", async ({ params }) => {
+  .get("/:username/replies", async ({ params, query: queryParams, headers, jwt }) => {
     try {
       const { username } = params;
 
@@ -569,14 +598,125 @@ export default new Elysia({ prefix: "/profile" })
         return { error: "User not found" };
       }
 
-      const replies = getUserReplies.all(user.id);
+      const before = queryParams.before;
+      const limit = parseInt(queryParams.limit || "20", 10);
+
+      let replies;
+      if (before) {
+        replies = getUserRepliesPaginated.all(user.id, before, limit);
+      } else {
+        replies = db.query(`
+          SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+          FROM posts 
+          JOIN users ON posts.user_id = users.id 
+          WHERE posts.user_id = ? AND posts.reply_to IS NOT NULL
+          ORDER BY posts.created_at DESC 
+          LIMIT ?
+        `).all(user.id, limit);
+      }
+
+      let currentUserId = null;
+      const authorization = headers.authorization;
+      if (authorization) {
+        try {
+          const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+          if (payload) {
+            const currentUser = getUserByUsername.get(payload.username);
+            if (currentUser) {
+              currentUserId = currentUser.id;
+            }
+          }
+        } catch {}
+      }
+
+      const processedReplies = replies.map((reply) => ({
+        ...reply,
+        author: {
+          username: reply.username,
+          name: reply.name,
+          avatar: reply.avatar || null,
+          verified: reply.verified || false,
+          gold: reply.gold || false,
+          avatar_radius: reply.avatar_radius || null,
+        },
+        poll: getPollDataForPost(reply.id, currentUserId),
+        quoted_tweet: getQuotedPostData(reply.quote_tweet_id, currentUserId),
+        attachments: getPostAttachments(reply.id),
+        liked_by_user: false,
+        retweeted_by_user: false,
+      }));
+
+      if (currentUserId && replies.length > 0) {
+        try {
+          const replyIds = replies.map((r) => r.id);
+          const likesQuery = db.query(`
+            SELECT post_id FROM likes WHERE user_id = ? AND post_id IN (${replyIds.map(() => "?").join(",")})
+          `);
+          const retweetsQuery = db.query(`
+            SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${replyIds.map(() => "?").join(",")})
+          `);
+
+          const likedPosts = likesQuery.all(currentUserId, ...replyIds);
+          const retweetedPosts = retweetsQuery.all(currentUserId, ...replyIds);
+
+          const likedPostsSet = new Set(likedPosts.map((like) => like.post_id));
+          const retweetedPostsSet = new Set(retweetedPosts.map((retweet) => retweet.post_id));
+
+          processedReplies.forEach((reply) => {
+            reply.liked_by_user = likedPostsSet.has(reply.id);
+            reply.retweeted_by_user = retweetedPostsSet.has(reply.id);
+          });
+        } catch (e) {
+          console.warn("Failed to fetch likes/retweets for replies:", e);
+        }
+      }
 
       return {
-        replies,
+        replies: processedReplies,
       };
     } catch (error) {
       console.error("Replies fetch error:", error);
       return { error: "Failed to fetch replies" };
+    }
+  })
+  .get("/:username/media", async ({ params, query: queryParams }) => {
+    try {
+      const { username } = params;
+
+      const user = getUserByUsername.get(username);
+      if (!user) {
+        return { error: "User not found" };
+      }
+
+      const before = queryParams.before;
+      const limit = parseInt(queryParams.limit || "20", 10);
+
+      let media;
+      if (before) {
+        media = getUserMediaPaginated.all(user.id, before, limit);
+      } else {
+        media = getUserMedia.all(user.id, limit);
+      }
+
+      const processedMedia = media.map((post) => ({
+        ...post,
+        author: {
+          username: post.username,
+          name: post.name,
+          avatar: post.avatar || null,
+          verified: post.verified || false,
+          gold: post.gold || false,
+          avatar_radius: post.avatar_radius || null,
+        },
+        attachments: getPostAttachments(post.id),
+      }));
+
+      return {
+        media: processedMedia,
+      };
+    } catch (error) {
+      console.error("Media fetch error:", error);
+      return { error: "Failed to fetch media" };
     }
   })
   .put("/:username", async ({ params, jwt, headers, body }) => {

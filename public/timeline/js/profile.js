@@ -16,8 +16,15 @@ import { createTweetElement } from "./tweets.js";
 let currentProfile = null;
 let currentPosts = [];
 let currentReplies = [];
+let currentMedia = [];
 let currentUsername = null;
 let currentAffiliates = [];
+let isLoadingReplies = false;
+let isLoadingMedia = false;
+let hasMoreReplies = true;
+let hasMoreMedia = true;
+let repliesObserver = null;
+let mediaObserver = null;
 
 const escapeHTML = (str) =>
   str ? str.split("").join("").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
@@ -232,6 +239,199 @@ const renderPosts = async (posts, isReplies = false) => {
 
     container.appendChild(tweetElement);
   }
+
+  const sentinel = document.createElement("div");
+  sentinel.className = "scroll-sentinel";
+  sentinel.style.height = "1px";
+  container.appendChild(sentinel);
+};
+
+const renderMediaPosts = async (posts) => {
+  const container = document.getElementById("profilePostsContainer");
+
+  if (!posts || posts.length === 0) {
+    container.innerHTML = `
+      <div class="profile-empty-state">
+        <h3>No media yet</h3>
+        <p>When they post images or videos, they'll show up here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = "";
+
+  for (const post of posts) {
+    const tweetElement = createTweetElement(post, {
+      clickToOpen: true,
+    });
+    container.appendChild(tweetElement);
+  }
+
+  const sentinel = document.createElement("div");
+  sentinel.className = "scroll-sentinel";
+  sentinel.style.height = "1px";
+  container.appendChild(sentinel);
+};
+
+const loadMoreReplies = async () => {
+  if (isLoadingReplies || !hasMoreReplies || !currentUsername) return;
+
+  isLoadingReplies = true;
+
+  const lastReply = currentReplies[currentReplies.length - 1];
+  if (!lastReply) {
+    isLoadingReplies = false;
+    return;
+  }
+
+  const { error, replies } = await query(
+    `/profile/${currentUsername}/replies?before=${lastReply.id}&limit=20`
+  );
+
+  if (error) {
+    toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
+    isLoadingReplies = false;
+    return;
+  }
+
+  if (!replies || replies.length === 0) {
+    hasMoreReplies = false;
+    isLoadingReplies = false;
+    return;
+  }
+
+  currentReplies = [...currentReplies, ...replies];
+
+  if (replies.length < 20) {
+    hasMoreReplies = false;
+  }
+
+  const container = document.getElementById("profilePostsContainer");
+  const sentinel = container.querySelector(".scroll-sentinel");
+  if (sentinel) sentinel.remove();
+
+  for (const reply of replies) {
+    const tweetElement = createTweetElement(reply, {
+      clickToOpen: true,
+    });
+    container.appendChild(tweetElement);
+  }
+
+  if (hasMoreReplies) {
+    const newSentinel = document.createElement("div");
+    newSentinel.className = "scroll-sentinel";
+    newSentinel.style.height = "1px";
+    container.appendChild(newSentinel);
+  }
+
+  isLoadingReplies = false;
+
+  if (hasMoreReplies) {
+    setupRepliesInfiniteScroll();
+  }
+};
+
+const loadMoreMedia = async () => {
+  if (isLoadingMedia || !hasMoreMedia || !currentUsername) return;
+
+  isLoadingMedia = true;
+
+  const lastMedia = currentMedia[currentMedia.length - 1];
+  if (!lastMedia) {
+    isLoadingMedia = false;
+    return;
+  }
+
+  const { error, media } = await query(
+    `/profile/${currentUsername}/media?before=${lastMedia.id}&limit=20`
+  );
+
+  if (error) {
+    toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
+    isLoadingMedia = false;
+    return;
+  }
+
+  if (!media || media.length === 0) {
+    hasMoreMedia = false;
+    isLoadingMedia = false;
+    return;
+  }
+
+  currentMedia = [...currentMedia, ...media];
+
+  if (media.length < 20) {
+    hasMoreMedia = false;
+  }
+
+  const container = document.getElementById("profilePostsContainer");
+  const sentinel = container.querySelector(".scroll-sentinel");
+  if (sentinel) sentinel.remove();
+
+  for (const post of media) {
+    const tweetElement = createTweetElement(post, {
+      clickToOpen: true,
+    });
+    container.appendChild(tweetElement);
+  }
+
+  if (hasMoreMedia) {
+    const newSentinel = document.createElement("div");
+    newSentinel.className = "scroll-sentinel";
+    newSentinel.style.height = "1px";
+    container.appendChild(newSentinel);
+  }
+
+  isLoadingMedia = false;
+
+  if (hasMoreMedia) {
+    setupMediaInfiniteScroll();
+  }
+};
+
+const setupRepliesInfiniteScroll = () => {
+  if (repliesObserver) {
+    repliesObserver.disconnect();
+  }
+
+  const sentinel = document.querySelector(".scroll-sentinel");
+  if (!sentinel || !hasMoreReplies) return;
+
+  repliesObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && !isLoadingReplies && hasMoreReplies) {
+        loadMoreReplies();
+      }
+    },
+    {
+      rootMargin: "200px",
+    }
+  );
+
+  repliesObserver.observe(sentinel);
+};
+
+const setupMediaInfiniteScroll = () => {
+  if (mediaObserver) {
+    mediaObserver.disconnect();
+  }
+
+  const sentinel = document.querySelector(".scroll-sentinel");
+  if (!sentinel || !hasMoreMedia) return;
+
+  mediaObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting && !isLoadingMedia && hasMoreMedia) {
+        loadMoreMedia();
+      }
+    },
+    {
+      rootMargin: "200px",
+    }
+  );
+
+  mediaObserver.observe(sentinel);
 };
 
 const switchTab = async (tabName) => {
@@ -239,6 +439,15 @@ const switchTab = async (tabName) => {
   const affiliatesContainer = document.getElementById(
     "profileAffiliatesContainer"
   );
+
+  if (repliesObserver) {
+    repliesObserver.disconnect();
+    repliesObserver = null;
+  }
+  if (mediaObserver) {
+    mediaObserver.disconnect();
+    mediaObserver = null;
+  }
 
   if (postsContainer) postsContainer.classList.add("hidden");
   if (affiliatesContainer) affiliatesContainer.classList.add("hidden");
@@ -250,9 +459,10 @@ const switchTab = async (tabName) => {
     if (postsContainer) postsContainer.classList.remove("hidden");
     if (currentReplies.length === 0 && currentUsername) {
       document.getElementById("profilePostsContainer").innerHTML = "";
+      hasMoreReplies = true;
 
       let { error, replies } = await query(
-        `/profile/${currentUsername}/replies`
+        `/profile/${currentUsername}/replies?limit=20`
       );
 
       if (error) {
@@ -261,9 +471,36 @@ const switchTab = async (tabName) => {
       }
 
       currentReplies = replies || [];
+      if (currentReplies.length < 20) {
+        hasMoreReplies = false;
+      }
     }
 
     renderPosts(currentReplies, true);
+    setupRepliesInfiniteScroll();
+  } else if (tabName === "media") {
+    if (postsContainer) postsContainer.classList.remove("hidden");
+    if (currentMedia.length === 0 && currentUsername) {
+      document.getElementById("profilePostsContainer").innerHTML = "";
+      hasMoreMedia = true;
+
+      let { error, media } = await query(
+        `/profile/${currentUsername}/media?limit=20`
+      );
+
+      if (error) {
+        toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
+        media = [];
+      }
+
+      currentMedia = media || [];
+      if (currentMedia.length < 20) {
+        hasMoreMedia = false;
+      }
+    }
+
+    renderMediaPosts(currentMedia);
+    setupMediaInfiniteScroll();
   } else if (tabName === "affiliates") {
     if (affiliatesContainer) affiliatesContainer.classList.remove("hidden");
     renderAffiliates();
@@ -671,6 +908,9 @@ const renderProfile = (data) => {
 
   currentPosts = posts;
   currentReplies = [];
+  currentMedia = [];
+  hasMoreReplies = true;
+  hasMoreMedia = true;
   currentAffiliates = Array.isArray(data.affiliates)
     ? [...data.affiliates]
     : [];

@@ -72,6 +72,27 @@ const adminQueries = {
     WHERE s.status = 'active'
   `),
 
+  createFactCheck: db.query(
+    `INSERT INTO fact_checks (id, post_id, created_by, note, severity) VALUES (?, ?, ?, ?, ?)`
+  ),
+  getFactCheck: db.query(
+    `SELECT fc.*, u.username as admin_username FROM fact_checks fc JOIN users u ON fc.created_by = u.id WHERE fc.post_id = ?`
+  ),
+  deleteFactCheck: db.query(`DELETE FROM fact_checks WHERE id = ?`),
+  getPostInteractions: db.query(`
+    SELECT DISTINCT user_id FROM (
+      SELECT user_id FROM likes WHERE post_id = ?
+      UNION
+      SELECT user_id FROM retweets WHERE post_id = ?
+      UNION
+      SELECT user_id FROM posts WHERE reply_to = ?
+      UNION
+      SELECT user_id FROM post_reactions WHERE post_id = ?
+      UNION
+      SELECT user_id FROM bookmarks WHERE post_id = ?
+    )
+  `),
+
   // Recent activity
   getRecentUsers: db.query(
     "SELECT username, created_at FROM users ORDER BY created_at DESC LIMIT 15"
@@ -251,6 +272,41 @@ const adminQueries = {
     ORDER BY ml.created_at DESC
     LIMIT ? OFFSET ?
   `),
+  getAffiliateRequestsForTarget: db.query(`
+    SELECT ar.*, req.username as requester_username, req.name as requester_name, req.avatar as requester_avatar, req.verified as requester_verified, req.gold as requester_gold
+    FROM affiliate_requests ar
+    JOIN users req ON req.id = ar.requester_id
+    WHERE ar.target_id = ?
+    ORDER BY ar.created_at DESC
+  `),
+  getAffiliateRequestsForRequester: db.query(`
+    SELECT ar.*, target.username as target_username, target.name as target_name, target.avatar as target_avatar, target.verified as target_verified, target.gold as target_gold
+    FROM affiliate_requests ar
+    JOIN users target ON target.id = ar.target_id
+    WHERE ar.requester_id = ?
+    ORDER BY ar.created_at DESC
+  `),
+  getAffiliatesForUser: db.query(`
+    SELECT u.id, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius
+    FROM users u
+    WHERE u.affiliate = 1 AND u.affiliate_with = ?
+    ORDER BY u.created_at DESC
+  `),
+  getAffiliateRequestById: db.query(
+    "SELECT * FROM affiliate_requests WHERE id = ?"
+  ),
+  deleteAffiliateRequest: db.query(
+    "DELETE FROM affiliate_requests WHERE requester_id = ? AND target_id = ?"
+  ),
+  insertAffiliateRequest: db.query(
+    "INSERT INTO affiliate_requests (id, requester_id, target_id) VALUES (?, ?, ?)"
+  ),
+  updateAffiliateRequestStatus: db.query(
+    "UPDATE affiliate_requests SET status = ?, responded_at = datetime('now', 'utc') WHERE id = ?"
+  ),
+  setUserAffiliate: db.query(
+    "UPDATE users SET affiliate = ?, affiliate_with = ? WHERE id = ?"
+  ),
   // Emoji management
   createEmoji: db.query(
     "INSERT INTO emojis (id, name, file_hash, file_url, created_by) VALUES (?, ?, ?, ?, ?)"
@@ -397,9 +453,168 @@ export default new Elysia({ prefix: "/admin" })
         verified: t.Optional(t.Boolean()),
         gold: t.Optional(t.Boolean()),
         admin: t.Optional(t.Boolean()),
+        cloneAffiliate: t.Optional(t.Boolean()),
       }),
-    }
-  )
+    })
+
+      .post(
+        "/users/:id/affiliate-requests",
+        async ({ params, body, user: moderator }) => {
+          const targetUsername = body.target_username?.trim();
+          if (!targetUsername) {
+            return { error: "Target username required" };
+          }
+
+          let requester = adminQueries.findUserById.get(params.id);
+          if (!requester) {
+            requester = adminQueries.findUserByUsername.get(params.id);
+          }
+
+          if (!requester) {
+            return { error: "User not found" };
+          }
+
+          const targetUser =
+            adminQueries.findUserByUsername.get(targetUsername);
+          if (!targetUser) {
+            return { error: "Target user not found" };
+          }
+
+          if (targetUser.id === requester.id) {
+            return {
+              error: "Cannot create affiliate relationship with the same user",
+            };
+          }
+
+          const existing = db
+            .query(
+              "SELECT * FROM affiliate_requests WHERE requester_id = ? AND target_id = ?"
+            )
+            .get(requester.id, targetUser.id);
+
+          if (existing) {
+            if (existing.status === "pending") {
+              return { error: "Affiliate request already pending" };
+            }
+            if (existing.status === "approved") {
+              return { error: "Affiliate request already approved" };
+            }
+            adminQueries.deleteAffiliateRequest.run(
+              requester.id,
+              targetUser.id
+            );
+          }
+
+          const requestId = Bun.randomUUIDv7();
+          adminQueries.insertAffiliateRequest.run(
+            requestId,
+            requester.id,
+            targetUser.id
+          );
+
+          addNotification(
+            targetUser.id,
+            "affiliate_request",
+            `@${requester.username} requested you to become an affiliate`,
+            `affiliate_request:${requestId}`,
+            requester.id,
+            requester.username,
+            requester.name || requester.username
+          );
+
+          logModerationAction(
+            moderator.id,
+            "send_affiliate_request",
+            "affiliate_request",
+            requestId,
+            {
+              requester: requester.username,
+              target: targetUser.username,
+            }
+          );
+
+          return { success: true, id: requestId };
+        },
+        {
+          body: t.Object({
+            target_username: t.String(),
+          }),
+        }
+      )
+
+      .post(
+        "/affiliate-requests/:id/approve",
+        async ({ params, user: moderator }) => {
+          const request = adminQueries.getAffiliateRequestById.get(params.id);
+          if (!request) {
+            return { error: "Affiliate request not found" };
+          }
+
+          adminQueries.updateAffiliateRequestStatus.run("approved", params.id);
+          adminQueries.setUserAffiliate.run(
+            1,
+            request.requester_id,
+            request.target_id
+          );
+
+          const requester = adminQueries.findUserById.get(request.requester_id);
+          const targetUser = adminQueries.findUserById.get(request.target_id);
+
+          if (requester && targetUser) {
+            addNotification(
+              requester.id,
+              "affiliate_approved",
+              `@${targetUser.username} accepted your affiliate request`,
+              targetUser.username,
+              targetUser.id,
+              targetUser.username,
+              targetUser.name || targetUser.username
+            );
+          }
+
+          logModerationAction(
+            moderator.id,
+            "force_accept_affiliate",
+            "affiliate_request",
+            params.id,
+            {
+              requester: requester?.username,
+              target: targetUser?.username,
+            }
+          );
+
+          return { success: true };
+        }
+      )
+
+      .post(
+        "/affiliate-requests/:id/deny",
+        async ({ params, user: moderator }) => {
+          const request = adminQueries.getAffiliateRequestById.get(params.id);
+          if (!request) {
+            return { error: "Affiliate request not found" };
+          }
+
+          adminQueries.updateAffiliateRequestStatus.run("denied", params.id);
+
+          const requester = adminQueries.findUserById.get(request.requester_id);
+          const targetUser = adminQueries.findUserById.get(request.target_id);
+
+          logModerationAction(
+            moderator.id,
+            "force_reject_affiliate",
+            "affiliate_request",
+            params.id,
+            {
+              requester: requester?.username,
+              target: targetUser?.username,
+            }
+          );
+
+          return { success: true };
+        }
+      )
+
 
   .get("/users/:id", async ({ params }) => {
     const user = adminQueries.getUserWithDetails.get(params.id);
@@ -418,11 +633,53 @@ export default new Elysia({ prefix: "/admin" })
 
     const recentPosts = adminQueries.getUserRecentPosts.all(params.id);
     const suspensions = adminQueries.getUserSuspensions.all(params.id);
+    const incomingAffiliateRequestsRaw =
+      adminQueries.getAffiliateRequestsForTarget.all(params.id);
+    const outgoingAffiliateRequestsRaw =
+      adminQueries.getAffiliateRequestsForRequester.all(params.id);
+    const managedAffiliates = adminQueries.getAffiliatesForUser.all(params.id);
+
+    const incomingAffiliateRequests = incomingAffiliateRequestsRaw.map(
+      (request) => ({
+        id: request.id,
+        status: request.status,
+        created_at: request.created_at,
+        responded_at: request.responded_at,
+        requester_id: request.requester_id,
+        requester_username: request.requester_username,
+        requester_name: request.requester_name,
+        requester_avatar: request.requester_avatar,
+        requester_verified: request.requester_verified,
+        requester_gold: request.requester_gold,
+        target_id: request.target_id,
+      })
+    );
+
+    const outgoingAffiliateRequests = outgoingAffiliateRequestsRaw.map(
+      (request) => ({
+        id: request.id,
+        status: request.status,
+        created_at: request.created_at,
+        responded_at: request.responded_at,
+        requester_id: request.requester_id,
+        target_id: request.target_id,
+        target_username: request.target_username,
+        target_name: request.target_name,
+        target_avatar: request.target_avatar,
+        target_verified: request.target_verified,
+        target_gold: request.target_gold,
+      })
+    );
 
     return {
       user,
       recentPosts,
       suspensions,
+      affiliate: {
+        incoming: incomingAffiliateRequests,
+        outgoing: outgoingAffiliateRequests,
+        managed: managedAffiliates,
+      },
     };
   })
 
@@ -571,6 +828,8 @@ export default new Elysia({ prefix: "/admin" })
         body.cloneCommunities === undefined ? true : !!body.cloneCommunities;
       const cloneMedia =
         body.cloneMedia === undefined ? false : !!body.cloneMedia;
+      const cloneAffiliate =
+        body.cloneAffiliate === undefined ? false : !!body.cloneAffiliate;
 
       if (!username) return { error: "Username is required" };
 
@@ -596,6 +855,18 @@ export default new Elysia({ prefix: "/admin" })
             sourceUser.character_limit || null,
             new Date().toISOString()
           );
+
+          if (
+            cloneAffiliate &&
+            sourceUser.affiliate &&
+            sourceUser.affiliate_with
+          ) {
+            adminQueries.setUserAffiliate.run(
+              1,
+              sourceUser.affiliate_with,
+              newId
+            );
+          }
 
           // Clone real followers (people who follow the source) -> they should follow the new user
           if (cloneRelations) {
@@ -910,6 +1181,7 @@ export default new Elysia({ prefix: "/admin" })
             cloneReactions,
             cloneCommunities,
             cloneMedia,
+            cloneAffiliate,
           },
         });
 
@@ -1802,4 +2074,98 @@ export default new Elysia({ prefix: "/admin" })
       name: e.name,
     });
     return { success: true };
+  })
+
+  .post("/fact-check/:postId", async ({ params, body, user }) => {
+    const { note, severity = "warning" } = body;
+    if (!note || note.trim().length === 0) {
+      return { error: "Note is required" };
+    }
+
+    const post = db
+      .query("SELECT * FROM posts WHERE id = ?")
+      .get(params.postId);
+    if (!post) return { error: "Post not found" };
+
+    const existing = adminQueries.getFactCheck.get(params.postId);
+    if (existing) {
+      return { error: "Fact-check already exists for this post" };
+    }
+
+    const id = Bun.randomUUIDv7();
+    adminQueries.createFactCheck.run(
+      id,
+      params.postId,
+      user.id,
+      note.trim(),
+      severity
+    );
+
+    const interactedUsers = adminQueries.getPostInteractions.all(
+      params.postId,
+      params.postId,
+      params.postId,
+      params.postId,
+      params.postId
+    );
+
+    for (const { user_id } of interactedUsers) {
+      if (user_id !== post.user_id && user_id !== user.id) {
+        addNotification(
+          user_id,
+          "fact_check",
+          `A post you interacted with has been fact-checked by admins`,
+          params.postId,
+          user.id,
+          user.username,
+          user.name || user.username
+        );
+      }
+    }
+
+    if (post.user_id !== user.id) {
+      addNotification(
+        post.user_id,
+        "fact_check",
+        `Admins added a fact-check to your post`,
+        params.postId,
+        user.id,
+        user.username,
+        user.name || user.username
+      );
+    }
+
+    logModerationAction(user.id, "add_fact_check", "post", params.postId, {
+      note,
+      severity,
+    });
+
+    return {
+      success: true,
+      factCheck: { id, post_id: params.postId, note, severity },
+    };
+  })
+
+  .delete("/fact-check/:id", async ({ params, user }) => {
+    const factCheck = db
+      .query("SELECT * FROM fact_checks WHERE id = ?")
+      .get(params.id);
+    if (!factCheck) return { error: "Fact-check not found" };
+
+    adminQueries.deleteFactCheck.run(params.id);
+
+    logModerationAction(
+      user.id,
+      "remove_fact_check",
+      "post",
+      factCheck.post_id,
+      {}
+    );
+
+    return { success: true };
+  })
+
+  .get("/fact-check/:postId", async ({ params }) => {
+    const factCheck = adminQueries.getFactCheck.get(params.postId);
+    return { factCheck };
   });

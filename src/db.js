@@ -508,4 +508,20 @@ CREATE TABLE IF NOT EXISTS emojis (
 CREATE INDEX IF NOT EXISTS idx_emojis_name ON emojis(name);
 `);
 
+db.exec(`
+CREATE TABLE IF NOT EXISTS fact_checks (
+  id TEXT PRIMARY KEY,
+  post_id TEXT NOT NULL,
+  created_by TEXT NOT NULL,
+  note TEXT NOT NULL,
+  severity TEXT DEFAULT 'warning',
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_fact_checks_post_id ON fact_checks(post_id);
+CREATE INDEX IF NOT EXISTS idx_fact_checks_created_by ON fact_checks(created_by);
+`);
+
 export default db;
