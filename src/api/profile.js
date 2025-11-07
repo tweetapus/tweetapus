@@ -737,7 +737,6 @@ export default new Elysia({ prefix: "/profile" })
 
       return { success: true, requestSent: true };
     } else {
-      // Public account - follow immediately
       const followId = Bun.randomUUIDv7();
       addFollow.run(followId, currentUser.id, targetUser.id);
 

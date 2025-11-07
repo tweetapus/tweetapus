@@ -54,7 +54,6 @@ body {
   display: none !important;
 }
 
-/* Hide interactive action buttons on suspended profiles */
 #profileContainer.suspended #followBtn,
 #profileContainer.suspended #profileDmBtn,
 #profileContainer.suspended #editProfileBtn,
@@ -62,7 +61,6 @@ body {
   display: none !important;
 }
 
-/* Suspension notice styling */
 #profileSuspendedNotice {
   display: none;
   padding: 16px;
@@ -408,7 +406,7 @@ nav {
 }
 
 .compose-tweet {
-  margin-bottom: 24px; /* Tr Happies */
+  margin-bottom: 24px;
   width: 100%;
   border-bottom: 1px solid var(--border-primary);
   padding-bottom: 12px;
@@ -693,7 +691,6 @@ nav {
   }
 }
 
-/* Attachment Preview Styles */
 #attachment-preview {
   display: flex;
   flex-wrap: wrap;
@@ -846,7 +843,6 @@ nav {
       cursor: pointer;
       overflow: hidden;
       border-radius: 8px;
-      /* removed scale hover to avoid distracting motion; keep subtle focus via outline */
       transition: box-shadow 0.12s;
 
       &:hover {
@@ -1405,7 +1401,6 @@ nav {
     border-radius: 12px;
     overflow: hidden;
     border: 1px solid var(--border-primary);
-    /* reduce shadow for a cleaner, flatter look */
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 
     .tweet-attachment {
@@ -1775,7 +1770,6 @@ nav {
 
   .profile-banner {
     height: 200px;
-    /* use neutral surface color instead of a bright gradient for a cleaner look */
     background-color: var(--bg-secondary);
     margin-left: -24px;
     margin-right: -24px;
@@ -1794,7 +1788,8 @@ nav {
       height: 100px;
       border-radius: 50%;
       margin-top: -50px;
-      margin-left: 0px;
+      margin-left: -3px;
+            border: 3px solid var(--bg-primary);
     }
 
     .profile-actions {
@@ -1884,7 +1879,6 @@ nav {
           height: 36px;
           padding: 0;
           transition: transform 0.2s, opacity 0.2s;
-          /* Tr Happies don't let the cursor be stuck it unfortunately will be stuck soon NOOOOOOOOOOOOOOOOOOOO*/
           &:hover {
             opacity: 0.7;
           }
@@ -1978,7 +1972,6 @@ nav {
     }
   }
 
-  /* Blocked-by-profile banner */
   .profile-block-banner {
     display: none;
     align-items: center;
@@ -2107,7 +2100,6 @@ nav {
   }
 }
 
-/* Suspended account notice */
 .profile-suspended {
   display: none;
   align-items: flex-start;
@@ -2128,17 +2120,14 @@ nav {
   font-size: 13px;
 }
 
-/* Suspended avatar fallback styling: ensure it appears as a gray circle */
 #profileAvatar {
   background-color: transparent;
 }
 
-/* When JS sets a suspended avatar background color, this ensures the image fits */
 #profileAvatar[suspended] {
   background-color: var(--suspended-avatar-bg, #bdbdbd);
 }
 
-/* When the JS marks the avatar as suspended via data attribute, show a pure gray circle */
 #profileAvatar[data-suspended="true"] {
   background-image: none !important;
   background-color: var(--suspended-avatar-bg, #bdbdbd) !important;
@@ -2819,9 +2808,6 @@ nav {
     border-color: var(--border-primary);
   }
 
-  /* Previous visual override for gold avatars removed. Avatar-radius scaling
-       is handled in JS so user-configured pixel radii scale proportionally
-       across avatar sizes (profile vs smaller contexts). */
 
   &.active {
     transform: scale(0.98);
@@ -2891,7 +2877,6 @@ nav {
   }
 }
 
-/* Reaction button wrapper and count */
 .reaction-wrapper {
   display: inline-flex !important;
   align-items: center;
@@ -2919,7 +2904,6 @@ nav {
   }
 }
 
-/* Reactions modal */
 .reactions-modal {
   .reactions-list {
     display: flex;
@@ -3171,36 +3155,35 @@ nav {
   }
 
   &.reaction-icon {
-    color: #8a3ffc; /* purple for reactions */
+    color: #8a3ffc;
   }
 
-  /* Community related notification colors */
   &.community-join-request-icon {
-    color: #ff8c42; /* orange - request */
+    color: #ff8c42;
   }
 
   &.community-join-approved-icon {
-    color: #00ba7c; /* green - approved */
+    color: #00ba7c;
   }
 
   &.community-join-rejected-icon {
-    color: #ff4d4f; /* red - rejected */
+    color: #ff4d4f;
   }
 
   &.community-role-change-icon {
-    color: #0aa3b5; /* teal - role change */
+    color: #0aa3b5;
   }
 
   &.community-ban-icon {
-    color: #c0392b; /* darker red - ban */
+    color: #c0392b;
   }
 
   &.community-unban-icon {
-    color: #7dd36e; /* light green - unban */
+    color: #7dd36e;
   }
 
   &.default-icon {
-    color: #6c757d; /* neutral gray for unknown types */
+    color: #6c757d;
   }
 
   svg {
@@ -3602,7 +3585,7 @@ nav {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 12px; /* increased clickable area */
+  padding: 12px 12px;
   border-bottom: 1px solid var(--border-primary);
   cursor: pointer;
   text-decoration: none;
@@ -3686,7 +3669,7 @@ nav {
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: none; /* clean, flat badge */
+      box-shadow: none;
     }
   }
 }
@@ -3767,7 +3750,7 @@ nav {
 .dm-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 16px; /* a bit more padding for breathing room */
+  padding: 20px 16px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -3804,7 +3787,7 @@ nav {
         color: var(--primary-fg);
         padding: 10px 14px;
         border-radius: 18px;
-        border-bottom-right-radius: 8px; /* gentler corner */
+        border-bottom-right-radius: 8px;
       }
     }
 
@@ -3824,7 +3807,7 @@ nav {
         color: var(--text-primary);
         padding: 10px 14px;
         border-radius: 18px;
-        border-bottom-left-radius: 8px; /* consistent rounding */
+        border-bottom-left-radius: 8px;
       }
     }
   }
@@ -4503,7 +4486,6 @@ nav {
   }
 }
 
-/* Group Chat Styles */
 .group-chat-options {
   margin-top: 16px;
   padding-top: 16px;
@@ -4634,7 +4616,6 @@ nav {
   }
 }
 
-/* Group Settings Modal */
 .group-settings-modal {
   position: fixed;
   top: 0;
@@ -4836,7 +4817,6 @@ nav {
   }
 }
 
-/* Add Participant Modal - reuse styles from other modals */
 .add-participant-modal {
   position: fixed;
   top: 0;
@@ -5687,7 +5667,6 @@ nav {
 .community-banner {
   width: 100%;
   height: 100px;
-  /* use a neutral solid background instead of a gradient; allow inline images to show */
   background-color: var(--bg-secondary);
   background-size: cover;
   background-position: center;
@@ -5885,7 +5864,6 @@ nav {
 
 .community-detail-banner {
   width: 100%;
-  /* neutral fallback background instead of a gradient */
   background-color: var(--bg-secondary);
   background-size: cover;
   background-position: center;
@@ -5893,8 +5871,6 @@ nav {
 
 .community-detail-content {
   flex: 1;
-  /* Let the root page handle scrolling instead of creating an inner scroll
-     area, this prevents cramped scrollbars near tweet items */
   overflow: visible;
   max-height: none;
   display: flex;
@@ -5938,8 +5914,6 @@ nav {
   padding: 0;
 }
 
-/* Ensure community detail area doesn't overflow the main column and uses box-sizing
-   so padding doesn't create unexpected scrollbars when children are full-width */
 .community-detail-content,
 .community-detail-tab-content,
 .community-detail-banner {
@@ -5948,10 +5922,7 @@ nav {
   overflow-x: hidden;
 }
 
-/* Tweak compose-tweet specifically when rendered inside community tabs so it
-   follows the site's spacing and doesn't create vertical/horizontal scrollbars */
 .community-detail-tab-content .compose-tweet {
-  /* Give the composer more breathing room when inside a community detail */
   margin: 0 0 18px 0;
   padding: 12px 14px;
   border-bottom: 1px solid var(--border-primary);
@@ -5961,8 +5932,6 @@ nav {
   background: var(--bg-primary);
 }
 
-/* Remove the focus ring for the tweet textarea inside community detail (the
-   global focus styling is useful elsewhere but the green ring here was unexpected) */
 .community-detail-tab-content textarea:focus,
 .community-detail-tab-content .compose-input textarea:focus {
   outline: none !important;
@@ -5970,19 +5939,11 @@ nav {
   border-color: transparent !important;
 }
 
-/* Tweets-tab specific styling: apply only when the Tweets tab is active
-   (the JS toggles `.tab-tweets-active` on `.community-detail-content`).
-   - Hide any horizontal overflow
-   - Provide a subtle custom vertical scrollbar
-   - Ensure children don't force a horizontal scrollbar
-*/
 .community-detail-content.tab-tweets-active .community-detail-tab-content {
   overflow-x: hidden;
-  /* give a small inset so content doesn't butt up against the custom scrollbar */
   padding-right: 12px;
 }
 
-/* WebKit / Blink custom scrollbar */
 .community-detail-content.tab-tweets-active
   .community-detail-tab-content::-webkit-scrollbar {
   width: 12px;
@@ -5995,27 +5956,21 @@ nav {
   .community-detail-tab-content::-webkit-scrollbar-thumb {
   background-color: rgba(100, 100, 100, 0.18);
   border-radius: 8px;
-  border: 3px solid transparent; /* creates padding around thumb */
+  border: 3px solid transparent;
   background-clip: padding-box;
 }
 
-/* Firefox scrollbar styling */
 .community-detail-content.tab-tweets-active .community-detail-tab-content {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 100, 100, 0.18) transparent;
 }
 
-/* Prevent children from forcing horizontal scroll while Tweets is active */
 .community-detail-content.tab-tweets-active .community-detail-tab-content > * {
   max-width: 100%;
   box-sizing: border-box;
   overflow-wrap: anywhere;
 }
 
-/* When Tweets tab is active and there's no composer, give the tweets area
-   some extra breathing room so content doesn't feel cramped. We add a
-   container-level class `tweets-no-composer` from JS when appropriate.
-*/
 .community-detail-content.tab-tweets-active.tweets-no-composer
   .community-detail-tab-content {
   padding: 20px 16px;
@@ -6027,8 +5982,6 @@ nav {
   padding-top: 8px;
 }
 
-/* Force community actions into a horizontal layout and keep them on the right
-   of the header; prevent buttons from stretching vertically */
 .community-detail-header .community-actions {
   margin-left: auto;
   display: flex;
@@ -6039,14 +5992,12 @@ nav {
   white-space: nowrap;
 }
 
-/* Make sure buttons in community-actions don't grow to full width */
 .community-detail-header .community-actions button {
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
 }
 
-/* Style for the community-only checkbox area added by the composer */
 .community-only-container {
   padding: 12px 16px;
   border-top: 1px solid var(--border-primary);
@@ -6897,7 +6848,6 @@ emoji-picker.emoji-picker-popup {
   display: flex;
   align-items: center;
   gap: 8px;
-  /* ensure the arrow is pushed to the far right */
   justify-content: space-between;
   min-width: 100px;
   transition: all 0.2s;
@@ -7107,7 +7057,6 @@ emoji-picker.emoji-picker-popup {
   margin-top: 24px;
 }
 
-/* Make buttons inside setting-control span full width but keep a sane max */
 .setting-control .btn {
   width: 100%;
   max-width: 100%;
@@ -7193,7 +7142,7 @@ emoji-picker.emoji-picker-popup {
 
   .setting-item {
     flex-direction: column;
-    gap: 16px; /* increase spacing to avoid crowding/overlap on small screens */
+    gap: 16px;
   }
 
   .setting-item.setting-item-inline {
@@ -7225,8 +7174,6 @@ emoji-picker.emoji-picker-popup {
   }
 
   .color-presets {
-    /* Use flex-wrap instead of grid here to avoid forcing parent widths
-       which can push .setting-description (labels) to wrap on small screens. */
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
