@@ -187,6 +187,14 @@ const getUserById = db.query(
   `SELECT id, username, name, avatar, verified, gold, avatar_radius FROM users WHERE id = ?`
 );
 
+const getFactCheckForPost = db.query(`
+  SELECT fc.*, u.username as admin_username, u.name as admin_name
+  FROM fact_checks fc
+  JOIN users u ON fc.created_by = u.id
+  WHERE fc.post_id = ?
+  LIMIT 1
+`);
+
 const getPendingAffiliateRequests = db.query(`
   SELECT ar.*, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius, u.bio
   FROM affiliate_requests ar
@@ -517,6 +525,7 @@ export default new Elysia({ prefix: "/profile" })
           attachments: getPostAttachments(post.id),
           liked_by_user: false, // Will be set below
           retweeted_by_user: false, // Will be set below
+          fact_check: getFactCheckForPost.get(post.id) || null,
         }));
 
         processedReplies = replies.map((reply) => ({
@@ -534,6 +543,7 @@ export default new Elysia({ prefix: "/profile" })
           attachments: getPostAttachments(reply.id),
           liked_by_user: false,
           retweeted_by_user: false,
+          fact_check: getFactCheckForPost.get(reply.id) || null,
         }));
       }
 
@@ -652,6 +662,7 @@ export default new Elysia({ prefix: "/profile" })
           attachments: getPostAttachments(reply.id),
           liked_by_user: false,
           retweeted_by_user: false,
+          fact_check: getFactCheckForPost.get(reply.id) || null,
         }));
 
         if (currentUserId && replies.length > 0) {
@@ -729,6 +740,7 @@ export default new Elysia({ prefix: "/profile" })
           avatar_radius: post.avatar_radius || null,
         },
         attachments: getPostAttachments(post.id),
+        fact_check: getFactCheckForPost.get(post.id) || null,
       }));
 
       return {

@@ -1442,269 +1442,264 @@ export default new Elysia({ prefix: "/admin" })
         }
       }
 
-      try {
-        db.transaction(() => {
-          const changes = {};
-          if (body.username && body.username !== user.username)
-            changes.username = { old: user.username, new: body.username };
-          if (body.name !== undefined && body.name !== user.name)
-            changes.name = { old: user.name, new: body.name };
-          if (body.bio !== undefined && body.bio !== user.bio)
-            changes.bio = {
-              old: user.bio?.substring(0, 50),
-              new: body.bio?.substring(0, 50),
-            };
-          if (body.verified !== undefined && body.verified !== user.verified)
-            changes.verified = { old: user.verified, new: body.verified };
-          if (body.gold !== undefined && body.gold !== user.gold)
-            changes.gold = { old: user.gold, new: body.gold };
-          if (body.admin !== undefined && body.admin !== user.admin)
-            changes.admin = { old: user.admin, new: body.admin };
+      const changes = {};
+      if (body.username && body.username !== user.username)
+        changes.username = { old: user.username, new: body.username };
+      if (body.name !== undefined && body.name !== user.name)
+        changes.name = { old: user.name, new: body.name };
+      if (body.bio !== undefined && body.bio !== user.bio)
+        changes.bio = {
+          old: user.bio?.substring(0, 50),
+          new: body.bio?.substring(0, 50),
+        };
+      if (body.verified !== undefined && body.verified !== user.verified)
+        changes.verified = { old: user.verified, new: body.verified };
+      if (body.gold !== undefined && body.gold !== user.gold)
+        changes.gold = { old: user.gold, new: body.gold };
+      if (body.admin !== undefined && body.admin !== user.admin)
+        changes.admin = { old: user.admin, new: body.admin };
 
-          let affiliateWith = user.affiliate_with;
-          if (
-            body.affiliate !== undefined &&
-            body.affiliate !== user.affiliate
-          ) {
-            changes.affiliate = { old: user.affiliate, new: body.affiliate };
-          }
-
-          if (body.affiliate && body.affiliate_with_username) {
-            const affiliateUser = db
-              .query("SELECT id FROM users WHERE username = ?")
-              .get(body.affiliate_with_username);
-            if (affiliateUser) {
-              affiliateWith = affiliateUser.id;
-              if (affiliateWith !== user.affiliate_with) {
-                changes.affiliate_with = {
-                  old: user.affiliate_with,
-                  new: affiliateWith,
-                };
-              }
-            }
-          } else if (!body.affiliate) {
-            affiliateWith = null;
-            if (user.affiliate_with !== null) {
-              changes.affiliate_with = { old: user.affiliate_with, new: null };
-            }
-          }
-
-          if (body.ghost_followers !== undefined) {
-            const currentGhostFollowers = db
-              .query(
-                "SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ?"
-              )
-              .get(params.id).count;
-
-            if (body.ghost_followers !== currentGhostFollowers) {
-              const diff = body.ghost_followers - currentGhostFollowers;
-
-              if (diff > 0) {
-                for (let i = 0; i < diff; i++) {
-                  const ghostId = Bun.randomUUIDv7();
-                  db.query(
-                    "INSERT INTO ghost_follows (id, follower_type, target_id) VALUES (?, 'follower', ?)"
-                  ).run(ghostId, params.id);
-                }
-              } else if (diff < 0) {
-                const toRemove = Math.abs(diff);
-                const ghostFollowers = db
-                  .query(
-                    "SELECT id FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ? LIMIT ?"
-                  )
-                  .all(params.id, toRemove);
-                for (const ghost of ghostFollowers) {
-                  db.query("DELETE FROM ghost_follows WHERE id = ?").run(
-                    ghost.id
-                  );
-                }
-              }
-
-              changes.ghost_followers = {
-                old: currentGhostFollowers,
-                new: body.ghost_followers,
-              };
-            }
-          }
-
-          if (body.ghost_following !== undefined) {
-            const currentGhostFollowing = db
-              .query(
-                "SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'following' AND target_id = ?"
-              )
-              .get(params.id).count;
-
-            if (body.ghost_following !== currentGhostFollowing) {
-              const diff = body.ghost_following - currentGhostFollowing;
-
-              if (diff > 0) {
-                for (let i = 0; i < diff; i++) {
-                  const ghostId = Bun.randomUUIDv7();
-                  db.query(
-                    "INSERT INTO ghost_follows (id, follower_type, target_id) VALUES (?, 'following', ?)"
-                  ).run(ghostId, params.id);
-                }
-              } else if (diff < 0) {
-                const toRemove = Math.abs(diff);
-                const ghostFollowing = db
-                  .query(
-                    "SELECT id FROM ghost_follows WHERE follower_type = 'following' AND target_id = ? LIMIT ?"
-                  )
-                  .all(params.id, toRemove);
-                for (const ghost of ghostFollowing) {
-                  db.query("DELETE FROM ghost_follows WHERE id = ?").run(
-                    ghost.id
-                  );
-                }
-              }
-
-              changes.ghost_following = {
-                old: currentGhostFollowing,
-                new: body.ghost_following,
-              };
-            }
-          }
-
-          if (
-            body.character_limit !== undefined &&
-            body.character_limit !== user.character_limit
-          )
-            changes.character_limit = {
-              old: user.character_limit,
-              new: body.character_limit,
-            };
-
-          if (
-            body.force_follow_usernames &&
-            Array.isArray(body.force_follow_usernames)
-          ) {
-            const followedUsers = [];
-            const pendingUsers = [];
-            const failedUsers = [];
-
-            for (const username of body.force_follow_usernames) {
-              const targetUser = db
-                .query("SELECT id FROM users WHERE username = ?")
-                .get(username);
-
-              if (!targetUser) {
-                const forcedId = Bun.randomUUIDv7();
-                db.query(
-                  "INSERT INTO forced_follows (id, follower_id, following_id) VALUES (?, ?, ?)"
-                ).run(forcedId, params.id, username);
-                pendingUsers.push(username);
-                continue;
-              }
-
-              if (targetUser.id === params.id) {
-                failedUsers.push(`${username} (cannot follow self)`);
-                continue;
-              }
-
-              const blocked = db
-                .query(
-                  "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)"
-                )
-                .get(params.id, targetUser.id, targetUser.id, params.id);
-
-              if (blocked) {
-                failedUsers.push(`${username} (blocked)`);
-                continue;
-              }
-
-              const existing = db
-                .query(
-                  "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?"
-                )
-                .get(targetUser.id, params.id);
-
-              if (!existing) {
-                const followId = Bun.randomUUIDv7();
-                db.query(
-                  "INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)"
-                ).run(followId, targetUser.id, params.id);
-                followedUsers.push(username);
-              }
-            }
-
-            if (followedUsers.length > 0 || pendingUsers.length > 0) {
-              changes.forced_follows = {
-                added: followedUsers.length > 0 ? followedUsers : undefined,
-                pending: pendingUsers.length > 0 ? pendingUsers : undefined,
-                failed: failedUsers.length > 0 ? failedUsers : undefined,
-              };
-            }
-          }
-
-          let newVerified =
-            body.verified !== undefined
-              ? body.verified
-                ? 1
-                : 0
-              : user.verified
-              ? 1
-              : 0;
-          let newGold =
-            body.gold !== undefined ? (body.gold ? 1 : 0) : user.gold ? 1 : 0;
-          if (newGold) newVerified = 0;
-          if (newVerified) newGold = 0;
-
-          let newUserCreatedAt = user.created_at;
-          if (body.created_at !== undefined) {
-            try {
-              const parsed = new Date(body.created_at);
-              if (Number.isNaN(parsed.getTime()))
-                throw new Error("Invalid date");
-              newUserCreatedAt = parsed.toISOString();
-              if (newUserCreatedAt !== user.created_at) {
-                changes.created_at = {
-                  old: user.created_at,
-                  new: newUserCreatedAt,
-                };
-              }
-            } catch (_err) {
-              throw new Error("Invalid created_at value");
-            }
-          }
-
-          db.query(
-            "UPDATE users SET username = ?, name = ?, bio = ?, verified = ?, admin = ?, gold = ?, affiliate = ?, affiliate_with = ?, character_limit = ?, created_at = ? WHERE id = ?"
-          ).run(
-            body.username || user.username,
-            body.name !== undefined ? body.name : user.name,
-            body.bio !== undefined ? body.bio : user.bio,
-            newVerified,
-            body.admin !== undefined ? body.admin : user.admin,
-            newGold,
-            body.affiliate !== undefined
-              ? body.affiliate
-                ? 1
-                : 0
-              : user.affiliate
-              ? 1
-              : 0,
-            affiliateWith,
-            body.character_limit !== undefined
-              ? body.character_limit
-              : user.character_limit,
-            newUserCreatedAt,
-            params.id
-          );
-
-          logModerationAction(
-            moderator.id,
-            "edit_user_profile",
-            "user",
-            params.id,
-            { username: user.username, changes }
-          );
-        })();
-
-        return { success: true };
-      } catch (error) {
-        console.error("Failed to update user profile:", error);
-        return { error: error.message || "Failed to update user profile" };
+      let affiliateWith = user.affiliate_with;
+      if (body.affiliate !== undefined && body.affiliate !== user.affiliate) {
+        changes.affiliate = { old: user.affiliate, new: body.affiliate };
       }
+
+      if (body.affiliate && body.affiliate_with_username) {
+        const affiliateUser = db
+          .query("SELECT id FROM users WHERE username = ?")
+          .get(body.affiliate_with_username);
+        if (affiliateUser) {
+          affiliateWith = affiliateUser.id;
+          if (affiliateWith !== user.affiliate_with) {
+            changes.affiliate_with = {
+              old: user.affiliate_with,
+              new: affiliateWith,
+            };
+          }
+        }
+      } else if (!body.affiliate) {
+        affiliateWith = null;
+        if (user.affiliate_with !== null) {
+          changes.affiliate_with = { old: user.affiliate_with, new: null };
+        }
+      }
+
+      if (body.ghost_followers !== undefined) {
+        const currentGhostFollowers = db
+          .query(
+            "SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ?"
+          )
+          .get(params.id).count;
+
+        if (body.ghost_followers !== currentGhostFollowers) {
+          const diff = body.ghost_followers - currentGhostFollowers;
+
+          if (diff > 0) {
+            const values = [];
+            for (let i = 0; i < diff; i++) {
+              values.push(
+                `('${Bun.randomUUIDv7()}', 'follower', '${params.id}')`
+              );
+            }
+            if (values.length > 0) {
+              db.exec(
+                `INSERT INTO ghost_follows (id, follower_type, target_id) VALUES ${values.join(
+                  ","
+                )}`
+              );
+            }
+          } else if (diff < 0) {
+            const toRemove = Math.abs(diff);
+            db.exec(
+              `DELETE FROM ghost_follows WHERE id IN (SELECT id FROM ghost_follows WHERE follower_type = 'follower' AND target_id = '${params.id}' LIMIT ${toRemove})`
+            );
+          }
+
+          changes.ghost_followers = {
+            old: currentGhostFollowers,
+            new: body.ghost_followers,
+          };
+        }
+      }
+
+      if (body.ghost_following !== undefined) {
+        const currentGhostFollowing = db
+          .query(
+            "SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'following' AND target_id = ?"
+          )
+          .get(params.id).count;
+
+        if (body.ghost_following !== currentGhostFollowing) {
+          const diff = body.ghost_following - currentGhostFollowing;
+
+          if (diff > 0) {
+            const values = [];
+            for (let i = 0; i < diff; i++) {
+              values.push(
+                `('${Bun.randomUUIDv7()}', 'following', '${params.id}')`
+              );
+            }
+            if (values.length > 0) {
+              db.exec(
+                `INSERT INTO ghost_follows (id, follower_type, target_id) VALUES ${values.join(
+                  ","
+                )}`
+              );
+            }
+          } else if (diff < 0) {
+            const toRemove = Math.abs(diff);
+            db.exec(
+              `DELETE FROM ghost_follows WHERE id IN (SELECT id FROM ghost_follows WHERE follower_type = 'following' AND target_id = '${params.id}' LIMIT ${toRemove})`
+            );
+          }
+
+          changes.ghost_following = {
+            old: currentGhostFollowing,
+            new: body.ghost_following,
+          };
+        }
+      }
+
+      if (
+        body.character_limit !== undefined &&
+        body.character_limit !== user.character_limit
+      )
+        changes.character_limit = {
+          old: user.character_limit,
+          new: body.character_limit,
+        };
+
+      if (
+        body.force_follow_usernames &&
+        Array.isArray(body.force_follow_usernames)
+      ) {
+        const followedUsers = [];
+        const pendingUsers = [];
+        const failedUsers = [];
+
+        for (const username of body.force_follow_usernames) {
+          const targetUser = db
+            .query("SELECT id FROM users WHERE username = ?")
+            .get(username);
+
+          if (!targetUser) {
+            const forcedId = Bun.randomUUIDv7();
+            db.query(
+              "INSERT INTO forced_follows (id, follower_id, following_id) VALUES (?, ?, ?)"
+            ).run(forcedId, params.id, username);
+            pendingUsers.push(username);
+            continue;
+          }
+
+          if (targetUser.id === params.id) {
+            failedUsers.push(`${username} (cannot follow self)`);
+            continue;
+          }
+
+          const blocked = db
+            .query(
+              "SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)"
+            )
+            .get(params.id, targetUser.id, targetUser.id, params.id);
+
+          if (blocked) {
+            failedUsers.push(`${username} (blocked)`);
+            continue;
+          }
+
+          const existing = db
+            .query(
+              "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?"
+            )
+            .get(targetUser.id, params.id);
+
+          if (!existing) {
+            const followId = Bun.randomUUIDv7();
+            db.query(
+              "INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)"
+            ).run(followId, targetUser.id, params.id);
+            followedUsers.push(username);
+          }
+        }
+
+        if (followedUsers.length > 0 || pendingUsers.length > 0) {
+          changes.forced_follows = {
+            added: followedUsers.length > 0 ? followedUsers : undefined,
+            pending: pendingUsers.length > 0 ? pendingUsers : undefined,
+            failed: failedUsers.length > 0 ? failedUsers : undefined,
+          };
+        }
+      }
+
+      let newVerified =
+        body.verified !== undefined
+          ? body.verified
+            ? 1
+            : 0
+          : user.verified
+          ? 1
+          : 0;
+      let newGold =
+        body.gold !== undefined ? (body.gold ? 1 : 0) : user.gold ? 1 : 0;
+      if (newGold) newVerified = 0;
+      if (newVerified) newGold = 0;
+
+      let newUserCreatedAt = user.created_at;
+      if (body.created_at !== undefined) {
+        try {
+          const parsed = new Date(body.created_at);
+          if (Number.isNaN(parsed.getTime())) throw new Error("Invalid date");
+          newUserCreatedAt = parsed.toISOString();
+          if (newUserCreatedAt !== user.created_at) {
+            changes.created_at = {
+              old: user.created_at,
+              new: newUserCreatedAt,
+            };
+          }
+        } catch (_err) {
+          return { error: "Invalid created_at value" };
+        }
+      }
+
+      adminQueries.updateUser.run(
+        body.username || user.username,
+        body.name !== undefined ? body.name : user.name,
+        body.bio !== undefined ? body.bio : user.bio,
+        newVerified,
+        body.admin !== undefined ? body.admin : user.admin,
+        newGold,
+        user.follower_count || 0,
+        user.following_count || 0,
+        body.character_limit !== undefined
+          ? body.character_limit
+          : user.character_limit,
+        newUserCreatedAt,
+        params.id
+      );
+
+      db.query(
+        "UPDATE users SET affiliate = ?, affiliate_with = ? WHERE id = ?"
+      ).run(
+        body.affiliate !== undefined
+          ? body.affiliate
+            ? 1
+            : 0
+          : user.affiliate
+          ? 1
+          : 0,
+        affiliateWith,
+        params.id
+      );
+
+      logModerationAction(
+        moderator.id,
+        "edit_user_profile",
+        "user",
+        params.id,
+        { username: user.username, changes }
+      );
+
+      return { success: true };
     },
     {
       body: t.Object({
@@ -2121,7 +2116,7 @@ export default new Elysia({ prefix: "/admin" })
         addNotification(
           user_id,
           "fact_check",
-          `A post you interacted with has been fact-checked by admins`,
+          `has marked a tweet that you have interacted with as misleading`,
           params.postId,
           user.id,
           user.username,

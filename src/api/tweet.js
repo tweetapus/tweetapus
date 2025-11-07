@@ -233,6 +233,14 @@ const getTweetAttachments = (tweetId) => {
   return getAttachmentsByPostId.all(tweetId);
 };
 
+const getFactCheckForPost = db.query(`
+  SELECT fc.*, u.username as admin_username, u.name as admin_name
+  FROM fact_checks fc
+  JOIN users u ON fc.created_by = u.id
+  WHERE fc.post_id = ?
+  LIMIT 1
+`);
+
 const summarizeArticle = (article) => {
   if (!article) return "";
   const trimmedContent = article.content?.trim();
@@ -1045,6 +1053,7 @@ export default new Elysia({ prefix: "/tweets" })
         : null,
       reaction_count: countReactionsForPost.get(post.id)?.total || 0,
       top_reactions: getTopReactionsForPost.all(post.id),
+      fact_check: getFactCheckForPost.get(post.id) || null,
     }));
 
     const processedReplies = replies.map((reply) => ({
@@ -1058,6 +1067,7 @@ export default new Elysia({ prefix: "/tweets" })
       article_preview: reply.article_id
         ? articleMap.get(reply.article_id) || null
         : null,
+      fact_check: getFactCheckForPost.get(reply.id) || null,
     }));
 
     const extendedStats = {
@@ -1083,6 +1093,7 @@ export default new Elysia({ prefix: "/tweets" })
           : null,
         reaction_count: tweetReactionCount,
         top_reactions: tweetTopReactions,
+        fact_check: getFactCheckForPost.get(tweet.id) || null,
       },
       threadPosts: processedThreadPosts,
       replies: processedReplies,
