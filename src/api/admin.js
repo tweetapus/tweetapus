@@ -45,15 +45,15 @@ const adminQueries = {
   ),
 
   getPostsWithUsers: db.query(`
-    SELECT p.*, u.username, u.name, u.avatar, u.verified, u.gold
+    SELECT p.*, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius
     FROM posts p
     JOIN users u ON p.user_id = u.id
-    WHERE p.content LIKE ?
+    WHERE (p.content LIKE ? OR p.article_title LIKE ? OR p.article_body_markdown LIKE ?)
     ORDER BY p.created_at DESC
     LIMIT ? OFFSET ?
   `),
   getPostsCount: db.query(
-    "SELECT COUNT(*) as count FROM posts WHERE content LIKE ?"
+    "SELECT COUNT(*) as count FROM posts WHERE (content LIKE ? OR article_title LIKE ? OR article_body_markdown LIKE ?)"
   ),
 
   getUserStats: db.query(`
@@ -1210,10 +1210,16 @@ export default new Elysia({ prefix: "/admin" })
     const searchPattern = `%${search}%`;
     const posts = adminQueries.getPostsWithUsers.all(
       searchPattern,
+      searchPattern,
+      searchPattern,
       limit,
       offset
     );
-    const totalCount = adminQueries.getPostsCount.get(searchPattern);
+    const totalCount = adminQueries.getPostsCount.get(
+      searchPattern,
+      searchPattern,
+      searchPattern
+    );
 
     return {
       posts,

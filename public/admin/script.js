@@ -1044,7 +1044,11 @@ class AdminPanel {
                 <td>
                   <div style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">
                     ${
-                      post.content.length > 100
+                      post.is_article && post.article_title
+                        ? `<strong>[Article]</strong> ${this.escapeHtml(
+                            post.article_title
+                          )}`
+                        : post.content.length > 100
                         ? post.content
                             .replaceAll("<", "&lt;")
                             .replaceAll(">", "&gt;")
