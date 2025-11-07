@@ -17,7 +17,11 @@ const normalizeContent = (value) => {
 const enrichUsersWithAffiliateProfiles = (users) => {
   users.forEach((user) => {
     if (user.affiliate && user.affiliate_with) {
-      const affiliateProfile = db.query("SELECT id, username, name, avatar, verified, gold, avatar_radius FROM users WHERE id = ?").get(user.affiliate_with);
+      const affiliateProfile = db
+        .query(
+          "SELECT id, username, name, avatar, verified, gold, avatar_radius FROM users WHERE id = ?"
+        )
+        .get(user.affiliate_with);
       if (affiliateProfile) {
         user.affiliate_with_profile = affiliateProfile;
       }
