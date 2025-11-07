@@ -802,7 +802,9 @@ const showEditModal = () => {
   document.getElementById("editLabelAutomated").checked =
     profile.label_automated || false;
 
-  const affiliateRemoveSection = document.getElementById("affiliateRemoveSection");
+  const affiliateRemoveSection = document.getElementById(
+    "affiliateRemoveSection"
+  );
   if (affiliateRemoveSection) {
     if (profile.affiliate && profile.affiliate_with) {
       affiliateRemoveSection.style.display = "block";
@@ -1461,41 +1463,49 @@ editBannerUpload?.addEventListener("change", (e) => {
 
 editRemoveBannerBtn?.addEventListener("click", handleEditBannerRemoval);
 
-document.getElementById("removeAffiliateBtn")?.addEventListener("click", async () => {
-  if (!confirm("Are you sure you want to remove your affiliate badge? This action cannot be undone.")) {
-    return;
-  }
-
-  try {
-    const { success, error } = await query("/profile/remove-affiliate", {
-      method: "DELETE",
-    });
-
-    if (error) {
-      toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
+document
+  .getElementById("removeAffiliateBtn")
+  ?.addEventListener("click", async () => {
+    if (
+      !confirm(
+        "Are you sure you want to remove your affiliate badge? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
-    if (success) {
-      toastQueue.add("<h1>Affiliate badge removed successfully</h1>");
-      
-      if (currentProfile?.profile) {
-        currentProfile.profile.affiliate = false;
-        currentProfile.profile.affiliate_with = null;
-        currentProfile.profile.affiliate_with_profile = null;
+    try {
+      const { success, error } = await query("/profile/remove-affiliate", {
+        method: "DELETE",
+      });
+
+      if (error) {
+        toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
+        return;
       }
-      
-      const affiliateRemoveSection = document.getElementById("affiliateRemoveSection");
-      if (affiliateRemoveSection) {
-        affiliateRemoveSection.style.display = "none";
+
+      if (success) {
+        toastQueue.add("<h1>Affiliate badge removed successfully</h1>");
+
+        if (currentProfile?.profile) {
+          currentProfile.profile.affiliate = false;
+          currentProfile.profile.affiliate_with = null;
+          currentProfile.profile.affiliate_with_profile = null;
+        }
+
+        const affiliateRemoveSection = document.getElementById(
+          "affiliateRemoveSection"
+        );
+        if (affiliateRemoveSection) {
+          affiliateRemoveSection.style.display = "none";
+        }
+
+        renderProfile(currentProfile);
       }
-      
-      renderProfile(currentProfile);
+    } catch (err) {
+      toastQueue.add("<h1>Failed to remove affiliate badge</h1>");
     }
-  } catch (err) {
-    toastQueue.add("<h1>Failed to remove affiliate badge</h1>");
-  }
-});
+  });
 
 document
   .getElementById("profileDropdownBtn")
