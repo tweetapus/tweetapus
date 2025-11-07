@@ -1485,7 +1485,7 @@ document
                         }
                       );
                       if (result?.success) {
-                        if (currentProfile && currentProfile.profile) {
+                        if (currentProfile?.profile) {
                           currentProfile.profile.affiliate = true;
                           currentProfile.profile.affiliate_with_profile = {
                             id: r.requester_id || r.id,

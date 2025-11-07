@@ -1789,7 +1789,7 @@ nav {
       border-radius: 50%;
       margin-top: -50px;
       margin-left: -3px;
-            border: 3px solid var(--bg-primary);
+      border: 3px solid var(--bg-primary);
     }
 
     .profile-actions {
@@ -2079,6 +2079,83 @@ nav {
     flex-direction: column;
     gap: 26px;
     padding-top: 24px;
+  }
+
+  #profileAffiliatesContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 24px 0 0 0;
+  }
+
+  #profileAffiliatesContainer .profile-empty-state {
+    padding: 36px 24px;
+  }
+
+  #profileAffiliatesContainer .profile-empty-state p {
+    max-width: 320px;
+  }
+
+  .profile-affiliate-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-primary);
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    .affiliate-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+
+    .affiliate-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+
+      .affiliate-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .affiliate-username {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .affiliate-bio {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.4;
+        max-width: 420px;
+      }
+    }
+
+    .affiliate-open-btn {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--border-primary);
+      color: var(--text-primary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--text-primary);
+      }
+    }
   }
 
   .profile-empty-state {
@@ -2807,7 +2884,6 @@ nav {
     background-color: var(--bg-overlay-light);
     border-color: var(--border-primary);
   }
-
 
   &.active {
     transform: scale(0.98);
@@ -7394,7 +7470,7 @@ emoji-picker.emoji-picker-popup {
 
 .role-badge.affiliate-with {
   padding: 0px;
-  
+
   img {
     width: 20px;
     height: 20px;

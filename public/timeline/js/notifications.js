@@ -519,7 +519,7 @@ function createNotificationElement(notification) {
                   (notif.actor_name && name === notif.actor_name)
                 );
               });
-              if (found && found.id) resolvedId = found.id;
+              if (found?.id) resolvedId = found.id;
             } catch (err) {
               console.error("Failed to resolve affiliate request id:", err);
             }
@@ -566,7 +566,7 @@ function createNotificationElement(notification) {
                   (notif.actor_name && name === notif.actor_name)
                 );
               });
-              if (found && found.id) resolvedId = found.id;
+              if (found?.id) resolvedId = found.id;
             } catch (err) {
               console.error("Failed to resolve affiliate request id:", err);
             }

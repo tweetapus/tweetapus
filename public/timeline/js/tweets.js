@@ -297,24 +297,6 @@ DOMPurify.addHook("uponSanitizeElement", (node, data) => {
   node.parentNode.replaceChild(textNode, node);
 });
 
-// Cache per-author block status to avoid repeated network calls when rendering timelines
-const authorBlockCache = new Map();
-
-const checkAuthorBlockedByProfile = async (username) => {
-  try {
-    if (!username) return false;
-    if (authorBlockCache.has(username)) return authorBlockCache.get(username);
-
-    const resp = await query(`/profile/${username}`);
-    const blocked = !!resp?.profile?.blockedByProfile;
-    authorBlockCache.set(username, blocked);
-    return blocked;
-  } catch (_) {
-    authorBlockCache.set(username, false);
-    return false;
-  }
-};
-
 const linkifyText = (text) => {
   const mentionRegex = /@([a-zA-Z0-9_]+)/g;
   const hashtagRegex = /#([a-zA-Z0-9_]+)/g;
