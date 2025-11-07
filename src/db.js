@@ -470,6 +470,13 @@ CREATE INDEX IF NOT EXISTS idx_affiliate_requests_target_id ON affiliate_request
 CREATE INDEX IF NOT EXISTS idx_affiliate_requests_status ON affiliate_requests(status);
 `);
 
+// Ensure users table has affiliate_with column (add if missing)
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN affiliate_with TEXT DEFAULT NULL`);
+} catch (err) {
+  // Ignore if column already exists or DB doesn't allow ALTER (safe no-op)
+}
+
 // Ensure post reactions table exists
 db.exec(`
 CREATE TABLE IF NOT EXISTS post_reactions (

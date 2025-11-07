@@ -916,7 +916,6 @@ const initializeSettings = () => {
     if (tabKey === "themes") {
       setTimeout(() => {
         isRestoringState = true;
-        loadCurrentAccentColor();
         loadCurrentThemeMode();
         setTimeout(() => {
           isRestoringState = false;
@@ -954,10 +953,6 @@ const setupSettingsEventHandlers = async () => {
       if (currentUser.theme) {
         localStorage.setItem("theme", currentUser.theme);
         handleThemeModeChange(currentUser.theme);
-      }
-      if (currentUser.accent_color) {
-        localStorage.setItem("accentColor", currentUser.accent_color);
-        applyAccentColor(currentUser.accent_color);
       }
     }
   } catch (error) {
@@ -1097,7 +1092,6 @@ const setupSettingsEventHandlers = async () => {
     }
   });
 
-  loadCurrentAccentColor();
   loadCurrentThemeMode();
 
   document.addEventListener("input", (event) => {
@@ -1133,18 +1127,13 @@ const saveThemeToServer = async () => {
     }
   }
 
-  const accent =
-    localStorage.getItem("accentColor") ||
-    document.getElementById("customColorPicker")?.value ||
-    "#1185fe";
-
   try {
     const data = await query(`/profile/${currentUser.username}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ theme, accent_color: accent }),
+      body: JSON.stringify({ theme }),
     });
 
     if (data.error) {
@@ -1154,9 +1143,7 @@ const saveThemeToServer = async () => {
 
     if (data.success) {
       currentUser.theme = theme;
-      currentUser.accent_color = accent;
       handleThemeModeChange(theme);
-      applyAccentColor(accent);
       toastQueue.add(
         `<h1>Saved</h1><p>Your theme is now saved to your account</p>`
       );
@@ -1189,17 +1176,6 @@ const handleThemeModeChange = (theme) => {
   }
 };
 
-const applyAccentColor = (color) => {
-  const root = document.documentElement;
-  root.style.setProperty("--primary", color);
-  const rgb = hexToRgb(color);
-  if (rgb)
-    root.style.setProperty("--primary-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
-  root.style.setProperty("--primary-hover", adjustBrightness(color, -10));
-  root.style.setProperty("--primary-focus", adjustBrightness(color, -20));
-  localStorage.setItem("accentColor", color);
-};
-
 const loadCurrentThemeMode = () => {
   let currentTheme = "auto";
 
@@ -1229,44 +1205,6 @@ const loadCurrentThemeMode = () => {
       }
     });
   }
-};
-
-const loadCurrentAccentColor = () => {
-  let savedColor = "#1185fe";
-
-  if (currentUser?.accent_color) {
-    savedColor = currentUser.accent_color;
-  } else {
-    savedColor = localStorage.getItem("accentColor") || "#1185fe";
-  }
-
-  setTimeout(() => {
-    document.querySelectorAll(".color-option").forEach((option) => {
-      option.classList.remove("active");
-    });
-
-    const colorOption = document.querySelector(`[data-color="${savedColor}"]`);
-    if (colorOption) {
-      colorOption.classList.add("active");
-      colorOption.style.backgroundColor = savedColor;
-    } else {
-      const customWrap = document.querySelector('[data-is-custom="true"]');
-      if (customWrap) {
-        customWrap.classList.add("active");
-        customWrap.style.background = savedColor;
-        const picker = customWrap.querySelector("#customColorPicker");
-        if (picker) {
-          picker.value = savedColor;
-          picker.style.background = savedColor;
-        }
-      }
-    }
-
-    const picker = document.getElementById("customColorPicker");
-    if (picker) {
-      picker.value = savedColor;
-    }
-  }, 100);
 };
 
 const showModal = (modal) => {
@@ -1516,7 +1454,6 @@ export const openSettings = (section = "account") => {
     if (section === "themes") {
       setTimeout(() => {
         isRestoringState = true;
-        loadCurrentAccentColor();
         loadCurrentThemeMode();
         setTimeout(() => {
           isRestoringState = false;
@@ -1586,7 +1523,6 @@ export const openSettingsModal = (section = "account") => {
     if (tabKey === "themes") {
       setTimeout(() => {
         isRestoringState = true;
-        loadCurrentAccentColor();
         loadCurrentThemeMode();
         setTimeout(() => {
           isRestoringState = false;
