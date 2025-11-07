@@ -408,7 +408,9 @@ export default new Elysia({ prefix: "/admin" })
     }
 
     if (user.affiliate && user.affiliate_with) {
-      const affiliateUser = db.query("SELECT username FROM users WHERE id = ?").get(user.affiliate_with);
+      const affiliateUser = db
+        .query("SELECT username FROM users WHERE id = ?")
+        .get(user.affiliate_with);
       if (affiliateUser) {
         user.affiliate_with_username = affiliateUser.username;
       }
@@ -1196,13 +1198,18 @@ export default new Elysia({ prefix: "/admin" })
       if (body.affiliate !== undefined && body.affiliate !== user.affiliate) {
         changes.affiliate = { old: user.affiliate, new: body.affiliate };
       }
-      
+
       if (body.affiliate && body.affiliate_with_username) {
-        const affiliateUser = db.query("SELECT id FROM users WHERE username = ?").get(body.affiliate_with_username);
+        const affiliateUser = db
+          .query("SELECT id FROM users WHERE username = ?")
+          .get(body.affiliate_with_username);
         if (affiliateUser) {
           affiliateWith = affiliateUser.id;
           if (affiliateWith !== user.affiliate_with) {
-            changes.affiliate_with = { old: user.affiliate_with, new: affiliateWith };
+            changes.affiliate_with = {
+              old: user.affiliate_with,
+              new: affiliateWith,
+            };
           }
         }
       } else if (!body.affiliate) {
@@ -1395,7 +1402,13 @@ export default new Elysia({ prefix: "/admin" })
         newVerified,
         body.admin !== undefined ? body.admin : user.admin,
         newGold,
-        body.affiliate !== undefined ? (body.affiliate ? 1 : 0) : (user.affiliate ? 1 : 0),
+        body.affiliate !== undefined
+          ? body.affiliate
+            ? 1
+            : 0
+          : user.affiliate
+          ? 1
+          : 0,
         affiliateWith,
         body.character_limit !== undefined
           ? body.character_limit

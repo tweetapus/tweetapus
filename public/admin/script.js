@@ -837,7 +837,9 @@ class AdminPanel {
                       <strong>@${user.username}</strong>
                       ${
                         user.name
-                          ? `<br><small class="text-muted">${user.name.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</small>`
+                          ? `<br><small class="text-muted">${user.name
+                              .replaceAll("<", "&lt;")
+                              .replaceAll(">", "&gt;")}</small>`
                           : ""
                       }
                     </div>
@@ -1106,7 +1108,9 @@ class AdminPanel {
                       <strong>@${suspension.username}</strong>
                       ${
                         suspension.name
-                          ? `<br><small class="text-muted">${suspension.name.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}</small>`
+                          ? `<br><small class="text-muted">${suspension.name
+                              .replaceAll("<", "&lt;")
+                              .replaceAll(">", "&gt;")}</small>`
                           : ""
                       }
                     </div>
@@ -1523,21 +1527,28 @@ class AdminPanel {
 
       // Add affiliate checkbox toggle logic
       const affiliateCheckbox = document.getElementById("editProfileAffiliate");
-      const affiliateWithSection = document.getElementById("affiliateWithSection");
-      
+      const affiliateWithSection = document.getElementById(
+        "affiliateWithSection"
+      );
+
       if (affiliateCheckbox && affiliateWithSection) {
         const newAffiliate = affiliateCheckbox.cloneNode(true);
-        affiliateCheckbox.parentNode.replaceChild(newAffiliate, affiliateCheckbox);
-        
+        affiliateCheckbox.parentNode.replaceChild(
+          newAffiliate,
+          affiliateCheckbox
+        );
+
         const aCheckbox = document.getElementById("editProfileAffiliate");
-        
+
         aCheckbox.addEventListener("change", () => {
           const section = document.getElementById("affiliateWithSection");
           if (aCheckbox.checked) {
             section.style.display = "block";
           } else {
             section.style.display = "none";
-            const affiliateWithInput = document.getElementById("editProfileAffiliateWith");
+            const affiliateWithInput = document.getElementById(
+              "editProfileAffiliateWith"
+            );
             if (affiliateWithInput) affiliateWithInput.value = "";
           }
         });
@@ -1643,7 +1654,9 @@ class AdminPanel {
       affiliate: document.getElementById("editProfileAffiliate").checked,
     };
 
-    const affiliateWithInput = document.getElementById("editProfileAffiliateWith");
+    const affiliateWithInput = document.getElementById(
+      "editProfileAffiliateWith"
+    );
     if (payload.affiliate && affiliateWithInput?.value?.trim()) {
       payload.affiliate_with_username = affiliateWithInput.value.trim();
     }

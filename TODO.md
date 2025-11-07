@@ -1,8 +1,3 @@
-claude working on:
-
-- ability to remove an affiliate badge from my profile
-- affiliate badges on tweets
-
 - fix replies tab
 - private accounts
 
