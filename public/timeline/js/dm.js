@@ -268,7 +268,7 @@ function renderConversationsList() {
 
 function createConversationElement(conversation) {
   const displayAvatar =
-    conversation.displayAvatar || "/public/shared/default-avatar.png";
+    conversation.displayAvatar || "/public/shared/assets/default-avatar.png";
   const displayName = sanitizeHTML(conversation.displayName || "Unknown");
   const lastMessage = sanitizeHTML(
     conversation.last_message_content || "No messages yet"
@@ -297,7 +297,7 @@ function createConversationElement(conversation) {
             ? `4px`
             : `50px`;
         return `<img src="${
-          p.avatar || "/public/shared/default-avatar.png"
+          p.avatar || "/public/shared/assets/default-avatar.png"
         }" alt="${p.name || p.username}" style="border-radius: ${radius};" />`;
       })
       .join("")}
@@ -416,7 +416,7 @@ function renderConversationHeader() {
               ? `4px`
               : `50px`;
           return `<img src="${
-            p.avatar || "/public/shared/default-avatar.png"
+            p.avatar || "/public/shared/assets/default-avatar.png"
           }" alt="${
             p.name || p.username
           }" style="border-radius: ${radius};" />`;
@@ -434,7 +434,7 @@ function renderConversationHeader() {
             ? `4px`
             : `50px`;
         return `<img src="${
-          p.avatar || "/public/shared/default-avatar.png"
+          p.avatar || "/public/shared/assets/default-avatar.png"
         }" alt="${p.name || p.username}" style="border-radius: ${radius};" />`;
       })
       .join("");
@@ -499,7 +499,7 @@ function setupAttachmentClickHandlers() {
 
 function createMessageElement(message, currentUser) {
   const isOwn = message.username === currentUser;
-  const avatar = message.avatar || "/public/shared/default-avatar.png";
+  const avatar = message.avatar || "/public/shared/assets/default-avatar.png";
   const radius =
     message.avatar_radius !== null && message.avatar_radius !== undefined
       ? `${message.avatar_radius}px`
@@ -919,7 +919,7 @@ function renderParticipantsList() {
       return `
         <div class="participant-item">
           <img src="${
-            participant.avatar || "/public/shared/default-avatar.png"
+            participant.avatar || "/public/shared/assets/default-avatar.png"
           }" alt="${participant.name || participant.username}" />
           <div class="participant-info">
             <span class="participant-name">${
@@ -1069,7 +1069,9 @@ function renderAddParticipantSuggestions(users) {
       <div class="suggestion-item" onclick="addParticipantUser('${
         user.username
       }', '${user.name || ""}', '${user.avatar || ""}', '${user.id}')">
-        <img src="${user.avatar || "/public/shared/default-avatar.png"}" alt="${
+        <img src="${
+          user.avatar || "/public/shared/assets/default-avatar.png"
+        }" alt="${
         user.name || user.username
       }" style="border-radius: ${radius};" />
         <div class="user-info">
@@ -1205,7 +1207,9 @@ function renderUserSuggestions(users) {
       <div class="suggestion-item" onclick="addUser('${user.username}', '${
         user.name || ""
       }', '${user.avatar || ""}')">
-        <img src="${user.avatar || "/public/shared/default-avatar.png"}" alt="${
+        <img src="${
+          user.avatar || "/public/shared/assets/default-avatar.png"
+        }" alt="${
         user.name || user.username
       }" style="border-radius: ${radius};" />
         <div class="user-info">

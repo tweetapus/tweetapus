@@ -1,4 +1,5 @@
 import toastQueue from "../../shared/toasts.js";
+import { createModal } from "../../shared/ui-utils.js";
 import query from "./api.js";
 import { authToken } from "./auth.js";
 import switchPage, { addRoute } from "./pages.js";
@@ -211,6 +212,7 @@ function createNotificationElement(notification) {
 		</svg>`,
     // community related icons
     community_join_request: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 6 6 .5-4.5 3 1.5 6L12 14l-6 4 1.5-6L3 8.5 9 8 12 2z"/></svg>`,
+    affiliate_request: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3 6 6 .5-4.5 3 1.5 6L12 14 6 18l1.5-6L3 8.5 9 8 12 2z"/></svg>`,
     community_join_approved: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 6L9 17l-5-5"/></svg>`,
     community_join_rejected: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 6L6 18M6 6l12 12"/></svg>`,
     community_role_change: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l4 4-4 4-4-4 4-4z"/><path d="M6 14v6h12v-6"/></svg>`,
@@ -228,6 +230,7 @@ function createNotificationElement(notification) {
     quote: "quote-icon",
     mention: "mention-icon",
     community_join_request: "community-join-request-icon",
+    affiliate_request: "affiliate-request-icon",
     community_join_approved: "community-join-approved-icon",
     community_join_rejected: "community-join-rejected-icon",
     community_role_change: "community-role-change-icon",
@@ -478,6 +481,92 @@ function createNotificationElement(notification) {
         console.error("Failed to open DM:", error);
         window.location.href = `/dm/${relatedId}`;
       }
+    } else if (
+      notificationType === "affiliate_request" ||
+      (relatedId && relatedId.startsWith("affiliate_request:"))
+    ) {
+      const requestId =
+        relatedId && relatedId.startsWith("affiliate_request:")
+          ? relatedId.split(":")[1]
+          : null;
+      const notif =
+        currentNotifications.find((n) => n.id === notificationId) || {};
+      const actorName = notif.actor_username || notif.actor_name || "this user";
+
+      const content = document.createElement("div");
+      const text = document.createElement("p");
+      text.textContent = `Do you want to be affiliated with ${
+        actorName.startsWith("@") ? actorName : `@${actorName}`
+      }?`;
+      content.appendChild(text);
+
+      const actions = document.createElement("div");
+      actions.className = "modal-actions";
+
+      const yesBtn = document.createElement("button");
+      yesBtn.type = "button";
+      yesBtn.className = "btn primary";
+      yesBtn.textContent = "Yes";
+
+      const noBtn = document.createElement("button");
+      noBtn.type = "button";
+      noBtn.className = "btn";
+      noBtn.textContent = "No";
+
+      actions.appendChild(yesBtn);
+      actions.appendChild(noBtn);
+      content.appendChild(actions);
+
+      const modal = createModal({
+        title: "Affiliation request",
+        content,
+        closeOnOverlayClick: true,
+      });
+
+      yesBtn.addEventListener("click", async (e) => {
+        yesBtn.disabled = true;
+        try {
+          if (!requestId) {
+            toastQueue.add("<h1>Invalid request</h1>");
+            modal.close();
+            return;
+          }
+          await query(`/profile/affiliate-requests/${requestId}/approve`, {
+            method: "POST",
+          });
+          toastQueue.add("<h1>Affiliation approved</h1>");
+          const n = currentNotifications.find((x) => x.id === notificationId);
+          if (n) n.read = true;
+          renderNotifications();
+          modal.close();
+        } catch (err) {
+          console.error(err);
+          toastQueue.add("<h1>Failed to approve</h1>");
+          yesBtn.disabled = false;
+        }
+      });
+
+      noBtn.addEventListener("click", async (e) => {
+        noBtn.disabled = true;
+        try {
+          if (!requestId) {
+            modal.close();
+            return;
+          }
+          await query(`/profile/affiliate-requests/${requestId}/deny`, {
+            method: "POST",
+          });
+          toastQueue.add("<h1>Affiliation denied</h1>");
+          const n = currentNotifications.find((x) => x.id === notificationId);
+          if (n) n.read = true;
+          renderNotifications();
+          modal.close();
+        } catch (err) {
+          console.error(err);
+          toastQueue.add("<h1>Failed to deny</h1>");
+          noBtn.disabled = false;
+        }
+      });
     }
   });
 

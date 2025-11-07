@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS users (
   accent_color TEXT DEFAULT NULL,
   avatar_radius INTEGER DEFAULT NULL,
   gold BOOLEAN DEFAULT FALSE,
+  affiliate BOOLEAN DEFAULT FALSE,
   use_c_algorithm BOOLEAN DEFAULT FALSE,
   label_type TEXT DEFAULT NULL,
   label_automated BOOLEAN DEFAULT FALSE,
@@ -450,6 +451,24 @@ CREATE TABLE IF NOT EXISTS community_join_requests (
 CREATE INDEX IF NOT EXISTS idx_community_join_requests_community_id ON community_join_requests(community_id);
 CREATE INDEX IF NOT EXISTS idx_community_join_requests_user_id ON community_join_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_community_join_requests_status ON community_join_requests(status);`);
+
+// Affiliate requests table and index
+db.exec(`
+CREATE TABLE IF NOT EXISTS affiliate_requests (
+  id TEXT PRIMARY KEY,
+  requester_id TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  responded_at TIMESTAMP DEFAULT NULL,
+  FOREIGN KEY (requester_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (target_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(requester_id, target_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_affiliate_requests_target_id ON affiliate_requests(target_id);
+CREATE INDEX IF NOT EXISTS idx_affiliate_requests_status ON affiliate_requests(status);
+`);
 
 // Ensure post reactions table exists
 db.exec(`

@@ -96,7 +96,7 @@ let _user;
   }
 
   document.querySelector(".account img").src =
-    user.avatar || `/public/shared/default-avatar.png`;
+    user.avatar || `/public/shared/assets/default-avatar.png`;
 
   const accountBtn = document.querySelector(".account");
   accountBtn.addEventListener("click", (e) => {

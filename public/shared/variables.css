@@ -48,12 +48,13 @@
 
 * {
   scrollbar-color: #dce0e8 transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .dark {
   color-scheme: dark;
 
-  --primary: #CBA6F7;
+  --primary: #cba6f7;
   --primary-rgb: 203, 166, 247;
   --primary-hover: #c29def;
   --primary-focus: #ae87de;

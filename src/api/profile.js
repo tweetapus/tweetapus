@@ -139,6 +139,35 @@ const deleteFollowRequest = db.query(`
   DELETE FROM follow_requests WHERE requester_id = ? AND target_id = ?
 `);
 
+// Affiliate request queries
+const getAffiliateRequest = db.query(
+  `SELECT * FROM affiliate_requests WHERE requester_id = ? AND target_id = ?`
+);
+
+const createAffiliateRequest = db.query(
+  `INSERT INTO affiliate_requests (id, requester_id, target_id) VALUES (?, ?, ?)`
+);
+
+const updateUserAffiliate = db.query(
+  `UPDATE users SET affiliate = ? WHERE id = ?`
+);
+
+const getPendingAffiliateRequests = db.query(`
+  SELECT ar.*, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius, u.bio
+  FROM affiliate_requests ar
+  JOIN users u ON ar.requester_id = u.id
+  WHERE ar.target_id = ? AND ar.status = 'pending'
+  ORDER BY ar.created_at DESC
+`);
+
+const approveAffiliateRequest = db.query(
+  `UPDATE affiliate_requests SET status = 'approved', responded_at = datetime('now', 'utc') WHERE id = ?`
+);
+
+const denyAffiliateRequest = db.query(
+  `UPDATE affiliate_requests SET status = 'denied', responded_at = datetime('now', 'utc') WHERE id = ?`
+);
+
 const getPendingFollowRequests = db.query(`
   SELECT fr.*, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius, u.bio
   FROM follow_requests fr
@@ -1238,6 +1267,158 @@ export default new Elysia({ prefix: "/profile" })
       } catch (error) {
         console.error("Deny follow request error:", error);
         return { error: "Failed to deny follow request" };
+      }
+    }
+  )
+  // Affiliate endpoints: send request, list pending, approve, deny
+  .post("/:username/affiliate", async ({ params, jwt, headers }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
+
+    const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+    if (!payload) return { error: "Invalid token" };
+
+    const currentUser = getUserByUsername.get(payload.username);
+    if (!currentUser) return { error: "User not found" };
+
+    const { username } = params;
+    const targetUser = getUserByUsername.get(username);
+    if (!targetUser) return { error: "User not found" };
+
+    if (currentUser.id === targetUser.id) {
+      return { error: "You cannot request affiliate for yourself" };
+    }
+
+    const existing = getAffiliateRequest.get(currentUser.id, targetUser.id);
+    if (existing) {
+      if (existing.status === "pending")
+        return { error: "Affiliate request already sent" };
+      if (existing.status === "denied") {
+        db.query(
+          "DELETE FROM affiliate_requests WHERE requester_id = ? AND target_id = ?"
+        ).run(currentUser.id, targetUser.id);
+      }
+    }
+
+    const id = Bun.randomUUIDv7();
+    try {
+      createAffiliateRequest.run(id, currentUser.id, targetUser.id);
+
+      // Include the affiliate request id in related_id so the client can approve/deny directly
+      addNotification(
+        targetUser.id,
+        "affiliate_request",
+        `@${currentUser.username} requested you to become an affiliate`,
+        `affiliate_request:${id}`,
+        currentUser.id,
+        currentUser.username,
+        currentUser.name || currentUser.username
+      );
+
+      return { success: true };
+    } catch (err) {
+      console.error("Create affiliate request error:", err);
+      return { error: "Failed to send affiliate request" };
+    }
+  })
+
+  .get("/affiliate-requests", async ({ jwt, headers }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
+
+    const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+    if (!payload) return { error: "Invalid token" };
+
+    const currentUser = getUserByUsername.get(payload.username);
+    if (!currentUser) return { error: "User not found" };
+
+    try {
+      const requests = getPendingAffiliateRequests.all(currentUser.id);
+      return { requests };
+    } catch (err) {
+      console.error("Get affiliate requests error:", err);
+      return { error: "Failed to get affiliate requests" };
+    }
+  })
+
+  .post(
+    "/affiliate-requests/:requestId/approve",
+    async ({ params, jwt, headers }) => {
+      const authorization = headers.authorization;
+      if (!authorization) return { error: "Authentication required" };
+
+      try {
+        const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+        if (!payload) return { error: "Invalid token" };
+
+        const currentUser = getUserByUsername.get(payload.username);
+        if (!currentUser) return { error: "User not found" };
+
+        const { requestId } = params;
+        const request = db
+          .query("SELECT * FROM affiliate_requests WHERE id = ?")
+          .get(requestId);
+        if (!request) return { error: "Affiliate request not found" };
+        if (request.target_id !== currentUser.id)
+          return { error: "Unauthorized" };
+        if (request.status !== "pending")
+          return { error: "Request already processed" };
+
+        approveAffiliateRequest.run(requestId);
+        updateUserAffiliate.run(1, currentUser.id);
+
+        const requester = db
+          .query("SELECT * FROM users WHERE id = ?")
+          .get(request.requester_id);
+        if (requester) {
+          addNotification(
+            requester.id,
+            "affiliate_approved",
+            `@${currentUser.username} accepted your affiliate request`,
+            currentUser.username,
+            currentUser.id,
+            currentUser.username,
+            currentUser.name || currentUser.username
+          );
+        }
+
+        return { success: true };
+      } catch (err) {
+        console.error("Approve affiliate request error:", err);
+        return { error: "Failed to approve affiliate request" };
+      }
+    }
+  )
+
+  .post(
+    "/affiliate-requests/:requestId/deny",
+    async ({ params, jwt, headers }) => {
+      const authorization = headers.authorization;
+      if (!authorization) return { error: "Authentication required" };
+
+      try {
+        const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+        if (!payload) return { error: "Invalid token" };
+
+        const currentUser = getUserByUsername.get(payload.username);
+        if (!currentUser) return { error: "User not found" };
+
+        const { requestId } = params;
+        const request = db
+          .query("SELECT * FROM affiliate_requests WHERE id = ?")
+          .get(requestId);
+        if (!request) return { error: "Affiliate request not found" };
+        if (request.target_id !== currentUser.id)
+          return { error: "Unauthorized" };
+        if (request.status !== "pending")
+          return { error: "Request already processed" };
+
+        denyAffiliateRequest.run(requestId);
+
+        return { success: true };
+      } catch (err) {
+        console.error("Deny affiliate request error:", err);
+        return { error: "Failed to deny affiliate request" };
       }
     }
   )

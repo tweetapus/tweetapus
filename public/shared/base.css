@@ -13,8 +13,8 @@ body {
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+  font-family: "chirp", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
     "Segoe UI Symbol";
   font-optical-sizing: auto;
   color: var(--text-primary);
@@ -254,7 +254,6 @@ img {
 }
 
 .mention-suggestions {
-  /* Use popup visual language: padding, border-radius and shadow consistent with .popup */
   background: var(--bg-primary);
   border: 1px solid var(--border-primary);
   border-radius: 12px;
@@ -267,7 +266,6 @@ img {
 }
 
 .mention-suggestion {
-  /* Mirror .popup-option sizing/feel so mentions match other popups */
   width: calc(100% - 8px);
   background: transparent;
   border: none;
@@ -333,4 +331,29 @@ img {
   text-align: center;
   color: var(--text-secondary);
   font-size: 13px;
+}
+
+@font-face {
+  font-family: "chirp";
+  src: url("/public/shared/assets/fonts/chirp.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "chirp";
+  src: url("/public/shared/assets/fonts/chirpmedium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "chirp";
+  src: url("/public/shared/assets/fonts/chirpbold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "chirp";
+  src: url("/public/shared/assets/fonts/chirpheavy.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
 }

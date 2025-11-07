@@ -195,7 +195,8 @@ const renderProfile = (data) => {
       }
     } else {
       delete avatarImg.dataset.suspended;
-      avatarImg.src = profile.avatar || "/public/shared/default-avatar.png";
+      avatarImg.src =
+        profile.avatar || "/public/shared/assets/default-avatar.png";
       avatarImg.alt = profile.name || profile.username;
       avatarImg.style.pointerEvents = "";
       avatarImg.style.objectFit = "cover";
@@ -218,6 +219,9 @@ const renderProfile = (data) => {
     profileNameEl.textContent = profile.name || profile.username;
     const existingBadge = profileNameEl.querySelector(".verification-badge");
     const existingAdminBadge = profileNameEl.querySelector(".role-badge.admin");
+    const existingAffiliateBadge = profileNameEl.querySelector(
+      ".role-badge.affiliate"
+    );
 
     if (!suspended && (profile.verified || profile.gold)) {
       const badgeColor = profile.gold ? "#D4AF37" : "var(--primary)";
@@ -248,6 +252,15 @@ const renderProfile = (data) => {
     } else if ((!profile.admin || suspended) && existingAdminBadge) {
       existingAdminBadge.remove();
     }
+    // Affiliate badge handling
+    if (!suspended && profile.affiliate && !existingAffiliateBadge) {
+      const affBadge = document.createElement("span");
+      affBadge.className = "role-badge affiliate";
+      affBadge.textContent = "Affiliate";
+      profileNameEl.appendChild(affBadge);
+    } else if ((!profile.affiliate || suspended) && existingAffiliateBadge) {
+      existingAffiliateBadge.remove();
+    }
   }
 
   const mainDisplayNameEl = document.getElementById("profileDisplayName");
@@ -257,6 +270,9 @@ const renderProfile = (data) => {
     );
     const existingMainAdmin =
       mainDisplayNameEl.querySelector(".role-badge.admin");
+    const existingMainAffiliate = mainDisplayNameEl.querySelector(
+      ".role-badge.affiliate"
+    );
 
     if (!suspended && (profile.verified || profile.gold)) {
       const badgeColor = profile.gold ? "#D4AF37" : "var(--primary)";
@@ -301,6 +317,21 @@ const renderProfile = (data) => {
       }
     } else if ((!profile.admin || suspended) && existingMainAdmin) {
       existingMainAdmin.remove();
+    }
+    // Affiliate badge (main)
+    if (!suspended && profile.affiliate && !existingMainAffiliate) {
+      const affBadgeMain = document.createElement("span");
+      affBadgeMain.className = "role-badge affiliate";
+      affBadgeMain.textContent = "Affiliate";
+      const followsBadge3 =
+        mainDisplayNameEl.querySelector(".follows-me-badge");
+      if (followsBadge3) {
+        mainDisplayNameEl.insertBefore(affBadgeMain, followsBadge3);
+      } else {
+        mainDisplayNameEl.appendChild(affBadgeMain);
+      }
+    } else if ((!profile.affiliate || suspended) && existingMainAffiliate) {
+      existingMainAffiliate.remove();
     }
   }
 
@@ -902,7 +933,8 @@ const updateEditAvatarDisplay = () => {
   const avatarPreviewContainer = document.querySelector(".avatar-preview");
 
   if (avatarImg) {
-    const avatarSrc = profile.avatar || `/public/shared/default-avatar.png`;
+    const avatarSrc =
+      profile.avatar || `/public/shared/assets/default-avatar.png`;
     avatarImg.src = avatarSrc;
     avatarImg.alt = profile.name || profile.username;
   }
@@ -1054,7 +1086,7 @@ const handleEditAvatarRemoval = async () => {
       updateEditAvatarDisplay();
       const profileAvatar = document.getElementById("profileAvatar");
       if (profileAvatar) {
-        profileAvatar.src = `/public/shared/default-avatar.png`;
+        profileAvatar.src = `/public/shared/assets/default-avatar.png`;
         if (
           currentProfile.profile.avatar_radius !== null &&
           currentProfile.profile.avatar_radius !== undefined
@@ -1339,13 +1371,197 @@ document
               },
             };
 
-            items.push(blockItem);
+            // Offer affiliate request if viewer is not the profile owner
+            if (!currentProfile.profile.affiliate) {
+              const affiliateItem = {
+                id: "request-affiliate",
+                icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"></path><path d="M12 22v-6"></path><path d="M4 12h16"></path></svg>`,
+                title: `Request affiliate for @${currentProfile.profile.username}`,
+                onClick: async () => {
+                  try {
+                    const result = await query(
+                      `/profile/${currentProfile.profile.username}/affiliate`,
+                      { method: "POST" }
+                    );
+                    if (result?.success) {
+                      toastQueue.add(
+                        `<h1>Request sent</h1><p>Your affiliate request has been sent.</p>`
+                      );
+                    } else {
+                      toastQueue.add(
+                        `<h1>Failed</h1><p>${
+                          result.error || "Failed to send request"
+                        }</p>`
+                      );
+                    }
+                  } catch (err) {
+                    console.error("Affiliate request error:", err);
+                    toastQueue.add(
+                      `<h1>Network error</h1><p>Please try again</p>`
+                    );
+                  }
+                },
+              };
+
+              items.push(affiliateItem);
+            } else {
+              items.push(blockItem);
+            }
           }
 
           createPopup({
             triggerElement: triggerEl,
             items,
           });
+          // If the current user is the profile owner, allow them to manage affiliate requests
+          if (
+            currentUser &&
+            currentProfile &&
+            currentProfile.profile &&
+            currentUser.id === currentProfile.profile.id
+          ) {
+            const manageAffiliates = document.createElement("div");
+            // Add a minimal trigger in the popup area by opening a modal directly
+            const openAffModal = async () => {
+              try {
+                const res = await query(`/profile/affiliate-requests`, {
+                  headers: { Authorization: `Bearer ${authToken}` },
+                });
+
+                if (res.error) {
+                  toastQueue.add(
+                    `<h1>Error</h1><p>${escapeHTML(res.error)}</p>`
+                  );
+                  return;
+                }
+
+                const requests = res.requests || [];
+                const content = document.createElement("div");
+                content.className = "affiliate-requests-list";
+
+                if (requests.length === 0) {
+                  const empty = document.createElement("div");
+                  empty.textContent = "No pending affiliate requests";
+                  content.appendChild(empty);
+                } else {
+                  requests.forEach((r) => {
+                    const item = document.createElement("div");
+                    item.className = "affiliate-request-item";
+
+                    const avatar = document.createElement("img");
+                    avatar.src =
+                      r.avatar || "/public/shared/default-avatar.png";
+                    avatar.alt = r.name || r.username;
+                    avatar.style.width = "40px";
+                    avatar.style.height = "40px";
+                    avatar.style.borderRadius = "6px";
+                    avatar.style.objectFit = "cover";
+                    avatar.style.marginRight = "10px";
+
+                    const info = document.createElement("div");
+                    info.style.flex = "1";
+                    const title = document.createElement("div");
+                    title.textContent = r.name || r.username;
+                    const uname = document.createElement("div");
+                    uname.textContent = `@${r.username}`;
+                    uname.style.opacity = "0.7";
+                    info.appendChild(title);
+                    info.appendChild(uname);
+
+                    const actions = document.createElement("div");
+
+                    const approveBtn = document.createElement("button");
+                    approveBtn.textContent = "Approve";
+                    approveBtn.className = "profile-btn profile-btn-primary";
+                    approveBtn.style.marginRight = "8px";
+                    approveBtn.onclick = async () => {
+                      approveBtn.disabled = true;
+                      const result = await query(
+                        `/profile/affiliate-requests/${r.id}/approve`,
+                        {
+                          method: "POST",
+                          headers: { Authorization: `Bearer ${authToken}` },
+                        }
+                      );
+                      if (result?.success) {
+                        // mark profile as affiliate and rerender
+                        if (currentProfile && currentProfile.profile) {
+                          currentProfile.profile.affiliate = true;
+                          renderProfile(currentProfile);
+                        }
+                        item.remove();
+                        toastQueue.add(
+                          `<h1>Approved</h1><p>Affiliate badge granted</p>`
+                        );
+                      } else {
+                        toastQueue.add(
+                          `<h1>Failed</h1><p>${result.error || "Failed"}</p>`
+                        );
+                        approveBtn.disabled = false;
+                      }
+                    };
+
+                    const denyBtn = document.createElement("button");
+                    denyBtn.textContent = "Deny";
+                    denyBtn.className = "profile-btn";
+                    denyBtn.onclick = async () => {
+                      denyBtn.disabled = true;
+                      const result = await query(
+                        `/profile/affiliate-requests/${r.id}/deny`,
+                        {
+                          method: "POST",
+                          headers: { Authorization: `Bearer ${authToken}` },
+                        }
+                      );
+                      if (result?.success) {
+                        item.remove();
+                        toastQueue.add(`<h1>Denied</h1>`);
+                      } else {
+                        toastQueue.add(
+                          `<h1>Failed</h1><p>${result.error || "Failed"}</p>`
+                        );
+                        denyBtn.disabled = false;
+                      }
+                    };
+
+                    actions.appendChild(approveBtn);
+                    actions.appendChild(denyBtn);
+
+                    item.style.display = "flex";
+                    item.style.alignItems = "center";
+                    item.style.justifyContent = "space-between";
+                    item.style.marginBottom = "8px";
+                    const left = document.createElement("div");
+                    left.style.display = "flex";
+                    left.style.alignItems = "center";
+                    left.appendChild(avatar);
+                    left.appendChild(info);
+                    item.appendChild(left);
+                    item.appendChild(actions);
+
+                    content.appendChild(item);
+                  });
+                }
+
+                createModal({
+                  title: "Affiliate Requests",
+                  content,
+                  className: "modal-overlay",
+                });
+              } catch (err) {
+                console.error("Error loading affiliate requests:", err);
+                toastQueue.add(`<h1>Error</h1><p>Please try again</p>`);
+              }
+            };
+
+            // add a simple manage item to popup that opens the modal
+            items.push({
+              id: "manage-affiliates",
+              icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"></path><path d="M12 22v-6"></path><path d="M4 12h16"></path></svg>`,
+              title: "Manage affiliate requests",
+              onClick: openAffModal,
+            });
+          }
         } catch (err) {
           console.error("Error building profile dropdown:", err);
           createPopup({

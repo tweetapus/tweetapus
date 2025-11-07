@@ -1,4 +1,5 @@
 - tweetapus circles like twiter circle
+- give elon musk admin
 
 idk:
 

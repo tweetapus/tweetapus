@@ -203,7 +203,7 @@ async function showInteractionUsers(tweetId, interaction, title) {
         userItem.innerHTML = `
           <div class="user-avatar">
             <img src="${
-              user.avatar || "/public/shared/default-avatar.png"
+              user.avatar || "/public/shared/assets/default-avatar.png"
             }" alt="${user.name || user.username}" />
           </div>
           <div class="user-info">
@@ -517,7 +517,7 @@ const createPollElement = (poll, tweet) => {
     poll.voters.slice(0, 3).forEach((voter, index) => {
       const avatarEl = document.createElement("img");
       avatarEl.className = "voter-avatar";
-      avatarEl.src = voter.avatar || `/public/shared/default-avatar.png`;
+      avatarEl.src = voter.avatar || `/public/shared/assets/default-avatar.png`;
       avatarEl.alt = voter.name || voter.username;
       avatarEl.title = voter.name || voter.username;
       avatarEl.loading = "lazy";
@@ -614,7 +614,7 @@ const updatePollDisplay = (pollElement, poll) => {
     poll.voters.slice(0, 3).forEach((voter, index) => {
       const avatarEl = document.createElement("img");
       avatarEl.className = "voter-avatar";
-      avatarEl.src = voter.avatar || `/public/shared/default-avatar.png`;
+      avatarEl.src = voter.avatar || `/public/shared/assets/default-avatar.png`;
       avatarEl.alt = voter.name || voter.username;
       avatarEl.title = voter.name || voter.username;
       avatarEl.loading = "lazy";
@@ -712,7 +712,7 @@ async function showInteractionsModal(tweetId) {
           userItem.innerHTML = `
             <div class="user-avatar">
               <img src="${
-                user.avatar || "/public/shared/default-avatar.png"
+                user.avatar || "/public/shared/assets/default-avatar.png"
               }" alt="${user.name || user.username}" />
             </div>
             <div class="user-info">
@@ -821,7 +821,7 @@ export const createTweetElement = (tweet, config = {}) => {
 
   const tweetHeaderAvatarEl = document.createElement("img");
   tweetHeaderAvatarEl.src =
-    tweet.author.avatar || `/public/shared/default-avatar.png`;
+    tweet.author.avatar || `/public/shared/assets/default-avatar.png`;
   tweetHeaderAvatarEl.alt = tweet.author.name || tweet.author.username;
   tweetHeaderAvatarEl.classList.add("tweet-header-avatar");
   tweetHeaderAvatarEl.loading = "lazy";
@@ -2225,11 +2225,12 @@ export const createTweetElement = (tweet, config = {}) => {
       container.innerHTML = `<p>No reactions yet.</p>`;
     } else {
       const currentUser = await getUser();
-      
+
       reactionsData.reactions.forEach((r) => {
         const item = document.createElement("div");
         item.className = "reaction-item";
-        const avatarSrc = r.avatar || "/public/shared/default-avatar.png";
+        const avatarSrc =
+          r.avatar || "/public/shared/assets/default-avatar.png";
         const displayName = r.name || r.username || "Unknown";
         const usernameText = r.username || "";
         const isOwnReaction = currentUser && r.user_id === currentUser.id;
@@ -2253,36 +2254,42 @@ export const createTweetElement = (tweet, config = {}) => {
               }</div>
             </div>
           </div>
-          ${isOwnReaction ? `<button class="reaction-remove-btn" title="Remove reaction"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>` : ''}
+          ${
+            isOwnReaction
+              ? `<button class="reaction-remove-btn" title="Remove reaction"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash2-icon lucide-trash-2"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>`
+              : ""
+          }
         `;
-        
+
         if (isOwnReaction) {
           const removeBtn = item.querySelector(".reaction-remove-btn");
           const emoji = r.emoji;
           removeBtn.addEventListener("click", async (e) => {
             e.stopPropagation();
-            
+
             try {
               const result = await query(`/tweets/${tweet.id}/reaction`, {
                 method: "POST",
                 body: { emoji },
               });
-              
+
               if (result.success) {
                 item.style.transition = "opacity 0.2s, transform 0.2s";
                 item.style.opacity = "0";
                 item.style.transform = "scale(0.95)";
                 setTimeout(() => {
                   item.remove();
-                  if (container.querySelectorAll(".reaction-item").length === 0) {
+                  if (
+                    container.querySelectorAll(".reaction-item").length === 0
+                  ) {
                     container.innerHTML = `<p>No reactions yet.</p>`;
                   }
                 }, 200);
-                
+
                 if (result.total_reactions !== undefined) {
                   reactionCountSpan.textContent = result.total_reactions || "";
                 }
-                
+
                 if (result.top_reactions) {
                   topReactionsSpan.innerHTML = result.top_reactions
                     .map((tr) => tr.emoji)
@@ -2295,7 +2302,7 @@ export const createTweetElement = (tweet, config = {}) => {
             }
           });
         }
-        
+
         container.appendChild(item);
       });
       replaceEmojiShortcodesInElement(container);

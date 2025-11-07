@@ -394,7 +394,7 @@ export const useComposer = (
         "mention-suggestion" + (i === mentionIndex ? " selected" : "");
       div.innerHTML = `
         <img class="mention-avatar" src="${
-          user.avatar || "/public/shared/default-avatar.png"
+          user.avatar || "/public/shared/assets/default-avatar.png"
         }" alt="" />
         <div class="mention-info">
           <div class="mention-name">${user.name}</div>
@@ -1140,7 +1140,7 @@ export const createComposer = async ({
   replyTo = null,
   quoteTweet = null,
   communityId = null,
-  autofocus = false
+  autofocus = false,
 }) => {
   const el = document.createElement("div");
   el.classList.add("compose-tweet");
@@ -1148,7 +1148,9 @@ export const createComposer = async ({
         <div class="compose-header">
           <img src="" alt="Your avatar" id="compose-avatar">
           <div class="compose-input">
-            <textarea id="tweet-textarea" style="overflow:hidden"${autofocus ? "autofocus" : ""}></textarea>
+            <textarea id="tweet-textarea" style="overflow:hidden"${
+              autofocus ? "autofocus" : ""
+            }></textarea>
             <div id="quoted-tweet-container"></div>
             <div id="poll-container" style="display: none;">
               <div class="poll-options"></div>
@@ -1259,14 +1261,14 @@ export const createComposer = async ({
   try {
     const user = await getUser();
     const avatarImg = el.querySelector(".compose-header img");
-    avatarImg.src = user?.avatar || "/public/shared/default-avatar.png";
+    avatarImg.src = user?.avatar || "/public/shared/assets/default-avatar.png";
 
     const radius = user?.avatar_radius ?? (user?.gold ? 4 : 50);
     avatarImg.style.borderRadius = `${radius}%`;
   } catch (error) {
     console.error("Error loading user avatar:", error);
     const avatarImg = el.querySelector(".compose-header img");
-    avatarImg.src = "/public/shared/default-avatar.png";
+    avatarImg.src = "/public/shared/assets/default-avatar.png";
     avatarImg.style.borderRadius = "50%";
   }
 
