@@ -325,6 +325,13 @@ export default new Elysia({ prefix: "/timeline" })
           attachmentMap.get(attachment.post_id).push(attachment);
         });
 
+        const allFactChecks = db
+          .query(
+            `SELECT post_id FROM fact_checks WHERE post_id IN (${attachmentPlaceholders})`
+          )
+          .all(...postIds);
+        const factCheckSet = new Set(allFactChecks.map((fc) => fc.post_id));
+
         const userIds = [...new Set(posts.map((p) => p.user_id))];
         const userPlaceholders = userIds.map(() => "?").join(",");
         const postUsers = db
@@ -336,6 +343,7 @@ export default new Elysia({ prefix: "/timeline" })
 
         posts.forEach((post) => {
           post.attachments = attachmentMap.get(post.id) || [];
+          post.has_community_note = factCheckSet.has(post.id);
           const userData = userDataMap.get(post.user_id);
           if (userData) {
             post.verified = userData.verified;
@@ -595,6 +603,13 @@ export default new Elysia({ prefix: "/timeline" })
           attachmentMap.get(attachment.post_id).push(attachment);
         });
 
+        const allFactChecks = db
+          .query(
+            `SELECT post_id FROM fact_checks WHERE post_id IN (${attachmentPlaceholders})`
+          )
+          .all(...postIds);
+        const factCheckSet = new Set(allFactChecks.map((fc) => fc.post_id));
+
         const userIds = [...new Set(posts.map((p) => p.user_id))];
         const userPlaceholders = userIds.map(() => "?").join(",");
         const postUsers = db
@@ -606,6 +621,7 @@ export default new Elysia({ prefix: "/timeline" })
 
         posts.forEach((post) => {
           post.attachments = attachmentMap.get(post.id) || [];
+          post.has_community_note = factCheckSet.has(post.id);
           const userData = userDataMap.get(post.user_id);
           if (userData) {
             post.verified = userData.verified;

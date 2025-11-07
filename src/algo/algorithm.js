@@ -27,6 +27,7 @@ if (existsSync(libPath)) {
           FFIType.i32,
           FFIType.i32,
           FFIType.i32,
+          FFIType.i32,
         ],
         returns: FFIType.double,
       },
@@ -37,8 +38,12 @@ if (existsSync(libPath)) {
     console.warn("Error:", error.message);
   }
 } else {
-  console.warn(`C algorithm library not found at ${libPath} (possibly not compiled?)`);
-  console.warn("Run 'make' in src/algo/ to compile the C algorithm (optional, but C algorithm experiment won't work");
+  console.warn(
+    `C algorithm library not found at ${libPath} (possibly not compiled?)`
+  );
+  console.warn(
+    "Run 'make' in src/algo/ to compile the C algorithm (optional, but C algorithm experiment won't work"
+  );
 }
 
 export const calculateScore = (
@@ -57,7 +62,8 @@ export const calculateScore = (
   position_in_feed = 0,
   user_verified = 0,
   user_gold = 0,
-  follower_count = 0
+  follower_count = 0,
+  has_community_note = 0
 ) => {
   if (!lib) {
     return 0;
@@ -84,7 +90,8 @@ export const calculateScore = (
     position_in_feed,
     user_verified,
     user_gold,
-    follower_count
+    follower_count,
+    has_community_note
   );
 };
 
@@ -191,6 +198,8 @@ export const rankTweets = (tweets, seenInput = new Map()) => {
     const userGold = tweet.gold || tweet.author?.gold ? 1 : 0;
     const followerCount =
       tweet.follower_count || tweet.author?.follower_count || 0;
+    const hasCommunityNote =
+      tweet.has_community_note || tweet.fact_check ? 1 : 0;
 
     const score = calculateScore(
       timestamp,
@@ -208,7 +217,8 @@ export const rankTweets = (tweets, seenInput = new Map()) => {
       0,
       userVerified,
       userGold,
-      followerCount
+      followerCount,
+      hasCommunityNote
     );
 
     return { ...tweet, _score: score };

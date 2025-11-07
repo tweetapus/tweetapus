@@ -5,10 +5,11 @@
 #include <time.h>
 #include <math.h>
 
-#define MAX_AGE_HOURS 72
-#define FRESH_TWEET_HOURS 12
+#define MAX_AGE_HOURS 48
+#define FRESH_TWEET_HOURS 6
 #define VIRAL_THRESHOLD 100
 #define MIN_ENGAGEMENT_RATIO 0.01
+#define SUPER_FRESH_HOURS 2
 
 static inline double safe_log(double x) {
     return (x > 0.0) ? log(x + 1.0) : 0.0;
@@ -21,14 +22,18 @@ static inline int safe_max(int a, int b) {
 static double calculate_time_decay(double age_hours) {
     if (age_hours < 0.0) age_hours = 0.0;
     
-    if (age_hours < FRESH_TWEET_HOURS) {
-        return 1.0 + (FRESH_TWEET_HOURS - age_hours) / FRESH_TWEET_HOURS * 0.8;
+    if (age_hours < SUPER_FRESH_HOURS) {
+        return 2.2 - age_hours * 0.15;
+    } else if (age_hours < FRESH_TWEET_HOURS) {
+        return 1.9 - (age_hours - SUPER_FRESH_HOURS) * 0.2;
+    } else if (age_hours < 12.0) {
+        return 1.1 * exp(-(age_hours - FRESH_TWEET_HOURS) * 0.08);
     } else if (age_hours < 24.0) {
-        return 1.0 - (age_hours - FRESH_TWEET_HOURS) / (24.0 - FRESH_TWEET_HOURS) * 0.3;
+        return 0.65 * exp(-(age_hours - 12.0) * 0.06);
     } else if (age_hours < MAX_AGE_HOURS) {
-        return 0.7 - (age_hours - 24.0) / (MAX_AGE_HOURS - 24.0) * 0.5;
+        return 0.35 * exp(-(age_hours - 24.0) * 0.08);
     } else {
-        return 0.2 * exp(-(age_hours - MAX_AGE_HOURS) / 24.0);
+        return 0.12 * exp(-(age_hours - MAX_AGE_HOURS) * 0.1);
     }
 }
 
@@ -40,40 +45,72 @@ static double calculate_engagement_quality(
 ) {
     int total_engagement = like_count + retweet_count * 2 + reply_count + quote_count;
     
-    if (total_engagement == 0) return 0.1;
+    if (total_engagement == 0) return 0.05;
     
-    double retweet_ratio = (double)retweet_count / safe_max(like_count, 1);
-    double reply_ratio = (double)reply_count / safe_max(like_count, 1);
-    double quote_ratio = (double)quote_count / safe_max(like_count, 1);
+    double total_for_ratio = (double)(like_count + retweet_count + reply_count + quote_count);
+    if (total_for_ratio < 1.0) total_for_ratio = 1.0;
+    
+    double retweet_ratio = (double)retweet_count / total_for_ratio;
+    double reply_ratio = (double)reply_count / total_for_ratio;
+    double quote_ratio = (double)quote_count / total_for_ratio;
+    double like_ratio = (double)like_count / total_for_ratio;
     
     double quality_score = 1.0;
     
-    if (retweet_ratio > 0.3) quality_score *= 1.4;
-    if (reply_ratio > 0.2) quality_score *= 1.3;
-    if (quote_ratio > 0.1) quality_score *= 1.2;
+    if (retweet_ratio > 0.15) quality_score *= 1.5;
+    if (reply_ratio > 0.12) quality_score *= 1.4;
+    if (quote_ratio > 0.08) quality_score *= 1.35;
+    
+    if (like_ratio > 0.95 && total_engagement > 10) {
+        quality_score *= 0.7;
+    }
+    
+    int engagement_types = 0;
+    if (like_count > 0) engagement_types++;
+    if (retweet_count > 0) engagement_types++;
+    if (reply_count > 0) engagement_types++;
+    if (quote_count > 0) engagement_types++;
+    
+    quality_score *= (0.7 + engagement_types * 0.15);
+    
+    double reply_like_ratio = (double)reply_count / safe_max(like_count, 1);
+    if (reply_like_ratio > 1.5 && like_count < 10) {
+        quality_score *= 0.5;
+    }
     
     return quality_score;
 }
 
 static double calculate_virality_boost(int like_count, int retweet_count, double age_hours) {
-    int total_actions = like_count + retweet_count * 2;
+    int total_actions = like_count + retweet_count * 3 + (retweet_count > 0 ? retweet_count : 0);
     
-    if (age_hours < 0.1) age_hours = 0.1;
+    if (age_hours < 0.05) age_hours = 0.05;
     
     double velocity = (double)total_actions / age_hours;
+    double momentum = (double)(retweet_count * 2 + like_count) / (age_hours + 1.0);
     
     double boost = 1.0;
     
     if (total_actions >= VIRAL_THRESHOLD) {
-        boost = 1.5 + safe_log(total_actions / (double)VIRAL_THRESHOLD) * 0.3;
+        boost = 2.0 + safe_log(total_actions / (double)VIRAL_THRESHOLD) * 0.5;
     } else if (total_actions >= 50) {
-        boost = 1.0 + (double)(total_actions - 50) / 50.0 * 0.5;
+        boost = 1.4 + (double)(total_actions - 50) / 50.0 * 0.6;
     } else if (total_actions >= 20) {
-        boost = 1.0 + (double)(total_actions - 20) / 30.0 * 0.3;
+        boost = 1.0 + (double)(total_actions - 20) / 30.0 * 0.4;
     }
     
-    if (velocity > 10.0) {
-        boost *= 1.0 + safe_log(velocity / 10.0) * 0.2;
+    if (velocity > 20.0) {
+        boost *= 1.5 + safe_log(velocity / 20.0) * 0.3;
+    } else if (velocity > 10.0) {
+        boost *= 1.2 + safe_log(velocity / 10.0) * 0.25;
+    }
+    
+    if (momentum > 15.0 && age_hours < 3.0) {
+        boost *= 1.4;
+    }
+    
+    if (age_hours < 1.0 && velocity > 5.0) {
+        boost *= 1.3;
     }
     
     return boost;
@@ -95,7 +132,8 @@ double calculate_score(
     int position_in_feed,
     int user_verified,
     int user_gold,
-    int follower_count
+    int follower_count,
+    int has_community_note
 ) {
     if (created_at < 0) created_at = 0;
     if (like_count < 0) like_count = 0;
@@ -115,13 +153,21 @@ double calculate_score(
     if (user_verified < 0) user_verified = 0;
     if (user_gold < 0) user_gold = 0;
     if (follower_count < 0) follower_count = 0;
+    if (has_community_note < 0) has_community_note = 0;
     
     time_t now = time(NULL);
     double age_hours = (double)(now - created_at) / 3600.0;
     
     int total_engagement = like_count + retweet_count + reply_count + quote_count;
     
-    if (age_hours > MAX_AGE_HOURS && total_engagement < 5) {
+    if (age_hours > MAX_AGE_HOURS && total_engagement < 10) {
+        return 0.0;
+    }
+    
+    if (has_community_note) {
+        if (age_hours < 12.0) {
+            return 0.001;
+        }
         return 0.0;
     }
     
@@ -133,56 +179,51 @@ double calculate_score(
     
     double virality_boost = calculate_virality_boost(like_count, retweet_count, age_hours);
     
-    double base_score = safe_log(like_count + 1) * 2.0 +
-                       safe_log(retweet_count + 1) * 1.2 +
-                       safe_log(reply_count + 1) * 0.8 +
-                       safe_log(quote_count + 1) * 1.0;
-    
-    double diversity_bonus = 1.0;
-    int engagement_types = 0;
-    if (like_count > 0) engagement_types++;
-    if (retweet_count > 0) engagement_types++;
-    if (reply_count > 0) engagement_types++;
-    if (quote_count > 0) engagement_types++;
-    diversity_bonus = 1.0 + (engagement_types - 1) * 0.15;
+    double base_score = safe_log(like_count + 1) * 2.5 +
+                       safe_log(retweet_count + 1) * 2.0 +
+                       safe_log(reply_count + 1) * 1.2 +
+                       safe_log(quote_count + 1) * 1.5;
     
     double media_boost = 1.0;
     if (has_media > 0) {
-        media_boost = 1.15;
+        media_boost = 1.25;
+        if (age_hours < FRESH_TWEET_HOURS) {
+            media_boost *= 1.15;
+        }
     }
     
     if (quote_count > 0 && has_media > 0) {
-        media_boost *= 1.1;
+        media_boost *= 1.12;
     }
 
     double seen_penalty = 1.0;
     if (hours_since_seen >= 0.0) {
         if (hours_since_seen < 0.5) {
-            seen_penalty = 0.05;
+            seen_penalty = 0.02;
         } else if (hours_since_seen < 2.0) {
-            seen_penalty = 0.08;
+            seen_penalty = 0.05;
         } else if (hours_since_seen < 6.0) {
-            seen_penalty = 0.12;
+            seen_penalty = 0.10;
         } else if (hours_since_seen < 12.0) {
-            seen_penalty = 0.20;
+            seen_penalty = 0.18;
         } else if (hours_since_seen < 24.0) {
-            seen_penalty = 0.35;
+            seen_penalty = 0.32;
         } else if (hours_since_seen < 48.0) {
-            seen_penalty = 0.55;
+            seen_penalty = 0.50;
         } else if (hours_since_seen < 96.0) {
-            seen_penalty = 0.75;
+            seen_penalty = 0.68;
         } else if (hours_since_seen < 168.0) {
-            seen_penalty = 0.88;
+            seen_penalty = 0.82;
         } else {
-            seen_penalty = 0.95;
+            seen_penalty = 0.92;
         }
     }
 
-    double author_penalty = 1.0 / (1.0 + (double)author_repeats * 0.75);
-    if (author_penalty < 0.15) author_penalty = 0.15;
+    double author_penalty = 1.0 / (1.0 + (double)author_repeats * 0.85);
+    if (author_penalty < 0.12) author_penalty = 0.12;
 
-    double content_penalty = 1.0 / (1.0 + (double)content_repeats * 1.5);
-    if (content_penalty < 0.08) content_penalty = 0.08;
+    double content_penalty = 1.0 / (1.0 + (double)content_repeats * 2.0);
+    if (content_penalty < 0.05) content_penalty = 0.05;
 
     double position_penalty = 1.0;
     if (position_in_feed < 5) {
@@ -196,14 +237,20 @@ double calculate_score(
     }
 
     double recency_adjust = 1.0;
-    if (age_hours < 0.5) {
-        recency_adjust = 1.12;
+    if (age_hours < 0.25) {
+        recency_adjust = 1.35;
+    } else if (age_hours < 1.0) {
+        recency_adjust = 1.25;
     } else if (age_hours < 3.0) {
-        recency_adjust = 1.06;
-    } else if (age_hours > 72.0) {
-        recency_adjust = 0.7;
-    } else if (age_hours > 48.0) {
-        recency_adjust = 0.82;
+        recency_adjust = 1.15;
+    } else if (age_hours < 6.0) {
+        recency_adjust = 1.05;
+    } else if (age_hours > MAX_AGE_HOURS) {
+        recency_adjust = 0.5;
+    } else if (age_hours > 36.0) {
+        recency_adjust = 0.65;
+    } else if (age_hours > 24.0) {
+        recency_adjust = 0.75;
     }
 
     double discussion_boost = 1.0;
@@ -278,7 +325,6 @@ double calculate_score(
                         time_decay * 
                         engagement_quality * 
                         virality_boost * 
-                        diversity_bonus * 
                         media_boost *
                         seen_penalty *
                         author_penalty *
@@ -339,7 +385,8 @@ void rank_tweets(Tweet *tweets, size_t count) {
             0,
             tweets[i].user_verified,
             tweets[i].user_gold,
-            tweets[i].follower_count
+            tweets[i].follower_count,
+            tweets[i].has_community_note
         );
 
         tweets[i].score = base_score;
@@ -364,7 +411,8 @@ void rank_tweets(Tweet *tweets, size_t count) {
             (int)i,
             tweets[i].user_verified,
             tweets[i].user_gold,
-            tweets[i].follower_count
+            tweets[i].follower_count,
+            tweets[i].has_community_note
         );
 
         tweets[i].score = adjusted_score;
