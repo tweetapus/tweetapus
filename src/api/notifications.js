@@ -169,7 +169,7 @@ export default new Elysia({ prefix: "/notifications" })
           typeof notification.related_id === "string" &&
           !notification.related_id.startsWith("meta:") &&
           !notification.related_id.startsWith("subtitle:") &&
-          ["like", "retweet", "reply", "quote", "mention"].includes(
+          ["like", "retweet", "reply", "quote", "mention", "fact_check"].includes(
             notification.type
           )
         ) {

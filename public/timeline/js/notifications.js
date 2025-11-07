@@ -295,7 +295,7 @@ function createNotificationElement(notification) {
       tweetPreviewEl.appendChild(tweetElement);
       contentEl.appendChild(tweetPreviewEl);
     } else if (
-      ["like", "retweet", "quote", "mention"].includes(notification.type)
+      ["like", "retweet", "quote", "mention", "fact_check"].includes(notification.type)
     ) {
       const tweetContent =
         notification.tweet.content.length > 100
@@ -358,7 +358,7 @@ function createNotificationElement(notification) {
     if (!relatedId) return;
 
     if (
-      ["like", "retweet", "reply", "quote", "mention", "reaction"].includes(
+      ["like", "retweet", "reply", "quote", "mention", "reaction", "fact_check"].includes(
         notificationType
       )
     ) {

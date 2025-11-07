@@ -582,7 +582,7 @@ export default new Elysia({ prefix: "/admin" })
         addNotification(
           requester.id,
           "affiliate_approved",
-          `@${targetUser.username} accepted your affiliate request`,
+          "accepted your affiliate request",
           targetUser.username,
           targetUser.id,
           targetUser.username,
@@ -2217,11 +2217,11 @@ export default new Elysia({ prefix: "/admin" })
         addNotification(
           user_id,
           "fact_check",
-          `has marked a tweet that you have interacted with as misleading`,
+          `A tweet you have interacted with has been marked as misleading`,
           params.postId,
-          user.id,
-          user.username,
-          user.name || user.username
+          undefined,
+          undefined,
+          undefined
         );
       }
     }
@@ -2230,11 +2230,11 @@ export default new Elysia({ prefix: "/admin" })
       addNotification(
         post.user_id,
         "fact_check",
-        `Admins added a fact-check to your post`,
+        `Your post has been marked as misleading`,
         params.postId,
-        user.id,
-        user.username,
-        user.name || user.username
+        undefined,
+        undefined,
+        undefined
       );
     }
 
