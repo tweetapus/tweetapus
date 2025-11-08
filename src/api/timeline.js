@@ -35,7 +35,9 @@ const getTimelinePosts = db.query(`
   SELECT posts.* FROM posts 
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
+  LEFT JOIN follows ON (posts.user_id = follows.following_id AND follows.follower_id = ?)
   WHERE posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.community_only = FALSE
+  AND (users.private = 0 OR follows.id IS NOT NULL OR posts.user_id = ?)
   ORDER BY posts.created_at DESC, posts.id DESC
   LIMIT ?
 `);
@@ -44,7 +46,9 @@ const getTimelinePostsBefore = db.query(`
   SELECT posts.* FROM posts 
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
+  LEFT JOIN follows ON (posts.user_id = follows.following_id AND follows.follower_id = ?)
   WHERE posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.community_only = FALSE
+  AND (users.private = 0 OR follows.id IS NOT NULL OR posts.user_id = ?)
   AND (posts.created_at < ? OR (posts.created_at = ? AND posts.id < ?))
   ORDER BY posts.created_at DESC, posts.id DESC
   LIMIT ?
@@ -182,6 +186,25 @@ const getTweetAttachments = (tweetId) => {
   return getAttachmentsByPostId.all(tweetId);
 };
 
+const getCardByPostId = db.query(`
+  SELECT * FROM interactive_cards WHERE post_id = ?
+`);
+
+const getCardOptions = db.query(`
+  SELECT * FROM interactive_card_options WHERE card_id = ? ORDER BY option_order ASC
+`);
+
+const getCardDataForTweet = (tweetId) => {
+  const card = getCardByPostId.get(tweetId);
+  if (!card) return null;
+
+  const options = getCardOptions.all(card.id);
+  return {
+    ...card,
+    options,
+  };
+};
+
 const getQuotedTweetData = (quoteTweetId, userId) => {
   if (!quoteTweetId) return null;
 
@@ -215,6 +238,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
     author,
     poll: getPollDataForTweet(quotedTweet.id, userId),
     attachments: getTweetAttachments(quotedTweet.id),
+    interactive_card: getCardDataForTweet(quotedTweet.id),
   };
 };
 
@@ -250,6 +274,7 @@ const getTopReplyData = (tweetId, userId) => {
     poll: getPollDataForTweet(topReply.id, userId),
     quoted_tweet: getQuotedTweetData(topReply.quote_tweet_id, userId),
     attachments: getTweetAttachments(topReply.id),
+    interactive_card: getCardDataForTweet(topReply.id),
   };
 };
 
@@ -306,14 +331,13 @@ export default new Elysia({ prefix: "/timeline" })
     const limit = Math.min(Math.max(parseInt(query.limit) || 10, 1), 50);
     let posts = [];
     if (beforeId) {
-      // Fetch the cursor post's created_at so we can paginate using a
-      // composite cursor (created_at + id). This keeps the frontend
-      // unchanged while ensuring deterministic ordering.
       const cursor = getPostCreatedAt.get(beforeId);
       if (!cursor) {
         posts = [];
       } else {
         posts = getTimelinePostsBefore.all(
+          user.id,
+          user.id,
           user.id,
           cursor.created_at,
           cursor.created_at,
@@ -322,7 +346,7 @@ export default new Elysia({ prefix: "/timeline" })
         );
       }
     } else {
-      posts = getTimelinePosts.all(user.id, limit);
+      posts = getTimelinePosts.all(user.id, user.id, user.id, limit);
     }
 
     // Compute per-batch author/content repeat counts to aid debugging
@@ -547,6 +571,7 @@ export default new Elysia({ prefix: "/timeline" })
             ? articleMap.get(post.article_id) || null
             : null,
           fact_check: getFactCheckForPost.get(post.id) || null,
+          interactive_card: getCardDataForTweet(post.id),
         };
       })
       .filter(Boolean);
@@ -842,6 +867,7 @@ export default new Elysia({ prefix: "/timeline" })
             ? articleMap.get(post.article_id) || null
             : null,
           fact_check: getFactCheckForPost.get(post.id) || null,
+          interactive_card: getCardDataForTweet(post.id),
         };
       })
       .filter(Boolean);

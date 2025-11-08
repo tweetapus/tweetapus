@@ -2381,6 +2381,10 @@ export default new Elysia({ prefix: "/admin" })
           undefined
         );
       } else if (action === "delete_post" && report.reported_type === "post") {
+        const post = db
+          .query("SELECT user_id FROM posts WHERE id = ?")
+          .get(report.reported_id);
+
         db.query("DELETE FROM posts WHERE id = ?").run(report.reported_id);
 
         logModerationAction(
@@ -2392,6 +2396,18 @@ export default new Elysia({ prefix: "/admin" })
             reportId: params.id,
           }
         );
+
+        if (post) {
+          addNotification(
+            post.user_id,
+            "post_deleted",
+            "Your post was deleted due to a violation",
+            null,
+            null,
+            null,
+            null
+          );
+        }
       } else if (
         action === "fact_check" &&
         report.reported_type === "post" &&
@@ -2443,6 +2459,31 @@ export default new Elysia({ prefix: "/admin" })
         WHERE id = ?
       `
       ).run("resolved", user.id, resolutionAction, params.id);
+
+      if (action !== "ignore") {
+        let notificationMessage = "";
+        if (action === "ban_user") {
+          notificationMessage = "Report resolved: User suspended";
+        } else if (action === "delete_post") {
+          notificationMessage = "Report resolved: Post deleted";
+        } else if (action === "fact_check") {
+          notificationMessage = "Report resolved: Fact-check added";
+        } else if (action === "ban_reporter") {
+          notificationMessage = "Your report was marked as abuse";
+        }
+
+        if (notificationMessage) {
+          addNotification(
+            report.reporter_id,
+            "report_resolved",
+            notificationMessage,
+            params.id,
+            null,
+            null,
+            null
+          );
+        }
+      }
 
       return { success: true };
     },

@@ -45,6 +45,12 @@ const updateLabels = db.query(`
   WHERE id = ?
 `);
 
+const updatePrivacy = db.query(`
+  UPDATE users
+  SET private = ?
+  WHERE id = ?
+`);
+
 const updateBanner = db.query(`
   UPDATE users
   SET banner = ?
@@ -278,6 +284,25 @@ const getTweetAttachments = (tweetId) => {
   return getAttachmentsByPostId.all(tweetId);
 };
 
+const getCardByPostId = db.query(`
+  SELECT * FROM interactive_cards WHERE post_id = ?
+`);
+
+const getCardOptions = db.query(`
+  SELECT * FROM interactive_card_options WHERE card_id = ? ORDER BY option_order ASC
+`);
+
+const getCardDataForTweet = (tweetId) => {
+  const card = getCardByPostId.get(tweetId);
+  if (!card) return null;
+
+  const options = getCardOptions.all(card.id);
+  return {
+    ...card,
+    options,
+  };
+};
+
 const getQuotedTweetData = (quoteTweetId, userId) => {
   if (!quoteTweetId) return null;
 
@@ -322,6 +347,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
     author,
     poll: getPollDataForTweet(quotedTweet.id, userId),
     attachments: getTweetAttachments(quotedTweet.id),
+    interactive_card: getCardDataForTweet(quotedTweet.id),
   };
 };
 
@@ -558,9 +584,10 @@ export default new Elysia({ prefix: "/profile" })
           poll: getPollDataForPost(post.id, currentUserId),
           quoted_tweet: getQuotedPostData(post.quote_tweet_id, currentUserId),
           attachments: getPostAttachments(post.id),
-          liked_by_user: false, // Will be set below
-          retweeted_by_user: false, // Will be set below
+          liked_by_user: false,
+          retweeted_by_user: false,
           fact_check: getFactCheckForPost.get(post.id) || null,
+          interactive_card: getCardDataForTweet(post.id),
         }));
 
         processedReplies = replies.map((reply) => {
@@ -594,6 +621,7 @@ export default new Elysia({ prefix: "/profile" })
             liked_by_user: false,
             retweeted_by_user: false,
             fact_check: getFactCheckForPost.get(reply.id) || null,
+            interactive_card: getCardDataForTweet(reply.id),
           };
         });
       }
@@ -729,6 +757,7 @@ export default new Elysia({ prefix: "/profile" })
             liked_by_user: false,
             retweeted_by_user: false,
             fact_check: getFactCheckForPost.get(reply.id) || null,
+            interactive_card: getCardDataForTweet(reply.id),
           };
         });
 
@@ -1875,6 +1904,27 @@ export default new Elysia({ prefix: "/profile" })
       return { success: true };
     } catch (error) {
       console.error("Update C algorithm setting error:", error);
+      return { error: "Failed to update setting" };
+    }
+  })
+  .post("/settings/private", async ({ jwt, headers, body }) => {
+    const authorization = headers.authorization;
+    if (!authorization) return { error: "Authentication required" };
+
+    try {
+      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+      if (!payload) return { error: "Invalid token" };
+
+      const currentUser = getUserByUsername.get(payload.username);
+      if (!currentUser) return { error: "User not found" };
+
+      const { enabled } = body;
+
+      updatePrivacy.run(enabled ? 1 : 0, currentUser.id);
+
+      return { success: true };
+    } catch (error) {
+      console.error("Update privacy setting error:", error);
       return { error: "Failed to update setting" };
     }
   });

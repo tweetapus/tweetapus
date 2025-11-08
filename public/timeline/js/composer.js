@@ -58,7 +58,6 @@ export const useComposer = (
   let replyRestriction = "everyone";
   let selectedGif = null;
   let scheduledFor = null;
-  const currentInteractiveCard = interactiveCard;
 
   const updateCharacterCount = () => {
     const length = textarea.value.length;
@@ -258,7 +257,7 @@ export const useComposer = (
 
       pendingFiles.push(fileData);
       displayAttachmentPreview(fileData);
-      // ensure the tweet button updates immediately when files are added
+
       updateCharacterCount();
       return fileData;
     } catch (error) {
@@ -354,8 +353,6 @@ export const useComposer = (
     }
   });
 
-  // Mention autocomplete
-  // create or reuse a single popup element appended to body so suggestions act like a popup
   let mentionBox = document.querySelector("#mention-suggestions-popup");
   if (!mentionBox) {
     mentionBox = document.createElement("div");
@@ -381,7 +378,6 @@ export const useComposer = (
   const renderMentions = () => {
     if (!mentionBox) return;
     if (!mentionCandidates) mentionCandidates = [];
-    // show 'No results' message when empty
     if (mentionCandidates.length === 0) {
       const rect = textarea.getBoundingClientRect();
       mentionBox.style.left = `${rect.left + window.scrollX}px`;
@@ -391,7 +387,7 @@ export const useComposer = (
       mentionBox.style.display = "block";
       return;
     }
-    // position popup near textarea
+
     const rect = textarea.getBoundingClientRect();
     mentionBox.style.left = `${rect.left + window.scrollX}px`;
     mentionBox.style.top = `${rect.bottom + window.scrollY + 6}px`;
@@ -413,7 +409,6 @@ export const useComposer = (
         </div>
       `;
       div.addEventListener("mousedown", (ev) => {
-        // prevent blur on textarea
         ev.preventDefault();
         selectMention(i);
       });
@@ -426,10 +421,8 @@ export const useComposer = (
     const user = mentionCandidates[i];
     if (!user) return;
 
-    // replace the @query at the caret with the full handle
     const value = textarea.value;
     const selStart = textarea.selectionStart;
-    // find the last '@' before selStart that starts a mention
     const upto = value.slice(0, selStart);
     const atMatch = upto.match(/@([\w\d_\-.]{0,64})$/);
     if (!atMatch) return closeMentions();
@@ -453,7 +446,6 @@ export const useComposer = (
       return;
     }
 
-    // call existing query helper for /search/users?q=
     try {
       const { users, error } = await query(
         `/search/users?q=${encodeURIComponent(q)}`
@@ -461,11 +453,9 @@ export const useComposer = (
       if (error) {
         mentionCandidates = [];
       } else {
-        // filter by prefix match on username or name starting with q (case-insensitive)
         const lower = q.toLowerCase();
         const filtered = (users || []).filter((u) => {
           if (!u) return false;
-          // exclude suspended accounts
           if (u.suspended) return false;
           const uname = (u.username || "").toLowerCase();
           const name = (u.name || "").toLowerCase();
@@ -512,7 +502,6 @@ export const useComposer = (
         mentionCandidates.length;
       renderMentions();
     } else if (e.key === "Enter" || e.key === "Tab") {
-      // if mention visible, select
       if (mentionCandidates.length > 0) {
         e.preventDefault();
         selectMention(mentionIndex >= 0 ? mentionIndex : 0);
@@ -522,7 +511,6 @@ export const useComposer = (
     }
   });
 
-  // click outside to close
   document.addEventListener("click", (e) => {
     if (!mentionBox) return;
     if (!element.contains(e.target) && e.target !== mentionBox) {
@@ -648,14 +636,12 @@ export const useComposer = (
               .addEventListener("click", () => {
                 selectedGif = null;
                 previewEl.remove();
-                // update button state after removing the GIF
                 updateCharacterCount();
               });
 
             attachmentPreview.appendChild(previewEl);
             gifPicker.style.display = "none";
             gifSearchInput.value = "";
-            // update button state after selecting a GIF
             updateCharacterCount();
           });
 
@@ -683,11 +669,8 @@ export const useComposer = (
     emojiBtn.addEventListener("click", async (e) => {
       e.preventDefault();
       const rect = emojiBtn.getBoundingClientRect();
-      // Use the popup's onEmojiSelect callback so the picker normalizes
-      // selections (unicode or :shortcode:) for us and the popup handles cleanup.
       await showEmojiPickerPopup(
         (emoji) => {
-          // emoji may be a unicode character (standard emoji) or a shortcode like :name:
           if (!emoji) return;
           const start = textarea.selectionStart;
           const end = textarea.selectionEnd;
@@ -1416,7 +1399,7 @@ export const createComposer = async ({
                 </div>
               </div>
               <div class="compose-submit">
-                <div class="character-counter" id="">
+                <div class="character-counter">
                   <span id="char-count">0</span>/400
                 </div>
                 <button id="tweet-button" disabled="">Tweet</button>
@@ -1519,6 +1502,10 @@ export const createComposer = async ({
     const counter = el.querySelector(".character-counter");
     if (counter) {
       counter.innerHTML = `<span id="char-count">0</span>/${maxChars}`;
+    }
+
+    if (maxChars > 999999) {
+      counter.style.display = "none";
     }
 
     const textareaEl = el.querySelector("#tweet-textarea");

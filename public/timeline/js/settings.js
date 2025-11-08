@@ -121,6 +121,44 @@ const createAccountContent = () => {
   h1.textContent = "Account Settings";
   section.appendChild(h1);
 
+  const privacyGroup = document.createElement("div");
+  privacyGroup.className = "setting-group";
+  const privacyH2 = document.createElement("h2");
+  privacyH2.textContent = "Privacy";
+  privacyGroup.appendChild(privacyH2);
+
+  const privateItem = document.createElement("div");
+  privateItem.className = "setting-item";
+
+  const privateLabel = document.createElement("div");
+  privateLabel.className = "setting-label";
+  const privateTitle = document.createElement("div");
+  privateTitle.className = "setting-title";
+  privateTitle.textContent = "Private Account";
+  const privateDesc = document.createElement("div");
+  privateDesc.className = "setting-description";
+  privateDesc.textContent =
+    "When enabled, only approved followers can see your posts";
+  privateLabel.appendChild(privateTitle);
+  privateLabel.appendChild(privateDesc);
+
+  const privateControl = document.createElement("div");
+  privateControl.className = "setting-control";
+
+  const privateToggle = document.createElement("label");
+  privateToggle.className = "toggle-switch";
+  privateToggle.innerHTML = `
+    <input type="checkbox" id="private-account-toggle" />
+    <span class="toggle-slider"></span>
+  `;
+
+  privateControl.appendChild(privateToggle);
+  privateItem.appendChild(privateLabel);
+  privateItem.appendChild(privateControl);
+  privacyGroup.appendChild(privateItem);
+
+  section.appendChild(privacyGroup);
+
   const group = document.createElement("div");
   group.className = "setting-group";
   const h2 = document.createElement("h2");
@@ -895,6 +933,12 @@ const initializeSettings = () => {
         loadCurrentThemeMode();
       }, 50);
     }
+
+    if (tabKey === "account") {
+      setTimeout(() => {
+        loadPrivacySettings();
+      }, 50);
+    }
   };
 
   tabButtons.forEach((btn) => {
@@ -916,16 +960,19 @@ const initializeSettings = () => {
 };
 
 const setupSettingsEventHandlers = async () => {
-  if (!authToken) return;
-
+  // Always register event handlers so UI interactions (modals, buttons)
+  // work even if the auth token hasn't been loaded yet. If a token is
+  // available we try to fetch the current user; failures are non-fatal.
   try {
-    const data = await query("/auth/me");
-    if (data.user) {
-      currentUser = data.user;
+    if (authToken) {
+      const data = await query("/auth/me");
+      if (data?.user) {
+        currentUser = data.user;
 
-      if (currentUser.theme) {
-        localStorage.setItem("theme", currentUser.theme);
-        handleThemeModeChange(currentUser.theme);
+        if (currentUser.theme) {
+          localStorage.setItem("theme", currentUser.theme);
+          handleThemeModeChange(currentUser.theme);
+        }
       }
     }
   } catch (error) {
@@ -974,7 +1021,7 @@ const setupSettingsEventHandlers = async () => {
     }
 
     // Save theme/account-wide preferences
-    if (target.id === "saveThemeBtn") {
+    if (target.closest?.("#saveThemeBtn")) {
       saveThemeToServer();
     }
 
@@ -987,38 +1034,47 @@ const setupSettingsEventHandlers = async () => {
     if (target.classList.contains("theme-mode-select")) {
     }
 
-    if (target.id === "changeUsernameBtn") {
+    if (target.closest?.("#changeUsernameBtn")) {
       showModal(document.getElementById("changeUsernameModal"));
       if (currentUser?.username) {
-        document.getElementById("newUsername").value = currentUser.username;
+        const nu = document.getElementById("newUsername");
+        if (nu) nu.value = currentUser.username;
       }
     }
 
-    if (target.id === "addPasskeyBtn") {
+    if (target.closest?.("#addPasskeyBtn")) {
       handleAddPasskey();
     }
 
-    if (target.id === "changePasswordBtn") {
+    if (target.closest?.("#changePasswordBtn")) {
       const modal = document.getElementById("changePasswordModal");
-      const hasPassword = currentUser?.password_hash !== null;
+      if (modal) {
+        const hasPassword = currentUser?.password_hash !== null;
 
-      modal.querySelector("h2").textContent = hasPassword
-        ? "Change Password"
-        : "Set Password";
-      modal.querySelector("button[type='submit']").textContent = hasPassword
-        ? "Change Password"
-        : "Set Password";
+        const h2 = modal.querySelector("h2");
+        if (h2)
+          h2.textContent = hasPassword ? "Change Password" : "Set Password";
 
-      const currentPasswordGroup = document.getElementById(
-        "currentPasswordGroup"
-      );
-      currentPasswordGroup.style.display = hasPassword ? "block" : "none";
+        const submitBtn = modal.querySelector("button[type='submit']");
+        if (submitBtn)
+          submitBtn.textContent = hasPassword
+            ? "Change Password"
+            : "Set Password";
 
-      document.getElementById("changePasswordForm").reset();
-      showModal(modal);
+        const currentPasswordGroup = document.getElementById(
+          "currentPasswordGroup"
+        );
+        if (currentPasswordGroup)
+          currentPasswordGroup.style.display = hasPassword ? "block" : "none";
+
+        const cpf = document.getElementById("changePasswordForm");
+        if (cpf && typeof cpf.reset === "function") cpf.reset();
+
+        showModal(modal);
+      }
     }
 
-    if (target.id === "deleteAccountBtn") {
+    if (target.closest?.("#deleteAccountBtn")) {
       showModal(document.getElementById("deleteAccountModal"));
     }
 
@@ -1178,6 +1234,59 @@ const loadCurrentThemeMode = () => {
       }
     });
   }
+};
+
+const loadPrivacySettings = async () => {
+  const checkbox = document.getElementById("private-account-toggle");
+  if (!checkbox) return;
+
+  try {
+    const data = await query("/auth/me");
+    const serverEnabled = !!data.user?.private;
+    checkbox.checked = serverEnabled;
+    checkbox.defaultChecked = serverEnabled;
+    checkbox.dataset.serverState = serverEnabled ? "on" : "off";
+    checkbox.setAttribute("aria-checked", serverEnabled ? "true" : "false");
+  } catch (error) {
+    console.error("Failed to load privacy setting:", error);
+    checkbox.checked = false;
+    checkbox.defaultChecked = false;
+    checkbox.dataset.serverState = "off";
+    checkbox.setAttribute("aria-checked", "false");
+  }
+
+  checkbox.addEventListener("change", async (e) => {
+    const enabled = e.target.checked;
+    try {
+      const result = await query("/profile/settings/private", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enabled }),
+      });
+
+      if (result.success) {
+        checkbox.dataset.serverState = enabled ? "on" : "off";
+        checkbox.setAttribute("aria-checked", enabled ? "true" : "false");
+        toastQueue.add(
+          `<h1>Privacy ${enabled ? "Enabled" : "Disabled"}</h1><p>${
+            enabled
+              ? "Your account is now private. Only approved followers can see your posts."
+              : "Your account is now public. Anyone can see your posts."
+          }</p>`
+        );
+      } else {
+        e.target.checked = !enabled;
+        checkbox.setAttribute("aria-checked", !enabled ? "true" : "false");
+        toastQueue.add(`<h1>Failed to update setting</h1>`);
+      }
+    } catch {
+      e.target.checked = !enabled;
+      checkbox.setAttribute("aria-checked", !enabled ? "true" : "false");
+      toastQueue.add(`<h1>Failed to update setting</h1>`);
+    }
+  });
 };
 
 const showModal = (modal) => {

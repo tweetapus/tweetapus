@@ -305,6 +305,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
     author,
     poll: getPollDataForTweet(quotedTweet.id, userId),
     attachments: getTweetAttachments(quotedTweet.id),
+    interactive_card: getCardDataForTweet(quotedTweet.id),
   };
 };
 

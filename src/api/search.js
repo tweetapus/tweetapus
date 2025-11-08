@@ -16,7 +16,9 @@ const searchUsersQuery = db.query(`
 const searchPostsQuery = db.query(`
   SELECT posts.* FROM posts 
   JOIN users ON posts.user_id = users.id
+  LEFT JOIN follows ON (posts.user_id = follows.following_id AND follows.follower_id = ?)
   WHERE LOWER(posts.content) LIKE LOWER(?) AND users.suspended = 0
+  AND (users.private = 0 OR follows.id IS NOT NULL OR posts.user_id = ?)
   ORDER BY posts.created_at DESC 
   LIMIT 20
 `);
@@ -96,6 +98,25 @@ const getTweetAttachments = (tweetId) => {
   return getAttachmentsByPostId.all(tweetId);
 };
 
+const getCardByPostId = db.query(`
+  SELECT * FROM interactive_cards WHERE post_id = ?
+`);
+
+const getCardOptions = db.query(`
+  SELECT * FROM interactive_card_options WHERE card_id = ? ORDER BY option_order ASC
+`);
+
+const getCardDataForTweet = (tweetId) => {
+  const card = getCardByPostId.get(tweetId);
+  if (!card) return null;
+
+  const options = getCardOptions.all(card.id);
+  return {
+    ...card,
+    options,
+  };
+};
+
 const getQuotedTweetData = (quoteTweetId, userId) => {
   if (!quoteTweetId) return null;
 
@@ -129,6 +150,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
     author,
     poll: getPollDataForTweet(quotedTweet.id, userId),
     attachments: getTweetAttachments(quotedTweet.id),
+    interactive_card: getCardDataForTweet(quotedTweet.id),
   };
 };
 
@@ -164,6 +186,7 @@ const getTopReplyData = (tweetId, userId) => {
     poll: getPollDataForTweet(topReply.id, userId),
     quoted_tweet: getQuotedTweetData(topReply.quote_tweet_id, userId),
     attachments: getTweetAttachments(topReply.id),
+    interactive_card: getCardDataForTweet(topReply.id),
   };
 };
 
@@ -219,9 +242,9 @@ export default new Elysia({ prefix: "/search" })
     if (!q || q.trim().length === 0) return { posts: [] };
 
     const raw = q.trim();
-    // Always use a contains match so short queries behave like normal searches
     const searchTerm = `%${raw}%`;
-    const posts = searchPostsQuery.all(searchTerm);
+    const userId = user?.id || null;
+    const posts = searchPostsQuery.all(userId, searchTerm, userId);
 
     if (posts.length === 0) return { posts: [] };
 
@@ -298,6 +321,7 @@ export default new Elysia({ prefix: "/search" })
         ),
         top_reply: shouldShowTopReply ? topReply : null,
         attachments: getTweetAttachments(post.id),
+        interactive_card: getCardDataForTweet(post.id),
       };
     });
 

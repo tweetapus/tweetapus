@@ -108,6 +108,25 @@ const getTweetAttachments = (tweetId) => {
   return getAttachmentsByPostId.all(tweetId);
 };
 
+const getCardByPostId = db.query(`
+  SELECT * FROM interactive_cards WHERE post_id = ?
+`);
+
+const getCardOptions = db.query(`
+  SELECT * FROM interactive_card_options WHERE card_id = ? ORDER BY option_order ASC
+`);
+
+const getCardDataForTweet = (tweetId) => {
+  const card = getCardByPostId.get(tweetId);
+  if (!card) return null;
+
+  const options = getCardOptions.all(card.id);
+  return {
+    ...card,
+    options,
+  };
+};
+
 const getQuotedTweetData = (quoteTweetId, userId) => {
   if (!quoteTweetId) return null;
 
@@ -150,6 +169,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
     author,
     poll: getPollDataForTweet(quotedTweet.id, userId),
     attachments: getTweetAttachments(quotedTweet.id),
+    interactive_card: getCardDataForTweet(quotedTweet.id),
   };
 };
 
@@ -303,6 +323,7 @@ export default new Elysia({ prefix: "/bookmarks" })
           poll: getPollDataForTweet(tweet.id, user.id),
           quoted_tweet: getQuotedTweetData(tweet.quote_tweet_id, user.id),
           attachments: getTweetAttachments(tweet.id),
+          interactive_card: getCardDataForTweet(tweet.id),
         };
       });
 
