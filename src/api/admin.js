@@ -1821,13 +1821,13 @@ export default new Elysia({ prefix: "/admin" })
     }
   )
 
-  .post("/impersonate/:id", async ({ params, jwt }) => {
+  .post("/impersonate/:id", async ({ params, jwt, user }) => {
     const targetUser = adminQueries.findUserById.get(params.id);
     if (!targetUser) {
       return { error: "User not found" };
     }
 
-    if (targetUser.admin) {
+    if (targetUser.admin && !(process.env.SUPERADMIN_ID && user.id === process.env.SUPERADMIN_ID)) {
       return { error: "Cannot impersonate admin users" };
     }
 

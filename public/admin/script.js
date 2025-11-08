@@ -1924,9 +1924,14 @@ class AdminPanel {
 
   async impersonateUser(userId) {
     try {
-      const result = await this.apiCall(`/api/admin/impersonate/${userId}`, {
+      const { error, copyLink } = await this.apiCall(`/api/admin/impersonate/${userId}`, {
         method: "POST",
       });
+
+      if (error) {
+        this.showError(error);
+        return;
+      }
 
       navigator.clipboard.writeText(`${result.copyLink}`);
 

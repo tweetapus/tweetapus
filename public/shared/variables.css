@@ -1,7 +1,7 @@
 :root {
   color-scheme: light;
 
-  --primary: #1e66f5;
+  --primary: rgb(var(--primary-rgb));
   --primary-rgb: 30, 102, 245;
   --primary-hover: #1b5ce0;
   --primary-focus: #174fc0;
@@ -54,8 +54,7 @@
 .dark {
   color-scheme: dark;
 
-  --primary: #cba6f7;
-  --primary-rgb: 203, 166, 247;
+  --primary-rgb: 172, 151, 255;
   --primary-hover: #c29def;
   --primary-focus: #ae87de;
 

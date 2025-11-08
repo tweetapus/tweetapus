@@ -1768,6 +1768,35 @@ document
                 navigator.clipboard.writeText(profileUrl);
               },
             },
+            {
+                id: "request-affiliate",
+                icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18.6471 15.3333V18.6667M18.6471 18.6667L18.6471 22M18.6471 18.6667H22M18.6471 18.6667H15.2941M3 22C3 17.7044 6.69722 14.2222 11.258 14.2222C12.0859 14.2222 12.8854 14.3369 13.6394 14.5505M16.4118 6.44444C16.4118 8.89904 14.4102 10.8889 11.9412 10.8889C9.47214 10.8889 7.47059 8.89904 7.47059 6.44444C7.47059 3.98985 9.47214 2 11.9412 2C14.4102 2 16.4118 3.98985 16.4118 6.44444Z"></path></svg>`,
+                title: `Invite to be your affiliate`,
+                onClick: async () => {
+                  try {
+                    const result = await query(
+                      `/profile/${currentProfile.profile.username}/affiliate`,
+                      { method: "POST" }
+                    );
+                    if (result?.success) {
+                      toastQueue.add(
+                        `<h1>Request sent</h1><p>Your affiliate request has been sent.</p>`
+                      );
+                    } else {
+                      toastQueue.add(
+                        `<h1>Failed</h1><p>${
+                          result.error || "Failed to send request"
+                        }</p>`
+                      );
+                    }
+                  } catch (err) {
+                    console.error("Affiliate request error:", err);
+                    toastQueue.add(
+                      `<h1>Network error</h1><p>Please try again</p>`
+                    );
+                  }
+                },
+              }
           ];
 
           const items = [...baseItems];
@@ -1783,7 +1812,7 @@ document
             );
             const isBlocked = checkResp?.blocked || false;
 
-            const blockItem = {
+            items.push({
               id: isBlocked ? "unblock-user" : "block-user",
               icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>`,
               title: isBlocked
@@ -1826,43 +1855,7 @@ document
                   toastQueue.add(`<h1>Network error. Please try again.</h1>`);
                 }
               },
-            };
-
-            if (!currentProfile.profile.affiliate) {
-              const affiliateItem = {
-                id: "request-affiliate",
-                icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"></path><path d="M12 22v-6"></path><path d="M4 12h16"></path></svg>`,
-                title: `Invite to be your affiliate`,
-                onClick: async () => {
-                  try {
-                    const result = await query(
-                      `/profile/${currentProfile.profile.username}/affiliate`,
-                      { method: "POST" }
-                    );
-                    if (result?.success) {
-                      toastQueue.add(
-                        `<h1>Request sent</h1><p>Your affiliate request has been sent.</p>`
-                      );
-                    } else {
-                      toastQueue.add(
-                        `<h1>Failed</h1><p>${
-                          result.error || "Failed to send request"
-                        }</p>`
-                      );
-                    }
-                  } catch (err) {
-                    console.error("Affiliate request error:", err);
-                    toastQueue.add(
-                      `<h1>Network error</h1><p>Please try again</p>`
-                    );
-                  }
-                },
-              };
-
-              items.push(affiliateItem);
-            } else {
-              items.push(blockItem);
-            }
+            });
           }
 
           createPopup({
@@ -2052,7 +2045,7 @@ document
 
             items.push({
               id: "manage-affiliates",
-              icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v6"></path><path d="M12 22v-6"></path><path d="M4 12h16"></path></svg>`,
+              icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18.6471 15.3333V18.6667M18.6471 18.6667L18.6471 22M18.6471 18.6667H22M18.6471 18.6667H15.2941M3 22C3 17.7044 6.69722 14.2222 11.258 14.2222C12.0859 14.2222 12.8854 14.3369 13.6394 14.5505M16.4118 6.44444C16.4118 8.89904 14.4102 10.8889 11.9412 10.8889C9.47214 10.8889 7.47059 8.89904 7.47059 6.44444C7.47059 3.98985 9.47214 2 11.9412 2C14.4102 2 16.4118 3.98985 16.4118 6.44444Z"></path></svg>`,
               title: "Manage affiliate requests",
               onClick: openAffModal,
             });
