@@ -26,8 +26,8 @@ export function openImageCropper(file, options = {}) {
 
     const zoom = document.createElement("input");
     zoom.type = "range";
-    zoom.min = -0.5;
-    zoom.max = 1;
+    zoom.min = 0;
+    zoom.max = 3;
     zoom.step = 0.01;
     zoom.value = 0;
     zoom.className = "image-cropper-zoom";
@@ -64,15 +64,19 @@ export function openImageCropper(file, options = {}) {
 
       let scale = 1;
       let baseScale = 1;
+      let minScale = 1;
+      let maxScale = 1;
+      let zoomRelative = 0;
+      let zoomMaxRelative = 3;
       let offsetX = 0;
       let offsetY = 0;
       let dragging = false;
       let lastX = 0;
       let lastY = 0;
 
-      let maxFactor = 1;
       const pointers = new Map();
       let prevPinchDistance = 0;
+      const minRelative = 0;
 
       const draw = () => {
         const dw = canvas.width;
@@ -94,10 +98,22 @@ export function openImageCropper(file, options = {}) {
         const ih = img.height * scale;
         const minX = Math.min(0, dw - iw);
         const minY = Math.min(0, dh - ih);
-        if (offsetX > 0) offsetX = 0;
-        if (offsetY > 0) offsetY = 0;
-        if (offsetX < minX) offsetX = minX;
-        if (offsetY < minY) offsetY = minY;
+
+        if (iw <= dw) {
+          offsetX = (dw - iw) / 2;
+        } else if (offsetX > 0) {
+          offsetX = 0;
+        } else if (offsetX < minX) {
+          offsetX = minX;
+        }
+
+        if (ih <= dh) {
+          offsetY = (dh - ih) / 2;
+        } else if (offsetY > 0) {
+          offsetY = 0;
+        } else if (offsetY < minY) {
+          offsetY = minY;
+        }
       };
 
       canvas.addEventListener("pointerdown", (ev) => {
@@ -142,10 +158,12 @@ export function openImageCropper(file, options = {}) {
           if (prevPinchDistance && Math.abs(dist - prevPinchDistance) > 2) {
             const ratio = dist / prevPinchDistance;
             const delta = Math.log2(ratio) * 0.25;
-            zoom.value = Math.min(
-              1,
-              Math.max(0, parseFloat(zoom.value) + delta)
+            const current = parseFloat(zoom.value) || 0;
+            const next = Math.max(
+              minRelative,
+              Math.min(zoomMaxRelative, current + delta)
             );
+            zoom.value = `${next}`;
             zoom.dispatchEvent(new Event("input"));
           }
           prevPinchDistance = dist;
@@ -166,41 +184,64 @@ export function openImageCropper(file, options = {}) {
         "wheel",
         (ev) => {
           ev.preventDefault();
-          const delta = ev.deltaY > 0 ? -0.03 : 0.03;
-          zoom.value = Math.min(1, Math.max(0, parseFloat(zoom.value) + delta));
+          const delta = ev.deltaY > 0 ? -0.05 : 0.05;
+          const current = parseFloat(zoom.value) || 0;
+          const next = Math.max(
+            minRelative,
+            Math.min(zoomMaxRelative, current + delta)
+          );
+          zoom.value = `${next}`;
           zoom.dispatchEvent(new Event("input"));
         },
         { passive: false }
       );
 
       zoom.addEventListener("input", (e) => {
-        const sliderPos = Math.min(
-          1,
-          Math.max(0, parseFloat(e.target.value) || 0)
+        const raw = parseFloat(e.target.value);
+        const desired = Number.isFinite(raw) ? raw : 0;
+        const clamped = Math.max(
+          minRelative,
+          Math.min(zoomMaxRelative, desired)
         );
-        const factor = 1 + sliderPos * (maxFactor - 1);
-        const newScale = baseScale * factor;
-        const cx = canvas.width / 2 - offsetX;
-        const cy = canvas.height / 2 - offsetY;
-        const relX = cx / scale;
-        const relY = cy / scale;
-        scale = newScale;
-        offsetX = canvas.width / 2 - relX * scale;
-        offsetY = canvas.height / 2 - relY * scale;
+        const previousScale = scale;
+        const targetScale = Math.max(
+          minScale,
+          Math.min(maxScale, baseScale * (1 + clamped))
+        );
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const relX = (centerX - offsetX) / previousScale;
+        const relY = (centerY - offsetY) / previousScale;
+        scale = targetScale;
+        offsetX = centerX - relX * targetScale;
+        offsetY = centerY - relY * targetScale;
         constrain();
+
+        zoomRelative = Math.max(
+          minRelative,
+          Math.min(zoomMaxRelative, scale / baseScale - 1)
+        );
+        zoom.value = `${zoomRelative}`;
         draw();
       });
 
       const scaleX = canvas.width / img.width;
       const scaleY = canvas.height / img.height;
-      const coverScale = Math.max(scaleX, scaleY);
-      baseScale = Math.max(1, coverScale);
+      const containScale = Math.min(scaleX, scaleY);
+      baseScale = containScale > 0 ? containScale : 1;
+      if (baseScale > 1) baseScale = 1;
+      if (baseScale <= 0) baseScale = 0.01;
+      minScale = baseScale;
+      maxScale = Math.max(6, baseScale * 4);
+      zoomMaxRelative = Math.max(0, maxScale / baseScale - 1);
       scale = baseScale;
       offsetX = (canvas.width - img.width * scale) / 2;
       offsetY = (canvas.height - img.height * scale) / 2;
-      const maxAbsoluteScale = Math.max(6, baseScale * 4);
-      maxFactor = Math.max(2, maxAbsoluteScale / baseScale);
-      zoom.value = 0;
+      zoomRelative = 0;
+      zoom.min = `${minRelative}`;
+      zoom.max = `${zoomMaxRelative}`;
+      zoom.value = "0";
       draw();
 
       cancelBtn.addEventListener("click", () => {

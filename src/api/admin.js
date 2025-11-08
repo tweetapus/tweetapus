@@ -1248,6 +1248,7 @@ export default new Elysia({ prefix: "/admin" })
         cloneReactions: t.Optional(t.Boolean()),
         cloneCommunities: t.Optional(t.Boolean()),
         cloneMedia: t.Optional(t.Boolean()),
+        cloneAffiliate: t.Optional(t.Boolean()),
       }),
     }
   )

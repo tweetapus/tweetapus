@@ -854,6 +854,8 @@ const createChangeUsernameModal = () => {
   modal.style.display = "flex";
   modal.style.flexDirection = "column";
   modal.style.overflow = "hidden";
+  modal.style.margin = "0 auto";
+  modal.style.alignSelf = "center";
 
   const header = document.createElement("div");
   header.className = "modal-header";
@@ -1011,6 +1013,8 @@ const createDeleteAccountModal = () => {
   modal.style.display = "flex";
   modal.style.flexDirection = "column";
   modal.style.overflow = "hidden";
+  modal.style.margin = "0 auto";
+  modal.style.alignSelf = "center";
 
   const header = document.createElement("div");
   header.className = "modal-header";
@@ -1155,6 +1159,8 @@ const createChangePasswordModal = () => {
   modal.style.display = "flex";
   modal.style.flexDirection = "column";
   modal.style.overflow = "hidden";
+  modal.style.margin = "0 auto";
+  modal.style.alignSelf = "center";
 
   const header = document.createElement("div");
   header.className = "modal-header";
@@ -1762,6 +1768,23 @@ const showModal = (element) => {
     ? element
     : element.closest?.(".settings-modal-overlay") || element;
   overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.flexDirection = "column";
+  overlay.style.width = "100%";
+  overlay.style.height = "100%";
+  overlay.style.minWidth = "100vw";
+  overlay.style.minHeight = "100vh";
+  overlay.style.padding = "0";
+  overlay.style.boxSizing = "border-box";
+  overlay.style.overflowY = "auto";
+  overlay.scrollTop = 0;
+
+  const modal = overlay.querySelector?.(".settings-form-modal");
+  if (modal) {
+    modal.style.margin = "auto";
+    modal.style.alignSelf = "center";
+  }
 };
 const hideModal = (element) => {
   if (!element) return;

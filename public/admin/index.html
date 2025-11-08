@@ -981,10 +981,10 @@
                 type="range"
                 id="emojiCropZoom"
                 class="form-range"
-                min="1"
+                min="-1"
                 max="4"
                 step="0.01"
-                value="1"
+                value="0"
               />
             </div>
             <p class="text-muted small mb-0">
@@ -994,7 +994,14 @@
           <div class="modal-footer">
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn btn-outline-secondary"
+              id="emojiCropReset"
+            >
+              Reset Zoom
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary ms-auto"
               id="emojiCropCancel"
             >
               Cancel

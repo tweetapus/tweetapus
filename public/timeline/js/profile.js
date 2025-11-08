@@ -595,8 +595,6 @@ const renderProfile = (data) => {
     const existingMainBadge = mainDisplayNameEl.querySelector(
       ".verification-badge"
     );
-    const existingMainAdmin =
-      mainDisplayNameEl.querySelector(".role-badge.admin");
 
     if (!suspended && (profile.verified || profile.gold)) {
       const badgeColor = profile.gold ? "#D4AF37" : "var(--primary)";
@@ -665,11 +663,19 @@ const renderProfile = (data) => {
           imgMain.style.height = "20px";
           imgMain.style.objectFit = "cover";
           if (aff.avatar_radius !== null && aff.avatar_radius !== undefined) {
-            imgMain.style.borderRadius = `${aff.avatar_radius}px`;
+            const rawRadius = Number(aff.avatar_radius);
+            const safeRadius = Number.isFinite(rawRadius)
+              ? Math.max(0, Math.min(100, rawRadius))
+              : 0;
+            imgMain.style.setProperty(
+              "border-radius",
+              `${safeRadius}%`,
+              "important"
+            );
           } else if (aff.gold) {
-            imgMain.style.borderRadius = `4px`;
+            imgMain.style.setProperty("border-radius", "4px", "important");
           } else {
-            imgMain.style.borderRadius = `50%`;
+            imgMain.style.setProperty("border-radius", "50%", "important");
           }
         }
       }
@@ -787,8 +793,13 @@ const renderProfile = (data) => {
 
   const meta = [];
   if (!suspended) {
-    if (profile.location) meta.push(`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHTML(profile.location)}`);
-    
+    if (profile.location)
+      meta.push(
+        `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-map-pin-icon lucide-map-pin"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></svg> ${escapeHTML(
+          profile.location
+        )}`
+      );
+
     if (profile.website) {
       const url = profile.website.startsWith("http")
         ? profile.website
@@ -1716,7 +1727,7 @@ document
 
         renderProfile(currentProfile);
       }
-    } catch (err) {
+    } catch (_err) {
       toastQueue.add("<h1>Failed to remove affiliate badge</h1>");
     }
   });

@@ -306,6 +306,7 @@ class AdminPanel {
     const zoom = document.getElementById("emojiCropZoom");
     const applyBtn = document.getElementById("emojiCropApply");
     const cancelBtn = document.getElementById("emojiCropCancel");
+    const resetBtn = document.getElementById("emojiCropReset");
     if (!modalEl || !canvas || !zoom || !applyBtn || !cancelBtn) return;
 
     this.emojiCropperInitialized = true;
@@ -322,6 +323,7 @@ class AdminPanel {
       zoom,
       applyBtn,
       cancelBtn,
+      resetBtn,
       modalEl,
       size,
       ratio,
@@ -329,6 +331,9 @@ class AdminPanel {
       scale: 1,
       minScale: 1,
       maxScale: 4,
+      baseScale: 1,
+      zoomRelative: 0,
+      zoomMaxRelative: 4,
       offsetX: 0,
       offsetY: 0,
       isDragging: false,
@@ -355,10 +360,26 @@ class AdminPanel {
       this.cancelEmojiCrop();
     });
 
+    if (resetBtn) {
+      resetBtn.addEventListener("click", () => {
+        if (!this.emojiCropper?.zoom) return;
+        this.emojiCropper.zoom.value = "0";
+        this.updateEmojiScale(0);
+      });
+      resetBtn.disabled = true;
+    }
+
     modalEl.addEventListener("hidden.bs.modal", () => {
       if (this.emojiCropper) {
         this.emojiCropper.image = null;
         this.emojiCropper.isDragging = false;
+        this.emojiCropper.zoomRelative = 0;
+      }
+      if (this.emojiCropper?.zoom) {
+        this.emojiCropper.zoom.value = "0";
+      }
+      if (this.emojiCropper?.resetBtn) {
+        this.emojiCropper.resetBtn.disabled = true;
       }
       this.pendingEmojiFile = null;
     });
@@ -429,21 +450,32 @@ class AdminPanel {
       const crop = this.emojiCropper;
       crop.image = img;
       const canvasSize = crop.size * crop.ratio;
-      const minScale = Math.max(
+      const containScale = Math.min(
         canvasSize / img.width,
         canvasSize / img.height
       );
-      const maxScale = Math.max(minScale * 6, minScale + 0.5);
-      crop.minScale = minScale;
+      let baseScale = containScale > 0 ? containScale : 1;
+      if (baseScale > 1) baseScale = 1;
+      if (baseScale <= 0) baseScale = 0.01;
+      const maxScale = Math.max(baseScale * 4, 6);
+      crop.baseScale = baseScale;
+      crop.minScale = baseScale;
       crop.maxScale = maxScale;
-      crop.scale = minScale;
+      crop.scale = baseScale;
+      crop.zoomRelative = 0;
+      crop.zoomMaxRelative = Math.max(0, maxScale / baseScale - 1);
       crop.offsetX = (canvasSize - img.width * crop.scale) / 2;
       crop.offsetY = (canvasSize - img.height * crop.scale) / 2;
-      crop.zoom.min = `${minScale}`;
-      crop.zoom.max = `${maxScale}`;
-      crop.zoom.step = Math.max(minScale / 100, 0.01);
-      crop.zoom.value = `${minScale}`;
-      this.drawEmojiCrop();
+      if (crop.zoom) {
+        crop.zoom.min = "0";
+        crop.zoom.max = `${crop.zoomMaxRelative}`;
+        crop.zoom.step = "0.01";
+        crop.zoom.value = "0";
+      }
+      if (crop.resetBtn) {
+        crop.resetBtn.disabled = false;
+      }
+      this.updateEmojiScale(0);
       this.emojiCropModal.show();
     };
     img.onerror = () => {
@@ -455,19 +487,39 @@ class AdminPanel {
     img.src = objectUrl;
   }
 
-  updateEmojiScale(newScale) {
+  updateEmojiScale(relativeValue) {
     const crop = this.emojiCropper;
     if (!crop || !crop.image) return;
-    const clamped = Math.max(crop.minScale, Math.min(crop.maxScale, newScale));
+    const relativeNumber = Number(relativeValue);
+    if (!Number.isFinite(relativeNumber)) return;
+    const baseScale = crop.baseScale || crop.scale || 1;
+    const maxRelative =
+      typeof crop.zoomMaxRelative === "number"
+        ? crop.zoomMaxRelative
+        : Math.max(0, (crop.maxScale || baseScale) / baseScale - 1);
+    const clampedRelative = Math.max(0, Math.min(maxRelative, relativeNumber));
+    const previousScale = crop.scale || baseScale;
+    const targetScale = Math.max(
+      crop.minScale || 0.01,
+      Math.min(crop.maxScale || baseScale * (1 + clampedRelative))
+    );
     const canvasSize = crop.size * crop.ratio;
     const centerX = canvasSize / 2;
     const centerY = canvasSize / 2;
     const relX = centerX - crop.offsetX;
     const relY = centerY - crop.offsetY;
-    const ratio = clamped / crop.scale;
+    const ratio = targetScale / (previousScale || baseScale);
     crop.offsetX = centerX - relX * ratio;
     crop.offsetY = centerY - relY * ratio;
-    crop.scale = clamped;
+    crop.scale = targetScale;
+    const adjustedRelative = Math.max(
+      0,
+      Math.min(maxRelative, targetScale / baseScale - 1)
+    );
+    crop.zoomRelative = adjustedRelative;
+    if (crop.zoom) {
+      crop.zoom.value = `${adjustedRelative}`;
+    }
     this.constrainEmojiOffsets();
     this.drawEmojiCrop();
   }
