@@ -41,6 +41,11 @@ class AdminPanel {
     this.customNotificationIconClearBtn = null;
     this.customNotificationSvgEditor = null;
     this.customNotificationSvgInput = null;
+    this.fakeNotificationPreviewSetup = false;
+    this.reportsCache = [];
+    this.reportsById = new Map();
+    this.reportDetailsModal = null;
+    this.reportDetailsModalEl = null;
 
     this.init();
   }
@@ -2871,6 +2876,7 @@ class AdminPanel {
 
     this.bindNotificationTypeOptions();
     this.initCustomNotificationIconControls();
+    this.setupFakeNotificationPreview();
 
     form.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -2881,6 +2887,8 @@ class AdminPanel {
   bindNotificationTypeOptions() {
     const select = document.getElementById("notifType");
     if (!select) return;
+
+    const refreshPreview = () => this.updateFakeNotificationPreview();
 
     const fallbackTypes = [
       "default",
@@ -2913,6 +2921,7 @@ class AdminPanel {
       if (uniqueTypes.includes(previousValue)) {
         select.value = previousValue;
       }
+      refreshPreview();
     };
 
     const hasWindowTypes = () =>
@@ -3015,6 +3024,164 @@ class AdminPanel {
     );
   }
 
+  setupFakeNotificationPreview() {
+    if (this.fakeNotificationPreviewSetup) {
+      this.updateFakeNotificationPreview();
+      return;
+    }
+
+    const typeField = document.getElementById("notifType");
+    const titleField = document.getElementById("notifTitle");
+    const subtitleField = document.getElementById("notifSubtitle");
+    const messageField = document.getElementById("notifMessage");
+    const urlField = document.getElementById("notifUrl");
+
+    const update = () => this.updateFakeNotificationPreview();
+
+    typeField?.addEventListener("change", update);
+    titleField?.addEventListener("input", update);
+    subtitleField?.addEventListener("input", update);
+    messageField?.addEventListener("input", update);
+    urlField?.addEventListener("input", update);
+    if (typeof window !== "undefined") {
+      window.addEventListener("notification-icons-ready", update, {
+        once: true,
+      });
+    }
+
+    this.fakeNotificationPreviewSetup = true;
+    this.updateFakeNotificationPreview();
+  }
+
+  updateFakeNotificationPreview() {
+    const container = document.getElementById("notifPreview");
+    if (!container) return;
+
+    container.textContent = "";
+
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.alignItems = "flex-start";
+    wrapper.style.gap = "12px";
+
+    const iconBox = document.createElement("div");
+    iconBox.style.width = "48px";
+    iconBox.style.height = "48px";
+    iconBox.style.flexShrink = "0";
+    iconBox.style.borderRadius = "14px";
+    iconBox.style.display = "flex";
+    iconBox.style.alignItems = "center";
+    iconBox.style.justifyContent = "center";
+    iconBox.style.backgroundColor = "rgba(0, 0, 0, 0.06)";
+
+    const typeValue = document.getElementById("notifType")?.value || "default";
+    const iconData = this.customNotificationIcon;
+
+    if (iconData?.kind === "image" && this.customNotificationPreviewUrl) {
+      const img = document.createElement("img");
+      img.src = this.customNotificationPreviewUrl;
+      img.alt = "";
+      img.style.width = "100%";
+      img.style.height = "100%";
+      img.style.objectFit = "cover";
+      img.style.borderRadius = "inherit";
+      iconBox.appendChild(img);
+    } else if (iconData?.kind === "svg" && iconData.previewDataUri) {
+      const img = document.createElement("img");
+      img.src = iconData.previewDataUri;
+      img.alt = "";
+      img.style.width = "70%";
+      img.style.height = "70%";
+      iconBox.appendChild(img);
+    } else {
+      const iconMap =
+        typeof window !== "undefined" && window.NOTIFICATION_ICON_MAP
+          ? window.NOTIFICATION_ICON_MAP
+          : {};
+      const svgMarkup = iconMap[typeValue] || iconMap.default || "";
+      if (svgMarkup) {
+        const holder = document.createElement("span");
+        holder.style.display = "inline-flex";
+        holder.style.alignItems = "center";
+        holder.style.justifyContent = "center";
+        holder.style.width = "32px";
+        holder.style.height = "32px";
+        holder.innerHTML = svgMarkup;
+        iconBox.appendChild(holder);
+      } else {
+        const fallback = document.createElement("span");
+        fallback.style.fontSize = "11px";
+        fallback.style.fontWeight = "600";
+        fallback.style.color = "#6c757d";
+        fallback.style.letterSpacing = "0.04em";
+        fallback.textContent = typeValue.toUpperCase();
+        iconBox.appendChild(fallback);
+      }
+    }
+
+    const textBox = document.createElement("div");
+    textBox.style.flex = "1";
+    textBox.style.minWidth = "0";
+
+    const titleValue = document.getElementById("notifTitle")?.value?.trim();
+    const subtitleValue = document
+      .getElementById("notifSubtitle")
+      ?.value?.trim();
+    const messageValue = document.getElementById("notifMessage")?.value?.trim();
+    const urlValue = document.getElementById("notifUrl")?.value?.trim();
+
+    const primaryText =
+      titleValue ||
+      subtitleValue ||
+      messageValue ||
+      "Notification title will appear here.";
+
+    const secondaryCandidates = [];
+    if (subtitleValue && subtitleValue !== primaryText)
+      secondaryCandidates.push(subtitleValue);
+    if (messageValue && messageValue !== primaryText)
+      secondaryCandidates.push(messageValue);
+    const secondaryText = secondaryCandidates[0] || "";
+
+    const primaryEl = document.createElement("div");
+    primaryEl.style.fontWeight = "600";
+    primaryEl.style.fontSize = "16px";
+    primaryEl.style.color = "#212529";
+    primaryEl.textContent = primaryText;
+    textBox.appendChild(primaryEl);
+
+    if (secondaryText) {
+      const secondaryEl = document.createElement("div");
+      secondaryEl.style.marginTop = "4px";
+      secondaryEl.style.fontSize = "14px";
+      secondaryEl.style.color = "#495057";
+      secondaryEl.textContent = secondaryText;
+      textBox.appendChild(secondaryEl);
+    }
+
+    const metaLine = document.createElement("div");
+    metaLine.style.marginTop = secondaryText ? "8px" : "12px";
+    metaLine.style.fontSize = "12px";
+    metaLine.style.color = "#adb5bd";
+    metaLine.textContent = `Type: ${typeValue}`;
+    textBox.appendChild(metaLine);
+
+    if (urlValue) {
+      const urlLine = document.createElement("div");
+      urlLine.style.marginTop = "4px";
+      urlLine.style.fontSize = "12px";
+      urlLine.style.color = "#0d6efd";
+      urlLine.style.textDecoration = "underline";
+      urlLine.textContent = urlValue;
+      textBox.appendChild(urlLine);
+    }
+
+    wrapper.appendChild(iconBox);
+    wrapper.appendChild(textBox);
+
+    container.appendChild(wrapper);
+  }
+
   clearCustomNotificationIcon() {
     if (this.customNotificationPreviewUrl) {
       try {
@@ -3031,6 +3198,7 @@ class AdminPanel {
       this.customNotificationSvgEditor.classList.add("d-none");
     if (this.customNotificationSvgInput)
       this.customNotificationSvgInput.value = "";
+    this.updateFakeNotificationPreview();
   }
 
   updateCustomNotificationPreview() {
@@ -3063,6 +3231,7 @@ class AdminPanel {
     }
 
     this.customNotificationIconPreviewEl.appendChild(img);
+    this.updateFakeNotificationPreview();
   }
 
   applyCustomSvg() {
@@ -3267,11 +3436,14 @@ class AdminPanel {
       if (resultEl)
         resultEl.innerHTML =
           '<div class="alert alert-success">Notification sent (or queued) successfully.</div>';
-      document.getElementById("notifTitle").value = "";
-      document.getElementById("notifSubtitle").value = "";
+      const titleEl = document.getElementById("notifTitle");
+      if (titleEl) titleEl.value = "";
+      const subtitleEl = document.getElementById("notifSubtitle");
+      if (subtitleEl) subtitleEl.value = "";
       const msgEl = document.getElementById("notifMessage");
       if (msgEl) msgEl.value = "";
-      document.getElementById("notifUrl").value = "";
+      const urlEl = document.getElementById("notifUrl");
+      if (urlEl) urlEl.value = "";
       this.clearCustomNotificationIcon();
     } catch (err) {
       const msg = err?.message || "Failed to send notification";
@@ -3938,6 +4110,46 @@ class AdminPanel {
     );
   }
 
+  cacheReports(reports) {
+    if (!Array.isArray(reports)) {
+      this.reportsCache = [];
+      this.reportsById = new Map();
+      return;
+    }
+
+    this.reportsCache = reports.slice();
+    const map = new Map();
+    for (const report of this.reportsCache) {
+      if (report?.id) {
+        map.set(report.id, report);
+      }
+    }
+    this.reportsById = map;
+  }
+
+  async getReportById(reportId) {
+    if (!reportId) return null;
+
+    const cached = this.reportsById?.get(reportId);
+    if (cached) return cached;
+
+    try {
+      const response = await fetch(`/api/admin/reports?limit=200`, {
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+      });
+
+      if (!response.ok) return null;
+      const data = await response.json();
+      this.cacheReports(data.reports || []);
+      return this.reportsById?.get(reportId) || null;
+    } catch (error) {
+      console.error("Error fetching report by id:", error);
+      return null;
+    }
+  }
+
   async loadReports(page = 1) {
     const limit = 50;
     const offset = (page - 1) * limit;
@@ -3965,6 +4177,7 @@ class AdminPanel {
       const total = rawTotal > 0 ? rawTotal : 0;
       const pages = total === 0 ? 1 : Math.ceil(total / limit);
 
+      this.cacheReports(data.reports || []);
       this.displayReports(data.reports || [], {
         page,
         pages,
@@ -4155,32 +4368,177 @@ class AdminPanel {
     `;
   }
 
-  showReportDetails(reportId) {
-    const report = this.findReportById(reportId);
-    if (!report) return;
+  async showReportDetails(reportId) {
+    const report = await this.getReportById(reportId);
+    if (!report) {
+      alert("Report not found");
+      return;
+    }
 
-    const details = `
-      <strong>Reason:</strong> ${report.reason}<br>
-      <strong>Additional Info:</strong> ${this.escapeHtml(
-        report.additional_info || "None"
-      )}
+    if (!this.reportDetailsModalEl) {
+      const modalEl = document.createElement("div");
+      modalEl.className = "modal fade";
+      modalEl.id = "reportDetailsModal";
+      modalEl.tabIndex = -1;
+      modalEl.innerHTML = `
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Report Details</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body"></div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(modalEl);
+      this.reportDetailsModalEl = modalEl;
+      this.reportDetailsModal = new bootstrap.Modal(modalEl);
+    }
+
+    const reasonLabels = {
+      spam: "Spam",
+      harassment: "Harassment",
+      hate_speech: "Hate Speech",
+      violence: "Violence",
+      nsfw: "NSFW",
+      impersonation: "Impersonation",
+      misinformation: "Misinformation",
+      illegal: "Illegal",
+      other: "Other",
+    };
+
+    const resolutionLabels = {
+      ignored: "Ignored",
+      ban_reporter: "Reporter Banned",
+      ban_user: "User Banned",
+      delete_post: "Post Deleted",
+      fact_check: "Fact-Checked",
+    };
+
+    const reporterUsername = report.reporter?.username
+      ? `@${this.escapeHtml(String(report.reporter.username))}`
+      : "Unknown";
+    const reporterLink = report.reporter?.username
+      ? `<a href="/@${this.escapeHtml(
+          String(report.reporter.username)
+        )}" target="_blank">${reporterUsername}</a>`
+      : reporterUsername;
+    const reporterName = report.reporter?.name
+      ? `<br><small class="text-muted">${this.escapeHtml(
+          String(report.reporter.name)
+        )}</small>`
+      : "";
+
+    let reportedInfo = "Deleted";
+    if (report.reported_type === "user" && report.reported) {
+      const reportedUsername = String(report.reported.username || "");
+      reportedInfo = `<a href="/@${this.escapeHtml(
+        reportedUsername
+      )}" target="_blank">@${this.escapeHtml(reportedUsername)}</a>`;
+      if (report.reported.name) {
+        reportedInfo += `<br><small class="text-muted">${this.escapeHtml(
+          String(report.reported.name)
+        )}</small>`;
+      }
+    } else if (report.reported_type === "post" && report.reported) {
+      const reportedId = String(report.reported.id || "");
+      reportedInfo = `<a href="/tweet/${this.escapeHtml(
+        reportedId
+      )}" target="_blank">Tweet</a>`;
+      if (report.reported.content) {
+        const reportedSnippet = String(report.reported.content);
+        const truncatedSnippet =
+          reportedSnippet.length > 140
+            ? `${reportedSnippet.slice(0, 140)}...`
+            : reportedSnippet;
+        reportedInfo += `<br><small class="text-muted">${this.escapeHtml(
+          truncatedSnippet
+        )}</small>`;
+      }
+    }
+
+    const reasonLabel =
+      reasonLabels[report.reason] || report.reason || "Unknown";
+    const additionalInfo = this.escapeHtml(report.additional_info || "None");
+    const createdAt = report.created_at
+      ? new Date(report.created_at).toLocaleString()
+      : "Unknown";
+    const statusBadge =
+      report.status === "resolved"
+        ? '<span class="badge bg-success">Resolved</span>'
+        : '<span class="badge bg-warning text-dark">Pending</span>';
+
+    let resolutionSection = "<em>Not resolved yet.</em>";
+    if (report.status === "resolved") {
+      const resolutionLabel =
+        resolutionLabels[report.resolution_action] ||
+        report.resolution_action ||
+        "Unknown";
+      const resolvedBy = this.escapeHtml(report.resolved_by || "Unknown");
+      const resolvedAt = report.resolved_at
+        ? new Date(report.resolved_at).toLocaleString()
+        : "Unknown";
+      resolutionSection = `
+        <div class="d-flex flex-column gap-1">
+          <div><strong>Resolution:</strong> ${this.escapeHtml(
+            resolutionLabel
+          )}</div>
+          <div><strong>Resolved By:</strong> ${resolvedBy}</div>
+          <div><strong>Resolved At:</strong> ${this.escapeHtml(
+            resolvedAt
+          )}</div>
+        </div>
+      `;
+    }
+
+    const modalBody = this.reportDetailsModalEl.querySelector(".modal-body");
+    if (!modalBody) return;
+    const reportIdValue = report.id != null ? String(report.id) : "";
+    const shortId = reportIdValue
+      ? `${this.escapeHtml(reportIdValue.slice(0, 8))}...`
+      : "";
+    const modalTitle = this.reportDetailsModalEl.querySelector(".modal-title");
+    if (modalTitle) {
+      modalTitle.textContent = `Report ${shortId || "Details"}`;
+    }
+
+    modalBody.innerHTML = `
+      <div class="d-flex flex-column gap-3">
+        <div>
+          <strong>Report ID:</strong>
+          <span class="font-monospace">${this.escapeHtml(reportIdValue)}</span>
+        </div>
+        <div><strong>Status:</strong> ${statusBadge}</div>
+        <div><strong>Reporter:</strong> ${reporterLink}${reporterName}</div>
+        <div><strong>Reported:</strong> ${reportedInfo}</div>
+        <div>
+          <strong>Reason:</strong>
+          <span class="badge bg-warning text-dark">${this.escapeHtml(
+            reasonLabel
+          )}</span>
+        </div>
+        <div>
+          <strong>Additional Info:</strong><br>
+          <span class="text-muted">${additionalInfo}</span>
+        </div>
+        <div><strong>Created:</strong> ${this.escapeHtml(createdAt)}</div>
+        <div>
+          <strong>Resolution Details:</strong><br>
+          ${resolutionSection}
+        </div>
+      </div>
     `;
 
-    alert(details);
+    this.reportDetailsModal.show();
   }
 
   findReportById(reportId) {
-    const tables = document.querySelectorAll("#reportsTable table");
-    for (const table of tables) {
-      const rows = table.querySelectorAll("tbody tr");
-      for (const row of rows) {
-        const btn = row.querySelector(`[onclick*="${reportId}"]`);
-        if (btn) {
-          return { id: reportId };
-        }
-      }
-    }
-    return null;
+    if (!reportId) return null;
+    return this.reportsById?.get(reportId) || null;
   }
 
   async showReportActionModal(reportId) {

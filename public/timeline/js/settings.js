@@ -277,6 +277,8 @@ const openChangeUsernameModal = async () => {
   const usernameInput = document.getElementById("newUsername");
   if (usernameInput) {
     usernameInput.value = userForModal.username || "";
+    usernameInput.focus();
+    usernameInput.select();
   }
 };
 
@@ -306,13 +308,18 @@ const openChangePasswordModal = async () => {
 
   const currentPasswordGroup = document.getElementById("currentPasswordGroup");
   if (currentPasswordGroup) {
-    currentPasswordGroup.style.display = hasPassword ? "block" : "none";
+    currentPasswordGroup.style.display = hasPassword ? "flex" : "none";
   }
 
   const form = document.getElementById("changePasswordForm");
   if (form && typeof form.reset === "function") {
     form.reset();
   }
+
+  const focusTarget = hasPassword
+    ? document.getElementById("current-password")
+    : document.getElementById("new-password");
+  focusTarget?.focus?.();
 
   showModal(modal);
 };
@@ -328,6 +335,12 @@ const openDeleteAccountModal = async () => {
 
   const modal = document.getElementById("deleteAccountModal");
   if (!modal) return;
+
+  const confirmation = document.getElementById("deleteConfirmation");
+  if (confirmation) {
+    confirmation.value = "";
+    confirmation.focus();
+  }
 
   showModal(modal);
 };
@@ -818,57 +831,136 @@ const createChangeUsernameModal = () => {
   overlay.id = "changeUsernameModal";
   overlay.className = "settings-modal-overlay";
   overlay.style.display = "none";
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.right = "0";
+  overlay.style.bottom = "0";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.backgroundColor = "rgba(15, 20, 25, 0.6)";
+  overlay.style.zIndex = "1200";
 
   const modal = document.createElement("div");
   modal.className = "modal settings-form-modal";
   modal.setAttribute("role", "dialog");
   modal.setAttribute("aria-modal", "true");
   modal.setAttribute("aria-labelledby", "changeUsernameHeading");
+  modal.style.backgroundColor = "var(--bg-primary)";
+  modal.style.borderRadius = "16px";
+  modal.style.width = "min(480px, 90vw)";
+  modal.style.maxHeight = "85vh";
+  modal.style.boxShadow = "0 18px 48px rgba(0, 0, 0, 0.35)";
+  modal.style.display = "flex";
+  modal.style.flexDirection = "column";
+  modal.style.overflow = "hidden";
 
   const header = document.createElement("div");
   header.className = "modal-header";
+  header.style.display = "flex";
+  header.style.alignItems = "center";
+  header.style.justifyContent = "space-between";
+  header.style.padding = "16px 20px";
+  header.style.borderBottom = "1px solid var(--border-primary)";
   const h2 = document.createElement("h2");
   h2.id = "changeUsernameHeading";
   h2.textContent = "Change Username";
+  h2.style.margin = "0";
+  h2.style.fontSize = "20px";
+  h2.style.fontWeight = "600";
+  h2.style.color = "var(--text-primary)";
   const close = document.createElement("button");
   close.className = "close-btn";
   close.id = "closeUsernameModal";
   close.type = "button";
   close.setAttribute("aria-label", "Close change username dialog");
   close.textContent = "×";
+  close.style.backgroundColor = "transparent";
+  close.style.border = "none";
+  close.style.color = "var(--text-secondary)";
+  close.style.cursor = "pointer";
+  close.style.fontSize = "24px";
+  close.style.lineHeight = "1";
+  close.style.width = "32px";
+  close.style.height = "32px";
+  close.style.borderRadius = "50%";
+  close.style.display = "flex";
+  close.style.alignItems = "center";
+  close.style.justifyContent = "center";
+  close.style.transition = "background-color 0.2s ease, color 0.2s ease";
+  close.addEventListener("pointerenter", () => {
+    close.style.backgroundColor = "var(--bg-secondary)";
+    close.style.color = "var(--text-primary)";
+  });
+  close.addEventListener("pointerleave", () => {
+    close.style.backgroundColor = "transparent";
+    close.style.color = "var(--text-secondary)";
+  });
   header.appendChild(h2);
   header.appendChild(close);
 
   const body = document.createElement("div");
   body.className = "modal-body";
+  body.style.padding = "20px";
+  body.style.overflowY = "auto";
+  body.style.color = "var(--text-primary)";
   const form = document.createElement("form");
   form.id = "changeUsernameForm";
+  form.style.display = "flex";
+  form.style.flexDirection = "column";
+  form.style.gap = "16px";
   const fg = document.createElement("div");
   fg.className = "form-group";
+  fg.style.display = "flex";
+  fg.style.flexDirection = "column";
+  fg.style.gap = "8px";
   const label = document.createElement("label");
   label.htmlFor = "newUsername";
   label.textContent = "New Username";
+  label.style.fontSize = "14px";
+  label.style.fontWeight = "500";
+  label.style.color = "var(--text-primary)";
   const userWrap = document.createElement("div");
   userWrap.className = "username-wrapper";
+  userWrap.style.display = "flex";
+  userWrap.style.alignItems = "center";
+  userWrap.style.gap = "8px";
+  userWrap.style.backgroundColor = "var(--bg-secondary)";
+  userWrap.style.border = "1px solid var(--border-primary)";
+  userWrap.style.borderRadius = "10px";
+  userWrap.style.padding = "10px 12px";
   const at = document.createElement("span");
   at.setAttribute("inert", "");
   at.textContent = "@";
+  at.style.color = "var(--text-secondary)";
+  at.style.fontWeight = "600";
   const input = document.createElement("input");
   input.type = "text";
   input.id = "newUsername";
   input.placeholder = "new username";
   input.required = true;
+  input.style.flex = "1";
+  input.style.backgroundColor = "transparent";
+  input.style.border = "none";
+  input.style.outline = "none";
+  input.style.color = "var(--text-primary)";
   userWrap.appendChild(at);
   userWrap.appendChild(input);
   const small = document.createElement("small");
   small.textContent =
     "Username must be 3-20 characters and contain only letters, numbers, and underscores.";
+  small.style.color = "var(--text-secondary)";
+  small.style.fontSize = "12px";
   fg.appendChild(label);
   fg.appendChild(userWrap);
   fg.appendChild(small);
 
   const actions = document.createElement("div");
   actions.className = "form-actions";
+  actions.style.display = "flex";
+  actions.style.justifyContent = "flex-end";
+  actions.style.alignItems = "center";
+  actions.style.gap = "10px";
   const cancel = document.createElement("button");
   cancel.type = "button";
   cancel.className = "btn secondary";
@@ -896,49 +988,121 @@ const createDeleteAccountModal = () => {
   overlay.id = "deleteAccountModal";
   overlay.className = "settings-modal-overlay";
   overlay.style.display = "none";
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.right = "0";
+  overlay.style.bottom = "0";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.backgroundColor = "rgba(15, 20, 25, 0.6)";
+  overlay.style.zIndex = "1200";
 
   const modal = document.createElement("div");
   modal.className = "modal settings-form-modal";
   modal.setAttribute("role", "dialog");
   modal.setAttribute("aria-modal", "true");
   modal.setAttribute("aria-labelledby", "deleteAccountHeading");
+  modal.style.backgroundColor = "var(--bg-primary)";
+  modal.style.borderRadius = "16px";
+  modal.style.width = "min(480px, 90vw)";
+  modal.style.maxHeight = "85vh";
+  modal.style.boxShadow = "0 18px 48px rgba(0, 0, 0, 0.35)";
+  modal.style.display = "flex";
+  modal.style.flexDirection = "column";
+  modal.style.overflow = "hidden";
 
   const header = document.createElement("div");
   header.className = "modal-header";
+  header.style.display = "flex";
+  header.style.alignItems = "center";
+  header.style.justifyContent = "space-between";
+  header.style.padding = "16px 20px";
+  header.style.borderBottom = "1px solid var(--border-primary)";
   const h2 = document.createElement("h2");
   h2.id = "deleteAccountHeading";
   h2.textContent = "Delete Account";
+  h2.style.margin = "0";
+  h2.style.fontSize = "20px";
+  h2.style.fontWeight = "600";
+  h2.style.color = "var(--text-primary)";
   const close = document.createElement("button");
   close.className = "close-btn";
   close.id = "closeDeleteModal";
   close.type = "button";
   close.setAttribute("aria-label", "Close delete account dialog");
   close.textContent = "×";
+  close.style.backgroundColor = "transparent";
+  close.style.border = "none";
+  close.style.color = "var(--text-secondary)";
+  close.style.cursor = "pointer";
+  close.style.fontSize = "24px";
+  close.style.lineHeight = "1";
+  close.style.width = "32px";
+  close.style.height = "32px";
+  close.style.borderRadius = "50%";
+  close.style.display = "flex";
+  close.style.alignItems = "center";
+  close.style.justifyContent = "center";
+  close.style.transition = "background-color 0.2s ease, color 0.2s ease";
+  close.addEventListener("pointerenter", () => {
+    close.style.backgroundColor = "var(--bg-secondary)";
+    close.style.color = "var(--text-primary)";
+  });
+  close.addEventListener("pointerleave", () => {
+    close.style.backgroundColor = "transparent";
+    close.style.color = "var(--text-secondary)";
+  });
   header.appendChild(h2);
   header.appendChild(close);
 
   const body = document.createElement("div");
   body.className = "modal-body";
+  body.style.padding = "20px";
+  body.style.overflowY = "auto";
+  body.style.color = "var(--text-primary)";
   const warning = document.createElement("p");
   warning.innerHTML =
     "<strong>Warning:</strong> This action cannot be undone. All your tweets, likes, follows, and account data will be permanently deleted.";
+  warning.style.margin = "0 0 16px 0";
+  warning.style.fontSize = "14px";
+  warning.style.lineHeight = "1.5";
   const form = document.createElement("form");
   form.id = "deleteAccountForm";
+  form.style.display = "flex";
+  form.style.flexDirection = "column";
+  form.style.gap = "16px";
   const fg = document.createElement("div");
   fg.className = "form-group";
+  fg.style.display = "flex";
+  fg.style.flexDirection = "column";
+  fg.style.gap = "8px";
   const label = document.createElement("label");
   label.htmlFor = "deleteConfirmation";
   label.textContent = 'Type "DELETE MY ACCOUNT" to confirm:';
+  label.style.fontSize = "14px";
+  label.style.fontWeight = "500";
+  label.style.color = "var(--text-primary)";
   const input = document.createElement("input");
   input.type = "text";
   input.id = "deleteConfirmation";
   input.placeholder = "DELETE MY ACCOUNT";
   input.required = true;
+  input.style.padding = "10px 12px";
+  input.style.borderRadius = "10px";
+  input.style.border = "1px solid var(--border-primary)";
+  input.style.backgroundColor = "var(--bg-secondary)";
+  input.style.color = "var(--text-primary)";
+  input.style.outline = "none";
   fg.appendChild(label);
   fg.appendChild(input);
 
   const actions = document.createElement("div");
   actions.className = "form-actions";
+  actions.style.display = "flex";
+  actions.style.justifyContent = "flex-end";
+  actions.style.alignItems = "center";
+  actions.style.gap = "10px";
   const cancel = document.createElement("button");
   cancel.type = "button";
   cancel.className = "btn secondary";
@@ -967,6 +1131,15 @@ const createChangePasswordModal = () => {
   overlay.id = "changePasswordModal";
   overlay.className = "settings-modal-overlay";
   overlay.style.display = "none";
+  overlay.style.position = "fixed";
+  overlay.style.top = "0";
+  overlay.style.left = "0";
+  overlay.style.right = "0";
+  overlay.style.bottom = "0";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.backgroundColor = "rgba(15, 20, 25, 0.6)";
+  overlay.style.zIndex = "1200";
 
   const modal = document.createElement("div");
   modal.className = "modal settings-form-modal";
@@ -974,63 +1147,139 @@ const createChangePasswordModal = () => {
   modal.setAttribute("aria-modal", "true");
   modal.setAttribute("aria-labelledby", "changePasswordHeading");
   modal.setAttribute("aria-describedby", "passwordModalDescription");
+  modal.style.backgroundColor = "var(--bg-primary)";
+  modal.style.borderRadius = "16px";
+  modal.style.width = "min(480px, 90vw)";
+  modal.style.maxHeight = "85vh";
+  modal.style.boxShadow = "0 18px 48px rgba(0, 0, 0, 0.35)";
+  modal.style.display = "flex";
+  modal.style.flexDirection = "column";
+  modal.style.overflow = "hidden";
 
   const header = document.createElement("div");
   header.className = "modal-header";
+  header.style.display = "flex";
+  header.style.alignItems = "center";
+  header.style.justifyContent = "space-between";
+  header.style.padding = "16px 20px";
+  header.style.borderBottom = "1px solid var(--border-primary)";
   const h2 = document.createElement("h2");
   h2.id = "changePasswordHeading";
   h2.textContent = "Change Password";
+  h2.style.margin = "0";
+  h2.style.fontSize = "20px";
+  h2.style.fontWeight = "600";
+  h2.style.color = "var(--text-primary)";
   const close = document.createElement("button");
   close.className = "close-btn";
   close.id = "closePasswordModal";
   close.type = "button";
   close.setAttribute("aria-label", "Close change password dialog");
   close.textContent = "×";
+  close.style.backgroundColor = "transparent";
+  close.style.border = "none";
+  close.style.color = "var(--text-secondary)";
+  close.style.cursor = "pointer";
+  close.style.fontSize = "24px";
+  close.style.lineHeight = "1";
+  close.style.width = "32px";
+  close.style.height = "32px";
+  close.style.borderRadius = "50%";
+  close.style.display = "flex";
+  close.style.alignItems = "center";
+  close.style.justifyContent = "center";
+  close.style.transition = "background-color 0.2s ease, color 0.2s ease";
+  close.addEventListener("pointerenter", () => {
+    close.style.backgroundColor = "var(--bg-secondary)";
+    close.style.color = "var(--text-primary)";
+  });
+  close.addEventListener("pointerleave", () => {
+    close.style.backgroundColor = "transparent";
+    close.style.color = "var(--text-secondary)";
+  });
   header.appendChild(h2);
   header.appendChild(close);
 
   const body = document.createElement("div");
   body.className = "modal-body";
+  body.style.padding = "20px";
+  body.style.overflowY = "auto";
+  body.style.color = "var(--text-primary)";
   const description = document.createElement("p");
   description.id = "passwordModalDescription";
   description.textContent =
     "Set a password for your account to enable traditional username/password login.";
+  description.style.margin = "0 0 16px 0";
+  description.style.fontSize = "14px";
+  description.style.lineHeight = "1.5";
   const form = document.createElement("form");
   form.id = "changePasswordForm";
+  form.style.display = "flex";
+  form.style.flexDirection = "column";
+  form.style.gap = "16px";
   const fgCur = document.createElement("div");
   fgCur.className = "form-group";
   fgCur.id = "currentPasswordGroup";
   fgCur.style.display = "none";
+  fgCur.style.flexDirection = "column";
+  fgCur.style.gap = "8px";
   const labelCur = document.createElement("label");
   labelCur.htmlFor = "current-password";
   labelCur.textContent = "Current Password";
+  labelCur.style.fontSize = "14px";
+  labelCur.style.fontWeight = "500";
+  labelCur.style.color = "var(--text-primary)";
   const inputCur = document.createElement("input");
   inputCur.type = "password";
   inputCur.id = "current-password";
   inputCur.placeholder = "enter your current password";
   inputCur.required = true;
+  inputCur.style.padding = "10px 12px";
+  inputCur.style.borderRadius = "10px";
+  inputCur.style.border = "1px solid var(--border-primary)";
+  inputCur.style.backgroundColor = "var(--bg-secondary)";
+  inputCur.style.color = "var(--text-primary)";
+  inputCur.style.outline = "none";
   fgCur.appendChild(labelCur);
   fgCur.appendChild(inputCur);
 
   const fgNew = document.createElement("div");
   fgNew.className = "form-group";
+  fgNew.style.display = "flex";
+  fgNew.style.flexDirection = "column";
+  fgNew.style.gap = "8px";
   const labelNew = document.createElement("label");
   labelNew.htmlFor = "new-password";
   labelNew.textContent = "New Password";
+  labelNew.style.fontSize = "14px";
+  labelNew.style.fontWeight = "500";
+  labelNew.style.color = "var(--text-primary)";
   const inputNew = document.createElement("input");
   inputNew.type = "password";
   inputNew.id = "new-password";
   inputNew.placeholder = "enter your new password";
   inputNew.minLength = 8;
   inputNew.required = true;
+  inputNew.style.padding = "10px 12px";
+  inputNew.style.borderRadius = "10px";
+  inputNew.style.border = "1px solid var(--border-primary)";
+  inputNew.style.backgroundColor = "var(--bg-secondary)";
+  inputNew.style.color = "var(--text-primary)";
+  inputNew.style.outline = "none";
   const hint = document.createElement("small");
   hint.textContent = "Password must be at least 8 characters long.";
+  hint.style.color = "var(--text-secondary)";
+  hint.style.fontSize = "12px";
   fgNew.appendChild(labelNew);
   fgNew.appendChild(inputNew);
   fgNew.appendChild(hint);
 
   const actions = document.createElement("div");
   actions.className = "form-actions";
+  actions.style.display = "flex";
+  actions.style.justifyContent = "flex-end";
+  actions.style.alignItems = "center";
+  actions.style.gap = "10px";
   const cancel = document.createElement("button");
   cancel.type = "button";
   cancel.className = "btn secondary";
