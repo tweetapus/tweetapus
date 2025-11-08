@@ -19,6 +19,41 @@ let currentUser = null;
 
 const query = fetch;
 
+const agreeCookieName = "agree";
+const agreeCookieExpiry = new Date("Fri, 31 Dec 9999 23:59:59 GMT");
+
+const persistAgreeCookie = async () => {
+  try {
+    if (window.cookieStore?.set) {
+      await window.cookieStore.set({
+        name: agreeCookieName,
+        value: "yes",
+        expires: agreeCookieExpiry,
+      });
+      return;
+    }
+  } catch (_) {}
+  Reflect.set(
+    document,
+    "cookie",
+    `${agreeCookieName}=yes; path=/; expires=${agreeCookieExpiry.toUTCString()}`
+  );
+};
+
+const clearAgreeCookie = async () => {
+  try {
+    if (window.cookieStore?.delete) {
+      await window.cookieStore.delete(agreeCookieName);
+      return;
+    }
+  } catch (_) {}
+  Reflect.set(
+    document,
+    "cookie",
+    `${agreeCookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+  );
+};
+
 function handleImpersonationToken() {
   const urlParams = new URLSearchParams(window.location.search);
   const impersonateToken = urlParams.get("impersonate");
@@ -26,11 +61,7 @@ function handleImpersonationToken() {
   if (impersonateToken) {
     localStorage.setItem("authToken", decodeURIComponent(impersonateToken));
     window.history.replaceState({}, document.title, window.location.pathname);
-    cookieStore.set({
-      name: "agree",
-      value: "yes",
-      expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
-    });
+    persistAgreeCookie();
 
     setTimeout(() => {
       window.location.href = "/timeline/";
@@ -155,11 +186,7 @@ async function handlePasswordRegistration() {
       authToken = data.token;
       localStorage.setItem("authToken", data.token);
 
-      await cookieStore.set({
-        name: "agree",
-        value: "yes",
-        expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
-      });
+      await persistAgreeCookie();
       location.href = "/";
     }
   } catch {
@@ -177,14 +204,13 @@ async function handlePasskeyRegistration() {
   setButtonsDisabled(true);
 
   try {
-    const { options, challenge, error } = await (await query(
-      "/api/auth/generate-registration-options",
-      {
+    const { options, challenge, error } = await (
+      await query("/api/auth/generate-registration-options", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username }),
-      }
-    )).json();
+      })
+    ).json();
 
     if (error) {
       toastQueue.add(`<h1>Unable to create account</h1><p>${error}</p>`);
@@ -195,15 +221,17 @@ async function handlePasskeyRegistration() {
       optionsJSON: options,
     });
 
-    const verification = await (await query("/api/auth/verify-registration", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username,
-        credential: registrationResponse,
-        challenge,
-      }),
-    })).json();
+    const verification = await (
+      await query("/api/auth/verify-registration", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username,
+          credential: registrationResponse,
+          challenge,
+        }),
+      })
+    ).json();
 
     if (!verification.verified) {
       toastQueue.add(
@@ -214,11 +242,7 @@ async function handlePasskeyRegistration() {
     authToken = verification.token;
     localStorage.setItem("authToken", authToken);
 
-    await cookieStore.set({
-      name: "agree",
-      value: "yes",
-      expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
-    });
+    await persistAgreeCookie();
     location.href = "/";
   } catch (error) {
     if (error.name === "NotAllowedError") return;
@@ -277,11 +301,7 @@ async function handleAuthentication() {
       authToken = verification.token;
       localStorage.setItem("authToken", authToken);
 
-      await cookieStore.set({
-        name: "agree",
-        value: "yes",
-        expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
-      });
+      await persistAgreeCookie();
       location.href = "/";
     } else {
       toastQueue.add(
@@ -325,7 +345,7 @@ elements.username.addEventListener("input", (e) => {
 });
 elements.logout.addEventListener("click", () => {
   showLoginForm();
-  cookieStore.delete("agree");
+  clearAgreeCookie();
 });
 
 elements.username.addEventListener("keypress", (e) => {
@@ -412,11 +432,7 @@ document
         showUserInfo(data);
         hideModal(elements.basicLoginModal);
 
-        await cookieStore.set({
-          name: "agree",
-          value: "yes",
-          expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
-        });
+        await persistAgreeCookie();
 
         toastQueue.add(`<h1>Welcome back!</h1><p>Signed in successfully</p>`);
       }

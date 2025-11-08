@@ -195,11 +195,45 @@ function createNotificationElement(notification) {
   notificationEl.dataset.relatedUrl = notification.url || "";
 
   const iconEl = document.createElement("div");
-  const iconClassName =
-    NOTIFICATION_ICON_CLASSES[notification.type] || "default-icon";
-  iconEl.className = `notification-icon ${iconClassName}`;
-  iconEl.innerHTML =
-    NOTIFICATION_ICON_MAP[notification.type] || NOTIFICATION_ICON_MAP.default;
+  const customIcon = notification.customIcon;
+
+  if (customIcon) {
+    iconEl.className = "notification-icon custom-icon";
+    const img = document.createElement("img");
+    img.alt = "";
+    img.loading = "lazy";
+    let src = "";
+    if (customIcon.kind === "svg" && customIcon.dataUri) {
+      src = customIcon.dataUri;
+    } else if (customIcon.kind === "image") {
+      if (
+        typeof customIcon.url === "string" &&
+        customIcon.url.startsWith("/")
+      ) {
+        src = customIcon.url;
+      } else if (customIcon.hash) {
+        src = `/api/uploads/${customIcon.hash}.webp`;
+      }
+    }
+
+    if (src) {
+      img.src = src;
+      iconEl.appendChild(img);
+    } else {
+      const iconClassName =
+        NOTIFICATION_ICON_CLASSES[notification.type] || "default-icon";
+      iconEl.className = `notification-icon ${iconClassName}`;
+      iconEl.innerHTML =
+        NOTIFICATION_ICON_MAP[notification.type] ||
+        NOTIFICATION_ICON_MAP.default;
+    }
+  } else {
+    const iconClassName =
+      NOTIFICATION_ICON_CLASSES[notification.type] || "default-icon";
+    iconEl.className = `notification-icon ${iconClassName}`;
+    iconEl.innerHTML =
+      NOTIFICATION_ICON_MAP[notification.type] || NOTIFICATION_ICON_MAP.default;
+  }
 
   const contentEl = document.createElement("div");
   contentEl.className = "notification-content";

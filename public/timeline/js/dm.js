@@ -50,14 +50,30 @@ let selectedUsers = [];
 let pendingFiles = [];
 let sseConnectTimeout = null;
 let lastSSEConnect = 0;
+let sseFailureCount = 0;
+let sseReconnectTimer = null;
+let sseUnstableNotified = false;
+let sseDisabledNotified = false;
 let replyingTo = null;
 let messageOffset = 0;
 let isLoadingMoreMessages = false;
 let hasMoreMessages = true;
 const typingIndicators = new Map();
 const typingTimeouts = new Map();
+const MAX_SSE_FAILURES = 5;
 
 function connectSSE() {
+  if (!authToken) return;
+
+  if (sseReconnectTimer) {
+    clearTimeout(sseReconnectTimer);
+    sseReconnectTimer = null;
+  }
+
+  if (sseFailureCount >= MAX_SSE_FAILURES) {
+    return;
+  }
+
   const now = Date.now();
   const timeSinceLastConnect = now - lastSSEConnect;
 
@@ -72,11 +88,20 @@ function connectSSE() {
   if (eventSource && eventSource.readyState === EventSource.OPEN) {
     return;
   }
-  if (!authToken) return;
 
   lastSSEConnect = now;
   const sseUrl = `/sse?token=${encodeURIComponent(authToken)}`;
   eventSource = new EventSource(sseUrl);
+
+  eventSource.onopen = () => {
+    sseFailureCount = 0;
+    sseUnstableNotified = false;
+    sseDisabledNotified = false;
+    if (sseReconnectTimer) {
+      clearTimeout(sseReconnectTimer);
+      sseReconnectTimer = null;
+    }
+  };
 
   eventSource.onmessage = (event) => {
     try {
@@ -104,8 +129,46 @@ function connectSSE() {
 
   eventSource.onerror = (error) => {
     console.error("SSE error:", error);
-    eventSource.close();
-    setTimeout(connectSSE, 3000);
+
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+    }
+
+    if (sseConnectTimeout) {
+      clearTimeout(sseConnectTimeout);
+      sseConnectTimeout = null;
+    }
+
+    sseFailureCount += 1;
+
+    if (sseFailureCount >= MAX_SSE_FAILURES) {
+      if (!sseDisabledNotified) {
+        toastQueue.add(
+          "Real-time updates temporarily disabled. Refresh the page to try again."
+        );
+        sseDisabledNotified = true;
+      }
+      return;
+    }
+
+    if (sseFailureCount >= 3 && !sseUnstableNotified) {
+      toastQueue.add(
+        "Connection to messages unstable, switching to slower updates."
+      );
+      sseUnstableNotified = true;
+    }
+
+    const retryDelay = sseFailureCount >= 3 ? 15000 : 3000;
+
+    if (sseReconnectTimer) {
+      clearTimeout(sseReconnectTimer);
+    }
+
+    sseReconnectTimer = setTimeout(() => {
+      sseReconnectTimer = null;
+      connectSSE();
+    }, retryDelay);
   };
 }
 

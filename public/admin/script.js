@@ -35,6 +35,12 @@ class AdminPanel {
     this.selectedUsers = new Set();
     this.bulkModal = null;
     this.bulkEditOrder = [];
+    this.customNotificationIcon = null;
+    this.customNotificationPreviewUrl = null;
+    this.customNotificationIconPreviewEl = null;
+    this.customNotificationIconClearBtn = null;
+    this.customNotificationSvgEditor = null;
+    this.customNotificationSvgInput = null;
 
     this.init();
   }
@@ -44,8 +50,7 @@ class AdminPanel {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
-  } // Tr, a the fix
-  // Applehidr
+  }
 
   isFlagSet(value) {
     return value === true || value === 1 || value === "1" || value === "true";
@@ -68,17 +73,13 @@ class AdminPanel {
       this.currentUser = user;
       this.setupEventListeners();
       this.loadDashboard();
-      // Setup clone form if present on the page
       try {
         this.setupCloneForm();
       } catch (_e) {
-        // noop
       }
-      // Setup fake notification form if present
       try {
         this.setupFakeNotificationForm();
       } catch (_e) {
-        // noop
       }
     } catch {
       location.href = "/";
@@ -164,13 +165,11 @@ class AdminPanel {
     }
   }
 
-  /* Emoji management (admin) */
   async loadEmojis() {
     try {
       const data = await this.apiCall("/api/admin/emojis");
       const emojis = data.emojis || [];
       this.renderEmojisList(emojis);
-      // Setup form handlers lazily
       this.setupEmojiForm();
     } catch (_err) {
       this.showError("Failed to load emojis");
@@ -242,8 +241,6 @@ class AdminPanel {
       });
     }
 
-    // remember whether the file input was originally required so we can
-    // temporarily bypass native validation when we store a processed file
     this.emojiFileInitiallyRequired = !!fileInput?.hasAttribute?.("required");
 
     form.addEventListener("submit", async (ev) => {
@@ -260,7 +257,6 @@ class AdminPanel {
       }
 
       try {
-        // Upload file via upload endpoint
         const fd = new FormData();
         fd.append("file", file, file.name);
 
@@ -275,7 +271,6 @@ class AdminPanel {
           return;
         }
 
-        // Create emoji record via admin API
         const createResp = await this.apiCall("/api/admin/emojis", {
           method: "POST",
           body: JSON.stringify({
@@ -589,9 +584,6 @@ class AdminPanel {
         this.updateEmojiPreview(webpFile);
         if (this.emojiCropModal) this.emojiCropModal.hide();
         this.pendingEmojiFile = null;
-        // clear the native file input so it shows "No file selected" visually,
-        // but remove the required attribute when we have a processed file so
-        // native browser validation does not block form submission
         if (this.emojiFileInput) {
           this.emojiFileInput.value = "";
           if (this.emojiFileInitiallyRequired)
@@ -614,11 +606,9 @@ class AdminPanel {
       this.emojiProcessedFile = this.previousEmojiFile;
       this.previousEmojiFile = null;
       this.updateEmojiPreview(this.emojiProcessedFile);
-      // we restored a processed file from before, ensure native required is not blocking
       if (this.emojiFileInput && this.emojiFileInitiallyRequired)
         this.emojiFileInput.removeAttribute("required");
     } else {
-      // no processed file available, restore original required state on the input
       if (this.emojiFileInput && this.emojiFileInitiallyRequired)
         this.emojiFileInput.setAttribute("required", "");
     }
@@ -649,7 +639,6 @@ class AdminPanel {
     }
     if (this.emojiFileInput) {
       this.emojiFileInput.value = "";
-      // restore required attribute state if it was originally present
       if (this.emojiFileInitiallyRequired)
         this.emojiFileInput.setAttribute("required", "");
     }
@@ -1226,52 +1215,109 @@ class AdminPanel {
     `;
   }
 
-  renderPagination(type, pagination) {
-    const container = document.getElementById(`${type}Pagination`);
+  renderPagination(target, pagination, onPageChange) {
+    if (!pagination) return;
 
-    if (pagination.pages <= 1) {
-      container.innerHTML = "";
-      return;
-    }
+    const totalPages = Math.max(1, Number(pagination.pages) || 1);
+    let currentPage = Number(pagination.page) || 1;
+    currentPage = Math.max(1, Math.min(totalPages, currentPage));
 
-    container.innerHTML = `
-      <ul class="pagination justify-content-center align-items-center">
-        <li class="page-item ${pagination.page === 1 ? "disabled" : ""}">
-          <a class="page-link" href="#" onclick="adminPanel.load${
-            type.charAt(0).toUpperCase() + type.slice(1)
-          }(${pagination.page - 1})">Previous</a>
-        </li>
-        <li class="page-item">
-          <span class="page-link bg-light">
-            Page <input type="number" min="1" max="${
-              pagination.pages
-            }" value="${pagination.page}" 
-                       style="width: 60px; border: 1px solid #ccc; text-align: center; margin: 0 5px;"
-                       onkeypress="if(event.key === 'Enter') adminPanel.load${
-                         type.charAt(0).toUpperCase() + type.slice(1)
-                       }(parseInt(this.value))"
-                       onchange="adminPanel.load${
-                         type.charAt(0).toUpperCase() + type.slice(1)
-                       }(parseInt(this.value))"> of ${pagination.pages}
-          </span>
-        </li>
-        <li class="page-item ${
-          pagination.page === pagination.pages ? "disabled" : ""
-        }">
-          <a class="page-link" href="#" onclick="adminPanel.load${
-            type.charAt(0).toUpperCase() + type.slice(1)
-          }(${pagination.page + 1})">Next</a>
-        </li>
-      </ul>
-    `;
+    const containerId =
+      typeof onPageChange === "function" ? target : `${target}Pagination`;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    container.innerHTML = "";
+    if (totalPages <= 1) return;
+
+    const triggerLoad = (page) => {
+      const numeric = Number(page);
+      if (!Number.isFinite(numeric)) return;
+      const clamped = Math.max(1, Math.min(totalPages, Math.floor(numeric)));
+      if (clamped === currentPage) return;
+
+      currentPage = clamped;
+
+      if (typeof onPageChange === "function") {
+        onPageChange(clamped);
+      } else if (typeof target === "string") {
+        const methodName = `load${
+          target.charAt(0).toUpperCase() + target.slice(1)
+        }`;
+        if (typeof this[methodName] === "function") {
+          this[methodName](clamped);
+        }
+      }
+    };
+
+    const list = document.createElement("ul");
+    list.className = "pagination justify-content-center align-items-center";
+
+    const prevItem = document.createElement("li");
+    prevItem.className = "page-item";
+    if (currentPage === 1) prevItem.classList.add("disabled");
+    const prevButton = document.createElement("button");
+    prevButton.type = "button";
+    prevButton.className = "page-link";
+    prevButton.textContent = "Previous";
+    prevButton.disabled = currentPage === 1;
+    prevButton.addEventListener("click", () => {
+      if (currentPage > 1) triggerLoad(currentPage - 1);
+    });
+    prevItem.appendChild(prevButton);
+    list.appendChild(prevItem);
+
+    const statusItem = document.createElement("li");
+    statusItem.className = "page-item";
+    const statusWrapper = document.createElement("div");
+    statusWrapper.className = "page-link bg-light d-flex align-items-center gap-2";
+    const label = document.createElement("span");
+    label.textContent = "Page";
+    const input = document.createElement("input");
+    input.type = "number";
+    input.min = "1";
+    input.max = `${totalPages}`;
+    input.value = `${currentPage}`;
+    input.style.width = "60px";
+    input.style.border = "1px solid #ccc";
+    input.style.textAlign = "center";
+    input.style.margin = "0 5px";
+    input.addEventListener("change", () => triggerLoad(input.value));
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        triggerLoad(input.value);
+      }
+    });
+    const totalText = document.createElement("span");
+    totalText.textContent = `of ${totalPages}`;
+    statusWrapper.appendChild(label);
+    statusWrapper.appendChild(input);
+    statusWrapper.appendChild(totalText);
+    statusItem.appendChild(statusWrapper);
+    list.appendChild(statusItem);
+
+    const nextItem = document.createElement("li");
+    nextItem.className = "page-item";
+    if (currentPage === totalPages) nextItem.classList.add("disabled");
+    const nextButton = document.createElement("button");
+    nextButton.type = "button";
+    nextButton.className = "page-link";
+    nextButton.textContent = "Next";
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.addEventListener("click", () => {
+      if (currentPage < totalPages) triggerLoad(currentPage + 1);
+    });
+    nextItem.appendChild(nextButton);
+    list.appendChild(nextItem);
+
+    container.appendChild(list);
   }
 
   async showUserModal(userId) {
     try {
-      // If we have cached data (or a promise), use it. Otherwise fetch and show loading state.
       const cached = this.userCache.get(userId);
 
-      // Show an immediate lightweight loading state so the modal appears instantly
       document.getElementById(
         "userModalBody"
       ).innerHTML = `<div class="text-center py-5"><div class="spinner-border text-primary" role="status" style="border-radius:5000px"></div><div class="mt-2 text-muted">Loading user...</div></div>`;
@@ -1283,7 +1329,6 @@ class AdminPanel {
 
       let userData;
       if (cached) {
-        // cached may be a promise or the resolved data
         userData = await cached;
       } else {
         userData = await this.apiCall(`/api/admin/users/${userId}`);
@@ -1559,10 +1604,8 @@ class AdminPanel {
         </div>
       `;
 
-      // Ensure fields are readonly/disabled until Edit Profile is clicked
       this.toggleEditMode(false);
 
-      // populate created_at field if available
       const createdInput = document.getElementById("editProfileCreatedAt");
       if (createdInput) {
         try {
@@ -1576,19 +1619,16 @@ class AdminPanel {
         }
       }
 
-      // Make verified and gold checkboxes mutually exclusive
       const verifiedCheckbox = document.getElementById("editProfileVerified");
       const goldCheckbox = document.getElementById("editProfileGold");
 
       if (verifiedCheckbox && goldCheckbox) {
-        // Remove any existing listeners by replacing node with a clone, then re-query
         const newVerified = verifiedCheckbox.cloneNode(true);
         verifiedCheckbox.parentNode.replaceChild(newVerified, verifiedCheckbox);
 
         const newGold = goldCheckbox.cloneNode(true);
         goldCheckbox.parentNode.replaceChild(newGold, goldCheckbox);
 
-        // Re-query to get the replaced elements
         const vCheckbox = document.getElementById("editProfileVerified");
         const gCheckbox = document.getElementById("editProfileGold");
 
@@ -1601,7 +1641,6 @@ class AdminPanel {
         });
       }
 
-      // Add affiliate checkbox toggle logic
       const affiliateCheckbox = document.getElementById("editProfileAffiliate");
       const affiliateWithSection = document.getElementById(
         "affiliateWithSection"
@@ -1634,7 +1673,6 @@ class AdminPanel {
     }
   }
 
-  // Prefetch user details into an in-memory cache to make the View/Edit action feel instant
   async prefetchUser(userId) {
     if (!userId) return;
     if (this.userCache.has(userId)) return;
@@ -1657,26 +1695,20 @@ class AdminPanel {
     const form = document.getElementById("editProfileForm");
     if (!form) return;
 
-    // Enable/disable all relevant controls in the form (more robust than only using readOnly)
     const controls = form.querySelectorAll("input, textarea, select");
     controls.forEach((field) => {
-      // keep hidden/id field untouched
       if (field.id === "editProfileId" || field.type === "hidden") return;
 
-      // skip buttons
       if (field.tagName === "BUTTON") return;
 
-      // skip input types that shouldn't be toggled (file, submit, reset)
       if (
         field.tagName === "INPUT" &&
         ["button", "submit", "reset", "file"].includes(field.type)
       )
         return;
 
-      // Use disabled for all controls so they cannot be interacted with
       field.disabled = !enable;
 
-      // For checkboxes, we want them to show their state but not be changeable in view mode
       if (field.type === "checkbox") {
         if (!enable) {
           field.disabled = false;
@@ -1688,13 +1720,11 @@ class AdminPanel {
         }
       }
 
-      // allow created_at datetime-local to be edited when enabling edit mode
       if (field.id === "editProfileCreatedAt") {
         field.readOnly = !enable;
         field.disabled = !enable;
       }
 
-      // For textual inputs and textareas also set readOnly to allow styling/selection differences
       if (
         field.tagName === "TEXTAREA" ||
         (field.tagName === "INPUT" &&
@@ -1704,13 +1734,11 @@ class AdminPanel {
       }
     });
 
-    // Toggle buttons visibility
     const editBtn = document.getElementById("editProfileBtn");
     const saveBtn = document.getElementById("saveProfileBtn");
     if (editBtn) editBtn.classList.toggle("d-none", enable);
     if (saveBtn) saveBtn.classList.toggle("d-none", !enable);
 
-    // Focus the first editable field when enabling edit mode
     if (enable) {
       const firstEditable = form.querySelector(
         "input:not([disabled]):not([type=hidden]), textarea:not([disabled])"
@@ -1810,7 +1838,6 @@ class AdminPanel {
     }
 
     try {
-      // include created_at if provided
       const createdInput = document.getElementById("editProfileCreatedAt");
       if (createdInput?.value) {
         const local = new Date(createdInput.value);
@@ -1846,7 +1873,6 @@ class AdminPanel {
       try {
         this.userCache.delete(userId);
       } catch {
-        // noop
       }
 
       this.showSuccess("Profile updated successfully");
@@ -1915,7 +1941,6 @@ class AdminPanel {
       });
 
       this.showSuccess("User unsuspended successfully");
-      // Refresh both users and suspensions if we're on those pages
       if (this.currentPage.users) this.loadUsers(this.currentPage.users);
       if (this.currentPage.suspensions)
         this.loadSuspensions(this.currentPage.suspensions);
@@ -1954,7 +1979,6 @@ class AdminPanel {
       this.showError("Username confirmation did not match");
       return;
     }
-    /* There's a MASSIVE vulnerability in this code that can TAPER away all the users and FADE the userbase to a LOW point */
     try {
       await this.apiCall(`/api/admin/users/${userId}`, {
         method: "DELETE",
@@ -2625,7 +2649,6 @@ class AdminPanel {
   formatDate(dateInput) {
     const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
     if (Number.isNaN(d.getTime())) return "";
-    // If year is before 1926, force a full numeric year to avoid two-digit ambiguity
     if (d.getFullYear() < 1926) {
       return d.toLocaleString(undefined, {
         year: "numeric",
@@ -2639,7 +2662,6 @@ class AdminPanel {
     return d.toLocaleString();
   }
 
-  // Date-only formatter (keeps just the date portion). Also forces full year for <1926
   formatDateOnly(dateInput) {
     const d = dateInput instanceof Date ? dateInput : new Date(dateInput);
     if (Number.isNaN(d.getTime())) return "";
@@ -2654,15 +2676,12 @@ class AdminPanel {
   }
 
   findAndViewUser(username) {
-    // Switch to users tab
     document.getElementById("users-nav").click();
 
-    // Focus and set search input
     const searchInput = document.getElementById("userSearch");
     searchInput.value = username;
     searchInput.focus();
 
-    // Trigger search
     this.searchUsers();
   }
 
@@ -2677,12 +2696,10 @@ class AdminPanel {
         post.retweet_count || 0;
       document.getElementById("editPostReplies").value = post.reply_count || 0;
       document.getElementById("editPostViews").value = post.view_count || 0;
-      // populate created_at if present
       const createdInput = document.getElementById("editPostCreatedAt");
       if (createdInput) {
         try {
           const d = new Date(post.created_at);
-          // convert to local ISO for datetime-local value
           const isoLocal = new Date(d.getTime() - d.getTimezoneOffset() * 60000)
             .toISOString()
             .slice(0, 16);
@@ -2726,7 +2743,6 @@ class AdminPanel {
       };
       const createdInput = document.getElementById("editPostCreatedAt");
       if (createdInput?.value) {
-        // convert local datetime-local back to ISO
         const local = new Date(createdInput.value);
         payload.created_at = local.toISOString();
       }
@@ -2761,7 +2777,6 @@ class AdminPanel {
         document.getElementById("tweetOnBehalfModal")
       );
       modal.show();
-      // setup char count UI (admin default: unlimited)
       this.updateTweetCharCount();
       const textarea = document.getElementById("tweetContent");
       if (textarea) {
@@ -2778,7 +2793,6 @@ class AdminPanel {
     const content = document.getElementById("tweetContent").value;
     const replyToRaw = document.getElementById("tweetReplyTo")?.value;
     const replyTo = replyToRaw?.trim() ? replyToRaw.trim() : undefined;
-    // Admin panel: unlimited by default
     const noCharLimit = true;
 
     if (!content.trim()) {
@@ -2787,7 +2801,6 @@ class AdminPanel {
     }
 
     try {
-      // Build payload, omitting replyTo when not provided to avoid sending null
       const payload = {
         content: content.trim(),
         userId,
@@ -2854,15 +2867,13 @@ class AdminPanel {
     });
   }
 
-  // Setup the fake notification form behavior
   setupFakeNotificationForm() {
     const form = document.getElementById("fakeNotificationForm");
     if (!form) return;
 
     this.bindNotificationTypeOptions();
+    this.initCustomNotificationIconControls();
 
-    // Attach a submit-like handler to the send button (we use explicit click handler in HTML)
-    // But also prevent Enter from submitting the page accidentally
     form.addEventListener("submit", (e) => {
       e.preventDefault();
       this.sendFakeNotification();
@@ -2926,13 +2937,265 @@ class AdminPanel {
     }
   }
 
-  // Send a fake notification via the admin API endpoint
+  initCustomNotificationIconControls() {
+    const uploadBtn = document.getElementById("notifIconUpload");
+    const svgBtn = document.getElementById("notifIconSvg");
+    const clearBtn = document.getElementById("notifIconClear");
+    const previewEl = document.getElementById("notifIconPreview");
+    const fileInput = document.getElementById("notifIconFile");
+    const svgEditor = document.getElementById("notifSvgEditor");
+    const svgInput = document.getElementById("notifIconSvgInput");
+    const applySvgBtn = document.getElementById("notifIconApplySvg");
+    const cancelSvgBtn = document.getElementById("notifIconCancelSvg");
+
+    if (
+      !uploadBtn ||
+      !svgBtn ||
+      !clearBtn ||
+      !previewEl ||
+      !fileInput ||
+      !svgEditor ||
+      !svgInput ||
+      !applySvgBtn ||
+      !cancelSvgBtn
+    )
+      return;
+
+    this.customNotificationIconPreviewEl = previewEl;
+    this.customNotificationIconClearBtn = clearBtn;
+    this.customNotificationSvgEditor = svgEditor;
+    this.customNotificationSvgInput = svgInput;
+
+    uploadBtn.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", async (event) => {
+      const file = event.target?.files?.[0];
+      if (!file) return;
+
+      try {
+        const cropperModule = await import("../shared/image-cropper.js");
+        const cropperFn =
+          cropperModule.openImageCropper || cropperModule.default;
+        if (typeof cropperFn !== "function") {
+          throw new Error("Image cropper unavailable");
+        }
+        const cropped = await cropperFn(file, { aspect: 1, size: 256 });
+        const cancelToken = cropperModule.CROP_CANCELLED;
+        if (cancelToken && cropped === cancelToken) return;
+
+        this.clearCustomNotificationIcon();
+        this.customNotificationIcon = { kind: "image", file: cropped };
+        if (this.customNotificationIconClearBtn)
+          this.customNotificationIconClearBtn.classList.remove("d-none");
+        this.updateCustomNotificationPreview();
+      } catch (err) {
+        console.error(err);
+        this.showError("Failed to process image");
+      } finally {
+        fileInput.value = "";
+      }
+    });
+
+    svgBtn.addEventListener("click", () => {
+      svgEditor.classList.remove("d-none");
+      svgInput.focus();
+    });
+
+    cancelSvgBtn.addEventListener("click", () => {
+      svgEditor.classList.add("d-none");
+      svgInput.value = "";
+    });
+
+    applySvgBtn.addEventListener("click", () => this.applyCustomSvg());
+    clearBtn.addEventListener("click", () =>
+      this.clearCustomNotificationIcon()
+    );
+  }
+
+  clearCustomNotificationIcon() {
+    if (this.customNotificationPreviewUrl) {
+      try {
+        URL.revokeObjectURL(this.customNotificationPreviewUrl);
+      } catch (_err) {}
+      this.customNotificationPreviewUrl = null;
+    }
+    this.customNotificationIcon = null;
+    if (this.customNotificationIconPreviewEl)
+      this.customNotificationIconPreviewEl.innerHTML = "";
+    if (this.customNotificationIconClearBtn)
+      this.customNotificationIconClearBtn.classList.add("d-none");
+    if (this.customNotificationSvgEditor)
+      this.customNotificationSvgEditor.classList.add("d-none");
+    if (this.customNotificationSvgInput)
+      this.customNotificationSvgInput.value = "";
+  }
+
+  updateCustomNotificationPreview() {
+    if (!this.customNotificationIconPreviewEl) return;
+    if (this.customNotificationPreviewUrl) {
+      try {
+        URL.revokeObjectURL(this.customNotificationPreviewUrl);
+      } catch (_err) {}
+      this.customNotificationPreviewUrl = null;
+    }
+    this.customNotificationIconPreviewEl.innerHTML = "";
+    const icon = this.customNotificationIcon;
+    if (!icon) return;
+
+    const img = document.createElement("img");
+    img.alt = "";
+    img.style.width = "40px";
+    img.style.height = "40px";
+    img.style.borderRadius = "8px";
+    img.style.objectFit = "contain";
+
+    if (icon.kind === "image" && icon.file instanceof File) {
+      const blobUrl = URL.createObjectURL(icon.file);
+      this.customNotificationPreviewUrl = blobUrl;
+      img.src = blobUrl;
+    } else if (icon.kind === "svg" && icon.previewDataUri) {
+      img.src = icon.previewDataUri;
+    } else {
+      return;
+    }
+
+    this.customNotificationIconPreviewEl.appendChild(img);
+  }
+
+  applyCustomSvg() {
+    if (!this.customNotificationSvgInput) return;
+    const raw = this.customNotificationSvgInput.value.trim();
+    if (!raw) {
+      this.showError("SVG markup is required");
+      return;
+    }
+
+    const sanitized = this.sanitizeSvgMarkup(raw);
+    if (!sanitized) {
+      this.showError("Invalid SVG markup");
+      return;
+    }
+
+    if (this.customNotificationPreviewUrl) {
+      try {
+        URL.revokeObjectURL(this.customNotificationPreviewUrl);
+      } catch (_err) {}
+      this.customNotificationPreviewUrl = null;
+    }
+
+    this.customNotificationIcon = {
+      kind: "svg",
+      svg: sanitized,
+      previewDataUri: this.buildSvgDataUri(sanitized),
+    };
+
+    if (this.customNotificationIconClearBtn)
+      this.customNotificationIconClearBtn.classList.remove("d-none");
+    if (this.customNotificationSvgEditor)
+      this.customNotificationSvgEditor.classList.add("d-none");
+    this.customNotificationSvgInput.value = "";
+    this.updateCustomNotificationPreview();
+  }
+
+  sanitizeSvgMarkup(svgText) {
+    if (typeof svgText !== "string") return null;
+    const trimmed = svgText.trim();
+    if (!trimmed || trimmed.length > 8000) return null;
+    if (!trimmed.startsWith("<svg") || !trimmed.endsWith("</svg>")) return null;
+    const lowered = trimmed.toLowerCase();
+    const forbiddenTokens = [
+      "<script",
+      "<iframe",
+      "<object",
+      "<embed",
+      "<link",
+      "<meta",
+      "<style",
+      "javascript:",
+      "onload",
+      "onerror",
+      "onclick",
+      "onfocus",
+      "onmouseenter",
+      "onmouseover",
+      "onanimation",
+      "onbegin",
+      "onend",
+      "onrepeat",
+      "foreignobject",
+      "<?xml",
+      "<!doctype",
+    ];
+    for (const token of forbiddenTokens) {
+      if (lowered.includes(token)) return null;
+    }
+    return trimmed;
+  }
+
+  buildSvgDataUri(markup) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(markup);
+    let binary = "";
+    bytes.forEach((byte) => {
+      binary += String.fromCharCode(byte);
+    });
+    return `data:image/svg+xml;base64,${btoa(binary)}`;
+  }
+
+  async resolveCustomNotificationIcon() {
+    if (!this.customNotificationIcon) return null;
+
+    if (this.customNotificationIcon.kind === "image") {
+      const file = this.customNotificationIcon.file;
+      if (!(file instanceof File)) {
+        throw new Error("Icon file missing");
+      }
+
+      const formData = new FormData();
+      formData.append("file", file, file.name || "icon.webp");
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.token}`,
+        },
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok || data?.error) {
+        throw new Error(data?.error || "Failed to upload icon");
+      }
+
+      const uploaded = data?.file || {};
+      if (!uploaded.hash) {
+        throw new Error("Upload response missing hash");
+      }
+
+      return {
+        kind: "image",
+        hash: uploaded.hash,
+        url: uploaded.url || null,
+      };
+    }
+
+    if (this.customNotificationIcon.kind === "svg") {
+      const svg = this.customNotificationIcon.svg;
+      if (!svg) {
+        throw new Error("SVG markup missing");
+      }
+      return {
+        kind: "svg",
+        markup: svg,
+      };
+    }
+
+    return null;
+  }
+
   async sendFakeNotification() {
     const targetRaw = document.getElementById("notifTarget")?.value?.trim();
     const title = document.getElementById("notifTitle")?.value?.trim();
     const type = document.getElementById("notifType")?.value || "default";
-    // Subtitle replaces the old message body textarea and is the preferred
-    // notification preview/body. Message remains optional as a fallback.
     const subtitle = document.getElementById("notifSubtitle")?.value?.trim();
     const message = document.getElementById("notifMessage")?.value?.trim();
     const url = document.getElementById("notifUrl")?.value?.trim();
@@ -2945,7 +3208,6 @@ class AdminPanel {
       return;
     }
 
-    // Allow subtitle OR message (or title) — require at least one body/title present
     if (!title && !subtitle && !message) {
       if (resultEl)
         resultEl.innerHTML =
@@ -2972,10 +3234,26 @@ class AdminPanel {
     if (subtitle) payload.subtitle = subtitle;
     if (url) payload.url = url;
 
+    const sendBtn = document.querySelector(
+      "#fakeNotificationForm button.btn-primary"
+    );
+
     try {
-      const sendBtn = document.querySelector(
-        "#fakeNotificationForm button.btn-primary"
-      );
+      const iconPayload = await this.resolveCustomNotificationIcon();
+      if (iconPayload) payload.customIcon = iconPayload;
+    } catch (iconError) {
+      const messageText = iconError?.message || "Failed to prepare custom icon";
+      if (resultEl) {
+        resultEl.innerHTML = `<div class="alert alert-danger">${this.escapeHtml(
+          messageText
+        )}</div>`;
+      } else {
+        this.showError(messageText);
+      }
+      return;
+    }
+
+    try {
       if (sendBtn) sendBtn.disabled = true;
 
       await this.apiCall("/api/admin/fake-notification", {
@@ -2991,7 +3269,7 @@ class AdminPanel {
       const msgEl = document.getElementById("notifMessage");
       if (msgEl) msgEl.value = "";
       document.getElementById("notifUrl").value = "";
-      if (sendBtn) sendBtn.disabled = false;
+      this.clearCustomNotificationIcon();
     } catch (err) {
       const msg = err?.message || "Failed to send notification";
       if (resultEl)
@@ -2999,10 +3277,11 @@ class AdminPanel {
           msg
         )}</div>`;
       else this.showError(msg);
+    } finally {
+      if (sendBtn) sendBtn.disabled = false;
     }
   }
 
-  // DM Management Methods
   async loadDMs(page = 1) {
     try {
       const data = await this.apiCall(`/api/admin/dms?page=${page}&limit=20`);
@@ -3098,14 +3377,12 @@ class AdminPanel {
     const totalPages = pagination.pages;
     let paginationHtml = '<ul class="pagination">';
 
-    // Previous button
     if (currentPage > 1) {
       paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="adminPanel.loadDMs(${
         currentPage - 1
       })">Previous</a></li>`;
     }
 
-    // Page numbers
     const startPage = Math.max(1, currentPage - 2);
     const endPage = Math.min(totalPages, currentPage + 2);
 
@@ -3114,7 +3391,6 @@ class AdminPanel {
       paginationHtml += `<li class="page-item ${activeClass}"><a class="page-link" href="#" onclick="adminPanel.loadDMs(${i})">${i}</a></li>`;
     }
 
-    // Next button
     if (currentPage < totalPages) {
       paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="adminPanel.loadDMs(${
         currentPage + 1
@@ -3232,7 +3508,6 @@ class AdminPanel {
 
     document.getElementById("dmMessages").innerHTML = messagesHtml;
 
-    // Render pagination if needed
     if (pagination && pagination.pages > 1) {
       let paginationHtml = '<ul class="pagination pagination-sm">';
 
@@ -3298,7 +3573,6 @@ class AdminPanel {
         method: "DELETE",
       });
       this.showSuccess("Message deleted successfully");
-      // Reload the current conversation
       if (this.currentConversationId) {
         this.viewConversation(this.currentConversationId);
       }
@@ -3333,7 +3607,6 @@ class AdminPanel {
     return container;
   }
 
-  // Create user methods
   showCreateUserModal() {
     document.getElementById("createUserForm").reset();
     const modal = new bootstrap.Modal(
@@ -3341,7 +3614,6 @@ class AdminPanel {
     );
     modal.show();
 
-    // Make verified and gold checkboxes mutually exclusive in create modal
     const verifiedCheckbox = document.getElementById("createVerified");
     const goldCheckbox = document.getElementById("createGold");
 
@@ -3401,10 +3673,9 @@ class AdminPanel {
     }
   }
 
-  // Clone profile UI integration -------------------------------------------------
   setupCloneForm() {
     const form = document.getElementById("cloneForm");
-    if (!form) return; // nothing to do on pages without the clone form
+    if (!form) return;
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -3439,7 +3710,6 @@ class AdminPanel {
       try {
         const payload = { username };
         if (name) payload.name = name;
-        // Include boolean flags only when explicitly set to allow server defaults
         payload.cloneRelations = cloneRelations;
         payload.cloneGhosts = cloneGhosts;
         payload.cloneTweets = cloneTweets;
@@ -3460,11 +3730,9 @@ class AdminPanel {
 
         if (resultEl) {
           resultEl.className = "success";
-          // Prefer server-returned username; fall back to the requested username
           const createdUsername = data?.username || username || data?.id || "";
           resultEl.textContent = `Cloned user created: @${createdUsername}`;
           const a = document.createElement("a");
-          // Link to canonical username URL (/@username)
           a.href = `/@${encodeURIComponent(createdUsername)}`;
           a.textContent = " Open profile";
           a.style.marginLeft = "8px";
@@ -3684,10 +3952,19 @@ class AdminPanel {
       if (!response.ok) throw new Error("Failed to load reports");
 
       const data = await response.json();
+      const rawTotal =
+        typeof data.total === "number"
+          ? data.total
+          : Array.isArray(data.reports)
+          ? data.reports.length
+          : 0;
+      const total = rawTotal > 0 ? rawTotal : 0;
+      const pages = total === 0 ? 1 : Math.ceil(total / limit);
+
       this.displayReports(data.reports || [], {
-        currentPage: page,
-        totalPages: Math.ceil((data.reports?.length || 0) / limit),
-        totalItems: data.reports?.length || 0,
+        page,
+        pages,
+        total,
       });
     } catch (error) {
       console.error("Error loading reports:", error);
@@ -3704,8 +3981,22 @@ class AdminPanel {
       tableContainer.innerHTML = `
         <div class="alert alert-info">No reports found</div>
       `;
+      this.renderPagination("reports", { page: 1, pages: 1 });
       return;
     }
+
+    const pager = {
+      page:
+        (pagination && (pagination.page || pagination.currentPage)) !==
+        undefined
+          ? pagination.page || pagination.currentPage
+          : 1,
+      pages:
+        (pagination && (pagination.pages || pagination.totalPages)) !==
+        undefined
+          ? pagination.pages || pagination.totalPages
+          : 1,
+    };
 
     const pendingReports = reports.filter((r) => r.status === "pending");
     const resolvedReports = reports.filter((r) => r.status === "resolved");
@@ -3763,9 +4054,7 @@ class AdminPanel {
     html += `</div>`;
     tableContainer.innerHTML = html;
 
-    this.renderPagination("reports", pagination, (page) =>
-      this.loadReports(page)
-    );
+    this.renderPagination("reports", pager);
   }
 
   renderReportRow(report, isResolved = false) {
@@ -4536,6 +4825,7 @@ class AdminPanel {
 }
 
 const adminPanel = new AdminPanel();
+window.adminPanel = adminPanel;
 
 function showSection(section) {
   adminPanel.showSection(section);

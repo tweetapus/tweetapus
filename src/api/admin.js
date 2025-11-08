@@ -338,6 +338,41 @@ WHERE u.id = ?
   deleteEmoji: db.query("DELETE FROM emojis WHERE id = ?"),
 };
 
+const sanitizeSvgMarkup = (svgText) => {
+  if (typeof svgText !== "string") return null;
+  const trimmed = svgText.trim();
+  if (!trimmed || trimmed.length > 8000) return null;
+  if (!trimmed.startsWith("<svg") || !trimmed.endsWith("</svg>")) return null;
+  const lowered = trimmed.toLowerCase();
+  const forbiddenTokens = [
+    "<script",
+    "<iframe",
+    "<object",
+    "<embed",
+    "<link",
+    "<meta",
+    "<style",
+    "javascript:",
+    "onload",
+    "onerror",
+    "onclick",
+    "onfocus",
+    "onmouseenter",
+    "onmouseover",
+    "onanimation",
+    "onbegin",
+    "onend",
+    "onrepeat",
+    "foreignobject",
+    "<?xml",
+    "<!doctype",
+  ];
+  for (const token of forbiddenTokens) {
+    if (lowered.includes(token)) return null;
+  }
+  return trimmed;
+};
+
 const requireAdmin = async ({ headers, jwt, set }) => {
   const token = headers.authorization?.replace("Bearer ", "");
   if (!token) {
@@ -870,11 +905,7 @@ export default new Elysia({ prefix: "/admin" })
             new Date().toISOString()
           );
 
-          if (
-            cloneAffiliate &&
-            sourceUser.affiliate &&
-            sourceUser.affiliate_with
-          ) {
+          if (cloneAffiliate && sourceUser.affiliate_with) {
             adminQueries.setUserAffiliate.run(
               1,
               sourceUser.affiliate_with,
@@ -1973,7 +2004,6 @@ export default new Elysia({ prefix: "/admin" })
   .post(
     "/fake-notification",
     async ({ body, user }) => {
-      // body: { target: 'all' | ['username1','username2'] | 'username', type, title, message, url }
       const {
         target,
         type = "default",
@@ -1981,6 +2011,7 @@ export default new Elysia({ prefix: "/admin" })
         message,
         subtitle = null,
         url,
+        customIcon,
       } = body || {};
 
       if (!target) return { error: "target is required" };
@@ -1989,6 +2020,43 @@ export default new Elysia({ prefix: "/admin" })
         return {
           error: "At least one of title, subtitle, or message is required",
         };
+
+      const subtitleText = subtitle?.trim() || null;
+      const urlText = url?.trim() || null;
+
+      let customIconMeta = null;
+      if (customIcon) {
+        if (customIcon.kind === "image") {
+          const hash =
+            typeof customIcon.hash === "string" ? customIcon.hash.trim() : "";
+          let iconUrl =
+            typeof customIcon.url === "string" ? customIcon.url.trim() : "";
+          if (!hash || !/^[a-f0-9]+$/i.test(hash)) {
+            return { error: "Invalid custom icon hash" };
+          }
+          if (iconUrl) {
+            if (
+              !iconUrl.startsWith("/api/uploads/") ||
+              !iconUrl.includes(hash)
+            ) {
+              return { error: "Invalid custom icon URL" };
+            }
+          } else {
+            iconUrl = `/api/uploads/${hash}.webp`;
+          }
+          customIconMeta = { kind: "image", hash, url: iconUrl };
+        } else if (customIcon.kind === "svg") {
+          const markup = sanitizeSvgMarkup(customIcon.markup);
+          if (!markup) return { error: "Invalid SVG markup" };
+          const dataUri = `data:image/svg+xml;base64,${Buffer.from(
+            markup,
+            "utf8"
+          ).toString("base64")}`;
+          customIconMeta = { kind: "svg", dataUri };
+        } else {
+          return { error: "Unsupported custom icon type" };
+        }
+      }
 
       let targetIds = [];
 
@@ -2012,26 +2080,28 @@ export default new Elysia({ prefix: "/admin" })
       // the notifications enhancer can expose it as the notification preview.
       // Prefer title as the main line; use subtitle as the primary body
       // (replaces the old message textarea), falling back to message.
-      const content = title || subtitle || message || "";
+      const content = title || subtitleText || message || "";
       // Do NOT append the URL to the content — URL should not appear in
       // the title or subtitle. We'll store it in related_id (meta) so the
       // client can redirect when the notification is clicked.
+
+      let encodedMeta = null;
+      const metaPayload = {};
+      if (subtitleText) metaPayload.subtitle = subtitleText;
+      if (urlText) metaPayload.url = urlText;
+      if (customIconMeta) metaPayload.customIcon = customIconMeta;
+      if (Object.keys(metaPayload).length > 0) {
+        encodedMeta = Buffer.from(JSON.stringify(metaPayload), "utf8").toString(
+          "base64"
+        );
+      }
 
       const created = [];
       for (const userId of targetIds) {
         try {
           // For fake notifications we intentionally omit actor metadata so
           // they don't show a forced admin username.
-          let relatedId = null;
-          if (subtitle?.trim() || url?.trim()) {
-            const meta = {};
-            if (subtitle?.trim()) meta.subtitle = subtitle.trim();
-            if (url?.trim()) meta.url = url.trim();
-            const encoded = Buffer.from(JSON.stringify(meta), "utf8").toString(
-              "base64"
-            );
-            relatedId = `meta:${encoded}`;
-          }
+          const relatedId = encodedMeta ? `meta:${encodedMeta}` : null;
 
           const nid = addNotification(
             userId,
@@ -2060,6 +2130,7 @@ export default new Elysia({ prefix: "/admin" })
             targets: targetIds.length,
             type,
             created: created.length,
+            custom_icon_kind: customIconMeta?.kind || null,
           }
         );
       } catch {}
@@ -2074,6 +2145,14 @@ export default new Elysia({ prefix: "/admin" })
         message: t.Optional(t.String()),
         subtitle: t.Optional(t.String()),
         url: t.Optional(t.String()),
+        customIcon: t.Optional(
+          t.Object({
+            kind: t.Union([t.Literal("image"), t.Literal("svg")]),
+            hash: t.Optional(t.String()),
+            url: t.Optional(t.String()),
+            markup: t.Optional(t.String()),
+          })
+        ),
       }),
     }
   )
@@ -2275,6 +2354,9 @@ export default new Elysia({ prefix: "/admin" })
     const limit = Number.parseInt(query.limit) || 50;
     const offset = Number.parseInt(query.offset) || 0;
 
+    const totalRow = db.query("SELECT COUNT(*) AS count FROM reports").get();
+    const totalReports = totalRow?.count || 0;
+
     const reports = db
       .query(
         `
@@ -2316,7 +2398,7 @@ export default new Elysia({ prefix: "/admin" })
       };
     });
 
-    return { reports: enrichedReports };
+    return { reports: enrichedReports, total: totalReports };
   })
 
   .post(
