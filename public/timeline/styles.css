@@ -171,8 +171,6 @@ nav {
     }
 
     &.active {
-        color: var(--primary);
-
       svg {
         display: none;
 
