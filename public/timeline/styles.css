@@ -7764,7 +7764,7 @@ emoji-picker.emoji-picker-popup {
     &.active {
       background-color: var(--primary);
       border-color: var(--primary);
-      color: #fff;
+      color: var(--primary-fg);
       font-weight: 600;
     }
 

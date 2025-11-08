@@ -15,6 +15,7 @@ export const useComposer = (
     communityId = null,
     communitySelector = null,
     interactiveCard = null,
+    cardOnly = false,
   } = {}
 ) => {
   const textarea = element.querySelector("#tweet-textarea");
@@ -117,6 +118,12 @@ export const useComposer = (
 
   const togglePoll = () => {
     if (!pollContainer || !pollToggle) return;
+    if (cardOnly) {
+      toastQueue.add(
+        `<h1>Polls not available</h1><p>Polls cannot be used in card composer mode</p>`
+      );
+      return;
+    }
     pollEnabled = !pollEnabled;
     pollContainer.style.display = pollEnabled ? "block" : "none";
     pollToggle.innerHTML = pollEnabled
@@ -133,6 +140,12 @@ export const useComposer = (
   };
 
   textarea.addEventListener("input", updateCharacterCount);
+
+  if (cardOnly) {
+    if (fileUploadBtn) fileUploadBtn.style.display = "none";
+    if (gifBtn) gifBtn.style.display = "none";
+    if (pollToggle) pollToggle.style.display = "none";
+  }
 
   textarea.addEventListener("input", () => {
     textarea.style.height = "0px";
@@ -312,6 +325,12 @@ export const useComposer = (
 
   if (fileUploadBtn && fileInput) {
     fileUploadBtn.addEventListener("click", () => {
+      if (cardOnly) {
+        toastQueue.add(
+          `<h1>Media upload not available</h1><p>Images and videos cannot be uploaded in card composer mode</p>`
+        );
+        return;
+      }
       if (selectedGif) {
         toastQueue.add(
           `<h1>Cannot add files</h1><p>Remove the GIF first to upload files</p>`
@@ -322,6 +341,13 @@ export const useComposer = (
     });
 
     fileInput.addEventListener("change", async (e) => {
+      if (cardOnly) {
+        toastQueue.add(
+          `<h1>Media upload not available</h1><p>Images and videos cannot be uploaded in card composer mode</p>`
+        );
+        e.target.value = "";
+        return;
+      }
       if (selectedGif) {
         toastQueue.add(
           `<h1>Cannot add files</h1><p>Remove the GIF first to upload files</p>`
@@ -338,6 +364,7 @@ export const useComposer = (
   }
 
   textarea.addEventListener("paste", async (e) => {
+    if (cardOnly) return;
     const items = Array.from(e.clipboardData.items);
     const fileItems = items.filter((item) => item.kind === "file");
 
@@ -533,6 +560,13 @@ export const useComposer = (
     e.preventDefault();
     textarea.classList.remove("drag-over");
 
+    if (cardOnly) {
+      toastQueue.add(
+        `<h1>Media upload not available</h1><p>Images and videos cannot be uploaded in card composer mode</p>`
+      );
+      return;
+    }
+
     const files = Array.from(e.dataTransfer.files);
     const validFiles = files.filter(
       (file) => isConvertibleImage(file) || file.type === "video/mp4"
@@ -551,6 +585,12 @@ export const useComposer = (
     let searchTimeout;
 
     gifBtn.addEventListener("click", () => {
+      if (cardOnly) {
+        toastQueue.add(
+          `<h1>GIFs not available</h1><p>GIFs cannot be used in card composer mode</p>`
+        );
+        return;
+      }
       if (pendingFiles.length > 0) {
         toastQueue.add(
           `<h1>Cannot add GIF</h1><p>Remove uploaded files first to select a GIF</p>`
@@ -897,25 +937,6 @@ export const useComposer = (
   }
 
   if (cardToggleBtn && cardModal && cardModalClose) {
-    cardToggleBtn.addEventListener("click", () => {
-      cardModal.style.display = "flex";
-      const optionsContainer = element.querySelector("#card-options-container");
-      if (optionsContainer.querySelectorAll(".card-option").length === 0) {
-        addCardOption();
-        addCardOption();
-      }
-    });
-
-    cardModalClose.addEventListener("click", () => {
-      cardModal.style.display = "none";
-    });
-
-    cardModal.addEventListener("click", (e) => {
-      if (e.target === cardModal) {
-        cardModal.style.display = "none";
-      }
-    });
-
     const addCardOption = () => {
       const optionsContainer = element.querySelector("#card-options-container");
       const optionCount =
@@ -948,6 +969,35 @@ export const useComposer = (
 
       optionsContainer.appendChild(optionDiv);
     };
+
+    if (cardOnly) {
+      cardToggleBtn.style.display = "block";
+      cardModal.style.display = "flex";
+      const optionsContainer = element.querySelector("#card-options-container");
+      if (optionsContainer.querySelectorAll(".card-option").length === 0) {
+        addCardOption();
+        addCardOption();
+      }
+    }
+
+    cardToggleBtn.addEventListener("click", () => {
+      cardModal.style.display = "flex";
+      const optionsContainer = element.querySelector("#card-options-container");
+      if (optionsContainer.querySelectorAll(".card-option").length === 0) {
+        addCardOption();
+        addCardOption();
+      }
+    });
+
+    cardModalClose.addEventListener("click", () => {
+      cardModal.style.display = "none";
+    });
+
+    cardModal.addEventListener("click", (e) => {
+      if (e.target === cardModal) {
+        cardModal.style.display = "none";
+      }
+    });
 
     const addCardOptionBtn = element.querySelector("#add-card-option");
     if (addCardOptionBtn) {
@@ -1306,6 +1356,7 @@ export const createComposer = async ({
   communityId = null,
   autofocus = false,
   interactiveCard = null,
+  cardOnly = false,
 }) => {
   const el = document.createElement("div");
   el.classList.add("compose-tweet");
@@ -1483,7 +1534,7 @@ export const createComposer = async ({
     if (textareaEl) textareaEl.setAttribute("maxlength", String(maxChars));
 
     const cardToggleBtn = el.querySelector("#card-toggle");
-    if (cardToggleBtn && (user?.verified || user?.gold)) {
+    if (cardToggleBtn && cardOnly) {
       cardToggleBtn.style.display = "block";
     }
 
@@ -1497,6 +1548,7 @@ export const createComposer = async ({
       communityId,
       communitySelector,
       interactiveCard,
+      cardOnly,
     });
   } catch {
     const communitySelector = communityId
@@ -1508,6 +1560,7 @@ export const createComposer = async ({
       communityId,
       communitySelector,
       interactiveCard,
+      cardOnly,
     });
   }
 

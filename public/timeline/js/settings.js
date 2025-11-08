@@ -4,6 +4,41 @@ import query from "./api.js";
 import { authToken } from "./auth.js";
 
 let currentUser = null;
+let currentUserPromise = null;
+
+const ensureCurrentUser = async (forceReload = false) => {
+  if (!authToken) return null;
+
+  if (!forceReload && currentUser) {
+    return currentUser;
+  }
+
+  if (!forceReload && currentUserPromise) {
+    return currentUserPromise;
+  }
+
+  currentUserPromise = (async () => {
+    try {
+      const data = await query("/auth/me?requestPreload=1");
+      if (data?.user) {
+        currentUser = {
+          ...data.user,
+        };
+        return currentUser;
+      }
+      currentUser = null;
+      return null;
+    } catch (error) {
+      console.error("Failed to query user data:", error);
+      currentUser = null;
+      return null;
+    } finally {
+      currentUserPromise = null;
+    }
+  })();
+
+  return currentUserPromise;
+};
 
 const settingsPages = [
   { key: "account", title: "Account", content: () => createAccountContent() },
@@ -19,9 +54,9 @@ const settingsPages = [
     content: () => createScheduledContent(),
   },
   {
-    key: "experiments",
-    title: "Experiments",
-    content: () => createExperimentsContent(),
+    key: "others",
+    title: "Others",
+    content: () => createOthersContent(),
   },
 ];
 
@@ -380,34 +415,61 @@ const deletePasskey = async (passkeyId) => {
   }
 };
 
-const createExperimentsContent = () => {
+const createOthersContent = () => {
   const section = document.createElement("div");
   section.className = "settings-section";
 
   const h1 = document.createElement("h1");
-  h1.textContent = "Experiments";
+  h1.textContent = "Others";
   section.appendChild(h1);
-
-  const disclaimer = document.createElement("p");
-  disclaimer.style.cssText = `
-    color: var(--text-secondary);
-    font-size: 14px;
-    margin-bottom: 20px;
-    padding: 12px;
-    background: var(--bg-primary);
-    border-radius: 8px;
-    border-left: 3px solid var(--primary);
-  `;
-  disclaimer.textContent =
-    "These are experimental features that may change or be removed. Use at your own risk.";
-  section.appendChild(disclaimer);
 
   const group = document.createElement("div");
   group.className = "setting-group";
 
   const h2 = document.createElement("h2");
-  h2.textContent = "Timeline";
+  h2.textContent = "Composer";
   group.appendChild(h2);
+
+  const cardComposerItem = document.createElement("div");
+  cardComposerItem.className = "setting-item";
+
+  const cardComposerLabel = document.createElement("div");
+  cardComposerLabel.className = "setting-label";
+  const cardComposerTitle = document.createElement("div");
+  cardComposerTitle.className = "setting-title";
+  cardComposerTitle.textContent = "Card Composer";
+  const cardComposerDesc = document.createElement("div");
+  cardComposerDesc.className = "setting-description";
+  cardComposerDesc.textContent = "Create interactive cards";
+  cardComposerLabel.appendChild(cardComposerTitle);
+  cardComposerLabel.appendChild(cardComposerDesc);
+
+  const cardComposerControl = document.createElement("div");
+  cardComposerControl.className = "setting-control";
+
+  const cardComposerBtn = document.createElement("button");
+  cardComposerBtn.className = "btn primary";
+  cardComposerBtn.id = "open-card-composer-btn";
+  cardComposerBtn.textContent = "Open Card Composer";
+  cardComposerBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await openCardComposer();
+  });
+
+  cardComposerControl.appendChild(cardComposerBtn);
+  cardComposerItem.appendChild(cardComposerLabel);
+  cardComposerItem.appendChild(cardComposerControl);
+  group.appendChild(cardComposerItem);
+
+  section.appendChild(group);
+
+  const algoGroup = document.createElement("div");
+  algoGroup.className = "setting-group";
+
+  const algoH2 = document.createElement("h2");
+  algoH2.textContent = "Timeline";
+  algoGroup.appendChild(algoH2);
 
   const cAlgoItem = document.createElement("div");
   cAlgoItem.className = "setting-item";
@@ -436,9 +498,9 @@ const createExperimentsContent = () => {
   cAlgoControl.appendChild(cAlgoToggle);
   cAlgoItem.appendChild(cAlgoLabel);
   cAlgoItem.appendChild(cAlgoControl);
-  group.appendChild(cAlgoItem);
+  algoGroup.appendChild(cAlgoItem);
 
-  section.appendChild(group);
+  section.appendChild(algoGroup);
 
   setTimeout(async () => {
     const checkbox = document.getElementById("c-algorithm-toggle");
@@ -960,31 +1022,19 @@ const initializeSettings = () => {
 };
 
 const setupSettingsEventHandlers = async () => {
-  // Always register event handlers so UI interactions (modals, buttons)
-  // work even if the auth token hasn't been loaded yet. If a token is
-  // available we try to fetch the current user; failures are non-fatal.
-  try {
-    if (authToken) {
-      const data = await query("/auth/me");
-      if (data?.user) {
-        currentUser = data.user;
-
-        if (currentUser.theme) {
-          localStorage.setItem("theme", currentUser.theme);
-          handleThemeModeChange(currentUser.theme);
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Failed to query user data:", error);
+  // Ensure we have the latest user data so toggles/modals reflect server state.
+  const user = await ensureCurrentUser();
+  if (user?.theme) {
+    localStorage.setItem("theme", user.theme);
+    handleThemeModeChange(user.theme);
   }
 
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const target = event.target;
 
-    if (target.closest(".custom-dropdown-button")) {
-      const dropdown = target.closest(".custom-dropdown");
-      const isOpen = dropdown.classList.contains("open");
+    if (target.closest?.(".custom-dropdown-button")) {
+      const dropdown = target.closest?.(".custom-dropdown");
+      const isOpen = dropdown?.classList?.contains("open");
 
       document
         .querySelectorAll(".custom-dropdown")
@@ -995,27 +1045,29 @@ const setupSettingsEventHandlers = async () => {
       }
     }
 
-    if (target.classList.contains("custom-dropdown-option")) {
-      const value = target.dataset.value;
-      const dropdown = target.closest(".custom-dropdown");
-      const button = dropdown.querySelector(
+    const optionEl = target.closest?.(".custom-dropdown-option");
+    if (optionEl) {
+      const value = optionEl.dataset?.value;
+      if (!value) return;
+      const dropdown = optionEl.closest?.(".custom-dropdown");
+      const button = dropdown?.querySelector(
         ".custom-dropdown-button .dropdown-text"
       );
       const hiddenSelect =
-        dropdown.parentElement.querySelector(".theme-mode-select");
+        dropdown?.parentElement?.querySelector(".theme-mode-select");
 
-      if (button) button.textContent = target.textContent;
+      if (button) button.textContent = optionEl.textContent;
 
       if (hiddenSelect) {
         hiddenSelect.value = value;
       }
 
       dropdown
-        .querySelectorAll(".custom-dropdown-option")
+        ?.querySelectorAll(".custom-dropdown-option")
         .forEach((opt) => opt.classList.remove("selected"));
-      target.classList.add("selected");
+      optionEl.classList.add("selected");
 
-      dropdown.classList.remove("open");
+      dropdown?.classList.remove("open");
 
       handleThemeModeChange(value);
     }
@@ -1025,20 +1077,24 @@ const setupSettingsEventHandlers = async () => {
       saveThemeToServer();
     }
 
-    if (!target.closest(".custom-dropdown")) {
+    if (!target.closest?.(".custom-dropdown")) {
       document
         .querySelectorAll(".custom-dropdown")
         .forEach((d) => d.classList.remove("open"));
     }
 
-    if (target.classList.contains("theme-mode-select")) {
-    }
-
     if (target.closest?.("#changeUsernameBtn")) {
+      const userForModal = await ensureCurrentUser();
+      if (!userForModal) {
+        toastQueue.add(
+          "<h1>Not Signed In</h1><p>Please sign in to manage your account</p>"
+        );
+        return;
+      }
       showModal(document.getElementById("changeUsernameModal"));
-      if (currentUser?.username) {
-        const nu = document.getElementById("newUsername");
-        if (nu) nu.value = currentUser.username;
+      const nu = document.getElementById("newUsername");
+      if (nu) {
+        nu.value = userForModal.username || "";
       }
     }
 
@@ -1046,10 +1102,22 @@ const setupSettingsEventHandlers = async () => {
       handleAddPasskey();
     }
 
+    if (target.closest?.("#open-card-composer-btn")) {
+      event.preventDefault();
+      openCardComposer();
+    }
+
     if (target.closest?.("#changePasswordBtn")) {
+      const userForPassword = await ensureCurrentUser();
+      if (!userForPassword) {
+        toastQueue.add(
+          "<h1>Not Signed In</h1><p>Please sign in to manage your password</p>"
+        );
+        return;
+      }
       const modal = document.getElementById("changePasswordModal");
       if (modal) {
-        const hasPassword = currentUser?.password_hash !== null;
+        const hasPassword = !!userForPassword.has_password;
 
         const h2 = modal.querySelector("h2");
         if (h2)
@@ -1075,15 +1143,22 @@ const setupSettingsEventHandlers = async () => {
     }
 
     if (target.closest?.("#deleteAccountBtn")) {
+      const userForDeletion = await ensureCurrentUser();
+      if (!userForDeletion) {
+        toastQueue.add(
+          "<h1>Not Signed In</h1><p>Please sign in to manage your account</p>"
+        );
+        return;
+      }
       showModal(document.getElementById("deleteAccountModal"));
     }
 
     if (
-      target.classList.contains("close-btn") ||
-      target.id.includes("cancel") ||
-      target.id.includes("close")
+      target.classList?.contains("close-btn") ||
+      target.id?.includes("cancel") ||
+      target.id?.includes("close")
     ) {
-      const modal = target.closest(".modal");
+      const modal = target.closest?.(".modal");
       if (modal) hideModal(modal);
     }
   });
@@ -1113,30 +1188,23 @@ const setupSettingsEventHandlers = async () => {
         .toLowerCase()
         .replace(/[^a-z0-9_]/g, "");
     }
+    if (event.target.classList?.contains("theme-mode-select")) {
+      handleThemeModeChange(event.target.value);
+    }
   });
 
   document.addEventListener("click", (event) => {
-    if (event.target.closest(".modal") === event.target) {
+    if (event.target.closest?.(".modal") === event.target) {
       hideModal(event.target);
     }
   });
 
   loadCurrentThemeMode();
-
-  document.addEventListener("input", (event) => {
-    if (event.target.id === "newUsername") {
-      event.target.value = event.target.value
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, "");
-    }
-    if (event.target.classList.contains("theme-mode-select")) {
-      handleThemeModeChange(event.target.value);
-    }
-  });
 };
 
 const saveThemeToServer = async () => {
-  if (!currentUser) {
+  const user = await ensureCurrentUser();
+  if (!user) {
     toastQueue.add(
       `<h1>Not Signed In</h1><p>Please sign in to save theme settings</p>`
     );
@@ -1157,7 +1225,7 @@ const saveThemeToServer = async () => {
   }
 
   try {
-    const data = await query(`/profile/${currentUser.username}`, {
+    const data = await query(`/profile/${user.username}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -1171,7 +1239,10 @@ const saveThemeToServer = async () => {
     }
 
     if (data.success) {
-      currentUser.theme = theme;
+      currentUser = {
+        ...user,
+        theme,
+      };
       handleThemeModeChange(theme);
       toastQueue.add(
         `<h1>Saved</h1><p>Your theme is now saved to your account</p>`
@@ -1241,18 +1312,20 @@ const loadPrivacySettings = async () => {
   if (!checkbox) return;
 
   try {
-    const data = await query("/auth/me");
-    const serverEnabled = !!data.user?.private;
+    const user = await ensureCurrentUser();
+    const serverEnabled = !!user?.private;
     checkbox.checked = serverEnabled;
     checkbox.defaultChecked = serverEnabled;
     checkbox.dataset.serverState = serverEnabled ? "on" : "off";
     checkbox.setAttribute("aria-checked", serverEnabled ? "true" : "false");
+    checkbox.disabled = !user;
   } catch (error) {
     console.error("Failed to load privacy setting:", error);
     checkbox.checked = false;
     checkbox.defaultChecked = false;
     checkbox.dataset.serverState = "off";
     checkbox.setAttribute("aria-checked", "false");
+    checkbox.disabled = true;
   }
 
   checkbox.addEventListener("change", async (e) => {
@@ -1269,6 +1342,10 @@ const loadPrivacySettings = async () => {
       if (result.success) {
         checkbox.dataset.serverState = enabled ? "on" : "off";
         checkbox.setAttribute("aria-checked", enabled ? "true" : "false");
+        currentUser = {
+          ...(currentUser || {}),
+          private: enabled,
+        };
         toastQueue.add(
           `<h1>Privacy ${enabled ? "Enabled" : "Disabled"}</h1><p>${
             enabled
@@ -1348,6 +1425,14 @@ const handleAddPasskey = async () => {
 };
 
 const handleUsernameChange = async () => {
+  const user = await ensureCurrentUser();
+  if (!user) {
+    toastQueue.add(
+      `<h1>Not Signed In</h1><p>Please sign in to change your username</p>`
+    );
+    return;
+  }
+
   const newUsername = document.getElementById("newUsername").value.trim();
 
   if (!newUsername || newUsername.length < 3 || newUsername.length > 20) {
@@ -1357,7 +1442,7 @@ const handleUsernameChange = async () => {
     return;
   }
 
-  if (newUsername === currentUser?.username) {
+  if (newUsername === user.username) {
     toastQueue.add(
       `<h1>No Change</h1><p>Please enter a different username</p>`
     );
@@ -1365,7 +1450,7 @@ const handleUsernameChange = async () => {
   }
 
   try {
-    const data = await query(`/profile/${currentUser.username}/username`, {
+    const data = await query(`/profile/${user.username}/username`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -1379,7 +1464,10 @@ const handleUsernameChange = async () => {
     }
 
     if (data.success) {
-      currentUser.username = data.username;
+      currentUser = {
+        ...user,
+        username: data.username,
+      };
 
       if (data.token) {
         localStorage.setItem("authToken", data.token);
@@ -1398,7 +1486,15 @@ const handleUsernameChange = async () => {
 };
 
 const handlePasswordChange = async () => {
-  const hasPassword = currentUser?.password_hash !== null;
+  const user = await ensureCurrentUser();
+  if (!user) {
+    toastQueue.add(
+      `<h1>Not Signed In</h1><p>Please sign in to change your password</p>`
+    );
+    return;
+  }
+
+  const hasPassword = !!user.has_password;
   const currentPassword = document.getElementById("current-password")?.value;
   const newPassword = document.getElementById("new-password").value;
 
@@ -1417,7 +1513,7 @@ const handlePasswordChange = async () => {
   }
 
   try {
-    const data = await query(`/profile/${currentUser.username}/password`, {
+    const data = await query(`/profile/${user.username}/password`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",
@@ -1434,7 +1530,10 @@ const handlePasswordChange = async () => {
     }
 
     if (data.success) {
-      currentUser.password_hash = true;
+      currentUser = {
+        ...user,
+        has_password: true,
+      };
       hideModal(document.getElementById("changePasswordModal"));
       toastQueue.add(
         `<h1>Password ${
@@ -1452,6 +1551,14 @@ const handlePasswordChange = async () => {
 };
 
 const handleAccountDeletion = async () => {
+  const user = await ensureCurrentUser();
+  if (!user) {
+    toastQueue.add(
+      `<h1>Not Signed In</h1><p>Please sign in to delete your account</p>`
+    );
+    return;
+  }
+
   const confirmationText = document.getElementById("deleteConfirmation").value;
 
   if (confirmationText !== "DELETE MY ACCOUNT") {
@@ -1462,7 +1569,7 @@ const handleAccountDeletion = async () => {
   }
 
   try {
-    const data = await query(`/profile/${currentUser.username}`, {
+    const data = await query(`/profile/${user.username}`, {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
@@ -1541,6 +1648,34 @@ export const openSettings = (section = "account") => {
   }
 
   return settingsPage;
+};
+
+export const openCardComposer = async () => {
+  const { createComposer } = await import("./composer.js");
+  const { createModal } = await import("../../shared/ui-utils.js");
+
+  const composerEl = await createComposer({
+    callback: () => {
+      toastQueue.add(
+        `<h1>Card Posted!</h1><p>Your interactive card has been posted</p>`
+      );
+      if (modal?.close) {
+        modal.close();
+      }
+    },
+    placeholder: "Create an interactive card...",
+    autofocus: true,
+    cardOnly: true,
+  });
+
+  const modal = createModal({
+    title: "Card Composer",
+    content: composerEl,
+    className: "card-composer-modal",
+    onClose: () => {},
+  });
+
+  return modal;
 };
 
 export const openSettingsModal = (section = "account") => {

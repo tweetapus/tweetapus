@@ -114,6 +114,8 @@ export default new Elysia({ prefix: "/auth" })
           character_limit: user.character_limit ?? null,
           label_type: user.label_type || null,
           label_automated: user.label_automated || false,
+          private: user.private === 1 || user.private === true,
+          has_password: !!user.password_hash,
         },
         passkeys: passkeys.map((passkey) => ({
           id: passkey.cred_id,

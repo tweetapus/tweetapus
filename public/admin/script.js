@@ -3938,6 +3938,7 @@ class AdminPanel {
   async loadReports(page = 1) {
     const limit = 50;
     const offset = (page - 1) * limit;
+    this.currentPage.reports = page;
 
     try {
       const response = await fetch(
@@ -4338,7 +4339,7 @@ class AdminPanel {
       bootstrap.Modal.getInstance(
         document.getElementById("reportActionModal")
       ).hide();
-      this.loadReports();
+      this.loadReports(this.currentPage.reports || 1);
     } catch (error) {
       console.error("Error resolving report:", error);
       alert(`Failed to resolve report: ${error.message}`);

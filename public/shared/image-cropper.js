@@ -26,7 +26,7 @@ export function openImageCropper(file, options = {}) {
 
     const zoom = document.createElement("input");
     zoom.type = "range";
-    zoom.min = 0;
+    zoom.min = -0.5;
     zoom.max = 1;
     zoom.step = 0.01;
     zoom.value = 0;
