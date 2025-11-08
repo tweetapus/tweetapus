@@ -170,9 +170,26 @@ nav {
       transform: scale(0.97);
     }
 
+    &.active {
+        color: var(--primary);
+
+      svg {
+        display: none;
+
+        &.filled {
+          display: block;
+        }
+
+      }
+    }
+
     svg {
       color: var(--text-primary);
       min-width: 24px;
+
+      &.filled {
+        display: none;
+      }
     }
   }
 
@@ -7533,6 +7550,12 @@ emoji-picker.emoji-picker-popup {
   display: inline-block;
   line-height: 1;
 
+
+
+  &:is(.top-reply .affiliate-with) {
+      margin-left: 2px;
+    }
+
   &:is(#profileDisplayName .role-badge.affiliate-with) {
     margin-left: -3px;
   }
@@ -7544,6 +7567,11 @@ emoji-picker.emoji-picker-popup {
     border: 1px solid var(--border-secondary);
     user-select: none;
     transition: border-color 0.2s, opacity 0.2s;
+
+    &:is(.top-reply .affiliate-with-avatar) {
+      width: 16px;
+      height: 16px;
+    }
 
     &:hover {
       border-color: var(--primary);

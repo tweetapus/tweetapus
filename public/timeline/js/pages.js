@@ -18,8 +18,39 @@ const lazyInitializers = {
   communities: false,
 };
 
+const updateNavbar = () => {
+  requestAnimationFrame(() => {
+    const currentPath = window.location.pathname;
+    const currentPage = currentPath.split("/")[1];
+
+    document.querySelectorAll("nav button.active").forEach((btn) => {
+      btn.classList.remove("active");
+    });
+
+    if (!currentPage) {
+      document.querySelector(".home-btn").classList.add("active");
+    }
+
+    if (currentPage === "search") {
+      document.querySelector(".search-btn").classList.add("active");
+    }
+
+    if (currentPage === "notifications") {
+      document.querySelector(".notifications-btn").classList.add("active");
+    }
+
+    if (currentPage === "dm") {
+      document.querySelector(".dm-btn").classList.add("active");
+    }
+
+    if (currentPage === "communities") {
+      document.querySelector(".communities-btn").classList.add("active");
+    }
+  });
+};
+
 function showPage(page, options = {}) {
-  const { recoverState = () => {}, cleanup = () => {} } = options;
+  const { recoverState = () => {} } = options;
 
   if (history.state?.stateId && cleanups[history.state.stateId]) {
     try {
@@ -105,6 +136,7 @@ export default function switchPage(
   }
 
   showPage(page, { recoverState, path, cleanup });
+  updateNavbar();
 
   const stateId = crypto.randomUUID();
   states[stateId] = recoverState;
@@ -140,18 +172,21 @@ window.addEventListener("popstate", (event) => {
     try {
       cleanups[history.state.stateId]();
       delete cleanups[history.state.stateId];
-    } catch (error) {
-      console.error("Error in cleanup:", error);
+    } catch (e) {
+      console.error("Error in cleanup:", e);
     }
   }
 
   const recoverState = (stateId && states[stateId]) || (() => {});
 
   showPage(page, { recoverState });
+  updateNavbar();
 
   setTimeout(() => {
     window.scrollTo(0, scroll || 0);
   }, 0);
 });
+
+updateNavbar();
 
 export { showPage };
