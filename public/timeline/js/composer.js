@@ -931,12 +931,161 @@ export const useComposer = (
     }
   }
 
+  if (cardToggleBtn && cardModal && cardModalClose) {
+    cardToggleBtn.addEventListener("click", () => {
+      cardModal.style.display = "flex";
+      const optionsContainer = element.querySelector("#card-options-container");
+      if (optionsContainer.querySelectorAll(".card-option").length === 0) {
+        addCardOption();
+        addCardOption();
+      }
+    });
+
+    cardModalClose.addEventListener("click", () => {
+      cardModal.style.display = "none";
+    });
+
+    cardModal.addEventListener("click", (e) => {
+      if (e.target === cardModal) {
+        cardModal.style.display = "none";
+      }
+    });
+
+    const addCardOption = () => {
+      const optionsContainer = element.querySelector("#card-options-container");
+      const optionCount = optionsContainer.querySelectorAll(".card-option").length;
+      if (optionCount >= 4) return;
+
+      const optionDiv = document.createElement("div");
+      optionDiv.className = "card-option";
+      optionDiv.style.cssText = "margin-bottom: 12px; padding: 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-secondary);";
+      optionDiv.innerHTML = `
+        <input type="text" placeholder="Post #${optionCount + 1}" maxlength="100" style="width: 100%; padding: 8px; margin-bottom: 8px; border: 1px solid var(--border-primary); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary);" class="card-option-description" />
+        <textarea placeholder="Tweet text when clicked..." maxlength="280" style="width: 100%; padding: 8px; border: 1px solid var(--border-primary); border-radius: 6px; background: var(--bg-primary); color: var(--text-primary); min-height: 60px; resize: vertical;" class="card-option-tweet"></textarea>
+        ${optionCount >= 2 ? '<button type="button" class="remove-card-option" style="margin-top: 8px; padding: 6px 12px; border: none; border-radius: 6px; background: var(--error-color); color: white; cursor: pointer;">Remove</button>' : ""}
+      `;
+
+      if (optionCount >= 2) {
+        optionDiv.querySelector(".remove-card-option").addEventListener("click", () => {
+          optionDiv.remove();
+        });
+      }
+
+      optionsContainer.appendChild(optionDiv);
+    };
+
+    const addCardOptionBtn = element.querySelector("#add-card-option");
+    if (addCardOptionBtn) {
+      addCardOptionBtn.addEventListener("click", addCardOption);
+    }
+
+    if (cardMediaUploadBtn && cardMediaInput) {
+      cardMediaUploadBtn.addEventListener("click", () => {
+        cardMediaInput.click();
+      });
+
+      cardMediaInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          const result = await query("/upload", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (result.success) {
+            const preview = element.querySelector("#card-media-preview");
+            const mediaType = file.type.startsWith("image/") ? "image" : file.type === "video/mp4" ? "video" : "gif";
+            
+            preview.innerHTML = `
+              <div style="position: relative; border-radius: 8px; overflow: hidden;">
+                ${mediaType === "image" ? `<img src="${result.file.url}" style="width: 100%; border-radius: 8px;" />` : `<video src="${result.file.url}" controls style="width: 100%; border-radius: 8px;"></video>`}
+                <button type="button" id="remove-card-media" style="position: absolute; top: 8px; right: 8px; padding: 6px 12px; border: none; border-radius: 6px; background: rgba(0,0,0,0.7); color: white; cursor: pointer;">Remove</button>
+              </div>
+            `;
+
+            preview.querySelector("#remove-card-media").addEventListener("click", () => {
+              preview.innerHTML = "";
+              cardMediaInput.value = "";
+              interactiveCard = null;
+            });
+
+            if (!interactiveCard) {
+              interactiveCard = {};
+            }
+            interactiveCard.media_url = result.file.url;
+            interactiveCard.media_type = mediaType;
+          } else {
+            toastQueue.add(`<h1>Upload failed</h1><p>${result.error}</p>`);
+          }
+        } catch (error) {
+          console.error("Media upload error:", error);
+          toastQueue.add(`<h1>Upload failed</h1>`);
+        }
+      });
+    }
+
+    if (confirmCardBtn) {
+      confirmCardBtn.addEventListener("click", () => {
+        const optionsContainer = element.querySelector("#card-options-container");
+        const optionElements = optionsContainer.querySelectorAll(".card-option");
+
+        if (!interactiveCard || !interactiveCard.media_url) {
+          toastQueue.add(`<h1>Please upload media for the card</h1>`);
+          return;
+        }
+
+        if (optionElements.length < 2) {
+          toastQueue.add(`<h1>Card must have at least 2 options</h1>`);
+          return;
+        }
+
+        const options = [];
+        for (const optionEl of optionElements) {
+          const description = optionEl.querySelector(".card-option-description").value.trim();
+          const tweetText = optionEl.querySelector(".card-option-tweet").value.trim();
+
+          if (!description || !tweetText) {
+            toastQueue.add(`<h1>All options must have description and tweet text</h1>`);
+            return;
+          }
+
+          options.push({ description, tweet_text: tweetText });
+        }
+
+        interactiveCard.options = options;
+        cardModal.style.display = "none";
+        cardToggleBtn.style.color = "var(--primary)";
+        cardToggleBtn.title = "Edit interactive card";
+        updateCharacterCount();
+      });
+    }
+
+    if (clearCardBtn) {
+      clearCardBtn.addEventListener("click", () => {
+        interactiveCard = null;
+        cardModal.style.display = "none";
+        cardToggleBtn.style.color = "";
+        cardToggleBtn.title = "Create interactive card";
+        element.querySelector("#card-media-preview").innerHTML = "";
+        element.querySelector("#card-media-input").value = "";
+        element.querySelector("#card-options-container").querySelectorAll(".card-option").forEach(el => el.remove());
+        updateCharacterCount();
+      });
+    }
+  }
+
   tweetButton.addEventListener("click", async () => {
     const content = textarea.value.trim();
     const hasExtras =
       (pendingFiles && pendingFiles.length > 0) ||
       !!selectedGif ||
       pollEnabled ||
+      !!interactiveCard ||
       !!article;
 
     if ((content.length === 0 && !hasExtras) || content.length > maxChars) {
@@ -1095,6 +1244,10 @@ export const useComposer = (
         requestBody.poll = poll;
       }
 
+      if (interactiveCard) {
+        requestBody.interactive_card = interactiveCard;
+      }
+
       const { error, tweet } = await query("/tweets/", {
         method: "POST",
         headers: {
@@ -1116,6 +1269,10 @@ export const useComposer = (
       pendingFiles = [];
       selectedGif = null;
       attachmentPreview.innerHTML = "";
+      interactiveCard = null;
+      if (cardToggleBtn) {
+        cardToggleBtn.style.color = "";
+      }
 
       if (pollEnabled && pollContainer) {
         pollContainer
@@ -1325,7 +1482,6 @@ export const createComposer = async ({
         ? 5500
         : 400;
 
-    // update the counter display to show the right max
     const counter = el.querySelector(".character-counter");
     if (counter) {
       counter.innerHTML = `<span id="char-count">0</span>/${maxChars}`;
@@ -1333,6 +1489,11 @@ export const createComposer = async ({
 
     const textareaEl = el.querySelector("#tweet-textarea");
     if (textareaEl) textareaEl.setAttribute("maxlength", String(maxChars));
+
+    const cardToggleBtn = el.querySelector("#card-toggle");
+    if (cardToggleBtn && (user?.verified || user?.gold)) {
+      cardToggleBtn.style.display = "block";
+    }
 
     const communitySelector = communityId
       ? null

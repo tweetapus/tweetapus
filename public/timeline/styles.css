@@ -7727,3 +7727,55 @@ emoji-picker.emoji-picker-popup {
     transform: scale(1);
   }
 }
+
+.interactive-card {
+  margin-top: 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.interactive-card .card-media {
+  width: 100%;
+  background: var(--bg-secondary);
+}
+
+.interactive-card .card-media img,
+.interactive-card .card-media video {
+  width: 100%;
+  display: block;
+  max-height: 400px;
+  object-fit: cover;
+}
+
+.interactive-card .card-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border-primary);
+}
+
+.interactive-card .card-option-button {
+  padding: 14px 16px;
+  border: none;
+  background: var(--bg-primary);
+  color: var(--primary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid var(--border-primary);
+  text-align: center;
+}
+
+.interactive-card .card-option-button:last-child {
+  border-bottom: none;
+}
+
+.interactive-card .card-option-button:hover {
+  background: var(--bg-secondary);
+}
+
+.interactive-card .card-option-button:active {
+  transform: scale(0.98);
+}

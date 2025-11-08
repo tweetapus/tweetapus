@@ -880,9 +880,8 @@ class AdminPanel {
                         : ""
                     }
                     ${
-                      // add account switching @tiagozip
                       this.isFlagSet(user.gold)
-                        ? '<span class="badge bg-yellow">Gold</span>'
+                        ? '<span class="badge bg-warning">Gold</span>'
                         : ""
                     }
                     ${
@@ -1939,7 +1938,7 @@ class AdminPanel {
         return;
       }
 
-      navigator.clipboard.writeText(`${result.copyLink}`);
+      navigator.clipboard.writeText(`${copyLink}`);
 
       this.showSuccess(
         `Impersonation link copied, paste it into a new incognito window`

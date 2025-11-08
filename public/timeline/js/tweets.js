@@ -1296,6 +1296,71 @@ export const createTweetElement = (tweet, config = {}) => {
     }
   }
 
+  if (tweet.interactive_card && tweet.interactive_card.options) {
+    const cardEl = document.createElement("div");
+    cardEl.className = "interactive-card";
+
+    const mediaEl = document.createElement("div");
+    mediaEl.className = "card-media";
+    
+    if (tweet.interactive_card.media_type === "image" || tweet.interactive_card.media_type === "gif") {
+      const img = document.createElement("img");
+      img.src = tweet.interactive_card.media_url;
+      img.alt = "Card media";
+      img.loading = "lazy";
+      mediaEl.appendChild(img);
+    } else if (tweet.interactive_card.media_type === "video") {
+      const video = document.createElement("video");
+      video.src = tweet.interactive_card.media_url;
+      video.controls = true;
+      video.loading = "lazy";
+      mediaEl.appendChild(video);
+    }
+
+    cardEl.appendChild(mediaEl);
+
+    const optionsEl = document.createElement("div");
+    optionsEl.className = "card-options";
+
+    tweet.interactive_card.options.forEach((option) => {
+      const optionBtn = document.createElement("button");
+      optionBtn.type = "button";
+      optionBtn.className = "card-option-button";
+      optionBtn.textContent = `Tweet ${option.description}`;
+      
+      optionBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const { createComposer } = await import("./composer.js");
+        const composer = await createComposer({
+          placeholder: "Confirm your tweet...",
+          autofocus: true,
+          callback: async (newTweet) => {
+            modal.close();
+            toastQueue.add(`<h1>Tweet posted!</h1>`);
+          },
+        });
+
+        const textarea = composer.querySelector("#tweet-textarea");
+        if (textarea) {
+          textarea.value = option.tweet_text;
+          textarea.dispatchEvent(new Event("input"));
+        }
+
+        const modal = createModal({
+          title: "Confirm Tweet",
+          content: composer,
+        });
+      });
+
+      optionsEl.appendChild(optionBtn);
+    });
+
+    cardEl.appendChild(optionsEl);
+    tweetEl.appendChild(cardEl);
+  }
+
   if (!isArticlePost && tweet.attachments && tweet.attachments.length > 0) {
     const attachmentsEl = document.createElement("div");
     attachmentsEl.className = "tweet-attachments";
