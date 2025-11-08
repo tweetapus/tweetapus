@@ -78,8 +78,6 @@ export default new Elysia({
       };
     }
   })
-  .use(auth)
-  .use(admin)
   .get("/emojis", async () => {
     try {
       const rows = db
@@ -92,6 +90,8 @@ export default new Elysia({
       return { emojis: [] };
     }
   })
+  .use(auth)
+  .use(admin)
   .use(blocking)
   .use(bookmarks)
   .use(communities)

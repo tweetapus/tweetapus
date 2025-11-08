@@ -16,6 +16,7 @@ export function showReportModal({ type, id, username }) {
     color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.5;
+    margin-top: -30px;
   `;
   description.textContent = `Help us understand why you're reporting this ${type}. Your report will be reviewed by our moderation team.`;
 
@@ -135,11 +136,12 @@ export function showReportModal({ type, id, username }) {
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
+    font-family: inherit;
   `;
 
   const submitButton = document.createElement("button");
   submitButton.type = "submit";
-  submitButton.textContent = "Submit Report";
+  submitButton.textContent = "Submit report";
   submitButton.style.cssText = `
     padding: 10px 20px;
     border: none;
@@ -149,6 +151,7 @@ export function showReportModal({ type, id, username }) {
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
+    font-family: inherit;
   `;
 
   buttonGroup.appendChild(cancelButton);

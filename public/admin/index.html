@@ -338,7 +338,10 @@
                   <i class="bi bi-flag"></i>
                   User Reports
                 </h4>
-                <button class="btn btn-secondary" onclick="adminPanel.loadReports()">
+                <button
+                  class="btn btn-secondary"
+                  onclick="adminPanel.loadReports()"
+                >
                   <i class="bi bi-arrow-clockwise"></i>
                   Refresh
                 </button>
@@ -1387,7 +1390,9 @@
               <select id="reportAction" class="form-select" required>
                 <option value="">Select an action...</option>
                 <option value="ignore">Ignore & Delete Report</option>
-                <option value="ban_reporter">Ban Reporter from Making Reports</option>
+                <option value="ban_reporter">
+                  Ban Reporter from Making Reports
+                </option>
                 <option value="ban_user">Ban Reported User</option>
                 <option value="delete_post">Delete Reported Tweet</option>
                 <option value="fact_check">Add Fact-Check to Tweet</option>

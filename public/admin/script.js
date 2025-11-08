@@ -1927,9 +1927,12 @@ class AdminPanel {
 
   async impersonateUser(userId) {
     try {
-      const { error, copyLink } = await this.apiCall(`/api/admin/impersonate/${userId}`, {
-        method: "POST",
-      });
+      const { error, copyLink } = await this.apiCall(
+        `/api/admin/impersonate/${userId}`,
+        {
+          method: "POST",
+        }
+      );
 
       if (error) {
         this.showError(error);
@@ -3726,7 +3729,9 @@ class AdminPanel {
             </tr>
           </thead>
           <tbody>
-            ${pendingReports.map((report) => this.renderReportRow(report)).join("")}
+            ${pendingReports
+              .map((report) => this.renderReportRow(report))
+              .join("")}
           </tbody>
         </table>
       `;
@@ -3748,7 +3753,9 @@ class AdminPanel {
             </tr>
           </thead>
           <tbody>
-            ${resolvedReports.map((report) => this.renderReportRow(report, true)).join("")}
+            ${resolvedReports
+              .map((report) => this.renderReportRow(report, true))
+              .join("")}
           </tbody>
         </table>
       `;
@@ -3764,14 +3771,22 @@ class AdminPanel {
 
   renderReportRow(report, isResolved = false) {
     const reporterLink = report.reporter
-      ? `<a href="/@${report.reporter.username}" target="_blank">@${this.escapeHtml(report.reporter.username)}</a>`
+      ? `<a href="/@${
+          report.reporter.username
+        }" target="_blank">@${this.escapeHtml(report.reporter.username)}</a>`
       : "Unknown";
 
     let reportedContent = "";
     if (report.reported_type === "user" && report.reported) {
-      reportedContent = `<a href="/@${report.reported.username}" target="_blank">@${this.escapeHtml(report.reported.username)}</a>`;
+      reportedContent = `<a href="/@${
+        report.reported.username
+      }" target="_blank">@${this.escapeHtml(report.reported.username)}</a>`;
     } else if (report.reported_type === "post" && report.reported) {
-      reportedContent = `<a href="/tweet/${report.reported.id}" target="_blank">Tweet</a><br><small class="text-muted">${this.escapeHtml(report.reported.content?.substring(0, 50) || "")}...</small>`;
+      reportedContent = `<a href="/tweet/${
+        report.reported.id
+      }" target="_blank">Tweet</a><br><small class="text-muted">${this.escapeHtml(
+        report.reported.content?.substring(0, 50) || ""
+      )}...</small>`;
     } else {
       reportedContent = "Deleted";
     }
@@ -3800,12 +3815,21 @@ class AdminPanel {
       return `
         <tr>
           <td>${reporterLink}</td>
-          <td><span class="badge bg-secondary">${report.reported_type}</span></td>
+          <td><span class="badge bg-secondary">${
+            report.reported_type
+          }</span></td>
           <td>${reportedContent}</td>
-          <td><span class="badge bg-warning">${reasonLabels[report.reason] || report.reason}</span></td>
-          <td><span class="badge bg-success">${resolutionLabels[report.resolution_action] || report.resolution_action}</span></td>
+          <td><span class="badge bg-warning">${
+            reasonLabels[report.reason] || report.reason
+          }</span></td>
+          <td><span class="badge bg-success">${
+            resolutionLabels[report.resolution_action] ||
+            report.resolution_action
+          }</span></td>
           <td>${report.resolved_by || "N/A"}</td>
-          <td><small>${new Date(report.resolved_at).toLocaleString()}</small></td>
+          <td><small>${new Date(
+            report.resolved_at
+          ).toLocaleString()}</small></td>
         </tr>
       `;
     }
@@ -3815,15 +3839,21 @@ class AdminPanel {
         <td>${reporterLink}</td>
         <td><span class="badge bg-secondary">${report.reported_type}</span></td>
         <td>${reportedContent}</td>
-        <td><span class="badge bg-warning">${reasonLabels[report.reason] || report.reason}</span></td>
+        <td><span class="badge bg-warning">${
+          reasonLabels[report.reason] || report.reason
+        }</span></td>
         <td>
-          <button class="btn btn-sm btn-info" onclick="adminPanel.showReportDetails('${report.id}')">
+          <button class="btn btn-sm btn-info" onclick="adminPanel.showReportDetails('${
+            report.id
+          }')">
             <i class="bi bi-info-circle"></i>
           </button>
         </td>
         <td><small>${new Date(report.created_at).toLocaleString()}</small></td>
         <td>
-          <button class="btn btn-sm btn-primary" onclick="adminPanel.showReportActionModal('${report.id}')">
+          <button class="btn btn-sm btn-primary" onclick="adminPanel.showReportActionModal('${
+            report.id
+          }')">
             <i class="bi bi-gavel"></i> Resolve
           </button>
         </td>
@@ -3837,7 +3867,9 @@ class AdminPanel {
 
     const details = `
       <strong>Reason:</strong> ${report.reason}<br>
-      <strong>Additional Info:</strong> ${this.escapeHtml(report.additional_info || "None")}
+      <strong>Additional Info:</strong> ${this.escapeHtml(
+        report.additional_info || "None"
+      )}
     `;
 
     alert(details);
@@ -3893,16 +3925,24 @@ class AdminPanel {
       if (report.reported_type === "user" && report.reported) {
         reportedInfo = `User: @${this.escapeHtml(report.reported.username)}`;
       } else if (report.reported_type === "post" && report.reported) {
-        reportedInfo = `Tweet: ${this.escapeHtml(report.reported.content?.substring(0, 100) || "")}...`;
+        reportedInfo = `Tweet: ${this.escapeHtml(
+          report.reported.content?.substring(0, 100) || ""
+        )}...`;
       }
 
       document.getElementById("reportActionDetails").innerHTML = `
         <div class="alert alert-secondary">
           <strong>Report Type:</strong> ${report.reported_type}<br>
           <strong>Reported:</strong> ${reportedInfo}<br>
-          <strong>Reason:</strong> ${reasonLabels[report.reason] || report.reason}<br>
-          <strong>Additional Info:</strong> ${this.escapeHtml(report.additional_info || "None")}<br>
-          <strong>Reporter:</strong> @${this.escapeHtml(report.reporter?.username || "Unknown")}
+          <strong>Reason:</strong> ${
+            reasonLabels[report.reason] || report.reason
+          }<br>
+          <strong>Additional Info:</strong> ${this.escapeHtml(
+            report.additional_info || "None"
+          )}<br>
+          <strong>Reporter:</strong> @${this.escapeHtml(
+            report.reporter?.username || "Unknown"
+          )}
         </div>
       `;
 
@@ -3951,7 +3991,9 @@ class AdminPanel {
         }
       };
 
-      const modal = new bootstrap.Modal(document.getElementById("reportActionModal"));
+      const modal = new bootstrap.Modal(
+        document.getElementById("reportActionModal")
+      );
       modal.show();
     } catch (error) {
       console.error("Error loading report:", error);
@@ -3977,7 +4019,9 @@ class AdminPanel {
       if (severity) body.severity = Number.parseInt(severity);
     } else if (action === "fact_check") {
       const note = document.getElementById("factCheckNoteReport")?.value;
-      const severity = document.getElementById("factCheckSeverityReport")?.value;
+      const severity = document.getElementById(
+        "factCheckSeverityReport"
+      )?.value;
       if (!note) {
         alert("Please provide a fact-check note");
         return;
@@ -4003,7 +4047,9 @@ class AdminPanel {
       }
 
       alert("Report resolved successfully");
-      bootstrap.Modal.getInstance(document.getElementById("reportActionModal")).hide();
+      bootstrap.Modal.getInstance(
+        document.getElementById("reportActionModal")
+      ).hide();
       this.loadReports();
     } catch (error) {
       console.error("Error resolving report:", error);

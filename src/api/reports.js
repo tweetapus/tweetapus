@@ -1,6 +1,15 @@
 import { Elysia, t } from "elysia";
+import { jwt } from "@elysiajs/jwt";
+import { rateLimit } from "elysia-rate-limit";
 import db from "../db.js";
 import { broadcastToUser } from "../index.js";
+import ratelimit from "../helpers/ratelimit.js";
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
+
+const getUserByUsername = db.prepare(
+  "SELECT * FROM users WHERE username = ?"
+);
 
 const createReport = db.prepare(`
   INSERT INTO reports (id, reporter_id, reported_type, reported_id, reason, additional_info)
@@ -68,7 +77,7 @@ const createModerationLog = db.prepare(`
   VALUES (?, ?, ?, ?, ?, ?)
 `);
 
-export default new Elysia({ prefix: "/api/reports" })
+export default new Elysia({ prefix: "/reports" })
   .post(
     "/create",
     async ({ body, user, set }) => {
