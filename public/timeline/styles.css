@@ -481,18 +481,17 @@ nav {
         margin-bottom: 10px;
       }
 
-
-            #reply-restriction-select {
-    border: none;
-    font-family: inherit;
-    background-color: transparent;
-    padding: 0px;
-    outline: none;
-    margin-bottom: 4px;
-    margin-left: -3px;
-    color: var(--text-secondary);
-    cursor: pointer;
-            }
+      #reply-restriction-select {
+        border: none;
+        font-family: inherit;
+        background-color: transparent;
+        padding: 0px;
+        outline: none;
+        margin-bottom: 4px;
+        margin-left: -3px;
+        color: var(--text-secondary);
+        cursor: pointer;
+      }
 
       .compose-footer {
         display: flex;
@@ -6861,6 +6860,111 @@ emoji-picker.emoji-picker-popup {
   min-width: 0;
   max-width: 900px;
   overflow-x: hidden;
+}
+
+.settings-modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(15, 20, 25, 0.6);
+  z-index: 1200;
+
+  .settings-form-modal {
+    background-color: var(--bg-primary);
+    border-radius: 16px;
+    width: min(480px, 90vw);
+    max-height: 85vh;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-primary);
+
+      h2 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .close-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 24px;
+        line-height: 1;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s ease, color 0.2s ease;
+
+        &:hover {
+          background-color: var(--bg-secondary);
+          color: var(--text-primary);
+        }
+      }
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      color: var(--text-primary);
+
+      .form-group {
+        margin-bottom: 18px;
+
+        label {
+          display: block;
+          margin-bottom: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--text-primary);
+        }
+
+        input {
+          width: 100%;
+          padding: 10px 12px;
+          border-radius: 10px;
+          border: 1px solid var(--border-primary);
+          background-color: var(--bg-secondary);
+          color: var(--text-primary);
+        }
+
+        small {
+          display: block;
+          margin-top: 6px;
+          color: var(--text-secondary);
+          font-size: 12px;
+        }
+      }
+
+      p {
+        margin: 0 0 16px 0;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+    }
+
+    .form-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+    }
+  }
 }
 
 .settings-section h1 {

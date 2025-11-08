@@ -75,12 +75,10 @@ class AdminPanel {
       this.loadDashboard();
       try {
         this.setupCloneForm();
-      } catch (_e) {
-      }
+      } catch (_e) {}
       try {
         this.setupFakeNotificationForm();
-      } catch (_e) {
-      }
+      } catch (_e) {}
     } catch {
       location.href = "/";
     }
@@ -1270,7 +1268,8 @@ class AdminPanel {
     const statusItem = document.createElement("li");
     statusItem.className = "page-item";
     const statusWrapper = document.createElement("div");
-    statusWrapper.className = "page-link bg-light d-flex align-items-center gap-2";
+    statusWrapper.className =
+      "page-link bg-light d-flex align-items-center gap-2";
     const label = document.createElement("span");
     label.textContent = "Page";
     const input = document.createElement("input");
@@ -1872,8 +1871,7 @@ class AdminPanel {
 
       try {
         this.userCache.delete(userId);
-      } catch {
-      }
+      } catch {}
 
       this.showSuccess("Profile updated successfully");
       this.toggleEditMode(false);
@@ -2971,6 +2969,11 @@ class AdminPanel {
     fileInput.addEventListener("change", async (event) => {
       const file = event.target?.files?.[0];
       if (!file) return;
+      if (!file.type || !file.type.startsWith("image/")) {
+        this.showError("Please choose an image file");
+        fileInput.value = "";
+        return;
+      }
 
       try {
         const cropperModule = await import("../shared/image-cropper.js");
@@ -4055,7 +4058,9 @@ class AdminPanel {
     html += `</div>`;
     tableContainer.innerHTML = html;
 
-    this.renderPagination("reports", pager);
+    this.renderPagination("reportsPagination", pager, (nextPage) =>
+      this.loadReports(nextPage)
+    );
   }
 
   renderReportRow(report, isResolved = false) {

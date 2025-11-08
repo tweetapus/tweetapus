@@ -145,6 +145,8 @@ const createThemesContent = () => {
   group.appendChild(saveItem);
 
   section.appendChild(group);
+  attachThemeSectionHandlers(section);
+
   return section;
 };
 
@@ -253,11 +255,134 @@ const createAccountContent = () => {
   danger.appendChild(item3);
   section.appendChild(danger);
 
-  section.appendChild(createChangeUsernameModal());
-  section.appendChild(createDeleteAccountModal());
-  section.appendChild(createChangePasswordModal());
+  attachAccountSectionHandlers(section);
 
   return section;
+};
+
+const openChangeUsernameModal = async () => {
+  const userForModal = await ensureCurrentUser();
+  if (!userForModal) {
+    toastQueue.add(
+      "<h1>Not Signed In</h1><p>Please sign in to manage your account</p>"
+    );
+    return;
+  }
+
+  const modal = document.getElementById("changeUsernameModal");
+  if (!modal) return;
+
+  showModal(modal);
+
+  const usernameInput = document.getElementById("newUsername");
+  if (usernameInput) {
+    usernameInput.value = userForModal.username || "";
+  }
+};
+
+const openChangePasswordModal = async () => {
+  const userForPassword = await ensureCurrentUser();
+  if (!userForPassword) {
+    toastQueue.add(
+      "<h1>Not Signed In</h1><p>Please sign in to manage your password</p>"
+    );
+    return;
+  }
+
+  const modal = document.getElementById("changePasswordModal");
+  if (!modal) return;
+
+  const hasPassword = !!userForPassword.has_password;
+
+  const header = modal.querySelector("h2");
+  if (header) {
+    header.textContent = hasPassword ? "Change Password" : "Set Password";
+  }
+
+  const submit = modal.querySelector("button[type='submit']");
+  if (submit) {
+    submit.textContent = hasPassword ? "Change Password" : "Set Password";
+  }
+
+  const currentPasswordGroup = document.getElementById("currentPasswordGroup");
+  if (currentPasswordGroup) {
+    currentPasswordGroup.style.display = hasPassword ? "block" : "none";
+  }
+
+  const form = document.getElementById("changePasswordForm");
+  if (form && typeof form.reset === "function") {
+    form.reset();
+  }
+
+  showModal(modal);
+};
+
+const openDeleteAccountModal = async () => {
+  const userForDeletion = await ensureCurrentUser();
+  if (!userForDeletion) {
+    toastQueue.add(
+      "<h1>Not Signed In</h1><p>Please sign in to manage your account</p>"
+    );
+    return;
+  }
+
+  const modal = document.getElementById("deleteAccountModal");
+  if (!modal) return;
+
+  showModal(modal);
+};
+
+const attachAccountSectionHandlers = (root) => {
+  if (!root) return;
+
+  const usernameBtn = root.querySelector("#changeUsernameBtn");
+  if (usernameBtn && !usernameBtn.dataset.bound) {
+    usernameBtn.dataset.bound = "1";
+    usernameBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      openChangeUsernameModal();
+    });
+  }
+
+  const passwordBtn = root.querySelector("#changePasswordBtn");
+  if (passwordBtn && !passwordBtn.dataset.bound) {
+    passwordBtn.dataset.bound = "1";
+    passwordBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      openChangePasswordModal();
+    });
+  }
+
+  const deleteBtn = root.querySelector("#deleteAccountBtn");
+  if (deleteBtn && !deleteBtn.dataset.bound) {
+    deleteBtn.dataset.bound = "1";
+    deleteBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      openDeleteAccountModal();
+    });
+  }
+};
+
+const attachThemeSectionHandlers = (root) => {
+  if (!root) return;
+  const saveBtn = root.querySelector("#saveThemeBtn");
+  if (saveBtn && !saveBtn.dataset.bound) {
+    saveBtn.dataset.bound = "1";
+    saveBtn.addEventListener("click", (event) => {
+      event.preventDefault();
+      saveThemeToServer();
+    });
+  }
+};
+
+const enhanceSettingsSection = (root) => {
+  if (!root) return;
+  if (root.querySelector("#changeUsernameBtn")) {
+    attachAccountSectionHandlers(root);
+  }
+  if (root.querySelector("#saveThemeBtn")) {
+    attachThemeSectionHandlers(root);
+  }
 };
 
 const createPasskeysContent = () => {
@@ -689,23 +814,31 @@ const loadScheduledPosts = async () => {
 };
 
 const createChangeUsernameModal = () => {
-  const modal = document.createElement("div");
-  modal.id = "changeUsernameModal";
-  modal.className = "modal";
-  modal.style.display = "none";
+  const overlay = document.createElement("div");
+  overlay.id = "changeUsernameModal";
+  overlay.className = "settings-modal-overlay";
+  overlay.style.display = "none";
 
-  const content = document.createElement("div");
-  content.className = "modal-content";
+  const modal = document.createElement("div");
+  modal.className = "modal settings-form-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "changeUsernameHeading");
+
   const header = document.createElement("div");
   header.className = "modal-header";
   const h2 = document.createElement("h2");
+  h2.id = "changeUsernameHeading";
   h2.textContent = "Change Username";
   const close = document.createElement("button");
   close.className = "close-btn";
   close.id = "closeUsernameModal";
+  close.type = "button";
+  close.setAttribute("aria-label", "Close change username dialog");
   close.textContent = "×";
   header.appendChild(h2);
   header.appendChild(close);
+
   const body = document.createElement("div");
   body.className = "modal-body";
   const form = document.createElement("form");
@@ -733,6 +866,7 @@ const createChangeUsernameModal = () => {
   fg.appendChild(label);
   fg.appendChild(userWrap);
   fg.appendChild(small);
+
   const actions = document.createElement("div");
   actions.className = "form-actions";
   const cancel = document.createElement("button");
@@ -746,36 +880,47 @@ const createChangeUsernameModal = () => {
   submit.textContent = "Change Username";
   actions.appendChild(cancel);
   actions.appendChild(submit);
+
   form.appendChild(fg);
   form.appendChild(actions);
   body.appendChild(form);
-  content.appendChild(header);
-  content.appendChild(body);
-  modal.appendChild(content);
-  return modal;
+
+  modal.appendChild(header);
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  return overlay;
 };
 
 const createDeleteAccountModal = () => {
+  const overlay = document.createElement("div");
+  overlay.id = "deleteAccountModal";
+  overlay.className = "settings-modal-overlay";
+  overlay.style.display = "none";
+
   const modal = document.createElement("div");
-  modal.id = "deleteAccountModal";
-  modal.className = "modal";
-  modal.style.display = "none";
-  const content = document.createElement("div");
-  content.className = "modal-content";
+  modal.className = "modal settings-form-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "deleteAccountHeading");
+
   const header = document.createElement("div");
   header.className = "modal-header";
   const h2 = document.createElement("h2");
+  h2.id = "deleteAccountHeading";
   h2.textContent = "Delete Account";
   const close = document.createElement("button");
   close.className = "close-btn";
   close.id = "closeDeleteModal";
+  close.type = "button";
+  close.setAttribute("aria-label", "Close delete account dialog");
   close.textContent = "×";
   header.appendChild(h2);
   header.appendChild(close);
+
   const body = document.createElement("div");
   body.className = "modal-body";
-  const p = document.createElement("p");
-  p.innerHTML =
+  const warning = document.createElement("p");
+  warning.innerHTML =
     "<strong>Warning:</strong> This action cannot be undone. All your tweets, likes, follows, and account data will be permanently deleted.";
   const form = document.createElement("form");
   form.id = "deleteAccountForm";
@@ -791,6 +936,7 @@ const createDeleteAccountModal = () => {
   input.required = true;
   fg.appendChild(label);
   fg.appendChild(input);
+
   const actions = document.createElement("div");
   actions.className = "form-actions";
   const cancel = document.createElement("button");
@@ -804,38 +950,50 @@ const createDeleteAccountModal = () => {
   submit.textContent = "Delete Account";
   actions.appendChild(cancel);
   actions.appendChild(submit);
+
   form.appendChild(fg);
   form.appendChild(actions);
-  body.appendChild(p);
+  body.appendChild(warning);
   body.appendChild(form);
-  content.appendChild(header);
-  content.appendChild(body);
-  modal.appendChild(content);
-  return modal;
+
+  modal.appendChild(header);
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  return overlay;
 };
 
 const createChangePasswordModal = () => {
+  const overlay = document.createElement("div");
+  overlay.id = "changePasswordModal";
+  overlay.className = "settings-modal-overlay";
+  overlay.style.display = "none";
+
   const modal = document.createElement("div");
-  modal.id = "changePasswordModal";
-  modal.className = "modal";
-  modal.style.display = "none";
-  const content = document.createElement("div");
-  content.className = "modal-content";
+  modal.className = "modal settings-form-modal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "changePasswordHeading");
+  modal.setAttribute("aria-describedby", "passwordModalDescription");
+
   const header = document.createElement("div");
   header.className = "modal-header";
   const h2 = document.createElement("h2");
+  h2.id = "changePasswordHeading";
   h2.textContent = "Change Password";
   const close = document.createElement("button");
   close.className = "close-btn";
   close.id = "closePasswordModal";
+  close.type = "button";
+  close.setAttribute("aria-label", "Close change password dialog");
   close.textContent = "×";
   header.appendChild(h2);
   header.appendChild(close);
+
   const body = document.createElement("div");
   body.className = "modal-body";
-  const p = document.createElement("p");
-  p.id = "passwordModalDescription";
-  p.textContent =
+  const description = document.createElement("p");
+  description.id = "passwordModalDescription";
+  description.textContent =
     "Set a password for your account to enable traditional username/password login.";
   const form = document.createElement("form");
   form.id = "changePasswordForm";
@@ -853,6 +1011,7 @@ const createChangePasswordModal = () => {
   inputCur.required = true;
   fgCur.appendChild(labelCur);
   fgCur.appendChild(inputCur);
+
   const fgNew = document.createElement("div");
   fgNew.className = "form-group";
   const labelNew = document.createElement("label");
@@ -864,11 +1023,12 @@ const createChangePasswordModal = () => {
   inputNew.placeholder = "enter your new password";
   inputNew.minLength = 8;
   inputNew.required = true;
-  const small = document.createElement("small");
-  small.textContent = "Password must be at least 8 characters long.";
+  const hint = document.createElement("small");
+  hint.textContent = "Password must be at least 8 characters long.";
   fgNew.appendChild(labelNew);
   fgNew.appendChild(inputNew);
-  fgNew.appendChild(small);
+  fgNew.appendChild(hint);
+
   const actions = document.createElement("div");
   actions.className = "form-actions";
   const cancel = document.createElement("button");
@@ -883,15 +1043,34 @@ const createChangePasswordModal = () => {
   submit.textContent = "Set Password";
   actions.appendChild(cancel);
   actions.appendChild(submit);
+
   form.appendChild(fgCur);
   form.appendChild(fgNew);
   form.appendChild(actions);
-  body.appendChild(p);
+  body.appendChild(description);
   body.appendChild(form);
-  content.appendChild(header);
-  content.appendChild(body);
-  modal.appendChild(content);
-  return modal;
+
+  modal.appendChild(header);
+  modal.appendChild(body);
+  overlay.appendChild(modal);
+  return overlay;
+};
+
+const ensureAccountModals = () => {
+  const body = document.body;
+  if (!body) return;
+
+  if (!document.getElementById("changeUsernameModal")) {
+    body.appendChild(createChangeUsernameModal());
+  }
+
+  if (!document.getElementById("changePasswordModal")) {
+    body.appendChild(createChangePasswordModal());
+  }
+
+  if (!document.getElementById("deleteAccountModal")) {
+    body.appendChild(createDeleteAccountModal());
+  }
 };
 
 const createSettingsPage = () => {
@@ -984,6 +1163,7 @@ const initializeSettings = () => {
     contentArea.textContent = "";
     const node = page.content();
     contentArea.appendChild(node);
+    enhanceSettingsSection(node);
 
     const newPath = `/settings/${tabKey}`;
     if (window.location.pathname !== newPath) {
@@ -1023,6 +1203,8 @@ const initializeSettings = () => {
 
 const setupSettingsEventHandlers = async () => {
   // Ensure we have the latest user data so toggles/modals reflect server state.
+  ensureAccountModals();
+
   const user = await ensureCurrentUser();
   if (user?.theme) {
     localStorage.setItem("theme", user.theme);
@@ -1084,18 +1266,9 @@ const setupSettingsEventHandlers = async () => {
     }
 
     if (target.closest?.("#changeUsernameBtn")) {
-      const userForModal = await ensureCurrentUser();
-      if (!userForModal) {
-        toastQueue.add(
-          "<h1>Not Signed In</h1><p>Please sign in to manage your account</p>"
-        );
-        return;
-      }
-      showModal(document.getElementById("changeUsernameModal"));
-      const nu = document.getElementById("newUsername");
-      if (nu) {
-        nu.value = userForModal.username || "";
-      }
+      event.preventDefault();
+      await openChangeUsernameModal();
+      return;
     }
 
     if (target.closest?.("#addPasskeyBtn")) {
@@ -1108,49 +1281,15 @@ const setupSettingsEventHandlers = async () => {
     }
 
     if (target.closest?.("#changePasswordBtn")) {
-      const userForPassword = await ensureCurrentUser();
-      if (!userForPassword) {
-        toastQueue.add(
-          "<h1>Not Signed In</h1><p>Please sign in to manage your password</p>"
-        );
-        return;
-      }
-      const modal = document.getElementById("changePasswordModal");
-      if (modal) {
-        const hasPassword = !!userForPassword.has_password;
-
-        const h2 = modal.querySelector("h2");
-        if (h2)
-          h2.textContent = hasPassword ? "Change Password" : "Set Password";
-
-        const submitBtn = modal.querySelector("button[type='submit']");
-        if (submitBtn)
-          submitBtn.textContent = hasPassword
-            ? "Change Password"
-            : "Set Password";
-
-        const currentPasswordGroup = document.getElementById(
-          "currentPasswordGroup"
-        );
-        if (currentPasswordGroup)
-          currentPasswordGroup.style.display = hasPassword ? "block" : "none";
-
-        const cpf = document.getElementById("changePasswordForm");
-        if (cpf && typeof cpf.reset === "function") cpf.reset();
-
-        showModal(modal);
-      }
+      event.preventDefault();
+      await openChangePasswordModal();
+      return;
     }
 
     if (target.closest?.("#deleteAccountBtn")) {
-      const userForDeletion = await ensureCurrentUser();
-      if (!userForDeletion) {
-        toastQueue.add(
-          "<h1>Not Signed In</h1><p>Please sign in to manage your account</p>"
-        );
-        return;
-      }
-      showModal(document.getElementById("deleteAccountModal"));
+      event.preventDefault();
+      await openDeleteAccountModal();
+      return;
     }
 
     if (
@@ -1158,8 +1297,10 @@ const setupSettingsEventHandlers = async () => {
       target.id?.includes("cancel") ||
       target.id?.includes("close")
     ) {
-      const modal = target.closest?.(".modal");
-      if (modal) hideModal(modal);
+      const overlay =
+        target.closest?.(".settings-modal-overlay") ||
+        target.closest?.(".modal");
+      if (overlay) hideModal(overlay);
     }
   });
 
@@ -1194,7 +1335,7 @@ const setupSettingsEventHandlers = async () => {
   });
 
   document.addEventListener("click", (event) => {
-    if (event.target.closest?.(".modal") === event.target) {
+    if (event.target.classList?.contains("settings-modal-overlay")) {
       hideModal(event.target);
     }
   });
@@ -1366,11 +1507,19 @@ const loadPrivacySettings = async () => {
   });
 };
 
-const showModal = (modal) => {
-  modal.style.display = "flex";
+const showModal = (element) => {
+  if (!element) return;
+  const overlay = element.classList?.contains("settings-modal-overlay")
+    ? element
+    : element.closest?.(".settings-modal-overlay") || element;
+  overlay.style.display = "flex";
 };
-const hideModal = (modal) => {
-  modal.style.display = "none";
+const hideModal = (element) => {
+  if (!element) return;
+  const overlay = element.classList?.contains("settings-modal-overlay")
+    ? element
+    : element.closest?.(".settings-modal-overlay") || element;
+  overlay.style.display = "none";
 };
 
 const handleAddPasskey = async () => {
@@ -1639,6 +1788,7 @@ export const openSettings = (section = "account") => {
     contentArea.textContent = "";
     const node = page.content();
     contentArea.appendChild(node);
+    enhanceSettingsSection(node);
 
     if (section === "themes") {
       setTimeout(() => {
@@ -1732,6 +1882,7 @@ export const openSettingsModal = (section = "account") => {
     contentArea.textContent = "";
     const node = page.content();
     contentArea.appendChild(node);
+    enhanceSettingsSection(node);
 
     if (tabKey === "themes") {
       setTimeout(() => {
