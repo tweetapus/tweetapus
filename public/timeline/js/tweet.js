@@ -106,7 +106,8 @@ export default async function openTweet(
         setTimeout(() => {
           const mainTweet = page.querySelector('[data-main-tweet="true"]');
           if (mainTweet) {
-            mainTweet.scrollIntoView({ block: "center" });
+            mainTweet.scrollIntoView({ block: "start" });
+            window.scrollBy(0, -200);
           }
         }, 100);
       }
