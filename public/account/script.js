@@ -38,20 +38,6 @@ const persistAgreeCookie = async () => {
   );
 };
 
-const clearAgreeCookie = async () => {
-  try {
-    if (window.cookieStore?.delete) {
-      await window.cookieStore.delete(agreeCookieName);
-      return;
-    }
-  } catch (_) {}
-  Reflect.set(
-    document,
-    "cookie",
-    `${agreeCookieName}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
-  );
-};
-
 function handleImpersonationToken() {
   const urlParams = new URLSearchParams(window.location.search);
   const impersonateToken = urlParams.get("impersonate");

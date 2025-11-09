@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tweetapus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <link rel="stylesheet" href="/public/shared/base.css" />
+    <link rel="stylesheet" href="/public/account-v2/styles.css" />
+  </head>
+  <body>
+    <svg
+      class="logo"
+      width="48"
+      height="48"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <path
+        d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
+      />
+    </svg>
+
+    <h1>
+      Be the first to know
+      <br />
+      what's happening.
+    </h1>
+
+    <div class="form init-form">
+      <p>Choose your username</p>
+      <input type="text" id="username" placeholder="username" autofocus />
+    </div>
+    <button class="create-account">
+      Create an account
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="24"
+        height="24"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="lucide lucide-arrow-right-icon lucide-arrow-right"
+      >
+        <path d="M5 12h14" />
+        <path d="m12 5 7 7-7 7" />
+      </svg>
+    </button>
+
+    <div class="already">
+      <p>Already have an account?</p>
+
+      <button class="log-in" style="margin: 0px">
+        Log in
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="lucide lucide-key-icon lucide-key"
+        >
+          <path
+            d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"
+          />
+          <path d="m21 2-9.6 9.6" />
+          <circle cx="7.5" cy="15.5" r="5.5" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="create-step2 model-wrapper">
+      <div class="modal">
+        <svg
+          class="logo"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path
+            d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"
+          />
+        </svg>
+
+        <h2></h2>
+      </div>
+    </div>
+
+    <div class="form" style="display: none">
+      <p>And your password</p>
+      <input type="password" id="username" placeholder="**********" />
+
+      <button>Create an account</button>
+
+      <p>Already have an account?</p>
+      <button>Log in with password</button>
+      <button>Log in with passkey</button>
+    </div>
+
+    <script src="/public/shared/darkmode.js" defer></script>
+
+    <script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.es5.umd.min.js"></script>
+    <script src="/public/account-v2/script.js" type="module"></script>
+  </body>
+</html>

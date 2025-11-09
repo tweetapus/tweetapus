@@ -131,7 +131,7 @@ export default new Elysia({ prefix: "/auth" })
     }
   })
   .post("/generate-registration-options", async ({ body, jwt, headers }) => {
-    const { username } = body;
+    const username = body.username?.trim()?.toLowerCase();
 
     if (!username) {
       return { error: "Username is required" };
@@ -141,7 +141,7 @@ export default new Elysia({ prefix: "/auth" })
       return { error: "Username must be less than 40 characters" };
     }
 
-    if (!/^[a-z0-9_]+$/.test(username)) {
+    if (!/^[^a-zA-Z0-9._-]+$/.test(username)) {
       return {
         error:
           "Username can only contain lowercase letters, numbers, and underscores",
@@ -582,7 +582,8 @@ export default new Elysia({ prefix: "/auth" })
   })
   .post("/register-with-password", async ({ body, jwt }) => {
     try {
-      const { username, password } = body;
+      const username = body.username?.trim()?.toLowerCase();
+      const { password } = body;
 
       if (!username || !password) {
         return { error: "Username and password are required" };
@@ -592,7 +593,7 @@ export default new Elysia({ prefix: "/auth" })
         return { error: "Username must be between 3 and 20 characters" };
       }
 
-      if (!/^[a-z0-9_]+$/.test(username)) {
+      if (!/^[^a-zA-Z0-9._-]+$/.test(username)) {
         return {
           error:
             "Username can only contain lowercase letters, numbers, and underscores",

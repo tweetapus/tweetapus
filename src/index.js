@@ -154,10 +154,11 @@ new Elysia()
   .get("/settings", ({ redirect }) => redirect("/settings/account"))
   .get("/settings/:page", () => file("./public/timeline/index.html"))
   .get("/legal", () => file("./public/legal.html"))
+  .get("/__old__account__", () => file("./public/account/index.html"))
   .get("*", ({ cookie }) => {
     return cookie.agree?.value === "yes"
       ? file("./public/timeline/index.html")
-      : file("./public/account/index.html");
+      : file("./public/account-v2/index.html");
   })
   .use(api)
   .listen({ port: process.env.PORT || 3000, idleTimeout: 255 }, () => {
