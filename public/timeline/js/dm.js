@@ -1128,10 +1128,18 @@ function renderAddParticipantSuggestions(users) {
           : user.gold
           ? `4px`
           : `50px`;
-      const escapedUsername = (user.username || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
-      const escapedName = (user.name || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
-      const escapedAvatar = (user.avatar || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
-      const escapedId = (user.id || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const escapedUsername = (user.username || "")
+        .replaceAll("'", "&#39;")
+        .replaceAll('"', "&quot;");
+      const escapedName = (user.name || "")
+        .replaceAll("'", "&#39;")
+        .replaceAll('"', "&quot;");
+      const escapedAvatar = (user.avatar || "")
+        .replaceAll("'", "&#39;")
+        .replaceAll('"', "&quot;");
+      const escapedId = (user.id || "")
+        .replaceAll("'", "&#39;")
+        .replaceAll('"', "&quot;");
       const displayName = sanitizeHTML(user.name || user.username);
       const displayUsername = sanitizeHTML(user.username);
       return `
@@ -1268,9 +1276,15 @@ function renderUserSuggestions(users) {
           : user.gold
           ? `4px`
           : `50px`;
-      const escapedUsername = (user.username || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
-      const escapedName = (user.name || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
-      const escapedAvatar = (user.avatar || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const escapedUsername = (user.username || "")
+        .replaceAll("'", "&#39;")
+        .replaceAll('"', "&quot;");
+      const escapedName = (user.name || "")
+        .replaceAll("'", "&#39;")
+        .replaceAll('"', "&quot;");
+      const escapedAvatar = (user.avatar || "")
+        .replaceAll("'", "&#39;")
+        .replaceAll('"', "&quot;");
       const displayName = sanitizeHTML(user.name || user.username);
       const displayUsername = sanitizeHTML(user.username);
       return `

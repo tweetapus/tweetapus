@@ -111,8 +111,8 @@ const displayResults = (users, posts) => {
           ? "4px"
           : "50px";
       const escapeHtml = (text) => {
-        const div = document.createElement('div');
-        div.textContent = text || '';
+        const div = document.createElement("div");
+        div.textContent = text || "";
         return div.innerHTML;
       };
       const escapedName = escapeHtml(user.name);
