@@ -505,9 +505,9 @@ nav {
             var(--text-secondary) 50%
           ),
           linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
-        background-position: calc(100% - 11px) calc(1em + -2px),
-          calc(100% - 5px) calc(1em + -2px);
-        background-size: 6px 6px, 6px 6px;
+        background-position: calc(100% - 12px) calc(1em + -2px),
+          calc(100% - 8px) calc(1em + -2px);
+        background-size: 4px 4px, 4px 4px;
         background-repeat: no-repeat;
         padding-right: 23px;
       }
