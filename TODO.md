@@ -1,4 +1,9 @@
+**IMPORTANT:**
 - proper rate-limiting & captchas
+- fix XSS
+- use Bun's SQL driver instead of sqlite since it's async
+
+**OTHER:**
 - i cant close the edit community modal
 
 - tweetapus circles like twiter circle
