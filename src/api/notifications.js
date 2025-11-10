@@ -12,18 +12,24 @@ try {
 const getUserByUsername = db.query("SELECT id FROM users WHERE username = ?");
 
 const getNotifications = db.prepare(`
-  SELECT id, type, content, related_id, actor_id, actor_username, actor_name, read, created_at
-  FROM notifications 
-  WHERE user_id = ? 
-  ORDER BY created_at DESC 
+  SELECT 
+    n.id, n.type, n.content, n.related_id, n.actor_id, n.actor_username, n.actor_name, n.read, n.created_at,
+    u.avatar as actor_avatar, u.verified as actor_verified, u.gold as actor_gold, u.avatar_radius as actor_avatar_radius
+  FROM notifications n
+  LEFT JOIN users u ON n.actor_id = u.id
+  WHERE n.user_id = ? 
+  ORDER BY n.created_at DESC 
   LIMIT ?
 `);
 
 const getNotificationsBefore = db.prepare(`
-  SELECT id, type, content, related_id, actor_id, actor_username, actor_name, read, created_at
-  FROM notifications 
-  WHERE user_id = ? AND created_at < (SELECT created_at FROM notifications WHERE id = ?)
-  ORDER BY created_at DESC 
+  SELECT 
+    n.id, n.type, n.content, n.related_id, n.actor_id, n.actor_username, n.actor_name, n.read, n.created_at,
+    u.avatar as actor_avatar, u.verified as actor_verified, u.gold as actor_gold, u.avatar_radius as actor_avatar_radius
+  FROM notifications n
+  LEFT JOIN users u ON n.actor_id = u.id
+  WHERE n.user_id = ? AND n.created_at < (SELECT created_at FROM notifications WHERE id = ?)
+  ORDER BY n.created_at DESC 
   LIMIT ?
 `);
 

@@ -65,6 +65,14 @@ async function loadNotifications() {
         notification.tweet.author = notification.tweet.user;
         delete notification.tweet.user;
       }
+      console.log(
+        "Notification:",
+        notification.type,
+        "Actor avatar:",
+        notification.actor_avatar,
+        "Actor ID:",
+        notification.actor_id
+      );
       return notification;
     });
 
@@ -154,24 +162,77 @@ function renderNotifications() {
     return;
   }
 
-  currentNotifications.forEach((notification) => {
-    const notificationEl = createNotificationElement(notification);
+  const groupedNotifications = groupSimilarNotifications(currentNotifications);
+
+  groupedNotifications.forEach((group) => {
+    const notificationEl = createNotificationElement(group);
     listElement.appendChild(notificationEl);
   });
 }
 
-function createNotificationElement(notification) {
+function groupSimilarNotifications(notifications) {
+  const groups = [];
+  const groupableTypes = ["like", "retweet", "follow", "reaction"];
+  const timeWindowMs = 24 * 60 * 60 * 1000;
+
+  for (const notification of notifications) {
+    if (!groupableTypes.includes(notification.type)) {
+      groups.push({
+        notifications: [notification],
+        type: notification.type,
+        related_id: notification.related_id,
+        created_at: notification.created_at,
+        read: notification.read,
+      });
+      continue;
+    }
+
+    const notifTime = new Date(notification.created_at).getTime();
+    const existingGroup = groups.find((g) => {
+      if (g.type !== notification.type) return false;
+      if (g.related_id !== notification.related_id) return false;
+
+      const groupTime = new Date(g.created_at).getTime();
+      return Math.abs(notifTime - groupTime) < timeWindowMs;
+    });
+
+    if (existingGroup) {
+      existingGroup.notifications.push(notification);
+      if (!existingGroup.read && notification.read) {
+        existingGroup.read = false;
+      }
+    } else {
+      groups.push({
+        notifications: [notification],
+        type: notification.type,
+        related_id: notification.related_id,
+        created_at: notification.created_at,
+        read: notification.read,
+      });
+    }
+  }
+
+  return groups;
+}
+
+function createNotificationElement(group) {
+  const notifications = Array.isArray(group.notifications)
+    ? group.notifications
+    : [group];
+  const primaryNotification = notifications[0];
+  const isGrouped = notifications.length > 1;
+
   const now = new Date();
   let date;
 
   if (
-    typeof notification.created_at === "string" &&
-    !notification.created_at.endsWith("Z") &&
-    !notification.created_at.includes("+")
+    typeof primaryNotification.created_at === "string" &&
+    !primaryNotification.created_at.endsWith("Z") &&
+    !primaryNotification.created_at.includes("+")
   ) {
-    date = new Date(`${notification.created_at}Z`);
+    date = new Date(`${primaryNotification.created_at}Z`);
   } else {
-    date = new Date(notification.created_at);
+    date = new Date(primaryNotification.created_at);
   }
 
   const diffInSeconds = Math.floor((now - date) / 1000);
@@ -185,17 +246,22 @@ function createNotificationElement(notification) {
     timeAgo = `${Math.floor(diffInSeconds / 86400)}d`;
   else timeAgo = date.toLocaleDateString();
 
-  const isUnread = !notification.read;
+  const isUnread = notifications.some((n) => !n.read);
 
   const notificationEl = document.createElement("div");
   notificationEl.className = `notification-item ${isUnread ? "unread" : ""}`;
-  notificationEl.dataset.id = notification.id;
-  notificationEl.dataset.type = notification.type;
-  notificationEl.dataset.relatedId = notification.related_id || "";
-  notificationEl.dataset.relatedUrl = notification.url || "";
+  notificationEl.dataset.id = primaryNotification.id;
+  notificationEl.dataset.type = primaryNotification.type;
+  notificationEl.dataset.relatedId = primaryNotification.related_id || "";
+  notificationEl.dataset.relatedUrl = primaryNotification.url || "";
+
+  const hasActors = notifications.some((n) => n.actor_avatar);
+
+  const headerContainer = document.createElement("div");
+  headerContainer.className = "notification-header";
 
   const iconEl = document.createElement("div");
-  const customIcon = notification.customIcon;
+  const customIcon = primaryNotification.customIcon;
 
   if (customIcon) {
     iconEl.className = "notification-icon custom-icon";
@@ -221,104 +287,220 @@ function createNotificationElement(notification) {
       iconEl.appendChild(img);
     } else {
       const iconClassName =
-        NOTIFICATION_ICON_CLASSES[notification.type] || "default-icon";
+        NOTIFICATION_ICON_CLASSES[primaryNotification.type] || "default-icon";
       iconEl.className = `notification-icon ${iconClassName}`;
       iconEl.innerHTML =
-        NOTIFICATION_ICON_MAP[notification.type] ||
+        NOTIFICATION_ICON_MAP[primaryNotification.type] ||
         NOTIFICATION_ICON_MAP.default;
     }
   } else {
     const iconClassName =
-      NOTIFICATION_ICON_CLASSES[notification.type] || "default-icon";
+      NOTIFICATION_ICON_CLASSES[primaryNotification.type] || "default-icon";
     iconEl.className = `notification-icon ${iconClassName}`;
     iconEl.innerHTML =
-      NOTIFICATION_ICON_MAP[notification.type] || NOTIFICATION_ICON_MAP.default;
+      NOTIFICATION_ICON_MAP[primaryNotification.type] ||
+      NOTIFICATION_ICON_MAP.default;
   }
+
+  headerContainer.appendChild(iconEl);
+
+  if (hasActors) {
+    const avatarsContainer = document.createElement("div");
+    avatarsContainer.className = "notification-avatars";
+
+    const maxAvatars = 3;
+    const displayNotifications = notifications.slice(0, maxAvatars);
+
+    displayNotifications.forEach((notif, index) => {
+      if (notif.actor_avatar) {
+        const avatarWrapper = document.createElement("div");
+        avatarWrapper.className = "notification-avatar-wrapper";
+        avatarWrapper.style.zIndex = maxAvatars - index;
+
+        const avatar = document.createElement("img");
+        avatar.className = "notification-avatar";
+        avatar.src = notif.actor_avatar;
+        avatar.alt = notif.actor_name || notif.actor_username || "";
+        avatar.loading = "lazy";
+
+        if (
+          notif.actor_avatar_radius !== undefined &&
+          notif.actor_avatar_radius !== null
+        ) {
+          avatar.style.borderRadius = `${notif.actor_avatar_radius}%`;
+        }
+
+        if (notif.actor_username) {
+          avatarWrapper.style.cursor = "pointer";
+          avatarWrapper.addEventListener("click", (e) => {
+            e.stopPropagation();
+            openProfile(notif.actor_username);
+          });
+        }
+
+        avatarWrapper.appendChild(avatar);
+        avatarsContainer.appendChild(avatarWrapper);
+      }
+    });
+
+    headerContainer.appendChild(avatarsContainer);
+  }
+
+  notificationEl.appendChild(headerContainer);
+
+  const mainSection = document.createElement("div");
+  mainSection.className = "notification-main";
 
   const contentEl = document.createElement("div");
   contentEl.className = "notification-content";
 
   const contentP = document.createElement("p");
 
-  const actorName =
-    notification.actor_name || notification.actor_username || null;
-  const actorUsername = notification.actor_username || "";
-
   function escapeRegExp(string) {
     return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
-  let remainingText = notification.content || "";
+  if (isGrouped) {
+    const actors = notifications.map((n) => ({
+      name: n.actor_name,
+      username: n.actor_username,
+    }));
 
-  try {
-    remainingText = remainingText
-      .replace(/\u00A0/g, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-  } catch {}
+    const maxDisplay = 3;
+    const displayActors = actors.slice(0, maxDisplay);
+    const remaining = actors.length - maxDisplay;
 
-  if (actorName && remainingText) {
-    try {
-      const normActorName = actorName
-        .replace(/\u00A0/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
+    displayActors.forEach((actor, index) => {
+      if (actor.name) {
+        const actorLink = document.createElement("a");
+        actorLink.className = "notification-actor-link";
+        actorLink.href = actor.username ? `/@${actor.username}` : "#";
+        actorLink.textContent = actor.name;
+        actorLink.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          ev.preventDefault();
+          if (actor.username) {
+            openProfile(actor.username);
+          }
+        });
 
-      const displayNameRe = new RegExp(escapeRegExp(normActorName), "gi");
-      remainingText = remainingText.replace(displayNameRe, "");
+        contentP.appendChild(actorLink);
 
-      if (actorUsername) {
-        const usernameRe = new RegExp(`@?${escapeRegExp(actorUsername)}`, "gi");
-        remainingText = remainingText.replace(usernameRe, "");
-        const parenRe = new RegExp(
-          `\\(\s*@?${escapeRegExp(actorUsername)}\s*\\)`,
-          "gi"
-        );
-        remainingText = remainingText.replace(parenRe, "");
-      }
-
-      remainingText = remainingText.replace(/\s+/g, " ").trim();
-      remainingText = remainingText.replace(/^[:;\-\s()]+/, "").trim();
-    } catch {}
-  }
-
-  if (actorName) {
-    const actorLink = document.createElement("a");
-    actorLink.className = "notification-actor-link";
-    actorLink.href = actorUsername ? `/@${actorUsername}` : "#";
-    actorLink.textContent = actorName;
-    actorLink.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      ev.preventDefault();
-      if (actorUsername) {
-        openProfile(actorUsername);
+        if (index < displayActors.length - 1) {
+          contentP.appendChild(document.createTextNode(", "));
+        }
       }
     });
 
+    if (remaining > 0) {
+      contentP.appendChild(
+        document.createTextNode(
+          ` and ${remaining} other${remaining > 1 ? "s" : ""}`
+        )
+      );
+    }
+
+    let actionText = "";
+    switch (primaryNotification.type) {
+      case "like":
+        actionText = " liked your tweet";
+        break;
+      case "retweet":
+        actionText = " retweeted your tweet";
+        break;
+      case "follow":
+        actionText = " followed you";
+        break;
+      case "reaction":
+        actionText = " reacted to your tweet";
+        break;
+      default:
+        actionText = ` ${primaryNotification.content}`;
+    }
+
     const restSpan = document.createElement("span");
     restSpan.className = "notification-rest";
-    restSpan.textContent = remainingText ? ` ${remainingText} ` : " ";
+    restSpan.textContent = actionText;
 
-    const timeSpan = document.createElement("span");
-    timeSpan.className = "notification-time";
-    timeSpan.textContent = `· ${timeAgo}`;
-
-    contentP.appendChild(actorLink);
     contentP.appendChild(restSpan);
-    contentP.appendChild(timeSpan);
-    contentEl.appendChild(contentP);
   } else {
-    contentP.textContent = `${notification.content?.trim() || ""}  `;
-    const timeSpan = document.createElement("span");
-    timeSpan.className = "notification-time";
-    timeSpan.textContent = `· ${timeAgo}`;
-    contentP.appendChild(timeSpan);
-    contentEl.appendChild(contentP);
+    const actorName =
+      primaryNotification.actor_name ||
+      primaryNotification.actor_username ||
+      null;
+    const actorUsername = primaryNotification.actor_username || "";
+
+    let remainingText = primaryNotification.content || "";
+
+    try {
+      remainingText = remainingText
+        .replace(/\u00A0/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    } catch {}
+
+    if (actorName && remainingText) {
+      try {
+        const normActorName = actorName
+          .replace(/\u00A0/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+
+        const displayNameRe = new RegExp(escapeRegExp(normActorName), "gi");
+        remainingText = remainingText.replace(displayNameRe, "");
+
+        if (actorUsername) {
+          const usernameRe = new RegExp(
+            `@?${escapeRegExp(actorUsername)}`,
+            "gi"
+          );
+          remainingText = remainingText.replace(usernameRe, "");
+          const parenRe = new RegExp(
+            `\\(\s*@?${escapeRegExp(actorUsername)}\s*\\)`,
+            "gi"
+          );
+          remainingText = remainingText.replace(parenRe, "");
+        }
+
+        remainingText = remainingText.replace(/\s+/g, " ").trim();
+        remainingText = remainingText.replace(/^[:;\-\s()]+/, "").trim();
+      } catch {}
+    }
+
+    if (actorName) {
+      const actorLink = document.createElement("a");
+      actorLink.className = "notification-actor-link";
+      actorLink.href = actorUsername ? `/@${actorUsername}` : "#";
+      actorLink.textContent = actorName;
+      actorLink.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        ev.preventDefault();
+        if (actorUsername) {
+          openProfile(actorUsername);
+        }
+      });
+
+      const restSpan = document.createElement("span");
+      restSpan.className = "notification-rest";
+      restSpan.textContent = remainingText ? ` ${remainingText}` : "";
+
+      contentP.appendChild(actorLink);
+      contentP.appendChild(restSpan);
+    } else {
+      contentP.textContent = `${primaryNotification.content?.trim() || ""}`;
+    }
   }
 
-  if (notification.tweet) {
-    if (notification.type === "reply") {
-      const tweetElement = createTweetElement(notification.tweet, {
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "notification-time";
+  timeSpan.textContent = ` · ${timeAgo}`;
+  contentP.appendChild(timeSpan);
+
+  contentEl.appendChild(contentP);
+
+  if (primaryNotification.tweet) {
+    if (primaryNotification.type === "reply") {
+      const tweetElement = createTweetElement(primaryNotification.tweet, {
         clickToOpen: false,
         showTopReply: false,
         isTopReply: false,
@@ -330,22 +512,22 @@ function createNotificationElement(notification) {
       contentEl.appendChild(tweetPreviewEl);
     } else if (
       ["like", "retweet", "quote", "mention", "fact_check"].includes(
-        notification.type
+        primaryNotification.type
       )
     ) {
       const tweetContent =
-        notification.tweet.content.length > 100
-          ? `${notification.tweet.content.substring(0, 100)}...`
-          : notification.tweet.content;
+        primaryNotification.tweet.content.length > 100
+          ? `${primaryNotification.tweet.content.substring(0, 100)}...`
+          : primaryNotification.tweet.content;
       const tweetSubtitleEl = document.createElement("div");
       tweetSubtitleEl.className = "notification-tweet-subtitle";
       tweetSubtitleEl.textContent = tweetContent;
       contentEl.appendChild(tweetSubtitleEl);
-    } else if (notification.tweet.content) {
+    } else if (primaryNotification.tweet.content) {
       const tweetContent =
-        notification.tweet.content.length > 100
-          ? `${notification.tweet.content.substring(0, 100)}...`
-          : notification.tweet.content;
+        primaryNotification.tweet.content.length > 100
+          ? `${primaryNotification.tweet.content.substring(0, 100)}...`
+          : primaryNotification.tweet.content;
       const tweetSubtitleEl = document.createElement("div");
       tweetSubtitleEl.className = "notification-tweet-subtitle";
       tweetSubtitleEl.textContent = tweetContent;
@@ -361,17 +543,15 @@ function createNotificationElement(notification) {
 
     if (authToken && isUnread) {
       try {
-        await query(`/notifications/${notificationId}/read`, {
-          method: "PATCH",
-        });
-
-        const notification = currentNotifications.find(
-          (n) => n.id === notificationId
-        );
-        if (notification) {
-          notification.read = true;
-          renderNotifications();
+        for (const notif of notifications) {
+          if (!notif.read) {
+            await query(`/notifications/${notif.id}/read`, {
+              method: "PATCH",
+            });
+            notif.read = true;
+          }
         }
+        renderNotifications();
       } catch (error) {
         console.error("Failed to mark notification as read:", error);
       }
@@ -455,8 +635,7 @@ function createNotificationElement(notification) {
       const requestId = relatedId?.startsWith("affiliate_request:")
         ? relatedId.split(":")[1]
         : null;
-      const notif =
-        currentNotifications.find((n) => n.id === notificationId) || {};
+      const notif = notifications.find((n) => n.id === notificationId) || {};
       const actorName = notif.actor_username || notif.actor_name || "this user";
 
       const content = document.createElement("div");
@@ -587,8 +766,8 @@ function createNotificationElement(notification) {
     }
   });
 
-  notificationEl.appendChild(iconEl);
-  notificationEl.appendChild(contentEl);
+  mainSection.appendChild(contentEl);
+  notificationEl.appendChild(mainSection);
 
   return notificationEl;
 }

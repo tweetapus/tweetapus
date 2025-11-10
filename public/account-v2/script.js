@@ -73,5 +73,5 @@ document.querySelector(".log-in").addEventListener("click", (e) => {
   e.preventDefault();
   e.stopPropagation();
 
-  location.href = "/__old__account__";
+  location.href = "/__old__account__"; // Stuck Cursor
 });
