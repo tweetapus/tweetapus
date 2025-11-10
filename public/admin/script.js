@@ -208,9 +208,9 @@ class AdminPanel {
                   )}</div>
                 </div>
                 <div class="ms-auto">
-                  <button class="btn btn-sm btn-outline-danger" onclick="adminPanel.deleteEmoji('${
+                  <button class="btn btn-sm btn-outline-danger" onclick="adminPanel.deleteEmoji('${this.escapeHtml(
                     e.id
-                  }')">Delete</button>
+                  )}')">Delete</button>
                 </div>
               </div>
             </div>

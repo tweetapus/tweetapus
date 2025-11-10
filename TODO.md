@@ -1,9 +1,11 @@
 **IMPORTANT:**
+
 - proper rate-limiting & captchas
-- fix XSS
+- fix XSS <-- flower doing rn
 - use Bun's SQL driver instead of sqlite since it's async
 
 **OTHER:**
+
 - i cant close the edit community modal
 
 - tweetapus circles like twiter circle
@@ -14,3 +16,5 @@
 - switching between accounts
 
 - delegates
+
+- make comuter's phone happy

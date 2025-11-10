@@ -1128,18 +1128,20 @@ function renderAddParticipantSuggestions(users) {
           : user.gold
           ? `4px`
           : `50px`;
+      const escapedUsername = (user.username || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const escapedName = (user.name || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const escapedAvatar = (user.avatar || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const escapedId = (user.id || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const displayName = sanitizeHTML(user.name || user.username);
+      const displayUsername = sanitizeHTML(user.username);
       return `
-      <div class="suggestion-item" onclick="addParticipantUser('${
-        user.username
-      }', '${user.name || ""}', '${user.avatar || ""}', '${user.id}')">
+      <div class="suggestion-item" onclick="addParticipantUser('${escapedUsername}', '${escapedName}', '${escapedAvatar}', '${escapedId}')">
         <img src="${
           user.avatar || "/public/shared/assets/default-avatar.png"
-        }" alt="${
-        user.name || user.username
-      }" style="border-radius: ${radius};" />
+        }" alt="${displayName}" style="border-radius: ${radius};" />
         <div class="user-info">
-          <p class="username">${user.name || user.username}</p>
-          <p class="name">@${user.username}</p>
+          <p class="username">${displayName}</p>
+          <p class="name">@${displayUsername}</p>
         </div>
       </div>
     `;
@@ -1266,18 +1268,19 @@ function renderUserSuggestions(users) {
           : user.gold
           ? `4px`
           : `50px`;
+      const escapedUsername = (user.username || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const escapedName = (user.name || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const escapedAvatar = (user.avatar || '').replaceAll("'", "&#39;").replaceAll('"', '&quot;');
+      const displayName = sanitizeHTML(user.name || user.username);
+      const displayUsername = sanitizeHTML(user.username);
       return `
-      <div class="suggestion-item" onclick="addUser('${user.username}', '${
-        user.name || ""
-      }', '${user.avatar || ""}')">
+      <div class="suggestion-item" onclick="addUser('${escapedUsername}', '${escapedName}', '${escapedAvatar}')">
         <img src="${
           user.avatar || "/public/shared/assets/default-avatar.png"
-        }" alt="${
-        user.name || user.username
-      }" style="border-radius: ${radius};" />
+        }" alt="${displayName}" style="border-radius: ${radius};" />
         <div class="user-info">
-          <p class="username">${user.name || user.username}</p>
-          <p class="name">@${user.username}</p>
+          <p class="username">${displayName}</p>
+          <p class="name">@${displayUsername}</p>
         </div>
       </div>
     `;

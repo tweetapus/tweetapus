@@ -110,15 +110,20 @@ const displayResults = (users, posts) => {
           : user.gold
           ? "4px"
           : "50px";
+      const escapeHtml = (text) => {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+      };
+      const escapedName = escapeHtml(user.name);
+      const escapedUsername = escapeHtml(user.username);
+      const escapedAvatar = escapeHtml(user.avatar || "/default-avatar.png");
       return `
-			<a href="/@${user.username}" class="search-user">
-				<img src="${user.avatar || "/default-avatar.png"}" alt="${user.name.replaceAll(
-        '"',
-        ""
-      )}" style="border-radius: ${radius};">
+			<a href="/@${escapedUsername}" class="search-user">
+				<img src="${escapedAvatar}" alt="${escapedName}" style="border-radius: ${radius};">
 				<div class="user-info">
-					<h4>${user.name.replaceAll('"', "")}</h4>
-					<p>@${user.username.replaceAll('"', "")}</p>
+					<h4>${escapedName}</h4>
+					<p>@${escapedUsername}</p>
 				</div>
 			</a>
 		`;
