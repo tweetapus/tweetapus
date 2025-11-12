@@ -1,7 +1,6 @@
 **IMPORTANT:**
 
 - proper rate-limiting & captchas
-- fix XSS <-- flower doing rn
 - use Bun's SQL driver instead of sqlite since it's async
 
 **OTHER:**
