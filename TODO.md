@@ -11,9 +11,5 @@
 
 - keyboard shortcuts
 - db indexes for speedse's
-- switch to Bun's SQL driver
 - switching between accounts
-
 - delegates
-
-- make comuter's phone happy
