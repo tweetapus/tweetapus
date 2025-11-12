@@ -28,7 +28,9 @@ const logModerationAction = (
 
 const adminQueries = {
   findUserById: db.prepare("SELECT * FROM users WHERE id = ?"),
-  findUserByUsername: db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)"),
+  findUserByUsername: db.prepare(
+    "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+  ),
   getUsersWithCounts: db.prepare(`
     SELECT u.*, 
            (SELECT COUNT(*) FROM posts WHERE user_id = u.id) as actual_post_count,

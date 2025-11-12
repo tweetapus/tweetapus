@@ -5,7 +5,9 @@ import { addNotification } from "./notifications.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const getUserByUsername = db.query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.query(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 const getCommunity = db.prepare("SELECT * FROM communities WHERE id = ?");
 const getCommunityByName = db.prepare(

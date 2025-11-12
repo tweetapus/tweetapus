@@ -9,7 +9,9 @@ import { addNotification } from "./notifications.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const getUserByUsername = db.query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.query(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 const checkReplyPermission = async (replier, originalAuthor, restriction) => {
   if (replier.id === originalAuthor.id) {

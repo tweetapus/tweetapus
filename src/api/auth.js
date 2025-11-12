@@ -15,7 +15,9 @@ const rpName = process.env.AUTH_RPNAME;
 const origin = process.env.AUTH_ORIGIN;
 
 function getUserByUsername(username) {
-  return db.query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)").get(username);
+  return db
+    .query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)")
+    .get(username);
 }
 
 function savePasskey(credentialData) {

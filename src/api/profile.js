@@ -25,7 +25,9 @@ const getFollowing = db.prepare(`
   LIMIT 50
 `);
 
-const getUserByUsername = db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.prepare(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 const updateProfile = db.prepare(`
   UPDATE users
@@ -311,8 +313,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 
   const suspensionRow = isSuspendedQuery.get(quotedTweet.user_id);
   const userSuspendedFlag = getUserSuspendedFlag.get(quotedTweet.user_id);
-  const authorSuspended =
-    !!suspensionRow || !!userSuspendedFlag?.suspended;
+  const authorSuspended = !!suspensionRow || !!userSuspendedFlag?.suspended;
 
   if (authorSuspended) {
     return {
@@ -406,8 +407,7 @@ export default new Elysia({ prefix: "/profile" })
 
       const suspensionRow = isSuspendedQuery.get(user.id);
       const userSuspendedFlag = getUserSuspendedFlag.get(user.id);
-      const isSuspended =
-        !!suspensionRow || !!userSuspendedFlag?.suspended;
+      const isSuspended = !!suspensionRow || !!userSuspendedFlag?.suspended;
 
       if (isSuspended) {
         const minimalProfile = {

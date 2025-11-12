@@ -6,7 +6,9 @@ import ratelimit from "../helpers/ratelimit.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const getUserByUsername = db.query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.query(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 const createScheduledPost = db.query(`
   INSERT INTO scheduled_posts (id, user_id, content, scheduled_for, poll_data, files_data, gif_url, reply_restriction)

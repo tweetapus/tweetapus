@@ -6,7 +6,9 @@ import ratelimit from "../helpers/ratelimit.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const getUserByUsername = db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.prepare(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 const createReport = db.prepare(`
   INSERT INTO reports (id, reporter_id, reported_type, reported_id, reason, additional_info)

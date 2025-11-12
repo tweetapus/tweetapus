@@ -7,7 +7,9 @@ import ratelimit from "../helpers/ratelimit.js";
 const JWT_SECRET = process.env.JWT_SECRET;
 const TENOR_API_KEY = process.env.TENOR_API_KEY;
 
-const getUserByUsername = db.query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.query(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 export default new Elysia({ prefix: "/tenor" })
   .use(jwt({ name: "jwt", secret: JWT_SECRET }))

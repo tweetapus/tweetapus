@@ -12,7 +12,9 @@ import {
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const getUserByUsername = db.query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.query(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 const uploadsDir = join(process.cwd(), ".data", "uploads");
 if (!existsSync(uploadsDir)) {

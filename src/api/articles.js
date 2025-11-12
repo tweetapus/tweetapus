@@ -7,7 +7,9 @@ import { extractAndSaveHashtags } from "./hashtags.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const getUserByUsername = db.prepare("SELECT * FROM users WHERE LOWER(username) = LOWER(?)");
+const getUserByUsername = db.prepare(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
 const getUserById = db.prepare("SELECT * FROM users WHERE id = ?");
 const listArticles = db.prepare(`
   SELECT p.* FROM posts p
