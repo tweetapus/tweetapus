@@ -1590,7 +1590,6 @@ export default new Elysia({ prefix: "/profile" })
         return { error: "Affiliate request already sent" };
     }
 
-    // Always delete any existing requests to avoid UNIQUE constraint errors
     db.query(
       "DELETE FROM affiliate_requests WHERE requester_id = ? AND target_id = ?"
     ).run(currentUser.id, targetUser.id);
