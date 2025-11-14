@@ -9,16 +9,18 @@ import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
 import ratelimit from "../helpers/ratelimit.js";
+import cap from "./cap.js";
 
 const rpID = process.env.AUTH_RPID;
 const rpName = process.env.AUTH_RPNAME;
 const origin = process.env.AUTH_ORIGIN;
 
-function getUserByUsername(username) {
-  return db
-    .query("SELECT * FROM users WHERE LOWER(username) = LOWER(?)")
-    .get(username);
-}
+const getUserByUsername = db.prepare(
+  "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
+);
+const userExistsByUsername = db.prepare(
+  "SELECT count(*) FROM users WHERE LOWER(username) = LOWER(?)"
+);
 
 function savePasskey(credentialData) {
   const {
@@ -71,6 +73,17 @@ export default new Elysia({ prefix: "/auth" })
       generator: ratelimit,
     })
   )
+  .post("/cap/challenge", async () => {
+    return await cap.createChallenge();
+  })
+  .post("/cap/redeem", async ({ body, set }) => {
+    const { token, solutions } = body;
+    if (!token || !solutions) {
+      set.status = 400;
+      return { success: false };
+    }
+    return await cap.redeemChallenge({ token, solutions });
+  })
   .get("/me", async ({ jwt, headers, query }) => {
     const authorization = headers.authorization;
     if (!authorization) {
@@ -84,7 +97,7 @@ export default new Elysia({ prefix: "/auth" })
         return { error: "Invalid token" };
       }
 
-      const user = getUserByUsername(payload.username);
+      const user = getUserByUsername.get(payload.username);
       if (!user) {
         return { error: "User not found" };
       }
@@ -132,6 +145,16 @@ export default new Elysia({ prefix: "/auth" })
       return { error: error.message };
     }
   })
+  .get("/username-availability", async ({ query }) => {
+    const username = query.username?.trim();
+    if (!username) {
+      return { error: "Username is required" };
+    }
+
+    const available = !Object.values(userExistsByUsername.get(username))[0];
+
+    return { available };
+  })
   .post("/generate-registration-options", async ({ body, jwt, headers }) => {
     const username = body.username?.trim();
 
@@ -150,7 +173,7 @@ export default new Elysia({ prefix: "/auth" })
       };
     }
 
-    const user = getUserByUsername(username);
+    const user = getUserByUsername.get(username);
     let excludeCredentials = [];
     let userId;
 
@@ -235,7 +258,7 @@ export default new Elysia({ prefix: "/auth" })
       return { error: "Invalid challenge:" };
     }
 
-    let user = getUserByUsername(username);
+    let user = getUserByUsername.get(username);
 
     try {
       const verification = await verifyRegistrationResponse({
@@ -434,7 +457,7 @@ export default new Elysia({ prefix: "/auth" })
         return { error: "Invalid token" };
       }
 
-      const user = getUserByUsername(payload.username);
+      const user = getUserByUsername.get(payload.username);
       if (!user) {
         return { error: "User not found" };
       }
@@ -474,7 +497,7 @@ export default new Elysia({ prefix: "/auth" })
         return { error: "Invalid token" };
       }
 
-      const user = getUserByUsername(payload.username);
+      const user = getUserByUsername.get(payload.username);
       if (!user) {
         return { error: "User not found" };
       }
@@ -534,7 +557,7 @@ export default new Elysia({ prefix: "/auth" })
         return { error: "Invalid token" };
       }
 
-      const user = getUserByUsername(payload.username);
+      const user = getUserByUsername.get(payload.username);
       if (!user) {
         return { error: "User not found" };
       }
@@ -606,7 +629,7 @@ export default new Elysia({ prefix: "/auth" })
         return { error: "Password must be at least 6 characters long" };
       }
 
-      const existingUser = getUserByUsername(username);
+      const existingUser = getUserByUsername.get(username);
       if (existingUser) {
         return { error: "Username is already taken" };
       }
@@ -645,7 +668,7 @@ export default new Elysia({ prefix: "/auth" })
         return { error: "Username and password are required" };
       }
 
-      const user = getUserByUsername(username);
+      const user = getUserByUsername.get(username);
       if (!user || !user.password_hash) {
         return { error: "Invalid username or password" };
       }

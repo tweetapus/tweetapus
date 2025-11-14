@@ -5,7 +5,7 @@
     "**/.wrangler": true,
     "**/bun.lock": false,
     "**/node_modules": true,
-    "**/.data": true,
+    "**/.data": false,
     "**/.github": true
   }
 }

@@ -102,7 +102,7 @@
 
     <div class="form" style="display: none">
       <p>And your password</p>
-      <input type="password" id="username" placeholder="**********" />
+      <input type="password" placeholder="**********" />
 
       <button>Create an account</button>
 
@@ -111,9 +111,10 @@
       <button>Log in with passkey</button>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@cap.js/widget@0.1.28" defer></script>
+    <script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.es5.umd.min.js" defer></script>
     <script src="/public/shared/darkmode.js" defer></script>
 
-    <script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.es5.umd.min.js"></script>
     <script src="/public/account-v2/script.js" type="module"></script>
   </body>
 </html>

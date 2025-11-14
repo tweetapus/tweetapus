@@ -13,6 +13,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@cap.js/server": "^4.0.3",
     "@elysiajs/jwt": "^1.4.0",
     "@elysiajs/static": "^1.4.0",
     "@simplewebauthn/server": "^13.2.2",

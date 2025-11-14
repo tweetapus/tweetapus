@@ -65,14 +65,7 @@ async function loadNotifications() {
         notification.tweet.author = notification.tweet.user;
         delete notification.tweet.user;
       }
-      console.log(
-        "Notification:",
-        notification.type,
-        "Actor avatar:",
-        notification.actor_avatar,
-        "Actor ID:",
-        notification.actor_id
-      );
+      
       return notification;
     });
 

@@ -18,35 +18,102 @@
   }
 })();
 
-document.querySelector(".create-account").addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+document
+  .querySelector(".create-account")
+  .addEventListener("click", async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const initialHtml = document.querySelector(".create-account").innerHTML;
 
-  const username = document.getElementById("username").value.trim();
-  if (!username) {
-    document.getElementById("username").focus();
-    document.querySelector(".init-form").style.transition = "all .2s";
+    const username = document.getElementById("username").value.trim();
+    if (!username) {
+      document.getElementById("username").focus();
+      document.querySelector(".init-form").style.transition = "all .2s";
 
-    setTimeout(() => {
-      document.querySelector(".init-form").style.transform = "scale(1.04)";
-    }, 5);
+      setTimeout(() => {
+        document.querySelector(".init-form").style.transform = "scale(1.04)";
+      }, 5);
 
-    setTimeout(() => {
-      document.querySelector(".init-form").style.transform = "scale(1)";
-    }, 200);
-    return;
-  }
+      setTimeout(() => {
+        document.querySelector(".init-form").style.transform = "scale(1)";
+      }, 200);
+      return;
+    }
 
-  document.querySelector(".create-account").style.width = `${
-    document.querySelector(".create-account").offsetWidth
-  }px`;
+    document.querySelector(".create-account").style.width = `${
+      document.querySelector(".create-account").offsetWidth
+    }px`;
 
-  document.querySelector(".create-account").classList.add("loading");
-  document.querySelector(".create-account").disabled = true;
-  document.querySelector(
-    ".create-account"
-  ).innerHTML = `<svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20" style="color:#c5c5c8" class="iosspin"><rect width="2" height="4" x="2.35" y="3.764" opacity=".93" rx="1" transform="rotate(-45 2.35 3.764)"></rect><rect width="4" height="2" x="1" y="7" opacity=".78" rx="1"></rect><rect width="2" height="4" x="5.179" y="9.41" opacity=".69" rx="1" transform="rotate(45 5.179 9.41)"></rect><rect width="2" height="4" x="7" y="11" opacity=".62" rx="1"></rect><rect width="2" height="4" x="9.41" y="10.824" opacity=".48" rx="1" transform="rotate(-45 9.41 10.824)"></rect><rect width="4" height="2" x="11" y="7" opacity=".38" rx="1"></rect><rect width="2" height="4" x="12.239" y="2.35" opacity=".3" rx="1" transform="rotate(45 12.239 2.35)"></rect><rect width="2" height="4" x="7" y="1" rx="1"></rect></svg>`;
-});
+    document.querySelector(".create-account").classList.add("loading");
+    document.querySelector(".create-account").disabled = true;
+    document.querySelector(
+      ".create-account"
+    ).innerHTML = `<svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20" style="color:#c5c5c8" class="iosspin"><rect width="2" height="4" x="2.35" y="3.764" opacity=".93" rx="1" transform="rotate(-45 2.35 3.764)"></rect><rect width="4" height="2" x="1" y="7" opacity=".78" rx="1"></rect><rect width="2" height="4" x="5.179" y="9.41" opacity=".69" rx="1" transform="rotate(45 5.179 9.41)"></rect><rect width="2" height="4" x="7" y="11" opacity=".62" rx="1"></rect><rect width="2" height="4" x="9.41" y="10.824" opacity=".48" rx="1" transform="rotate(-45 9.41 10.824)"></rect><rect width="4" height="2" x="11" y="7" opacity=".38" rx="1"></rect><rect width="2" height="4" x="12.239" y="2.35" opacity=".3" rx="1" transform="rotate(45 12.239 2.35)"></rect><rect width="2" height="4" x="7" y="1" rx="1"></rect></svg>`;
+
+    document.getElementById("username").blur();
+    document.getElementById("username").disabled = true;
+
+    const { available } = await (
+      await fetch(
+        `/api/auth/username-availability?username=${encodeURIComponent(
+          username
+        )}`
+      )
+    ).json();
+
+    if (!available) {
+      document.querySelector(".create-account").classList.remove("loading");
+      document.querySelector(".create-account").disabled = false;
+      document.querySelector(".create-account").innerHTML = initialHtml;
+      document.querySelector(".create-account").style.width = "";
+      document.getElementById("username").disabled = false;
+
+      document.getElementById("username").focus();
+      document.getElementById("username").select();
+
+      document.querySelector(".init-form p").innerText =
+        "Username taken, try another.";
+      document.querySelector(".init-form p").style.color = "#ea5f57ff";
+      document.querySelector(".init-form p").style.transition =
+        "opacity .4s, filter .4s, transform .4s";
+
+      setTimeout(() => {
+        document.querySelector(".init-form p").style.opacity = "0";
+        document.querySelector(".init-form p").style.filter = "blur(2px)";
+        document.querySelector(".init-form p").style.transform = "scale(0.9)";
+      }, 1500);
+      setTimeout(() => {
+        document.querySelector(".init-form p").innerText =
+          "Choose your username";
+
+        document.querySelector(".init-form p").style.color = "";
+        document.querySelector(".init-form p").style.opacity = "";
+        document.querySelector(".init-form p").style.filter = "";
+        document.querySelector(".init-form p").style.transform = "";
+      }, 1700);
+
+      return;
+    }
+
+    const cap = new window.Cap({
+      apiEndpoint: "/api/auth/cap/", // check discord, Tr.
+    });
+
+    let token;
+
+    cap.solve().then((solution) => {
+      token = solution.token;
+      console.log("solved captcha", token);
+    });
+
+    document.querySelector(".create-account").classList.remove("loading");
+    document.querySelector(".create-account").disabled = false;
+    document.querySelector(".create-account").innerHTML = initialHtml;
+    document.querySelector(".create-account").style.width = "";
+    document.getElementById("username").disabled = false;
+
+
+  });
 
 document.getElementById("username").addEventListener("input", (e) => {
   if (e.target.value.length > 20) {
@@ -65,7 +132,7 @@ document.getElementById("username").addEventListener("input", (e) => {
 document.getElementById("username").addEventListener("keydown", (e) => {
   if (e.key === "Enter") {
     e.preventDefault();
-    document.getElementById("createAccount").click();
+    document.querySelector(".create-account").click();
   }
 });
 
