@@ -579,6 +579,7 @@ const formatExtensionRecord = (record) => ({
 	enabled: !!record.enabled,
 	created_at: record.created_at,
 	updated_at: record.updated_at,
+    managed: true,
 });
 
 const sanitizeSvgMarkup = (svgText) => {
