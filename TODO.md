@@ -13,7 +13,8 @@
 - db indexes for speedse's
 - switching between accounts
 - delegates
-- when people change their pfp they get a popup asking them to tweet their new pfp + #NewProfilePic
+- when people change their pfp they get a popup asking them to tweet their new pfp + #NewProfilePic (done)
 
 **Joke:**
+
 - @Bangers account automatically quoting tweets with more than 5 likes with "Certified xeetapus banger👑"

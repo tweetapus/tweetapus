@@ -12,7 +12,7 @@ import { createModal, createPopup } from "../../shared/ui-utils.js";
 import query from "./api.js";
 import getUser, { authToken } from "./auth.js";
 import switchPage, { addRoute } from "./pages.js";
-import { createTweetElement } from "./tweets.js";
+import { addTweetToTimeline, createTweetElement } from "./tweets.js";
 
 let currentProfile = null;
 let currentPosts = [];
@@ -26,6 +26,9 @@ let hasMoreReplies = true;
 let hasMoreMedia = true;
 let repliesObserver = null;
 let mediaObserver = null;
+let avatarChangedForTweet = false;
+let pendingAvatarTweetUrl = null;
+let isAvatarTweetPromptOpen = false;
 
 const escapeHTML = (str) =>
   str ? str.split("").join("").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
@@ -1424,6 +1427,8 @@ const handleEditAvatarUpload = async (file) => {
 
     if (result.success) {
       currentProfile.profile.avatar = result.avatar;
+      avatarChangedForTweet = true;
+      pendingAvatarTweetUrl = result.avatar;
       updateEditAvatarDisplay();
       const profileAvatar = document.getElementById("profileAvatar");
       if (profileAvatar) {
@@ -1470,17 +1475,17 @@ const handleEditAvatarRemoval = async () => {
   }
 
   try {
-    const response = await query(
+    const result = await query(
       `/profile/${currentProfile.profile.username}/avatar`,
       {
         method: "DELETE",
       }
     );
 
-    const result = await response.json();
-
     if (result.success) {
       currentProfile.profile.avatar = null;
+      avatarChangedForTweet = false;
+      pendingAvatarTweetUrl = null;
       updateEditAvatarDisplay();
       const profileAvatar = document.getElementById("profileAvatar");
       if (profileAvatar) {
@@ -1517,6 +1522,161 @@ const handleEditAvatarRemoval = async () => {
       removeBtn.textContent = "Remove Avatar";
     }
   }
+};
+
+const getDeviceSource = () =>
+  /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    ? "mobile_web"
+    : "desktop_web";
+
+const getFileExtension = (mimeType, fallbackUrl = "") => {
+  if (mimeType.includes("png")) return "png";
+  if (mimeType.includes("gif")) return "gif";
+  if (mimeType.includes("jpeg") || mimeType.includes("jpg")) return "jpg";
+  if (mimeType.includes("bmp")) return "bmp";
+  if (mimeType.includes("svg")) return "svg";
+  if (mimeType.includes("avif")) return "avif";
+  if (mimeType.includes("heic")) return "heic";
+  if (mimeType.includes("heif")) return "heif";
+  const match = fallbackUrl.split("?")[0]?.match(/\.([a-z0-9]+)$/i);
+  if (match?.[1]) return match[1];
+  return "webp";
+};
+
+const postNewProfilePicTweet = async (avatarUrl) => {
+  const fetchOptions = { credentials: "include" };
+  if (authToken) {
+    fetchOptions.headers = {
+      Authorization: `Bearer ${authToken}`,
+    };
+  }
+
+  const imageResponse = await fetch(avatarUrl, fetchOptions);
+  if (!imageResponse.ok) {
+    throw new Error("Failed to load profile picture");
+  }
+
+  const imageBlob = await imageResponse.blob();
+  if (!imageBlob || imageBlob.size === 0) {
+    throw new Error("Profile picture unavailable");
+  }
+
+  const mimeType = imageBlob.type || "image/webp";
+  const extension = getFileExtension(mimeType, avatarUrl);
+  const fileName = `new-profile-${Date.now()}.${extension}`;
+  const file = new File([imageBlob], fileName, {
+    type: mimeType,
+    lastModified: Date.now(),
+  });
+
+  const uploadForm = new FormData();
+  uploadForm.append("file", file);
+
+  const uploadResult = await query("/upload", {
+    method: "POST",
+    body: uploadForm,
+  });
+
+  if (!uploadResult?.success || !uploadResult.file) {
+    throw new Error(uploadResult?.error || "Failed to upload image");
+  }
+
+  const { tweet, error } = await query("/tweets/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      content: "#NewProfilePic",
+      files: [uploadResult.file],
+      source: getDeviceSource(),
+      reply_restriction: "everyone",
+    }),
+  });
+
+  if (!tweet) {
+    throw new Error(error || "Failed to post tweet");
+  }
+
+  try {
+    addTweetToTimeline(tweet, true);
+  } catch (_) {}
+
+  return tweet;
+};
+
+const openNewAvatarTweetPrompt = (avatarUrl) => {
+  if (!avatarUrl || isAvatarTweetPromptOpen) return;
+  isAvatarTweetPromptOpen = true;
+
+  const content = document.createElement("div");
+  content.className = "new-avatar-tweet-modal";
+
+  const message = document.createElement("p");
+  message.textContent = "Tweet your new profile picture with #NewProfilePic?";
+  content.appendChild(message);
+
+  const preview = document.createElement("img");
+  preview.src = avatarUrl;
+  preview.alt = "New profile picture preview";
+  preview.loading = "lazy";
+  content.appendChild(preview);
+
+  const actions = document.createElement("div");
+  actions.className = "new-avatar-actions";
+
+  const noButton = document.createElement("button");
+  noButton.type = "button";
+  noButton.className = "profile-btn";
+  noButton.textContent = "No thanks";
+
+  const yesButton = document.createElement("button");
+  yesButton.type = "button";
+  yesButton.className = "profile-btn profile-btn-primary";
+  yesButton.textContent = "Tweet it";
+
+  actions.appendChild(noButton);
+  actions.appendChild(yesButton);
+  content.appendChild(actions);
+
+  let isPosting = false;
+  const modal = createModal({
+    title: "Share your new look?",
+    content,
+    className: "new-avatar-modal",
+    onClose: () => {
+      isAvatarTweetPromptOpen = false;
+      avatarChangedForTweet = false;
+      pendingAvatarTweetUrl = null;
+    },
+  });
+
+  noButton.addEventListener("click", () => {
+    modal.close();
+  });
+
+  yesButton.addEventListener("click", async () => {
+    if (isPosting) return;
+    isPosting = true;
+    const originalLabel = yesButton.textContent;
+    yesButton.disabled = true;
+    noButton.disabled = true;
+    yesButton.textContent = "Posting…";
+
+    try {
+      await postNewProfilePicTweet(avatarUrl);
+      toastQueue.add(`<h1>Tweet sent!</h1><p>Your #NewProfilePic is live.</p>`);
+      modal.close();
+    } catch (error) {
+      const errorMessage =
+        error?.message && typeof error.message === "string"
+          ? escapeHTML(error.message)
+          : "Failed to post tweet";
+      toastQueue.add(`<h1>Tweet failed</h1><p>${errorMessage}</p>`);
+      yesButton.disabled = false;
+      noButton.disabled = false;
+      yesButton.textContent = originalLabel;
+      isPosting = false;
+    }
+  });
 };
 
 const saveProfile = async (event) => {
@@ -1587,6 +1747,9 @@ const saveProfile = async (event) => {
       toastQueue.add(
         `<h1>Profile Updated!</h1><p>Your profile has been successfully updated</p>`
       );
+      if (avatarChangedForTweet && pendingAvatarTweetUrl) {
+        openNewAvatarTweetPrompt(pendingAvatarTweetUrl);
+      }
     } else {
       toastQueue.add(
         `<h1>Update Failed</h1><p>${

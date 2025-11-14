@@ -726,7 +726,7 @@ export default new Elysia({ prefix: "/tweets" })
 
       for (const mentionedUsername of mentions) {
         if (mentionedUsername.toLowerCase() === user.username.toLowerCase())
-          continue; // Don't notify self-mentions
+          continue;
 
         const mentionedUser = getUserByUsername.get(mentionedUsername);
         if (mentionedUser) {
