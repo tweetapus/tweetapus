@@ -1,144 +1,245 @@
 (async () => {
-  const impersonateToken = new URLSearchParams(window.location.search).get(
-    "impersonate"
-  );
+	const impersonateToken = new URLSearchParams(window.location.search).get(
+		"impersonate",
+	);
 
-  if (impersonateToken) {
-    localStorage.setItem("authToken", decodeURIComponent(impersonateToken));
-    window.history.replaceState({}, document.title, window.location.pathname);
+	if (impersonateToken) {
+		localStorage.setItem("authToken", decodeURIComponent(impersonateToken));
+		window.history.replaceState({}, document.title, window.location.pathname);
 
-    Reflect.set(
-      document,
-      "cookie",
-      `agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`
-    );
-    setTimeout(() => {
-      window.location.href = "/timeline/";
-    }, 200);
-  }
+		Reflect.set(
+			document,
+			"cookie",
+			`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
+		);
+		setTimeout(() => {
+			window.location.href = "/timeline/";
+		}, 200);
+	}
 })();
 
 document
-  .querySelector(".create-account")
-  .addEventListener("click", async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const initialHtml = document.querySelector(".create-account").innerHTML;
+	.querySelector(".create-account")
+	.addEventListener("click", async (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		const initialHtml = document.querySelector(".create-account").innerHTML;
 
-    const username = document.getElementById("username").value.trim();
-    if (!username) {
-      document.getElementById("username").focus();
-      document.querySelector(".init-form").style.transition = "all .2s";
+		const username = document.getElementById("username").value.trim();
+		if (!username) {
+			document.getElementById("username").focus();
+			document.querySelector(".init-form").style.transition = "all .2s";
 
-      setTimeout(() => {
-        document.querySelector(".init-form").style.transform = "scale(1.04)";
-      }, 5);
+			setTimeout(() => {
+				document.querySelector(".init-form").style.transform = "scale(1.04)";
+			}, 5);
 
-      setTimeout(() => {
-        document.querySelector(".init-form").style.transform = "scale(1)";
-      }, 200);
-      return;
-    }
+			setTimeout(() => {
+				document.querySelector(".init-form").style.transform = "scale(1)";
+			}, 200);
+			return;
+		}
 
-    document.querySelector(".create-account").style.width = `${
-      document.querySelector(".create-account").offsetWidth
-    }px`;
+		document.querySelector(".create-account").style.width = `${
+			document.querySelector(".create-account").offsetWidth
+		}px`;
 
-    document.querySelector(".create-account").classList.add("loading");
-    document.querySelector(".create-account").disabled = true;
-    document.querySelector(
-      ".create-account"
-    ).innerHTML = `<svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20" style="color:#c5c5c8" class="iosspin"><rect width="2" height="4" x="2.35" y="3.764" opacity=".93" rx="1" transform="rotate(-45 2.35 3.764)"></rect><rect width="4" height="2" x="1" y="7" opacity=".78" rx="1"></rect><rect width="2" height="4" x="5.179" y="9.41" opacity=".69" rx="1" transform="rotate(45 5.179 9.41)"></rect><rect width="2" height="4" x="7" y="11" opacity=".62" rx="1"></rect><rect width="2" height="4" x="9.41" y="10.824" opacity=".48" rx="1" transform="rotate(-45 9.41 10.824)"></rect><rect width="4" height="2" x="11" y="7" opacity=".38" rx="1"></rect><rect width="2" height="4" x="12.239" y="2.35" opacity=".3" rx="1" transform="rotate(45 12.239 2.35)"></rect><rect width="2" height="4" x="7" y="1" rx="1"></rect></svg>`;
+		document.querySelector(".create-account").classList.add("loading");
+		document.querySelector(".create-account").disabled = true;
+		document.querySelector(".create-account").innerHTML =
+			`<svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20" style="color:#c5c5c8" class="iosspin"><rect width="2" height="4" x="2.35" y="3.764" opacity=".93" rx="1" transform="rotate(-45 2.35 3.764)"></rect><rect width="4" height="2" x="1" y="7" opacity=".78" rx="1"></rect><rect width="2" height="4" x="5.179" y="9.41" opacity=".69" rx="1" transform="rotate(45 5.179 9.41)"></rect><rect width="2" height="4" x="7" y="11" opacity=".62" rx="1"></rect><rect width="2" height="4" x="9.41" y="10.824" opacity=".48" rx="1" transform="rotate(-45 9.41 10.824)"></rect><rect width="4" height="2" x="11" y="7" opacity=".38" rx="1"></rect><rect width="2" height="4" x="12.239" y="2.35" opacity=".3" rx="1" transform="rotate(45 12.239 2.35)"></rect><rect width="2" height="4" x="7" y="1" rx="1"></rect></svg>`;
 
-    document.getElementById("username").blur();
-    document.getElementById("username").disabled = true;
+		document.getElementById("username").blur();
+		document.getElementById("username").disabled = true;
 
-    const { available } = await (
-      await fetch(
-        `/api/auth/username-availability?username=${encodeURIComponent(
-          username
-        )}`
-      )
-    ).json();
+		const { available } = await (
+			await fetch(
+				`/api/auth/username-availability?username=${encodeURIComponent(
+					username,
+				)}`,
+			)
+		).json();
 
-    if (!available) {
-      document.querySelector(".create-account").classList.remove("loading");
-      document.querySelector(".create-account").disabled = false;
-      document.querySelector(".create-account").innerHTML = initialHtml;
-      document.querySelector(".create-account").style.width = "";
-      document.getElementById("username").disabled = false;
+		if (!available) {
+			document.querySelector(".create-account").classList.remove("loading");
+			document.querySelector(".create-account").disabled = false;
+			document.querySelector(".create-account").innerHTML = initialHtml;
+			document.querySelector(".create-account").style.width = "";
+			document.getElementById("username").disabled = false;
 
-      document.getElementById("username").focus();
-      document.getElementById("username").select();
+			document.getElementById("username").focus();
+			document.getElementById("username").select();
 
-      document.querySelector(".init-form p").innerText =
-        "Username taken, try another.";
-      document.querySelector(".init-form p").style.color = "#ea5f57ff";
-      document.querySelector(".init-form p").style.transition =
-        "opacity .4s, filter .4s, transform .4s";
+			document.querySelector(".init-form p").innerText =
+				"Username taken, try another.";
+			document.querySelector(".init-form p").style.color = "var(--error-color)";
+			document.querySelector(".init-form p").style.transition =
+				"opacity .4s, filter .4s, transform .4s";
 
-      setTimeout(() => {
-        document.querySelector(".init-form p").style.opacity = "0";
-        document.querySelector(".init-form p").style.filter = "blur(2px)";
-        document.querySelector(".init-form p").style.transform = "scale(0.9)";
-      }, 1500);
-      setTimeout(() => {
-        document.querySelector(".init-form p").innerText =
-          "Choose your username";
+			setTimeout(() => {
+				document.querySelector(".init-form p").style.opacity = "0";
+				document.querySelector(".init-form p").style.filter = "blur(2px)";
+				document.querySelector(".init-form p").style.transform = "scale(0.9)";
+			}, 1500);
+			setTimeout(() => {
+				document.querySelector(".init-form p").innerText =
+					"Choose your username";
 
-        document.querySelector(".init-form p").style.color = "";
-        document.querySelector(".init-form p").style.opacity = "";
-        document.querySelector(".init-form p").style.filter = "";
-        document.querySelector(".init-form p").style.transform = "";
-      }, 1700);
+				document.querySelector(".init-form p").style.color = "";
+				document.querySelector(".init-form p").style.opacity = "";
+				document.querySelector(".init-form p").style.filter = "";
+				document.querySelector(".init-form p").style.transform = "";
+			}, 1700);
 
-      return;
-    }
+			return;
+		}
 
-    const cap = new window.Cap({
-      apiEndpoint: "/api/auth/cap/", // check discord, Tr.
-    });
+		const cap = new window.Cap({
+			apiEndpoint: "/api/auth/cap/",
+		});
 
-    let token;
+		let challengeToken;
 
-    cap.solve().then((solution) => {
-      token = solution.token;
-      console.log("solved captcha", token);
-    });
+		cap.solve().then((solution) => {
+			challengeToken = solution.token;
+		});
 
-    document.querySelector(".create-account").classList.remove("loading");
-    document.querySelector(".create-account").disabled = false;
-    document.querySelector(".create-account").innerHTML = initialHtml;
-    document.querySelector(".create-account").style.width = "";
-    document.getElementById("username").disabled = false;
+		setTimeout(() => {
+			document.querySelector(".create-account").classList.remove("loading");
+			document.querySelector(".create-account").disabled = false;
+			document.querySelector(".create-account").innerHTML = initialHtml;
+			document.querySelector(".create-account").style.width = "";
+			document.getElementById("username").disabled = false;
+		}, 300);
 
+		const modal = document.querySelector(".model-wrapper.create-step2");
 
-  });
+		modal.style.display = "flex";
+
+		modal.querySelector("#create-username").value = username;
+		modal.querySelector("#create-password").value = "";
+		modal.querySelector("#create-password").focus();
+
+		modal.querySelector(".finish").onclick = async () => {
+			if (modal.querySelector("#create-username").value.trim() === "") {
+				modal.querySelector("#create-username").focus();
+				return;
+			}
+
+			if (modal.querySelector("#create-password").value.trim() === "") {
+				modal.querySelector("#create-password").focus();
+				return;
+			}
+
+			modal.querySelector(".finish").disabled = true;
+			modal.querySelector(".finish").innerHTML =
+				`<svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20" style="color:#c5c5c8" class="iosspin"><rect width="2" height="4" x="2.35" y="3.764" opacity=".93" rx="1" transform="rotate(-45 2.35 3.764)"></rect><rect width="4" height="2" x="1" y="7" opacity=".78" rx="1"></rect><rect width="2" height="4" x="5.179" y="9.41" opacity=".69" rx="1" transform="rotate(45 5.179 9.41)"></rect><rect width="2" height="4" x="7" y="11" opacity=".62" rx="1"></rect><rect width="2" height="4" x="9.41" y="10.824" opacity=".48" rx="1" transform="rotate(-45 9.41 10.824)"></rect><rect width="4" height="2" x="11" y="7" opacity=".38" rx="1"></rect><rect width="2" height="4" x="12.239" y="2.35" opacity=".3" rx="1" transform="rotate(45 12.239 2.35)"></rect><rect width="2" height="4" x="7" y="1" rx="1"></rect></svg>`;
+
+			if (!challengeToken) {
+				await new Promise((resolve) => {
+					const i = setInterval(() => {
+						if (challengeToken) {
+							clearInterval(i);
+							resolve();
+						}
+					}, 50);
+				});
+			}
+
+			const { token, success, error } = await (
+				await fetch("/api/auth/register-with-password", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						username: modal.querySelector("#create-username").value,
+						password: modal.querySelector("#create-password").value,
+						challengeToken,
+					}),
+				})
+			).json();
+
+			if (error || !success) {
+				modal.querySelector(".finish").innerText = error || "An error occurred";
+
+				setTimeout(() => {
+					modal.querySelector(".finish").innerText = "Create your account";
+					modal.querySelector(".finish").disabled = false;
+				}, 1500);
+				return;
+			}
+
+			if (success && token) {
+				localStorage.setItem("authToken", token);
+				setTimeout(() => {
+					location.reload();
+				}, 300);
+
+				try {
+					if (window.cookieStore?.set) {
+						await window.cookieStore.set({
+							name: "agree",
+							value: "yes",
+							expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
+						});
+						return;
+					}
+				} catch {}
+
+				Reflect.set(
+					document,
+					"cookie",
+					`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
+				);
+			}
+		};
+	});
 
 document.getElementById("username").addEventListener("input", (e) => {
-  if (e.target.value.length > 20) {
-    e.target.value = e.target.value.slice(0, 20);
-  }
+	if (e.target.value.length > 20) {
+		e.target.value = e.target.value.slice(0, 20);
+	}
 
-  if (e.target.value.trim() === "") {
-    e.target.value = "";
-  }
+	if (e.target.value.trim() === "") {
+		e.target.value = "";
+	}
 
-  e.target.value = e.target.value
-    .replaceAll(" ", "-")
-    .replace(/[^a-zA-Z0-9._-]/g, "");
+	e.target.value = e.target.value
+		.replaceAll(" ", "-")
+		.replace(/[^a-zA-Z0-9._-]/g, "");
 });
 
 document.getElementById("username").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();
-    document.querySelector(".create-account").click();
-  }
+	if (e.key === "Enter") {
+		e.preventDefault();
+		document.querySelector(".create-account").click();
+	}
 });
 
 document.querySelector(".log-in").addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
+	e.preventDefault();
+	e.stopPropagation();
 
-  location.href = "/__old__account__"; // Stuck Cursor
+	location.href = "/__old__account__";
 });
+
+document
+	.querySelector(".model-wrapper .close")
+	.addEventListener("click", (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+
+		document.querySelector(".model-wrapper").style.transition =
+			"top .3s, opacity .3s";
+
+		setTimeout(() => {
+			document.querySelector(".model-wrapper").style.top = "-100px";
+			document.querySelector(".model-wrapper").style.opacity = "0";
+		}, 10);
+
+		setTimeout(() => {
+			document.querySelector(".model-wrapper").style.display = "none";
+			document.querySelector(".model-wrapper").style.opacity = "";
+			document.querySelector(".model-wrapper").style.top = "";
+			document.querySelector(".model-wrapper").style.transition = "";
+		}, 500);
+	});

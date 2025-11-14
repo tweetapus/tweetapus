@@ -46,6 +46,8 @@ class AdminPanel {
     this.reportsById = new Map();
     this.reportDetailsModal = null;
     this.reportDetailsModalEl = null;
+    this.extensionsSectionInitialized = false;
+    this.extensionsData = [];
 
     this.init();
   }
@@ -164,6 +166,9 @@ class AdminPanel {
         break;
       case "emojis":
         this.loadEmojis();
+        break;
+      case "extensions":
+        this.loadExtensionsManager();
         break;
     }
   }
@@ -5236,6 +5241,217 @@ class AdminPanel {
     } catch (error) {
       console.error("Error removing member:", error);
       alert("Failed to remove member");
+    }
+  }
+
+  async loadExtensionsManager() {
+    try {
+      if (!this.extensionsSectionInitialized) {
+        this.setupExtensionsForm();
+        this.extensionsSectionInitialized = true;
+      }
+      const data = await this.apiCall("/api/admin/extensions");
+      const list = Array.isArray(data.extensions) ? data.extensions : [];
+      this.extensionsData = list;
+      this.renderExtensionsList(list);
+    } catch (error) {
+      console.error("Failed to load extensions", error);
+      this.showError("Failed to load extensions");
+    }
+  }
+
+  setupExtensionsForm() {
+    const form = document.getElementById("extensionUploadForm");
+    if (!form || form._extensionsReady) return;
+    form._extensionsReady = true;
+    const fileInput = document.getElementById("extensionFileInput");
+    const submitBtn = form.querySelector("button[type=submit]");
+    const defaultLabel = submitBtn?.textContent || "Upload Extension";
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const file = fileInput?.files?.[0];
+      if (!file) {
+        this.showError("Please select a .tweeta file");
+        return;
+      }
+      if (!file.name?.toLowerCase?.().endsWith?.(".tweeta")) {
+        this.showError("Package must end with .tweeta");
+        return;
+      }
+      if (submitBtn) {
+        submitBtn.textContent = "Uploading...";
+        submitBtn.disabled = true;
+      }
+      try {
+        const formData = new FormData();
+        formData.append("package", file, file.name);
+        const response = await fetch("/api/admin/extensions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.token}`,
+          },
+          body: formData,
+        });
+        const result = await response.json();
+        if (!response.ok || result?.error) {
+          throw new Error(result?.error || "Failed to install extension");
+        }
+        this.showSuccess("Extension installed successfully");
+        form.reset();
+        this.loadExtensionsManager();
+      } catch (error) {
+        console.error("Failed to upload extension", error);
+        this.showError(error.message || "Failed to upload extension");
+      } finally {
+        if (submitBtn) {
+          submitBtn.textContent = defaultLabel;
+          submitBtn.disabled = false;
+        }
+      }
+    });
+  }
+
+  renderExtensionsList(extensions) {
+    const container = document.getElementById("extensionsList");
+    if (!container) return;
+    if (!extensions || extensions.length === 0) {
+      container.innerHTML = '<p class="text-muted mb-0">No extensions installed yet.</p>';
+      return;
+    }
+
+    container.innerHTML = extensions
+      .map((ext) => {
+        const safeName = this.escapeHtml(ext.name || "Untitled");
+        const safeVersion = this.escapeHtml(ext.version || "0.0.0");
+        const safeAuthor = this.escapeHtml(ext.author || "Unknown");
+        const summary = ext.summary ? `<p class="mb-2 mt-2">${this.escapeHtml(ext.summary)}</p>` : "";
+        const infoChips = [];
+        const rootFile = this.escapeHtml(ext.root_file || ext.rootFile || "src/main.js");
+        infoChips.push(`<span class="badge bg-light text-dark border">Entry: ${rootFile}</span>`);
+        infoChips.push(
+          `<span class="badge bg-light text-dark border">Mode: ${this.escapeHtml(ext.entry_type || ext.entryType || "module")}</span>`
+        );
+        const caps = Array.isArray(ext.capabilities) ? ext.capabilities : [];
+        const targets = Array.isArray(ext.targets) ? ext.targets : [];
+        const capabilityBadges = caps.length
+          ? `<div class="d-flex flex-wrap gap-1 mt-2">${caps
+              .slice(0, 4)
+              .map((cap) => `<span class="badge bg-secondary text-uppercase">${this.escapeHtml(cap)}</span>`)
+              .join("")}</div>`
+          : "";
+        const targetBadges = targets.length
+          ? `<div class="d-flex flex-wrap gap-1 mt-2">${targets
+              .slice(0, 4)
+              .map((target) => `<span class="badge bg-dark">${this.escapeHtml(target)}</span>`)
+              .join("")}</div>`
+          : "";
+        const websiteUrl =
+          typeof ext.website === "string" && /^https?:\/\//i.test(ext.website) ? ext.website : null;
+        const changelogUrl =
+          typeof (ext.changelog_url || ext.changelogUrl) === "string" && /^https?:\/\//i.test(ext.changelog_url || ext.changelogUrl)
+            ? ext.changelog_url || ext.changelogUrl
+            : null;
+        const websiteLink = websiteUrl
+          ? `<a href="${this.escapeHtml(websiteUrl)}" target="_blank" rel="noopener" class="me-2">Website</a>`
+          : "";
+        const changelogLink = changelogUrl
+          ? `<a href="${this.escapeHtml(changelogUrl)}" target="_blank" rel="noopener">Changelog</a>`
+          : "";
+        const statusBadge = ext.enabled
+          ? '<span class="badge bg-success">Enabled</span>'
+          : '<span class="badge bg-secondary">Disabled</span>';
+
+        return `
+          <div class="border rounded p-3 mb-3">
+            <div class="d-flex align-items-start justify-content-between">
+              <div>
+                <h5 class="mb-1">${safeName} <span class="badge bg-dark text-white">v${safeVersion}</span></h5>
+                <div class="text-muted">by ${safeAuthor}</div>
+              </div>
+              ${statusBadge}
+            </div>
+            ${summary}
+            <div class="d-flex flex-wrap gap-2 small text-muted">
+              ${infoChips.join("")}
+            </div>
+            <div class="d-flex flex-wrap gap-3 small mt-2">
+              ${websiteLink}
+              ${changelogLink}
+            </div>
+            ${capabilityBadges}
+            ${targetBadges}
+            <div class="d-flex gap-2 mt-3">
+              <button
+                type="button"
+                class="btn btn-sm ${ext.enabled ? "btn-outline-warning" : "btn-outline-success"}"
+                data-extension-action="toggle"
+                data-extension-id="${ext.id}"
+                data-extension-enabled="${ext.enabled ? "true" : "false"}"
+              >
+                ${ext.enabled ? "Disable" : "Enable"}
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                data-extension-action="delete"
+                data-extension-id="${ext.id}"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    container.querySelectorAll("[data-extension-action]").forEach((btn) => {
+      btn.addEventListener("click", (event) => {
+        const target = event.currentTarget;
+        const extensionId = target.getAttribute("data-extension-id");
+        const action = target.getAttribute("data-extension-action");
+        if (!extensionId || !action) return;
+        if (action === "toggle") {
+          const enabled = target.getAttribute("data-extension-enabled") === "true";
+          this.toggleExtension(extensionId, !enabled);
+        } else if (action === "delete") {
+          this.deleteExtension(extensionId);
+        }
+      });
+    });
+  }
+
+  async toggleExtension(extensionId, enabled) {
+    if (!extensionId) return;
+    try {
+      await this.apiCall(`/api/admin/extensions/${extensionId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ enabled }),
+      });
+      this.showSuccess(enabled ? "Extension enabled" : "Extension disabled");
+      this.loadExtensionsManager();
+    } catch (error) {
+      console.error("Failed to toggle extension", error);
+      this.showError(error.message || "Failed to toggle extension");
+    }
+  }
+
+  async deleteExtension(extensionId) {
+    if (!extensionId) return;
+    const targetExtension = this.extensionsData?.find((ext) => ext.id === extensionId);
+    const targetLabel = targetExtension?.name ? ` "${targetExtension.name}"` : "";
+    if (!confirm(`Delete extension${targetLabel}? This cannot be undone.`)) {
+      return;
+    }
+    try {
+      await this.apiCall(`/api/admin/extensions/${extensionId}`, {
+        method: "DELETE",
+      });
+      this.showSuccess("Extension deleted");
+      this.loadExtensionsManager();
+    } catch (error) {
+      console.error("Failed to delete extension", error);
+      this.showError(error.message || "Failed to delete extension");
     }
   }
 }

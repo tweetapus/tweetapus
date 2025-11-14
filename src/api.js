@@ -7,6 +7,7 @@ import blocking from "./api/blocking.js";
 import bookmarks from "./api/bookmarks.js";
 import communities from "./api/communities.js";
 import dm from "./api/dm.js";
+import extensions from "./api/extensions.js";
 import hashtags from "./api/hashtags.js";
 import notifications from "./api/notifications.js";
 import profile, { avatarRoutes } from "./api/profile.js";
@@ -150,6 +151,7 @@ export default new Elysia({
   .use(timeline)
   .use(search)
   .use(upload)
+  .use(extensions)
   .use(notifications)
   .use(dm)
   .use(tenor)

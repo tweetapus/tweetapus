@@ -545,6 +545,32 @@ CREATE TABLE IF NOT EXISTS report_bans (
 
 CREATE INDEX IF NOT EXISTS idx_report_bans_user_id ON report_bans(user_id);
 
+CREATE TABLE IF NOT EXISTS extensions (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  version TEXT NOT NULL,
+  author TEXT NOT NULL,
+  summary TEXT DEFAULT NULL,
+  description TEXT DEFAULT NULL,
+  changelog_url TEXT DEFAULT NULL,
+  website TEXT DEFAULT NULL,
+  root_file TEXT NOT NULL,
+  entry_type TEXT DEFAULT 'module',
+  styles TEXT DEFAULT NULL,
+  capabilities TEXT DEFAULT NULL,
+  targets TEXT DEFAULT NULL,
+  bundle_hash TEXT NOT NULL,
+  manifest_json TEXT NOT NULL,
+  enabled BOOLEAN DEFAULT TRUE,
+  created_by TEXT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  updated_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_extensions_enabled ON extensions(enabled);
+CREATE INDEX IF NOT EXISTS idx_extensions_name ON extensions(name);
+
 CREATE TABLE IF NOT EXISTS interactive_cards (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL,

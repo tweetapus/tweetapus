@@ -184,6 +184,15 @@
               <i class="bi bi-emoji-smile"></i>
               Emojis
             </a>
+            <a
+              class="nav-link"
+              href="#"
+              data-section="extensions"
+              id="extensions-nav"
+            >
+              <i class="bi bi-puzzle"></i>
+              Extensions
+            </a>
           </nav>
         </div>
 
@@ -843,6 +852,71 @@
                   <hr />
                   <div id="emojisList">
                     <!-- list of emojis populated here -->
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Extensions Section -->
+            <div id="extensions-section" class="section d-none">
+              <div class="row g-4">
+                <div class="col-lg-5">
+                  <div class="card h-100">
+                    <div class="card-header">
+                      <h5 class="mb-0">
+                        <i class="bi bi-upload"></i>
+                        Install Extension
+                      </h5>
+                    </div>
+                    <div class="card-body">
+                      <form id="extensionUploadForm">
+                        <div class="mb-3">
+                          <label class="form-label">.tweeta Package</label>
+                          <input
+                            type="file"
+                            class="form-control"
+                            id="extensionFileInput"
+                            accept=".tweeta"
+                            required
+                          />
+                          <div class="form-text">
+                            Archive must include <code>ext.json</code>, <code>src/</code>, and <code>assets/</code>.
+                          </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                          Upload Extension
+                        </button>
+                      </form>
+                      <div class="alert alert-secondary mt-3 mb-0">
+                        Use extensions to customize Tweetapus without editing core files.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-7">
+                  <div class="card h-100">
+                    <div
+                      class="card-header d-flex justify-content-between align-items-center"
+                    >
+                      <h5 class="mb-0">
+                        <i class="bi bi-puzzle"></i>
+                        Installed Extensions
+                      </h5>
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        id="refreshExtensionsBtn"
+                        onclick="adminPanel.loadExtensionsManager()"
+                      >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Refresh
+                      </button>
+                    </div>
+                    <div class="card-body">
+                      <div id="extensionsList">
+                        <p class="text-muted mb-0">
+                          No extensions installed yet.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1513,6 +1587,7 @@
     </div>
 
     <script type="module" src="/public/shared/notification-icons.js"></script>
+    <script src="/public/shared/extensions.js" type="module" defer></script>
     <script
       src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
       integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"

@@ -1,0 +1,12 @@
+{
+  "name": "Happy Admin Tab",
+  "version": "1.0.0",
+  "author": "Tweetapus",
+  "summary": "Adds a secret Happies tab to the admin dashboard.",
+  "description": "A playful gratitude board for administrators to log small wins.",
+  "root_file": "src/main.js",
+  "entry_type": "module",
+  "styles": [],
+  "capabilities": ["ui", "admin"],
+  "targets": ["admin"]
+}
