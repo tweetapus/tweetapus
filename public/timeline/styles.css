@@ -80,6 +80,30 @@ body {
   margin: 12px 0;
 }
 
+/* Small custom restricted banner - does not hide profile banner/avatar or tweets */
+.profile .restricted-account-banner.small-restricted-banner {
+  background: rgba(255, 243, 205, 0.9);
+  /* soft warning color */
+  border: 1px solid rgba(245, 166, 35, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 8px 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile .restricted-account-banner.small-restricted-banner .restricted-banner-inner svg {
+  width: 18px;
+  height: 18px;
+}
+
+.profile .restricted-account-banner.small-restricted-banner .restricted-banner-text {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+
 .tweet-preview.unavailable-quote {
   padding: 16px;
   border: 1px solid var(--border-color);

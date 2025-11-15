@@ -521,22 +521,34 @@ const renderProfile = (data) => {
 	if (restricted && !suspended) {
 		if (!existingBanner) {
 			const banner = document.createElement("div");
-			banner.className = "restricted-account-banner alert alert-warning mb-3";
+			banner.className = "restricted-account-banner small-restricted-banner";
 			banner.innerHTML = `
-				<div class="d-flex align-items-center gap-2">
+				<div class="restricted-banner-inner d-flex align-items-center gap-2">
 					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
 						<circle cx="12" cy="12" r="10"/>
 						<line x1="12" y1="8" x2="12" y2="12"/>
 						<line x1="12" y1="16" x2="12.01" y2="16"/>
 					</svg>
-					<div>
+					<div class="restricted-banner-text">
 						<strong>Account Restricted</strong>
 						<p class="mb-0 small">This account has limited privileges. You can browse content, but interactions are disabled.</p>
 					</div>
 				</div>
 			`;
-			if (profileContainerEl) {
-				profileContainerEl.insertBefore(banner, profileContainerEl.firstChild);
+			const profileCardEl = profileContainerEl.querySelector(".profile-card");
+			if (profileCardEl && profileCardEl.parentNode) {
+				profileCardEl.insertAdjacentElement("afterend", banner);
+			} else {
+				const profileBannerEl =
+					profileContainerEl.querySelector(".profile-banner");
+				if (profileBannerEl && profileBannerEl.parentNode) {
+					profileBannerEl.insertAdjacentElement("afterend", banner);
+				} else {
+					profileContainerEl.insertBefore(
+						banner,
+						profileContainerEl.firstChild,
+					);
+				}
 			}
 		}
 	} else if (existingBanner) {

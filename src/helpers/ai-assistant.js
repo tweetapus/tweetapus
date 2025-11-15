@@ -23,7 +23,7 @@ async function getConversationContext(tweetId, db) {
 	}
 
 	return context;
-}
+} // ts = typescript
 
 async function getDMConversationContext(conversationId, db) {
 	const getMessages = db.query(`
@@ -301,10 +301,9 @@ async function callOpenAI(messages, db) {
 					db,
 				);
 				toolResults.push({
-					type: "function_result",
+					type: "function_call_output",
 					call_id: call.call_id,
-					name: call.name,
-					content: JSON.stringify(toolResult),
+					output: JSON.stringify(toolResult),
 				});
 			}
 
