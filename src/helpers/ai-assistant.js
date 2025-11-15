@@ -307,11 +307,7 @@ async function callOpenAI(messages, db) {
 		if (toolCalls.length > 0) {
 			const toolResults = [];
 			for (const toolCall of toolCalls) {
-				const toolResult = await executeTool(
-					toolCall.name,
-					toolCall.input,
-					db,
-				);
+				const toolResult = await executeTool(toolCall.name, toolCall.input, db);
 				toolResults.push({
 					type: "tool_result",
 					tool_use_id: toolCall.id,
