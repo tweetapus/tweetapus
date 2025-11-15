@@ -126,7 +126,7 @@ const renderAffiliates = () => {
 
 		const avatar = document.createElement("img");
 		avatar.className = "affiliate-avatar";
-		avatar.src = aff.avatar || "/public/shared/assets/default-avatar.png";
+		avatar.src = aff.avatar || "/public/shared/assets/default-avatar.svg";
 		avatar.alt = aff.name || aff.username;
 
 		if (aff.avatar_radius !== null && aff.avatar_radius !== undefined) {
@@ -549,7 +549,7 @@ const renderProfile = (data) => {
 		} else {
 			delete avatarImg.dataset.suspended;
 			avatarImg.src =
-				profile.avatar || "/public/shared/assets/default-avatar.png";
+				profile.avatar || "/public/shared/assets/default-avatar.svg";
 			avatarImg.alt = profile.name || profile.username;
 			avatarImg.style.pointerEvents = "";
 			avatarImg.style.objectFit = "cover";
@@ -648,7 +648,7 @@ const renderProfile = (data) => {
 
 				const affElImage = document.createElement("img");
 				affElImage.src =
-					aff.avatar || "/public/shared/assets/default-avatar.png";
+					aff.avatar || "/public/shared/assets/default-avatar.svg";
 				affElImage.draggable = false;
 				affElImage.alt = aff.name || aff.username;
 				affElImage.className = "affiliate-with-avatar";
@@ -1502,7 +1502,7 @@ const updateEditAvatarDisplay = () => {
 
 	if (avatarImg) {
 		const avatarSrc =
-			profile.avatar || `/public/shared/assets/default-avatar.png`;
+			profile.avatar || `/public/shared/assets/default-avatar.svg`;
 		avatarImg.src = avatarSrc;
 		avatarImg.alt = profile.name || profile.username;
 	}
@@ -1656,7 +1656,7 @@ const handleEditAvatarRemoval = async () => {
 			updateEditAvatarDisplay();
 			const profileAvatar = document.getElementById("profileAvatar");
 			if (profileAvatar) {
-				profileAvatar.src = `/public/shared/assets/default-avatar.png`;
+				profileAvatar.src = `/public/shared/assets/default-avatar.svg`;
 				if (
 					currentProfile.profile.avatar_radius !== null &&
 					currentProfile.profile.avatar_radius !== undefined
@@ -2229,7 +2229,7 @@ document
 
 										const avatar = document.createElement("img");
 										avatar.src =
-											r.avatar || "/public/shared/default-avatar.png";
+											r.avatar || "/public/shared/default-avatar.svg";
 										avatar.alt = r.name || r.username;
 										avatar.style.width = "40px";
 										avatar.style.height = "40px";

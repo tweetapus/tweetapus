@@ -279,7 +279,7 @@ async function showInteractionUsers(tweetId, interaction, title) {
         userItem.innerHTML = `
           <div class="user-avatar">
             <img src="${
-              user.avatar || "/public/shared/assets/default-avatar.png"
+              user.avatar || "/public/shared/assets/default-avatar.svg"
             }" alt="${user.name || user.username}" />
           </div>
           <div class="user-info">
@@ -557,7 +557,7 @@ const createPollElement = (poll, tweet) => {
     poll.voters.slice(0, 3).forEach((voter, index) => {
       const avatarEl = document.createElement("img");
       avatarEl.className = "voter-avatar";
-      avatarEl.src = voter.avatar || `/public/shared/assets/default-avatar.png`;
+      avatarEl.src = voter.avatar || `/public/shared/assets/default-avatar.svg`;
       avatarEl.alt = voter.name || voter.username;
       avatarEl.title = voter.name || voter.username;
       avatarEl.loading = "lazy";
@@ -654,7 +654,7 @@ const updatePollDisplay = (pollElement, poll) => {
     poll.voters.slice(0, 3).forEach((voter, index) => {
       const avatarEl = document.createElement("img");
       avatarEl.className = "voter-avatar";
-      avatarEl.src = voter.avatar || `/public/shared/assets/default-avatar.png`;
+      avatarEl.src = voter.avatar || `/public/shared/assets/default-avatar.svg`;
       avatarEl.alt = voter.name || voter.username;
       avatarEl.title = voter.name || voter.username;
       avatarEl.loading = "lazy";
@@ -752,7 +752,7 @@ async function showInteractionsModal(tweetId) {
           userItem.innerHTML = `
             <div class="user-avatar">
               <img src="${
-                user.avatar || "/public/shared/assets/default-avatar.png"
+                user.avatar || "/public/shared/assets/default-avatar.svg"
               }" alt="${user.name || user.username}" />
             </div>
             <div class="user-info">
@@ -860,7 +860,7 @@ export const createTweetElement = (tweet, config = {}) => {
 
   const tweetHeaderAvatarEl = document.createElement("img");
   tweetHeaderAvatarEl.src =
-    tweet.author.avatar || `/public/shared/assets/default-avatar.png`;
+    tweet.author.avatar || `/public/shared/assets/default-avatar.svg`;
   tweetHeaderAvatarEl.alt = tweet.author.name || tweet.author.username;
   tweetHeaderAvatarEl.classList.add("tweet-header-avatar");
   tweetHeaderAvatarEl.loading = "lazy";
@@ -978,7 +978,7 @@ export const createTweetElement = (tweet, config = {}) => {
     const affiliateImg = document.createElement("img");
     affiliateImg.src =
       tweet.author.affiliate_with_profile.avatar ||
-      "/public/shared/assets/default-avatar.png";
+      "/public/shared/assets/default-avatar.svg";
     affiliateImg.alt =
       tweet.author.affiliate_with_profile.name ||
       tweet.author.affiliate_with_profile.username;
@@ -2442,7 +2442,7 @@ export const createTweetElement = (tweet, config = {}) => {
         const item = document.createElement("div");
         item.className = "reaction-item";
         const avatarSrc =
-          r.avatar || "/public/shared/assets/default-avatar.png";
+          r.avatar || "/public/shared/assets/default-avatar.svg";
         const displayName = r.name || r.username || "Unknown";
         const usernameText = r.username || "";
         const isOwnReaction = currentUser && r.user_id === currentUser.id;

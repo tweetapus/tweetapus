@@ -426,7 +426,7 @@ export const useComposer = (
         `mention-suggestion ${i === mentionIndex ? " selected" : ""}`;
       div.innerHTML = `
         <img class="mention-avatar" src="${
-          user.avatar || "/public/shared/assets/default-avatar.png"
+          user.avatar || "/public/shared/assets/default-avatar.svg"
         }" alt="" />
         <div class="mention-info">
           <div class="mention-name">${user.name}</div>
@@ -1489,14 +1489,14 @@ export const createComposer = async ({
   try {
     const user = await getUser();
     const avatarImg = el.querySelector(".compose-header img");
-    avatarImg.src = user?.avatar || "/public/shared/assets/default-avatar.png";
+    avatarImg.src = user?.avatar || "/public/shared/assets/default-avatar.svg";
 
     const radius = user?.avatar_radius ?? (user?.gold ? 4 : 50);
     avatarImg.style.borderRadius = `${radius}%`;
   } catch (error) {
     console.error("Error loading user avatar:", error);
     const avatarImg = el.querySelector(".compose-header img");
-    avatarImg.src = "/public/shared/assets/default-avatar.png";
+    avatarImg.src = "/public/shared/assets/default-avatar.svg";
     avatarImg.style.borderRadius = "50%";
   }
 

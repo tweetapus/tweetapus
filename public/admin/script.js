@@ -1483,7 +1483,7 @@ class AdminPanel {
         <div class="row">
           <div class="col-md-4 text-center">
             <img src="${
-							user.avatar || "/img/default-avatar.png"
+							user.avatar || "/public/shared/assets/default-avatar.svg"
 						}" class="img-fluid mb-3" style="max-width: 150px; border-radius: ${
 							user.avatar_radius !== null && user.avatar_radius !== undefined
 								? `${user.avatar_radius}px`

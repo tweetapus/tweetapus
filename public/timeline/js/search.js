@@ -119,7 +119,7 @@ const displayResults = (users, posts) => {
       return `
 			<a href="/@${escapeHtml(user.username)}" class="search-user">
 				<img src="${escapeHtml(
-          user.avatar || "/default-avatar.png"
+          user.avatar || "/default-avatar.svg"
         )}" alt="${escapeHtml(user.name)}" style="border-radius: ${radius};">
 				<div class="user-info">
 					<h4>${escapeHtml(user.name)}</h4>

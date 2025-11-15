@@ -40,9 +40,8 @@ document
 			return;
 		}
 
-		document.querySelector(".create-account").style.width = `${
-			document.querySelector(".create-account").offsetWidth
-		}px`;
+		document.querySelector(".create-account").style.width = `${document.querySelector(".create-account").offsetWidth
+			}px`;
 
 		document.querySelector(".create-account").classList.add("loading");
 		document.querySelector(".create-account").disabled = true;
@@ -183,7 +182,7 @@ document
 						});
 						return;
 					}
-				} catch {}
+				} catch { }
 
 				Reflect.set(
 					document,
@@ -219,44 +218,24 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 	e.preventDefault();
 	e.stopPropagation();
 
-	const modal = document.createElement("div");
-	modal.className = "login-modal-backdrop";
+	const passwordModal = document.createElement("div");
+	passwordModal.className = "login-modal-backdrop";
 
-	const modalContent = document.createElement("div");
-	modalContent.className = "login-modal-content";
+	const passwordContent = document.createElement("div");
+	passwordContent.className = "login-modal-content";
 
-	const title = document.createElement("h2");
-	title.className = "login-modal-title";
-	title.textContent = "Log in to tweetapus";
+	const passwordTitle = document.createElement("h2");
+	passwordTitle.className = "login-modal-title";
+	passwordTitle.textContent = "Log in with password";
 
-	const dropdown = document.createElement("div");
-	dropdown.className = "login-dropdown";
+	const passkeyLoginButton = document.createElement("button");
+	passkeyLoginButton.type = "button";
+	passkeyLoginButton.className = "btn btn-primary";
+	passkeyLoginButton.textContent = "Log in with passkey";
+	passkeyLoginButton.addEventListener("click", async () => {
+		passwordModal.remove();
 
-	const passkeyOption = document.createElement("button");
-	passkeyOption.className = "login-dropdown-item";
-	passkeyOption.innerHTML = `
-		<div class="dropdown-item-content">
-			<div class="dropdown-item-title">Passkey</div>
-			<div class="dropdown-item-description">Use your device's built-in security</div>
-		</div>
-		<svg class="dropdown-item-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-	`;
 
-	const passwordOption = document.createElement("button");
-	passwordOption.className = "login-dropdown-item";
-	passwordOption.innerHTML = `
-		<div class="dropdown-item-content">
-			<div class="dropdown-item-title">Password</div>
-			<div class="dropdown-item-description">Log in with username and password</div>
-		</div>
-		<svg class="dropdown-item-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
-	`;
-
-	const cancelBtn = document.createElement("button");
-	cancelBtn.className = "login-cancel-btn";
-	cancelBtn.textContent = "Cancel";
-
-	passkeyOption.addEventListener("click", async () => {
 		try {
 			if (!window.SimpleWebAuthnBrowser) {
 				alert("WebAuthn not available. Please try password login.");
@@ -312,7 +291,7 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 							`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
 						);
 					}
-				} catch {}
+				} catch { }
 
 				window.location.href = "/timeline/";
 			} else {
@@ -320,125 +299,101 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 			}
 		} catch (err) {
 			console.error("Passkey login error:", err);
-			alert("Passkey login failed. Please try password login or try again.");
+		}
+
+	});
+	
+	passwordContent.appendChild(passkeyLoginButton);
+
+	const form = document.createElement("form");
+	form.className = "password-login-form";
+
+	const usernameInput = document.createElement("input");
+	usernameInput.type = "text";
+	usernameInput.placeholder = "Username";
+	usernameInput.required = true;
+
+	const passwordInput = document.createElement("input");
+	passwordInput.type = "password";
+	passwordInput.placeholder = "Password";
+	passwordInput.required = true;
+
+	const formActions = document.createElement("div");
+	formActions.className = "form-actions";
+
+	const loginBtn = document.createElement("button");
+	loginBtn.type = "submit";
+	loginBtn.className = "primary";
+	loginBtn.textContent = "Log in";
+
+	const backBtn = document.createElement("button");
+	backBtn.type = "button";
+	backBtn.className = "secondary";
+	backBtn.textContent = "Back";
+
+	form.addEventListener("submit", async (e) => {
+		e.preventDefault();
+		const username = usernameInput.value.trim();
+		const password = passwordInput.value.trim();
+
+		if (!username || !password) {
+			alert("Please enter both username and password");
+			return;
+		}
+
+		try {
+			const { token, error } = await (
+				await fetch("/api/auth/basic-login", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ username, password }),
+				})
+			).json();
+
+			if (token) {
+				localStorage.setItem("authToken", token);
+
+				try {
+					if (window.cookieStore?.set) {
+						await window.cookieStore.set({
+							name: "agree",
+							value: "yes",
+							expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
+						});
+					} else {
+						Reflect.set(
+							document,
+							"cookie",
+							`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
+						);
+					}
+				} catch { }
+
+				window.location.href = "/timeline/";
+			} else {
+				alert(error || "Login failed");
+			}
+		} catch (err) {
+			console.error("Login error:", err);
+			alert("Login failed. Please try again.");
 		}
 	});
 
-	passwordOption.addEventListener("click", () => {
-		modal.remove();
-
-		const passwordModal = document.createElement("div");
-		passwordModal.className = "login-modal-backdrop";
-
-		const passwordContent = document.createElement("div");
-		passwordContent.className = "login-modal-content";
-
-		const passwordTitle = document.createElement("h2");
-		passwordTitle.className = "login-modal-title";
-		passwordTitle.textContent = "Log in with password";
-
-		const form = document.createElement("form");
-		form.className = "password-login-form";
-
-		const usernameInput = document.createElement("input");
-		usernameInput.type = "text";
-		usernameInput.placeholder = "Username";
-		usernameInput.required = true;
-
-		const passwordInput = document.createElement("input");
-		passwordInput.type = "password";
-		passwordInput.placeholder = "Password";
-		passwordInput.required = true;
-
-		const formActions = document.createElement("div");
-		formActions.className = "form-actions";
-
-		const loginBtn = document.createElement("button");
-		loginBtn.type = "submit";
-		loginBtn.className = "primary";
-		loginBtn.textContent = "Log in";
-
-		const backBtn = document.createElement("button");
-		backBtn.type = "button";
-		backBtn.className = "secondary";
-		backBtn.textContent = "Back";
-
-		form.addEventListener("submit", async (e) => {
-			e.preventDefault();
-			const username = usernameInput.value.trim();
-			const password = passwordInput.value.trim();
-
-			if (!username || !password) {
-				alert("Please enter both username and password");
-				return;
-			}
-
-			try {
-				const { token, error } = await (
-					await fetch("/api/auth/basic-login", {
-						method: "POST",
-						headers: { "Content-Type": "application/json" },
-						body: JSON.stringify({ username, password }),
-					})
-				).json();
-
-				if (token) {
-					localStorage.setItem("authToken", token);
-
-					try {
-						if (window.cookieStore?.set) {
-							await window.cookieStore.set({
-								name: "agree",
-								value: "yes",
-								expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
-							});
-						} else {
-							Reflect.set(
-								document,
-								"cookie",
-								`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
-							);
-						}
-					} catch {}
-
-					window.location.href = "/timeline/";
-				} else {
-					alert(error || "Login failed");
-				}
-			} catch (err) {
-				console.error("Login error:", err);
-				alert("Login failed. Please try again.");
-			}
-		});
-
-		backBtn.addEventListener("click", () => {
-			passwordModal.remove();
-		});
-
-		formActions.appendChild(loginBtn);
-		formActions.appendChild(backBtn);
-		form.appendChild(usernameInput);
-		form.appendChild(passwordInput);
-		form.appendChild(formActions);
-		passwordContent.appendChild(passwordTitle);
-		passwordContent.appendChild(form);
-		passwordModal.appendChild(passwordContent);
-		document.body.appendChild(passwordModal);
-
-		usernameInput.focus();
+	backBtn.addEventListener("click", () => {
+		passwordModal.remove();
 	});
 
-	cancelBtn.addEventListener("click", () => {
-		modal.remove();
-	});
+	formActions.appendChild(loginBtn);
+	formActions.appendChild(backBtn);
+	form.appendChild(usernameInput);
+	form.appendChild(passwordInput);
+	form.appendChild(formActions);
+	passwordContent.appendChild(passwordTitle);
+	passwordContent.appendChild(form);
+	passwordModal.appendChild(passwordContent);
+	document.body.appendChild(passwordModal);
 
-	dropdown.appendChild(passkeyOption);
-	dropdown.appendChild(passwordOption);
-	modalContent.appendChild(title);
-	modalContent.appendChild(dropdown);
-	modalContent.appendChild(cancelBtn);
-	modal.appendChild(modalContent);
-	document.body.appendChild(modal);
+	usernameInput.focus();
 });
 
 document
