@@ -20,11 +20,7 @@ import tweet from "./api/tweet.js";
 import upload, { uploadRoutes } from "./api/upload.js";
 import db from "./db.js";
 import ratelimit from "./helpers/ratelimit.js";
-import {
-	clearSuspensionCache,
-	getSuspensionCache,
-	setSuspensionCache,
-} from "./helpers/suspensionCache.js";
+import { getSuspensionCache, setSuspensionCache } from "./helpers/suspensionCache.js";
 
 function formatExpiry(expiryStr) {
 	const now = new Date();
@@ -106,7 +102,7 @@ export default new Elysia({
 		let payload;
 		try {
 			payload = JSON.parse(atob(parts[1]));
-		} catch (e) {
+		} catch {
 			return;
 		}
 		const { userId } = payload;

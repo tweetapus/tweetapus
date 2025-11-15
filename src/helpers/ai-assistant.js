@@ -117,7 +117,7 @@ async function executeTool(toolName, args, db) {
         SELECT posts.*, users.username, users.name 
         FROM posts 
         JOIN users ON posts.user_id = users.id
-        WHERE LOWER(posts.content) LIKE LOWER(?) AND users.suspended = 0
+		WHERE LOWER(posts.content) LIKE LOWER(?) AND users.suspended = 0 AND users.shadowbanned = 0
         ORDER BY posts.created_at DESC 
         LIMIT 5
       `,

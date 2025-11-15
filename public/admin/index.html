@@ -209,48 +209,6 @@
                   <i class="bi bi-arrow-clockwise"></i>
                   Refresh
 
-                  <!-- Bulk Tweet Modal -->
-                  <div class="modal fade" id="bulkTweetModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                      <div class="modal-content">
-                        <div class="modal-header">
-                          <h5 class="modal-title">Mass Tweet (as selected users)</h5>
-                          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                          <form id="bulkTweetForm">
-                            <div class="mb-3">
-                              <label class="form-label">Selected Users</label>
-                              <div id="bulkTweetSelectedUsers" class="mb-2 small text-muted">None selected</div>
-                            </div>
-                            <div class="mb-3">
-                              <label class="form-label">Content *</label>
-                              <textarea class="form-control" id="bulkTweetContent" rows="3" required></textarea>
-                            </div>
-                            <div class="mb-3">
-                              <label class="form-label">No Character Limit (admin override)</label>
-                              <input type="checkbox" id="bulkTweetNoCharLimit" />
-                            </div>
-                            <div class="mb-3">
-                              <label class="form-label">Replying to (Tweet ID, optional)</label>
-                              <input type="text" id="bulkTweetReplyTo" class="form-control"
-                                placeholder="Enter tweet ID to reply to (optional)" />
-                            </div>
-                            <div class="mb-3">
-                              <label class="form-label">Posted At (optional)</label>
-                              <input type="datetime-local" id="bulkTweetCreatedAt" class="form-control" />
-                              <small class="text-muted">Optional: set creation date/time for the tweets</small>
-                            </div>
-                          </form>
-                        </div>
-                        <div class="modal-footer">
-                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                          <button type="button" class="btn btn-primary"
-                            onclick="adminPanel.postBulkTweets()">Send</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </button>
                 <button class="btn btn-success" onclick="adminPanel.showCreateUserModal()">
                   <i class="bi bi-plus-lg"></i>
@@ -764,6 +722,7 @@
                 <option value="suspend" selected>Suspend (hide/break account)</option>
                 <option value="restrict">Restrict (browse-only)</option>
                 <option value="shadowban">Shadowban (hide posts but keep account)</option>
+                <option value="lift">Lift (unsuspend/unrestrict/unshadowban)</option>
               </select>
             </div>
             <!-- Severity removed for suspensions; action is used instead -->
@@ -860,10 +819,12 @@
                 <input type="number" class="form-control" id="editPostLikes" min="0" />
               </div>
               <div class="col-md-3">
-                <label for="editPostRetweets" class="form-label">
-                  Retweets
-                  <label for="editPostViews" class="form-label">Views</label>
-                  <input type="number" class="form-control" id="editPostViews" min="0" />
+                <label for="editPostRetweets" class="form-label">Retweets</label>
+                <input type="number" class="form-control" id="editPostRetweets" min="0" />
+              </div>
+              <div class="col-md-3">
+                <label for="editPostViews" class="form-label">Views</label>
+                <input type="number" class="form-control" id="editPostViews" min="0" />
               </div>
             </div>
           </form>
@@ -925,6 +886,48 @@
           <button type="button" class="btn btn-primary" onclick="adminPanel.postTweetOnBehalf()">
             Tweet
           </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Tweet Modal -->
+  <div class="modal fade" id="bulkTweetModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Mass Tweet (as selected users)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="bulkTweetForm">
+            <div class="mb-3">
+              <label class="form-label">Selected Users</label>
+              <div id="bulkTweetSelectedUsers" class="mb-2 small text-muted">None selected</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Content *</label>
+              <textarea class="form-control" id="bulkTweetContent" rows="3" required></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">No Character Limit (admin override)</label>
+              <input type="checkbox" id="bulkTweetNoCharLimit" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Replying to (Tweet ID, optional)</label>
+              <input type="text" id="bulkTweetReplyTo" class="form-control"
+                placeholder="Enter tweet ID to reply to (optional)" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Posted At (optional)</label>
+              <input type="datetime-local" id="bulkTweetCreatedAt" class="form-control" />
+              <small class="text-muted">Optional: set creation date/time for the tweets</small>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="adminPanel.postBulkTweets()">Send</button>
         </div>
       </div>
     </div>

@@ -11,7 +11,7 @@ const getFollowers = db.prepare(`
   SELECT users.id, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.bio
   FROM follows
   JOIN users ON follows.follower_id = users.id
-  WHERE follows.following_id = ? AND users.suspended = 0
+	WHERE follows.following_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
   ORDER BY follows.created_at DESC
   LIMIT 50
 `);
@@ -20,7 +20,7 @@ const getFollowing = db.prepare(`
   SELECT users.id, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.bio
   FROM follows
   JOIN users ON follows.following_id = users.id
-  WHERE follows.follower_id = ? AND users.suspended = 0
+	WHERE follows.follower_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
   ORDER BY follows.created_at DESC
   LIMIT 50
 `);
@@ -123,7 +123,7 @@ const getUserPosts = db.prepare(`
   SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
   FROM posts 
   JOIN users ON posts.user_id = users.id 
-  WHERE posts.user_id = ? AND posts.reply_to IS NULL AND users.suspended = 0
+	WHERE posts.user_id = ? AND posts.reply_to IS NULL AND users.suspended = 0
   ORDER BY posts.pinned DESC, posts.created_at DESC
 `);
 
@@ -522,6 +522,31 @@ export default new Elysia({ prefix: "/profile" })
 			}
 
 			profile.blockedByProfile = blockedByProfile;
+
+			// If the account is shadowbanned, hide their posts unless the viewer is the owner or an admin
+			if (user.shadowbanned && !isOwnProfile) {
+				try {
+					const payload = headers.authorization
+						? await jwt.verify(headers.authorization.replace("Bearer ", ""))
+						: null;
+					const currentUser = payload
+						? getUserByUsername.get(payload.username)
+						: null;
+					if (!currentUser?.admin) {
+						const minimalProfile = {
+							username: user.username,
+							name: user.name,
+							avatar: user.avatar || null,
+							banner: user.banner || null,
+							created_at: user.created_at || null,
+							following_count: counts?.following_count || 0,
+							follower_count: counts?.follower_count || 0,
+							post_count: counts?.post_count || 0,
+						};
+						return { error: "User is shadowbanned", profile: minimalProfile };
+					}
+				} catch (_) {}
+			}
 
 			// Combine and sort by creation time
 			const allContent = [

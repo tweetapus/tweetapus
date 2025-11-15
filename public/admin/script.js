@@ -1135,7 +1135,7 @@ class AdminPanel {
 		}
 	}
 
-	showBulkTweetModal() {
+	async showBulkTweetModal() {
 		if (!this.selectedUsers.size) {
 			this.showError("Select at least one user to mass tweet as");
 			return;
@@ -1147,9 +1147,16 @@ class AdminPanel {
 
 		const usernames = [];
 		for (const id of this.selectedUsers) {
-			const cached = this.userCache.get(id);
+			let cached = this.userCache.get(id);
 			let username = id;
-			if (cached && cached.username) username = cached.username || id;
+			try {
+				if (cached && typeof cached.then === "function") {
+					cached = await cached;
+				}
+				if (cached?.user?.username) username = cached.user.username;
+			} catch {
+				// fallback to id if error
+			}
 			usernames.push(username);
 		}
 		selectedList.textContent = usernames.join(", ") || "None selected";
@@ -1164,16 +1171,24 @@ class AdminPanel {
 			return;
 		}
 
-		const noCharLimit = !!document.getElementById("bulkTweetNoCharLimit")?.checked;
+		const noCharLimit = !!document.getElementById("bulkTweetNoCharLimit")
+			?.checked;
 		const replyTo = document.getElementById("bulkTweetReplyTo")?.value || null;
 		let createdAt = null;
 		const createdAtInput = document.getElementById("bulkTweetCreatedAt");
-		if (createdAtInput && createdAtInput.value) {
+		if (createdAtInput?.value) {
 			try {
 				const d = new Date(createdAtInput.value);
 				if (!Number.isNaN(d.getTime())) createdAt = d.toISOString();
 			} catch (_err) {}
 		}
+
+		if (
+			!confirm(
+				`Send this message as ${this.selectedUsers.size} selected user(s)?`,
+			)
+		)
+			return;
 
 		const total = this.selectedUsers.size;
 		let successCount = 0;
@@ -1201,7 +1216,10 @@ class AdminPanel {
 		new bootstrap.Modal(document.getElementById("bulkTweetModal")).hide();
 		this.showSuccess(`Mass tweet completed: ${successCount}/${total} success`);
 		if (successCount !== total) {
-			console.warn("Bulk tweet errors:", results.filter((r) => !r.ok));
+			console.warn(
+				"Bulk tweet errors:",
+				results.filter((r) => !r.ok),
+			);
 		}
 	}
 
@@ -1838,10 +1856,10 @@ class AdminPanel {
           </button>
           <ul class="dropdown-menu dropdown-menu-end">
 			${
-							!user.suspended
-								? `<li><a class="dropdown-item" href="#" onclick="adminPanel.showSuspensionModal('${user.id}')">Suspend/Restrict User</a></li><li><a class="dropdown-item" href="#" onclick="adminPanel.showShadowbanModal('${user.id}')">Shadowban User</a></li>`
-								: `<li><a class="dropdown-item" href="#" onclick="adminPanel.unsuspendUser('${user.id}')">${user.suspended && user.restricted ? "Unsuspend & Unrestrict" : user.suspended ? "Unsuspend User" : "Unrestrict User"}</a></li>`
-						}
+				!user.suspended
+					? `<li><a class="dropdown-item" href="#" onclick="adminPanel.showSuspensionModal('${user.id}')">Suspend/Restrict User</a></li><li><a class="dropdown-item" href="#" onclick="adminPanel.showShadowbanModal('${user.id}')">Shadowban User</a></li>`
+					: `<li><a class="dropdown-item" href="#" onclick="adminPanel.unsuspendUser('${user.id}')">${user.suspended && user.restricted ? "Unsuspend & Unrestrict" : user.suspended ? "Unsuspend User" : "Unrestrict User"}</a></li>`
+			}
             <li><a class="dropdown-item text-danger" href="#" onclick="adminPanel.deleteUser('${
 							user.id
 						}', '@${user.username}')">Delete User</a></li>
@@ -2152,7 +2170,7 @@ class AdminPanel {
 		const duration = document.getElementById("suspensionDuration").value;
 		const notes = document.getElementById("suspensionNotes").value;
 
-		if (!reason.trim()) {
+		if (action !== "lift" && !reason.trim()) {
 			reason =
 				"No reason provided. Tweetapus reserves the right to suspend users at our discretion without notice.";
 		}
@@ -2178,7 +2196,15 @@ class AdminPanel {
 			bootstrap.Modal.getInstance(
 				document.getElementById("suspensionModal"),
 			).hide();
-			this.showSuccess("User suspended successfully");
+			const successMessage =
+				action === "lift"
+					? "User unsuspended successfully"
+					: action === "shadowban"
+						? "User shadowbanned"
+						: action === "restrict"
+							? "User restricted"
+							: "User suspended successfully";
+			this.showSuccess(successMessage);
 			this.loadUsers(this.currentPage.users);
 		} catch (error) {
 			this.showError(error.message);
@@ -2186,25 +2212,17 @@ class AdminPanel {
 	}
 
 	async unsuspendUser(userId) {
-		if (
-			!confirm(
-				"Are you sure you want to remove suspension/restriction on this user?",
-			)
-		)
-			return;
+		// Unified 'lift' action: open the same suspension modal prefilled with 'lift' action
+		this.showLiftModal(userId);
+	}
 
-		try {
-			await this.apiCall(`/api/admin/users/${userId}/unsuspend`, {
-				method: "POST",
-			});
-
-			this.showSuccess("User unsuspended successfully");
-			if (this.currentPage.users) this.loadUsers(this.currentPage.users);
-			if (this.currentPage.suspensions)
-				this.loadSuspensions(this.currentPage.suspensions);
-		} catch (error) {
-			this.showError(error.message);
-		}
+	showLiftModal(userId) {
+		document.getElementById("suspendUserId").value = userId;
+		const form = document.getElementById("suspensionForm");
+		if (form) form.reset();
+		const actionSelect = document.getElementById("suspensionAction");
+		if (actionSelect) actionSelect.value = "lift";
+		new bootstrap.Modal(document.getElementById("suspensionModal")).show();
 	}
 
 	async impersonateUser(userId) {
@@ -2301,7 +2319,9 @@ class AdminPanel {
 		bodyElement.innerHTML = loadedUsers
 			.map((user) => this.renderBulkUserCard(user))
 			.join("");
-		loadedUsers.forEach((user) => this.setupBulkFormInteractions(user));
+		for (const user of loadedUsers) {
+			this.setupBulkFormInteractions(user);
+		}
 		saveButton.disabled = false;
 	}
 

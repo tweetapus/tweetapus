@@ -1052,6 +1052,18 @@ export const createTweetElement = (tweet, config = {}) => {
 		tweetHeaderUsernameEl.textContent += ` · ${tweet.source}`;
 	}
 
+	if (tweet.edited_at) {
+		const editedIndicator = document.createElement("span");
+		editedIndicator.className = "tweet-edited-indicator";
+		editedIndicator.textContent = " (edited)";
+		editedIndicator.style.cssText = `
+			color: var(--text-secondary);
+			font-size: 12px;
+			font-style: italic;
+		`;
+		tweetHeaderUsernameEl.appendChild(editedIndicator);
+	}
+
 	tweetHeaderInfoEl.appendChild(tweetHeaderNameEl);
 	tweetHeaderInfoEl.appendChild(tweetHeaderUsernameEl);
 
@@ -2122,6 +2134,189 @@ export const createTweetElement = (tweet, config = {}) => {
 
 					document.body.appendChild(modalOverlay);
 					document.body.appendChild(restrictionMenu);
+				},
+			},
+			{
+				id: "edit-option",
+				icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>`,
+				title: "Edit tweet",
+				onClick: async () => {
+					if (tweet.poll_id) {
+						toastQueue.add(`<h1>Cannot edit tweets with polls</h1>`);
+						return;
+					}
+
+					const { createModal } = await import("../../shared/ui-utils.js");
+					const editModal = createModal({
+						title: "Edit tweet",
+						content: "",
+						showCloseButton: true,
+					});
+
+					const editForm = document.createElement("form");
+					editForm.style.cssText = `
+						display: flex;
+						flex-direction: column;
+						gap: 12px;
+					`;
+
+					const textarea = document.createElement("textarea");
+					textarea.value = tweet.content || "";
+					textarea.style.cssText = `
+						width: 100%;
+						min-height: 120px;
+						padding: 12px;
+						border: 1px solid var(--border-primary);
+						border-radius: 8px;
+						background: var(--bg-primary);
+						color: var(--text-primary);
+						font-family: inherit;
+						font-size: 14px;
+						resize: vertical;
+					`;
+					textarea.placeholder = "What's happening?";
+
+					const charCounter = document.createElement("div");
+					charCounter.style.cssText = `
+						text-align: right;
+						font-size: 12px;
+						color: var(--text-secondary);
+					`;
+
+					const currentUser = await getUser();
+					let maxTweetLength = currentUser.character_limit || 400;
+					if (!currentUser.character_limit) {
+						maxTweetLength = currentUser.gold
+							? 16500
+							: currentUser.verified
+								? 5500
+								: 400;
+					}
+
+					const updateCharCounter = () => {
+						const remaining = maxTweetLength - textarea.value.length;
+						charCounter.textContent = `${remaining} characters remaining`;
+						charCounter.style.color =
+							remaining < 0 ? "var(--error)" : "var(--text-secondary)";
+					};
+
+					textarea.addEventListener("input", updateCharCounter);
+					updateCharCounter();
+
+					const buttonContainer = document.createElement("div");
+					buttonContainer.style.cssText = `
+						display: flex;
+						gap: 8px;
+						justify-content: flex-end;
+					`;
+
+					const cancelButton = document.createElement("button");
+					cancelButton.type = "button";
+					cancelButton.textContent = "Cancel";
+					cancelButton.style.cssText = `
+						padding: 8px 16px;
+						border: 1px solid var(--border-primary);
+						border-radius: 8px;
+						background: transparent;
+						color: var(--text-primary);
+						cursor: pointer;
+					`;
+					cancelButton.addEventListener("click", () => {
+						editModal.remove();
+					});
+
+					const saveButton = document.createElement("button");
+					saveButton.type = "submit";
+					saveButton.textContent = "Save";
+					saveButton.style.cssText = `
+						padding: 8px 16px;
+						border: none;
+						border-radius: 8px;
+						background: var(--primary);
+						color: var(--primary-fg);
+						cursor: pointer;
+						font-weight: 600;
+					`;
+
+					buttonContainer.appendChild(cancelButton);
+					buttonContainer.appendChild(saveButton);
+
+					editForm.appendChild(textarea);
+					editForm.appendChild(charCounter);
+					editForm.appendChild(buttonContainer);
+
+					editForm.addEventListener("submit", async (e) => {
+						e.preventDefault();
+
+						const newContent = textarea.value.trim();
+						if (!newContent) {
+							toastQueue.add(`<h1>Tweet content cannot be empty</h1>`);
+							return;
+						}
+
+						if (newContent.length > maxTweetLength) {
+							toastQueue.add(`<h1>Tweet content is too long</h1>`);
+							return;
+						}
+
+						saveButton.disabled = true;
+						saveButton.textContent = "Saving...";
+
+						const result = await query(`/tweets/${tweet.id}`, {
+							method: "PUT",
+							headers: { "Content-Type": "application/json" },
+							body: JSON.stringify({ content: newContent }),
+						});
+
+						if (result.success) {
+							tweet.content = newContent;
+							tweet.edited_at = result.tweet.edited_at;
+
+							const contentEl = tweetEl.querySelector(".tweet-content");
+							if (contentEl) {
+								contentEl.innerHTML = linkifyText(newContent);
+								replaceEmojiShortcodesInElement(contentEl);
+
+								const editedIndicator = document.createElement("span");
+								editedIndicator.className = "tweet-edited-indicator";
+								editedIndicator.textContent = " (edited)";
+								editedIndicator.style.cssText = `
+									color: var(--text-secondary);
+									font-size: 12px;
+									font-style: italic;
+								`;
+								const usernameEl = tweetEl.querySelector(
+									".tweet-header-username",
+								);
+								if (
+									usernameEl &&
+									!usernameEl.querySelector(".tweet-edited-indicator")
+								) {
+									usernameEl.appendChild(editedIndicator);
+								}
+							}
+
+							editModal.remove();
+							toastQueue.add(`<h1>Tweet updated successfully</h1>`);
+						} else {
+							toastQueue.add(
+								`<h1>${result.error || "Failed to update tweet"}</h1>`,
+							);
+							saveButton.disabled = false;
+							saveButton.textContent = "Save";
+						}
+					});
+
+					const modalContent = editModal.querySelector(".modal-content");
+					if (modalContent) {
+						modalContent.appendChild(editForm);
+					}
+
+					document.body.appendChild(editModal);
+					textarea.focus();
 				},
 			},
 			{

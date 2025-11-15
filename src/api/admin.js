@@ -4,8 +4,8 @@ import { jwt } from "@elysiajs/jwt";
 import { Elysia, t } from "elysia";
 import { unzipSync, zipSync } from "fflate";
 import db from "../db.js";
-import { addNotification } from "./notifications.js";
 import { clearSuspensionCache } from "../helpers/suspensionCache.js";
+import { addNotification } from "./notifications.js";
 
 const logModerationAction = (
 	moderatorId,
@@ -1041,6 +1041,42 @@ export default new Elysia({ prefix: "/admin" })
 		"/users/:id/suspend",
 		async ({ params, body, user }) => {
 			const { reason, duration, notes, action } = body;
+
+			// If caller requested a lift via the suspend endpoint, unify the behavior: lift suspensions and flags.
+			if (action === "lift") {
+				const targetUser = adminQueries.findUserById.get(params.id);
+				if (!targetUser) return { error: "User not found" };
+				const wasSuspended = !!targetUser?.suspended;
+				const wasRestricted = !!targetUser?.restricted;
+				const wasShadowbanned = !!targetUser?.shadowbanned;
+
+				adminQueries.updateUserSuspended.run(false, params.id);
+				adminQueries.updateUserRestricted.run(false, params.id);
+				db.query("UPDATE users SET shadowbanned = FALSE WHERE id = ?").run(params.id);
+				adminQueries.updateSuspensionStatus.run("lifted", params.id);
+
+				if (wasSuspended) {
+					logModerationAction(user.id, "unsuspend_user", "user", params.id, {
+						username: targetUser?.username,
+					});
+				}
+				if (wasRestricted) {
+					logModerationAction(user.id, "unrestrict_user", "user", params.id, {
+						username: targetUser?.username,
+					});
+				}
+				if (wasShadowbanned) {
+					logModerationAction(user.id, "unshadowban_user", "user", params.id, {
+						username: targetUser?.username,
+					});
+				}
+
+				try {
+					clearSuspensionCache(params.id);
+				} catch (_) {}
+
+				return { success: true };
+			}
 			const suspensionId = Bun.randomUUIDv7();
 			const targetUser = adminQueries.findUserById.get(params.id);
 
@@ -1131,7 +1167,9 @@ export default new Elysia({ prefix: "/admin" })
 		adminQueries.updateUserSuspended.run(false, params.id);
 		adminQueries.updateUserRestricted.run(false, params.id);
 		// Also clear shadowbanned flag so users regain visibility after unsuspend
-		db.query("UPDATE users SET shadowbanned = FALSE WHERE id = ?").run(params.id);
+		db.query("UPDATE users SET shadowbanned = FALSE WHERE id = ?").run(
+			params.id,
+		);
 		adminQueries.updateSuspensionStatus.run("lifted", params.id);
 		// Invalidate any cached suspension status server-side so it takes effect immediately
 		try {
@@ -1143,6 +1181,11 @@ export default new Elysia({ prefix: "/admin" })
 				username: targetUser?.username,
 			});
 		}
+
+		// Invalidate any cached suspension/restriction for this user
+		try {
+			clearSuspensionCache(params.id);
+		} catch (_e) {}
 		if (wasRestricted) {
 			logModerationAction(user.id, "unrestrict_user", "user", params.id, {
 				username: targetUser?.username,

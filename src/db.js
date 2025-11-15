@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS posts (
   community_id TEXT DEFAULT NULL,
   community_only BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  edited_at TIMESTAMP DEFAULT NULL,
   like_count INTEGER DEFAULT 0,
   reply_count INTEGER DEFAULT 0,
   retweet_count INTEGER DEFAULT 0,

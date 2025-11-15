@@ -62,6 +62,12 @@ const isRestrictedQuery = db.query(`
 const getUserSuspendedFlag = db.query(`
   SELECT suspended FROM users WHERE id = ?
 `);
+const getUserShadowbannedFlag = db.query(`
+	SELECT shadowbanned FROM users WHERE id = ?
+`);
+const isShadowbannedQuery = db.query(`
+	SELECT * FROM suspensions WHERE user_id = ? AND status = 'active' AND action = 'shadowban' AND (expires_at IS NULL OR expires_at > datetime('now'))
+`);
 const getUserRestrictedFlag = db.query(`
   SELECT restricted FROM users WHERE id = ?
 `);
@@ -76,6 +82,12 @@ const isUserRestrictedById = (userId) => {
 	const restrictionRow = isRestrictedQuery.get(userId);
 	const userResFlag = getUserRestrictedFlag.get(userId);
 	return !!restrictionRow || !!userResFlag?.restricted;
+};
+
+const isUserShadowbannedById = (userId) => {
+	const row = isShadowbannedQuery.get(userId);
+	const flag = getUserShadowbannedFlag.get(userId);
+	return !!row || !!flag?.shadowbanned;
 };
 
 const getArticlePreviewById = db.query(`
@@ -289,12 +301,24 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 	// frontend can show an appropriate 'suspended' message instead of the full
 	// quoted tweet content.
 	const authorSuspended = isUserSuspendedById(quotedTweet.user_id);
+	const authorShadowbanned = isUserShadowbannedById(quotedTweet.user_id);
 	if (authorSuspended) {
 		return {
 			id: quotedTweet.id,
 			unavailable_reason: "suspended",
 			created_at: quotedTweet.created_at,
 		};
+	}
+	if (authorShadowbanned) {
+		// allow author view if userId is the author or if current user is admin
+		const viewer = userId ? getUserById.get(userId) : null;
+		if (!(viewer && (viewer.id === quotedTweet.user_id || viewer.admin))) {
+			return {
+				id: quotedTweet.id,
+				unavailable_reason: "shadowbanned",
+				created_at: quotedTweet.created_at,
+			};
+		}
 	}
 
 	const author = {
@@ -1039,31 +1063,44 @@ export default new Elysia({ prefix: "/tweets" })
 			return { error: "Tweet not found" };
 		}
 
-		// If the tweet's author is suspended, hide the tweet completely.
+		// If the tweet's author is suspended or shadowbanned (to non-owning viewers), hide the tweet completely.
 		if (isUserSuspendedById(tweet.user_id)) {
 			return { error: "Tweet not found" };
+		}
+
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Unauthorized" };
+
+		let currentUser = null;
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (payload) {
+				currentUser = getUserByUsername.get(payload.username);
+			}
+		} catch {
+			return { error: "Invalid token" };
+		}
+
+		// If author is shadowbanned and the request is not from their account or an admin, hide the tweet
+		if (isUserShadowbannedById(tweet.user_id)) {
+			if (
+				!(
+					currentUser &&
+					(currentUser.admin || currentUser.id === tweet.user_id)
+				)
+			) {
+				return { error: "Tweet not found" };
+			}
 		}
 
 		db.query("UPDATE posts SET view_count = view_count + 1 WHERE id = ?").run(
 			id,
 		);
 
-		const threadPosts = getTweetWithThread.all(id);
-		const replies = before
+		let threadPosts = getTweetWithThread.all(id);
+		let replies = before
 			? getTweetRepliesBefore.all(id, before, parseInt(limit))
 			: getTweetReplies.all(id, parseInt(limit));
-
-		let currentUser;
-		const authorization = headers.authorization;
-		if (!authorization) return { error: "Unauthorized" };
-
-		try {
-			currentUser = getUserByUsername.get(
-				(await jwt.verify(authorization.replace("Bearer ", ""))).username,
-			);
-		} catch {
-			return { error: "Invalid token" };
-		}
 
 		const allPostIds = [
 			...threadPosts.map((p) => p.id),
@@ -1116,6 +1153,20 @@ export default new Elysia({ prefix: "/tweets" })
 		});
 
 		const userMap = new Map(users.map((user) => [user.id, user]));
+
+		// Remove any shadowbanned posts from the thread/replies unless the viewer is author or admin
+		if (
+			!(currentUser && (currentUser.admin || currentUser.id === tweet.user_id))
+		) {
+			threadPosts = threadPosts.filter((p) => {
+				const u = userMap.get(p.user_id);
+				return !u || !u.shadowbanned;
+			});
+			replies = replies.filter((p) => {
+				const u = userMap.get(p.user_id);
+				return !u || !u.shadowbanned;
+			});
+		}
 
 		const articleIds = new Set();
 		if (tweet.article_id) {
@@ -1717,5 +1768,77 @@ export default new Elysia({ prefix: "/tweets" })
 		} catch (error) {
 			console.error("Update reply restriction error:", error);
 			return { error: "Failed to update reply restriction" };
+		}
+	})
+	.put("/:id", async ({ jwt, headers, params, body }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const user = getUserByUsername.get(payload.username);
+			if (!user) return { error: "User not found" };
+
+			const { id } = params;
+			const { content } = body;
+
+			const tweet = getTweetById.get(id);
+			if (!tweet) return { error: "Tweet not found" };
+
+			if (tweet.user_id !== user.id) {
+				return { error: "You can only edit your own tweets" };
+			}
+
+			if (tweet.poll_id) {
+				return { error: "Cannot edit tweets with polls" };
+			}
+
+			if (!content || typeof content !== "string") {
+				return { error: "Content is required" };
+			}
+
+			const trimmedContent = content.trim();
+			if (trimmedContent.length === 0) {
+				return { error: "Tweet content cannot be empty" };
+			}
+
+			let maxTweetLength = user.character_limit || 400;
+			if (!user.character_limit) {
+				maxTweetLength = user.gold ? 16500 : user.verified ? 5500 : 400;
+			}
+			if (trimmedContent.length > maxTweetLength) {
+				return {
+					error: `Tweet content must be ${maxTweetLength} characters or less`,
+				};
+			}
+
+			db.query(
+				"UPDATE posts SET content = ?, edited_at = datetime('now', 'utc') WHERE id = ?",
+			).run(trimmedContent, id);
+
+			extractAndSaveHashtags(trimmedContent, id);
+
+			const updatedTweet = getTweetById.get(id);
+
+			return {
+				success: true,
+				tweet: {
+					...updatedTweet,
+					author: user,
+					poll: getPollDataForTweet(updatedTweet.id, user.id),
+					quoted_tweet: getQuotedTweetData(
+						updatedTweet.quote_tweet_id,
+						user.id,
+					),
+					attachments: getTweetAttachments(updatedTweet.id),
+					fact_check: getFactCheckForPost.get(updatedTweet.id) || null,
+					interactive_card: getCardDataForTweet(updatedTweet.id),
+				},
+			};
+		} catch (error) {
+			console.error("Edit tweet error:", error);
+			return { error: "Failed to edit tweet" };
 		}
 	});

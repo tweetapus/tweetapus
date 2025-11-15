@@ -516,7 +516,10 @@ const renderProfile = (data) => {
 	// Add separate class when the viewer is the restricted account owner so only the owner
 	// sees the UI disabled; other visitors should still be able to interact.
 	if (profileContainerEl)
-		profileContainerEl.classList.toggle("restricted-self", restricted && isOwnProfile);
+		profileContainerEl.classList.toggle(
+			"restricted-self",
+			restricted && isOwnProfile,
+		);
 
 	// Add restricted account banner
 	const existingBanner = profileContainerEl?.querySelector(
