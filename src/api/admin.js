@@ -1090,7 +1090,7 @@ export default new Elysia({ prefix: "/admin" })
 
 	.post("/users/:id/unsuspend", async ({ params, user }) => {
 		const targetUser = adminQueries.findUserById.get(params.id);
-		// Clear both suspended and restricted flags when unsuspending/unrestricting
+
 		adminQueries.updateUserSuspended.run(false, params.id);
 		adminQueries.updateUserRestricted.run(false, params.id);
 		adminQueries.updateSuspensionStatus.run("lifted", params.id);
