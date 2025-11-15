@@ -92,7 +92,7 @@ export default new Elysia({
       generator: ratelimit,
     })
   )
-  .onBeforeHandle(async ({ headers }) => {
+  .onBeforeHandle(async ({ headers, request }) => {
     const token = headers.authorization?.split(" ")[1];
     if (!token) return;
 
@@ -113,7 +113,6 @@ export default new Elysia({
         }
       }
 
-      // Also handle restricted suspensions expiring
       let restriction = isRestrictedQuery.get(userId);
       if (restriction?.expires_at) {
         const expiresAt = new Date(restriction.expires_at).getTime();
@@ -122,6 +121,13 @@ export default new Elysia({
           updateUserRestricted.run(false, userId);
           restriction = null;
         }
+
+
+    if (restriction && ["GET", "OPTIONS"].includes(request.method)) {
+      return {
+        error: "Your account has been locked and you may not access this resource",
+      };
+    }
       }
 
       cached = { suspension, expiry: now + CACHE_TTL };
@@ -145,9 +151,6 @@ export default new Elysia({
         suspension: suspensionHtml,
       };
     }
-    // We intentionally do not block restricted users at this middleware layer
-    // so that they can still browse content. Individual endpoints should
-    // check the user's restricted flag and return appropriate errors.
   })
   .get("/emojis", async () => {
     try {
