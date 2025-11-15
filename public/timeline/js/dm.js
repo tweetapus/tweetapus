@@ -362,7 +362,7 @@ function renderConversationsList() {
 	if (!listElement) return;
 
 	if (currentConversations.length === 0) {
-		if (!listElement.querySelector('.no-conversations')) {
+		if (!listElement.querySelector(".no-conversations")) {
 			listElement.innerHTML = `
         <div class="no-conversations">
           <p>No conversations yet.</p>
@@ -376,7 +376,7 @@ function renderConversationsList() {
 	const newHTML = currentConversations
 		.map((conversation) => createConversationElement(conversation))
 		.join("");
-	
+
 	if (listElement.innerHTML !== newHTML) {
 		listElement.innerHTML = newHTML;
 	}
@@ -524,32 +524,38 @@ function renderConversationHeader() {
 	);
 	const isGroup = currentConversation.type === "group";
 
-	const newAvatarsHTML = isGroup && participants.length > 3
-		? `${participants.slice(0, 3)
-				.map((p) => {
-					const radius =
-						p.avatar_radius !== null && p.avatar_radius !== undefined
-							? `${p.avatar_radius}px`
-							: p.gold ? `4px` : `50px`;
-					return `<img src="${
-						p.avatar || "/public/shared/assets/default-avatar.svg"
-					}" alt="${
-						p.name || p.username
-					}" style="border-radius: ${radius};" />`;
-				})
-				.join("")}<div class="avatar-more">+${participants.length - 3}</div>`
-		: participants
-				.map((p) => {
-					const radius =
-						p.avatar_radius !== null && p.avatar_radius !== undefined
-							? `${p.avatar_radius}px`
-							: p.gold ? `4px` : `50px`;
-					return `<img src="${
-						p.avatar || "/public/shared/assets/default-avatar.svg"
-					}" alt="${p.name || p.username}" style="border-radius: ${radius};" />`;
-				})
-				.join("");
-	
+	const newAvatarsHTML =
+		isGroup && participants.length > 3
+			? `${participants
+					.slice(0, 3)
+					.map((p) => {
+						const radius =
+							p.avatar_radius !== null && p.avatar_radius !== undefined
+								? `${p.avatar_radius}px`
+								: p.gold
+									? `4px`
+									: `50px`;
+						return `<img src="${
+							p.avatar || "/public/shared/assets/default-avatar.svg"
+						}" alt="${
+							p.name || p.username
+						}" style="border-radius: ${radius};" />`;
+					})
+					.join("")}<div class="avatar-more">+${participants.length - 3}</div>`
+			: participants
+					.map((p) => {
+						const radius =
+							p.avatar_radius !== null && p.avatar_radius !== undefined
+								? `${p.avatar_radius}px`
+								: p.gold
+									? `4px`
+									: `50px`;
+						return `<img src="${
+							p.avatar || "/public/shared/assets/default-avatar.svg"
+						}" alt="${p.name || p.username}" style="border-radius: ${radius};" />`;
+					})
+					.join("");
+
 	if (avatarsElement.innerHTML !== newAvatarsHTML) {
 		avatarsElement.innerHTML = newAvatarsHTML;
 	}
@@ -911,7 +917,12 @@ async function handleScroll(event) {
 	}
 
 	handleScroll.debounceTimer = setTimeout(() => {
-		if (scrollTop < threshold && !isLoadingMoreMessages && hasMoreMessages && currentMessages.length > 0) {
+		if (
+			scrollTop < threshold &&
+			!isLoadingMoreMessages &&
+			hasMoreMessages &&
+			currentMessages.length > 0
+		) {
 			loadMoreMessages();
 		}
 	}, 100);

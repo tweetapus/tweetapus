@@ -3,8 +3,8 @@ import { Elysia, t } from "elysia";
 import db from "../db.js";
 import { generateAIDMResponse } from "../helpers/ai-assistant.js";
 import { getRateLimitMiddleware } from "../helpers/customRateLimit.js";
-import { addNotification } from "./notifications.js";
 import cap from "./cap.js";
+import { addNotification } from "./notifications.js";
 
 let broadcastToUser, sendUnreadCounts;
 try {
