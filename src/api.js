@@ -1,4 +1,4 @@
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 
 import admin from "./api/admin.js";
@@ -181,18 +181,38 @@ export default new Elysia({
 			set.restricted = true;
 		}
 	})
-	.get("/emojis", async () => {
-		try {
-			const rows = db
-				.query(
-					"SELECT id, name, file_hash, file_url, created_by, created_at FROM emojis ORDER BY created_at DESC",
-				)
-				.all();
-			return { emojis: rows };
-		} catch (_err) {
-			return { emojis: [] };
-		}
-	})
+	.get(
+		"/emojis",
+		async () => {
+			try {
+				const rows = db
+					.query(
+						"SELECT id, name, file_hash, file_url, created_by, created_at FROM emojis ORDER BY created_at DESC",
+					)
+					.all();
+				return { emojis: rows };
+			} catch (_err) {
+				return { emojis: [] };
+			}
+		},
+		{
+			detail: {
+				description: "Lists all custom emojis",
+			},
+			response: t.Object({
+				emojis: t.Array(
+					t.Object({
+						id: t.String(),
+						name: t.String(),
+						file_hash: t.String(),
+						file_url: t.String(),
+						created_by: t.String(),
+						created_at: t.String(),
+					}),
+				),
+			}),
+		},
+	)
 	.use(auth)
 	.use(admin)
 	.use(blocking)

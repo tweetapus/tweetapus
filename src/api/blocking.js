@@ -1,5 +1,5 @@
 import { jwt } from "@elysiajs/jwt";
-import { Elysia } from "elysia";
+import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
 import ratelimit from "../helpers/ratelimit.js";
@@ -87,6 +87,18 @@ export default new Elysia({ prefix: "/blocking" })
       console.error("Block user error:", error);
       return { error: "Failed to block user" };
     }
+  }, {
+    detail: {
+      description: "Blocks a user",
+    },
+    body: t.Object({
+      userId: t.String(),
+    }),
+    response: t.Object({
+      success: t.Boolean(),
+      error: t.Optional(t.String()),
+      blocked: true,
+    }),
   })
   .post("/unblock", async ({ jwt, headers, body }) => {
     const authorization = headers.authorization;
@@ -114,29 +126,18 @@ export default new Elysia({ prefix: "/blocking" })
       console.error("Unblock user error:", error);
       return { error: "Failed to unblock user" };
     }
-  })
-  .get("/", async ({ jwt, headers, query }) => {
-    const authorization = headers.authorization;
-    if (!authorization) return { error: "Authentication required" };
-
-    try {
-      const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-      if (!payload) return { error: "Invalid token" };
-
-      const user = getUserByUsername.get(payload.username);
-      if (!user) return { error: "User not found" };
-
-      const { limit = 20 } = query;
-      const blockedUsers = getBlockedUsers.all(user.id, parseInt(limit));
-
-      return {
-        success: true,
-        users: blockedUsers,
-      };
-    } catch (error) {
-      console.error("Get blocked users error:", error);
-      return { error: "Failed to get blocked users" };
-    }
+  }, {
+    detail: {
+      description: "Unblocks a user",
+    },
+    body: t.Object({
+      userId: t.String(),
+    }),
+    response: t.Object({
+      success: t.Boolean(),
+      error: t.Optional(t.String()),
+      blocked: false,
+    }),
   })
   .get("/check/:userId", async ({ jwt, headers, params }) => {
     const authorization = headers.authorization;
@@ -160,4 +161,15 @@ export default new Elysia({ prefix: "/blocking" })
       console.error("Check block status error:", error);
       return { error: "Failed to check block status" };
     }
+  }, {
+    detail: {
+      description: "Checks if a user is blocked",
+    },
+    params: t.Object({
+      userId: t.String(),
+    }),
+    response: t.Object({
+      success: t.Boolean(),
+      blocked: t.Boolean(),
+    }),
   });
