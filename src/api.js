@@ -197,6 +197,7 @@ export default new Elysia({
 		{
 			detail: {
 				description: "Lists all custom emojis",
+				tags: ["Emojis"],
 			},
 			response: t.Object({
 				emojis: t.Array(

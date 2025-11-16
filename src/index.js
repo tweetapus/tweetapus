@@ -145,6 +145,7 @@ new Elysia()
 					{ name: "Timeline", description: "Timeline endpoints" },
 					{ name: "Tweet", description: "Tweet endpoints" },
 					{ name: "Upload", description: "Managing and viewing uploads" },
+					{ name: "Emojis", description: "Listing emojis" },
 				],
 				components: {
 					securitySchemes: {
@@ -157,8 +158,7 @@ new Elysia()
 				},
 			},
 			exclude: {
-				paths: ["/*", "/public/*", "/legal", "/admin", "/api/admin/*"],
-				tags: ["Admin"],
+				paths: ["/*", "/public/*", "/legal", "/admin"]
 			},
 		}),
 	)
