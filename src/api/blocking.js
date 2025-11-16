@@ -23,20 +23,11 @@ const removeBlock = db.prepare(`
   DELETE FROM blocks WHERE blocker_id = ? AND blocked_id = ?
 `);
 
-const getBlockedUsers = db.prepare(`
-  SELECT u.id, u.username, u.name, u.avatar, u.verified, b.created_at as blocked_at
-  FROM blocks b
-  JOIN users u ON b.blocked_id = u.id
-  WHERE b.blocker_id = ?
-  ORDER BY b.created_at DESC
-  LIMIT ?
-`);
-
 const isUserBlocked = db.prepare(`
   SELECT id FROM blocks WHERE blocker_id = ? AND blocked_id = ?
 `);
 
-export default new Elysia({ prefix: "/blocking" })
+export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
   .use(jwt({ name: "jwt", secret: JWT_SECRET }))
   .use(
     rateLimit({

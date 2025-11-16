@@ -193,7 +193,7 @@ const getTopReplyData = (tweetId, userId) => {
 	};
 };
 
-export default new Elysia({ prefix: "/search" })
+export default new Elysia({ prefix: "/search", tags: ["Search"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({

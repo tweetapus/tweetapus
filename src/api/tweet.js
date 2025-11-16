@@ -4,7 +4,6 @@ import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
 import { generateAIResponse } from "../helpers/ai-assistant.js";
 import ratelimit from "../helpers/ratelimit.js";
-import { extractAndSaveHashtags } from "./hashtags.js";
 import { addNotification } from "./notifications.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -476,7 +475,7 @@ const getCardDataForTweet = (tweetId) => {
 	};
 };
 
-export default new Elysia({ prefix: "/tweets" })
+export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({
@@ -754,10 +753,6 @@ export default new Elysia({ prefix: "/tweets" })
 				community_only || false,
 				postedAsUserId,
 			);
-
-			if (trimmedContent.length > 0) {
-				extractAndSaveHashtags(trimmedContent, tweetId);
-			}
 
 			if (reply_to) {
 				updatePostCounts.run(reply_to);
@@ -1860,8 +1855,6 @@ export default new Elysia({ prefix: "/tweets" })
 			db.query(
 				"UPDATE posts SET content = ?, edited_at = datetime('now', 'utc') WHERE id = ?",
 			).run(trimmedContent, id);
-
-			extractAndSaveHashtags(trimmedContent, id);
 
 			const updatedTweet = getTweetById.get(id);
 

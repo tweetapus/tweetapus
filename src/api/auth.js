@@ -64,7 +64,7 @@ function getPasskeyByCredId(credId) {
 	return db.query("SELECT * FROM passkeys WHERE cred_id = ?").get(credId);
 }
 
-export default new Elysia({ prefix: "/auth" })
+export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 	.use(
 		rateLimit({
 			duration: 10_000,

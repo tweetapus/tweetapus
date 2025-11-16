@@ -27,7 +27,7 @@ const getPost = db.prepare(`
   SELECT id, user_id, content FROM posts WHERE id = ?
 `);
 
-export default new Elysia({ prefix: "/reports" })
+export default new Elysia({ prefix: "/reports", tags: ["Reports"] })
   .use(jwt({ name: "jwt", secret: JWT_SECRET }))
   .use(
     rateLimit({

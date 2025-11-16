@@ -395,7 +395,7 @@ const getPollDataForPost = getPollDataForTweet;
 const getQuotedPostData = getQuotedTweetData;
 const getPostAttachments = getTweetAttachments;
 
-export default new Elysia({ prefix: "/profile" })
+export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({

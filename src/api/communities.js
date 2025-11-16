@@ -188,8 +188,8 @@ export default new Elysia()
 		}
 	})
 	.get("/communities", async ({ query }) => {
-		const limit = Math.min(parseInt(query.limit) || 20, 100);
-		const offset = parseInt(query.offset) || 0;
+		const limit = Math.min(parseInt(query.limit, 10) || 20, 100);
+		const offset = parseInt(query.offset, 10) || 0;
 
 		const communities = getCommunities.all(limit, offset);
 		return { communities };

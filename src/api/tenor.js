@@ -11,7 +11,7 @@ const getUserByUsername = db.query(
   "SELECT * FROM users WHERE LOWER(username) = LOWER(?)"
 );
 
-export default new Elysia({ prefix: "/tenor" })
+export default new Elysia({ prefix: "/tenor", tags: ["Tenor"] })
   .use(jwt({ name: "jwt", secret: JWT_SECRET }))
   .use(
     rateLimit({

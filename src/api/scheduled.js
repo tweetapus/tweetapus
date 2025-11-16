@@ -39,7 +39,7 @@ const updateScheduledPostStatus = db.query(`
   WHERE id = ?
 `);
 
-export default new Elysia({ prefix: "/scheduled" })
+export default new Elysia({ prefix: "/scheduled", tags: ["Scheduling"] })
   .use(jwt({ name: "jwt", secret: JWT_SECRET }))
   .use(
     rateLimit({

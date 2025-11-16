@@ -205,7 +205,7 @@ const getReplyMessage = db.query(`
   WHERE dm.id = ?
 `);
 
-export default new Elysia({ prefix: "/dm" })
+export default new Elysia({ prefix: "/dm", tags: ["DM"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.onBeforeHandle(getRateLimitMiddleware("dm"))
 

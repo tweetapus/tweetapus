@@ -303,7 +303,7 @@ const summarizeArticle = (article) => {
 	return `${stripped.slice(0, 257)}…`;
 };
 
-export default new Elysia({ prefix: "/timeline" })
+export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({

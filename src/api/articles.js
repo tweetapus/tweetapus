@@ -3,7 +3,6 @@ import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "../db.js";
 import ratelimit from "../helpers/ratelimit.js";
-import { extractAndSaveHashtags } from "./hashtags.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -123,7 +122,7 @@ const attachArticleExtras = (articles, attachmentsMap, userMap) => {
 	});
 };
 
-export default new Elysia({ prefix: "/articles" })
+export default new Elysia({ prefix: "/articles", tags: ["Articles"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({
@@ -209,8 +208,6 @@ export default new Elysia({ prefix: "/articles" })
 				cover.url,
 			);
 		}
-
-		extractAndSaveHashtags(markdown, articleId);
 
 		return {
 			success: true,

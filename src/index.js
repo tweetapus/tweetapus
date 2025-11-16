@@ -121,6 +121,30 @@ new Elysia()
 				telemetry: false,
 			},
 			documentation: {
+				tags: [
+					{ name: "Admin", description: "Admin endpoints" },
+					{ name: "Articles", description: "Article endpoints" },
+					{
+						name: "Auth",
+						description:
+							"Logging in, registering, and managing passkeys and accounts",
+					},
+					{ name: "Blocking", description: "Blocking & unblocking" },
+					{ name: "Bookmarks", description: "Bookmarks endpoints" },
+					{ name: "Communities", description: "Communities endpoints" },
+					{ name: "Delegates", description: "Delegates endpoints" },
+					{ name: "DM", description: "Sending and reading DMs" },
+					{ name: "Extensions", description: "Extensions endpoints" },
+					{ name: "Notifications", description: "Recieving and managing notifications" },
+					{ name: "Profile", description: "Profile endpoints" },
+					{ name: "Reports", description: "Reports endpoints" },
+					{ name: "Scheduling", description: "Managing and viewing scheduled tweets" },
+					{ name: "Search", description: "Search endpoints" },
+					{ name: "Tenor", description: "Tenor endpoints" },
+					{ name: "Timeline", description: "Timeline endpoints" },
+					{ name: "Tweet", description: "Tweet endpoints" },
+					{ name: "Upload", description: "Managing and viewing uploads" },
+				],
 				components: {
 					securitySchemes: {
 						bearerAuth: {
@@ -133,7 +157,7 @@ new Elysia()
 			},
 			exclude: {
 				paths: ["/*", "/public/*", "/legal", "/admin", "/api/admin/*"],
-				tags: ["admin"],
+				tags: ["Admin"],
 			},
 		}),
 	)
@@ -221,6 +245,7 @@ new Elysia()
 		{
 			detail: {
 				description: "Notifications & DMs stream",
+				tags: ["DM", "Notifications"],
 			},
 		},
 	)

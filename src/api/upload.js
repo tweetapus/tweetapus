@@ -35,7 +35,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 const MAX_COMPRESSED_SIZE = 10 * 1024 * 1024;
 
-export default new Elysia({ prefix: "/upload" })
+export default new Elysia({ prefix: "/upload", tags: ["Upload"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({

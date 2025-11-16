@@ -115,7 +115,7 @@ export function addNotification(
   return id;
 }
 
-export default new Elysia({ prefix: "/notifications" })
+export default new Elysia({ prefix: "/notifications", tags: ["Notifications"] })
   .get("/", ({ headers, query: { limit = 20, before } }) => {
     try {
       const token = headers.authorization?.replace("Bearer ", "");
@@ -126,8 +126,8 @@ export default new Elysia({ prefix: "/notifications" })
       if (!user) return { error: "User not found" };
 
       const notifications = before
-        ? getNotificationsBefore.all(user.id, before, parseInt(limit))
-        : getNotifications.all(user.id, parseInt(limit));
+        ? getNotificationsBefore.all(user.id, before, parseInt(limit, 10))
+        : getNotifications.all(user.id, parseInt(limit, 10));
 
       const enhancedNotifications = notifications.map((notification) => {
         const enhanced = { ...notification };

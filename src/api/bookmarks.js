@@ -186,7 +186,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 	};
 };
 
-export default new Elysia({ prefix: "/bookmarks" })
+export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({

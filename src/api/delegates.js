@@ -37,7 +37,6 @@ const checkIfAlreadyInvited = db.prepare(
 const getUserByUsername = db.prepare(
 	"SELECT * FROM users WHERE LOWER(username) = LOWER(?)",
 );
-const getUserById = db.prepare("SELECT * FROM users WHERE id = ?");
 
 const isRestrictedQuery = db.prepare(
 	"SELECT 1 FROM suspensions WHERE user_id = ? AND status = 'active' AND action = 'restrict' AND (expires_at IS NULL OR expires_at > datetime('now'))",
@@ -51,7 +50,7 @@ const isUserRestrictedById = (userId) => {
 	return !!res || !!f?.restricted;
 };
 
-export default new Elysia({ prefix: "/delegates" })
+export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
 		rateLimit({
