@@ -176,38 +176,7 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 		{
 			detail: {
 				description: "Returns current user information",
-			},
-			response: t.Object({
-				user: t.Object({
-					id: t.String(),
-					username: t.String(),
-					name: t.Optional(t.String()),
-					avatar: t.Optional(t.String()),
-					verified: t.Union([t.Boolean(), t.Number()]),
-					gold: t.Boolean(),
-					admin: t.Union([t.Boolean(), t.Number()]),
-					theme: t.Optional(t.String()),
-					accent_color: t.Optional(t.String()),
-					use_c_algorithm: t.Boolean(),
-					avatar_radius: t.Optional(t.Number()),
-					character_limit: t.Optional(t.Union([t.Number(), t.Null()])),
-					label_type: t.Optional(t.Union([t.String(), t.Null()])),
-					label_automated: t.Boolean(),
-					private: t.Boolean(),
-					has_password: t.Boolean(),
-				}),
-				passkeys: t.Array(
-					t.Object({
-						id: t.String(),
-						createdAt: t.String(),
-						lastUsed: t.String(),
-						transports: t.Array(t.String()),
-						backupEligible: t.Boolean(),
-						name: t.String(),
-					}),
-				),
-				restricted: t.Optional(t.Boolean()),
-			}),
+			}
 		},
 	)
 	.get(
@@ -513,7 +482,10 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 				});
 
 				if (!verification.verified || !verification.authenticationInfo) {
-					return { verified: false, error: "Authentication verification failed" };
+					return {
+						verified: false,
+						error: "Authentication verification failed",
+					};
 				}
 
 				const user = db
@@ -527,7 +499,10 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 					};
 				}
 
-				updatePasskeyCounter(credId, verification.authenticationInfo.newCounter);
+				updatePasskeyCounter(
+					credId,
+					verification.authenticationInfo.newCounter,
+				);
 
 				const token = await jwt.sign({
 					userId: user.id,

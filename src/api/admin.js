@@ -656,9 +656,7 @@ const requireAdmin = async ({ headers, jwt, set }) => {
 };
 
 export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
-	.use(
-		jwt({ name: "jwt", secret: process.env.JWT_SECRET }),
-	)
+	.use(jwt({ name: "jwt", secret: process.env.JWT_SECRET }))
 	.derive(requireAdmin)
 	.guard({
 		beforeHandle: async ({ user, set }) => {
@@ -669,88 +667,96 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		},
 	})
 
-	.get("/stats", async () => {
-		const userStats = adminQueries.getUserStats.get();
-		const postStats = adminQueries.getPostStats.get();
-		const suspensionStats = adminQueries.getSuspensionStats.get();
+	.get(
+		"/stats",
+		async () => {
+			const userStats = adminQueries.getUserStats.get();
+			const postStats = adminQueries.getPostStats.get();
+			const suspensionStats = adminQueries.getSuspensionStats.get();
 
-		const recentUsers = adminQueries.getRecentUsers.all();
-		const recentSuspensions = adminQueries.getRecentSuspensions.all();
+			const recentUsers = adminQueries.getRecentUsers.all();
+			const recentSuspensions = adminQueries.getRecentSuspensions.all();
 
-		return {
-			stats: {
-				users: userStats,
-				posts: postStats,
-				suspensions: suspensionStats,
-			},
-			recentActivity: {
-				users: recentUsers,
-				suspensions: recentSuspensions,
-			},
-		};
-	}, {
-		detail: {
-			description: "Gets admin statistics and recent activity"
+			return {
+				stats: {
+					users: userStats,
+					posts: postStats,
+					suspensions: suspensionStats,
+				},
+				recentActivity: {
+					users: recentUsers,
+					suspensions: recentSuspensions,
+				},
+			};
 		},
-		response: t.Object({
-			stats: t.Object({
-				users: t.Any(),
-				posts: t.Any(),
-				suspensions: t.Any()
+		{
+			detail: {
+				description: "Gets admin statistics and recent activity",
+			},
+			response: t.Object({
+				stats: t.Object({
+					users: t.Any(),
+					posts: t.Any(),
+					suspensions: t.Any(),
+				}),
+				recentActivity: t.Object({
+					users: t.Array(t.Any()),
+					suspensions: t.Array(t.Any()),
+				}),
 			}),
-			recentActivity: t.Object({
-				users: t.Array(t.Any()),
-				suspensions: t.Array(t.Any())
-			})
-		})
-	})
-
-	.get("/users", async ({ query }) => {
-		const page = parseInt(query.page) || 1;
-		const limit = parseInt(query.limit) || 20;
-		const search = query.search || "";
-		const offset = (page - 1) * limit;
-
-		const searchPattern = `%${search}%`;
-		const users = adminQueries.getUsersWithCounts.all(
-			searchPattern,
-			searchPattern,
-			limit,
-			offset,
-		);
-		const totalCount = adminQueries.getUsersCount.get(
-			searchPattern,
-			searchPattern,
-		);
-
-		return {
-			users,
-			pagination: {
-				page,
-				limit,
-				total: totalCount.count,
-				pages: Math.ceil(totalCount.count / limit),
-			},
-		};
-	}, {
-		detail: {
-			description: "Lists users with pagination and search"
 		},
-		query: t.Object({
-			page: t.Optional(t.Number()),
-			limit: t.Optional(t.Number()),
-			search: t.Optional(t.String())
-		}),
-		response: t.Object({
-			users: t.Array(t.Any()),
-			pagination: t.Object({
-				page: t.Number(),
-				limit: t.Number(),
-				total: t.Number(),
-				pages: t.Number()
-			})
-		})
-	})
+	)
+
+	.get(
+		"/users",
+		async ({ query }) => {
+			const page = parseInt(query.page) || 1;
+			const limit = parseInt(query.limit) || 20;
+			const search = query.search || "";
+			const offset = (page - 1) * limit;
+
+			const searchPattern = `%${search}%`;
+			const users = adminQueries.getUsersWithCounts.all(
+				searchPattern,
+				searchPattern,
+				limit,
+				offset,
+			);
+			const totalCount = adminQueries.getUsersCount.get(
+				searchPattern,
+				searchPattern,
+			);
+
+			return {
+				users,
+				pagination: {
+					page,
+					limit,
+					total: totalCount.count,
+					pages: Math.ceil(totalCount.count / limit),
+				},
+			};
+		},
+		{
+			detail: {
+				description: "Lists users with pagination and search",
+			},
+			query: t.Object({
+				page: t.Optional(t.Number()),
+				limit: t.Optional(t.Number()),
+				search: t.Optional(t.String()),
+			}),
+			response: t.Object({
+				users: t.Array(t.Any()),
+				pagination: t.Object({
+					page: t.Number(),
+					limit: t.Number(),
+					total: t.Number(),
+					pages: t.Number(),
+				}),
+			}),
+		},
+	)
 
 	.post(
 		"/users",
@@ -997,7 +1003,9 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				adminQueries.getAffiliateRequestsForTarget.all(params.id);
 			const outgoingAffiliateRequestsRaw =
 				adminQueries.getAffiliateRequestsForRequester.all(params.id);
-			const managedAffiliates = adminQueries.getAffiliatesForUser.all(params.id);
+			const managedAffiliates = adminQueries.getAffiliatesForUser.all(
+				params.id,
+			);
 
 			const incomingAffiliateRequests = incomingAffiliateRequestsRaw.map(
 				(request) => ({
@@ -1814,11 +1822,14 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.get(
 		"/suspensions",
 		async ({ query }) => {
-			const page = parseInt(query.page) || 1;
-			const limit = parseInt(query.limit) || 20;
+			const page = parseInt(query.page, 10) || 1;
+			const limit = parseInt(query.limit, 10) || 20;
 			const offset = (page - 1) * limit;
 
-			const suspensions = adminQueries.getSuspensionsWithUsers.all(limit, offset);
+			const suspensions = adminQueries.getSuspensionsWithUsers.all(
+				limit,
+				offset,
+			);
 			const totalCount = adminQueries.getSuspensionsCount.get();
 
 			return {
@@ -1856,6 +1867,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			return post;
 		},
 		{
+			/* im gonna make a simple js sdk javascript access and coffee true JavaScript K4L1 H4xx0r St1nkray i will continue the tweeta android app after the auth problems are fixed 🚀 idk what is causing the auth problems tho, can you take a look at the devtools network tab yes, GPT-5.1-Codex is doing things RN check your devtools network tap and see if any errors show up network tap🚀🎯 an error did appear but it disappeared make a video or check devtools im gonna make a video🚀🚀🚀🚀🚀 check discord*/
 			detail: {
 				description: "Gets details for a specific post",
 			},
@@ -2015,396 +2027,400 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		},
 	)
 
-	.patch("/users/:id", async ({ params, body, user: moderator, jwt }) => {
-		try {
-			const user = adminQueries.findUserById.get(params.id);
-			if (!user) {
-				return { error: "User not found" };
-			}
-
-			const trimmedUsername =
-				body.username !== undefined
-					? body.username === null
-						? ""
-						: String(body.username).trim()
-					: undefined;
-
-			if (trimmedUsername !== undefined) {
-				if (!trimmedUsername.length) {
-					return { error: "Username cannot be empty" };
+	.patch(
+		"/users/:id",
+		async ({ params, body, user: moderator, jwt }) => {
+			try {
+				const user = adminQueries.findUserById.get(params.id);
+				if (!user) {
+					return { error: "User not found" };
 				}
-				if (/\s/.test(trimmedUsername)) {
-					return { error: "Username cannot contain spaces" };
-				}
-				if (trimmedUsername !== user.username) {
-					const existingUser =
-						adminQueries.findUserByUsername.get(trimmedUsername);
-					if (existingUser && existingUser.id !== params.id) {
-						return { error: "Username already taken" };
+
+				const trimmedUsername =
+					body.username !== undefined
+						? body.username === null
+							? ""
+							: String(body.username).trim()
+						: undefined;
+
+				if (trimmedUsername !== undefined) {
+					if (!trimmedUsername.length) {
+						return { error: "Username cannot be empty" };
 					}
-				}
-			}
-
-			const trimmedName =
-				body.name !== undefined
-					? body.name === null
-						? ""
-						: String(body.name).trim()
-					: undefined;
-			const nameToPersist =
-				trimmedName !== undefined
-					? trimmedName.length
-						? trimmedName
-						: null
-					: user.name;
-
-			const trimmedBio =
-				body.bio !== undefined
-					? body.bio === null
-						? ""
-						: String(body.bio).trim()
-					: undefined;
-			const bioToPersist =
-				trimmedBio !== undefined
-					? trimmedBio.length
-						? trimmedBio
-						: null
-					: user.bio;
-
-			const changes = {};
-			const newUsername =
-				trimmedUsername !== undefined ? trimmedUsername : user.username;
-			if (newUsername !== user.username) {
-				changes.username = { old: user.username, new: newUsername };
-			}
-			if (trimmedName !== undefined && nameToPersist !== user.name) {
-				changes.name = { old: user.name, new: nameToPersist };
-			}
-			if (trimmedBio !== undefined && bioToPersist !== user.bio) {
-				changes.bio = {
-					old: user.bio?.substring(0, 50),
-					new: bioToPersist?.substring(0, 50),
-				};
-			}
-
-			let newVerified =
-				body.verified !== undefined
-					? body.verified
-						? 1
-						: 0
-					: user.verified
-						? 1
-						: 0;
-			let newGold =
-				body.gold !== undefined ? (body.gold ? 1 : 0) : user.gold ? 1 : 0;
-			if (newGold) newVerified = 0;
-			if (newVerified) newGold = 0;
-			if (body.verified !== undefined && body.verified !== user.verified) {
-				changes.verified = { old: user.verified, new: body.verified };
-			}
-			if (body.gold !== undefined && body.gold !== user.gold) {
-				changes.gold = { old: user.gold, new: body.gold };
-			}
-
-			const newAdminFlag =
-				body.admin !== undefined ? (body.admin ? 1 : 0) : user.admin ? 1 : 0;
-			if (body.admin !== undefined && body.admin !== user.admin) {
-				changes.admin = { old: user.admin, new: body.admin };
-			}
-
-			let affiliateWith = user.affiliate_with;
-			const newAffiliateFlag =
-				body.affiliate !== undefined
-					? body.affiliate
-						? 1
-						: 0
-					: user.affiliate
-						? 1
-						: 0;
-			if (body.affiliate !== undefined && body.affiliate !== user.affiliate) {
-				changes.affiliate = { old: user.affiliate, new: body.affiliate };
-			}
-
-			const affiliateUsername =
-				body.affiliate_with_username !== undefined
-					? body.affiliate_with_username === null
-						? ""
-						: String(body.affiliate_with_username).trim()
-					: undefined;
-
-			if (newAffiliateFlag && affiliateUsername) {
-				const affiliateUser = db
-					.query("SELECT id FROM users WHERE LOWER(username) = LOWER(?)")
-					.get(affiliateUsername);
-				if (affiliateUser) {
-					affiliateWith = affiliateUser.id;
-					if (affiliateWith !== user.affiliate_with) {
-						changes.affiliate_with = {
-							old: user.affiliate_with,
-							new: affiliateWith,
-						};
+					if (/\s/.test(trimmedUsername)) {
+						return { error: "Username cannot contain spaces" };
 					}
-				}
-			} else if (!newAffiliateFlag) {
-				if (user.affiliate_with !== null) {
-					changes.affiliate_with = { old: user.affiliate_with, new: null };
-				}
-				affiliateWith = null;
-			}
-
-			if (body.ghost_followers !== undefined) {
-				const currentGhostFollowers = db
-					.query(
-						"SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ?",
-					)
-					.get(params.id).count;
-
-				if (body.ghost_followers !== currentGhostFollowers) {
-					const diff = body.ghost_followers - currentGhostFollowers;
-
-					if (diff > 0) {
-						const values = [];
-						for (let i = 0; i < diff; i++) {
-							values.push(
-								`('${Bun.randomUUIDv7()}', 'follower', '${params.id}')`,
-							);
+					if (trimmedUsername !== user.username) {
+						const existingUser =
+							adminQueries.findUserByUsername.get(trimmedUsername);
+						if (existingUser && existingUser.id !== params.id) {
+							return { error: "Username already taken" };
 						}
-						if (values.length > 0) {
-							db.exec(
-								`INSERT INTO ghost_follows (id, follower_type, target_id) VALUES ${values.join(
-									",",
-								)}`,
-							);
-						}
-					} else if (diff < 0) {
-						const toRemove = Math.abs(diff);
-						db.exec(
-							`DELETE FROM ghost_follows WHERE id IN (SELECT id FROM ghost_follows WHERE follower_type = 'follower' AND target_id = '${params.id}' LIMIT ${toRemove})`,
-						);
-					}
-
-					changes.ghost_followers = {
-						old: currentGhostFollowers,
-						new: body.ghost_followers,
-					};
-				}
-			}
-
-			if (body.ghost_following !== undefined) {
-				const currentGhostFollowing = db
-					.query(
-						"SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'following' AND target_id = ?",
-					)
-					.get(params.id).count;
-
-				if (body.ghost_following !== currentGhostFollowing) {
-					const diff = body.ghost_following - currentGhostFollowing;
-
-					if (diff > 0) {
-						const values = [];
-						for (let i = 0; i < diff; i++) {
-							values.push(
-								`('${Bun.randomUUIDv7()}', 'following', '${params.id}')`,
-							);
-						}
-						if (values.length > 0) {
-							db.exec(
-								`INSERT INTO ghost_follows (id, follower_type, target_id) VALUES ${values.join(
-									",",
-								)}`,
-							);
-						}
-					} else if (diff < 0) {
-						const toRemove = Math.abs(diff);
-						db.exec(
-							`DELETE FROM ghost_follows WHERE id IN (SELECT id FROM ghost_follows WHERE follower_type = 'following' AND target_id = '${params.id}' LIMIT ${toRemove})`,
-						);
-					}
-
-					changes.ghost_following = {
-						old: currentGhostFollowing,
-						new: body.ghost_following,
-					};
-				}
-			}
-
-			const newCharacterLimit =
-				body.character_limit !== undefined
-					? body.character_limit
-					: user.character_limit;
-			if (body.character_limit !== undefined) {
-				if (newCharacterLimit !== user.character_limit) {
-					changes.character_limit = {
-						old: user.character_limit,
-						new: newCharacterLimit,
-					};
-				}
-			}
-
-			if (
-				body.force_follow_usernames &&
-				Array.isArray(body.force_follow_usernames)
-			) {
-				const followedUsers = [];
-				const pendingUsers = [];
-				const failedUsers = [];
-
-				for (const usernameRaw of body.force_follow_usernames) {
-					const username =
-						typeof usernameRaw === "string" ? usernameRaw.trim() : "";
-					if (!username) continue;
-
-					const targetUser = db
-						.query("SELECT id FROM users WHERE LOWER(username) = LOWER(?)")
-						.get(username);
-
-					if (!targetUser) {
-						const forcedId = Bun.randomUUIDv7();
-						db.query(
-							"INSERT INTO forced_follows (id, follower_id, following_id) VALUES (?, ?, ?)",
-						).run(forcedId, params.id, username);
-						pendingUsers.push(username);
-						continue;
-					}
-
-					if (targetUser.id === params.id) {
-						failedUsers.push(`${username} (cannot follow self)`);
-						continue;
-					}
-
-					const blocked = db
-						.query(
-							"SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)",
-						)
-						.get(params.id, targetUser.id, targetUser.id, params.id);
-
-					if (blocked) {
-						failedUsers.push(`${username} (blocked)`);
-						continue;
-					}
-
-					const existing = db
-						.query(
-							"SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?",
-						)
-						.get(targetUser.id, params.id);
-
-					if (!existing) {
-						const followId = Bun.randomUUIDv7();
-						db.query(
-							"INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)",
-						).run(followId, targetUser.id, params.id);
-						followedUsers.push(username);
 					}
 				}
 
-				if (followedUsers.length > 0 || pendingUsers.length > 0) {
-					changes.forced_follows = {
-						added: followedUsers.length > 0 ? followedUsers : undefined,
-						pending: pendingUsers.length > 0 ? pendingUsers : undefined,
-						failed: failedUsers.length > 0 ? failedUsers : undefined,
-					};
-				}
-			}
+				const trimmedName =
+					body.name !== undefined
+						? body.name === null
+							? ""
+							: String(body.name).trim()
+						: undefined;
+				const nameToPersist =
+					trimmedName !== undefined
+						? trimmedName.length
+							? trimmedName
+							: null
+						: user.name;
 
-			let newUserCreatedAt = user.created_at;
-			if (body.created_at !== undefined) {
-				try {
-					const parsed = new Date(body.created_at);
-					if (Number.isNaN(parsed.getTime())) throw new Error("Invalid date");
-					newUserCreatedAt = parsed.toISOString();
-					if (newUserCreatedAt !== user.created_at) {
-						changes.created_at = {
-							old: user.created_at,
-							new: newUserCreatedAt,
-						};
-					}
-				} catch (_err) {
-					return { error: "Invalid created_at value" };
-				}
-			}
+				const trimmedBio =
+					body.bio !== undefined
+						? body.bio === null
+							? ""
+							: String(body.bio).trim()
+						: undefined;
+				const bioToPersist =
+					trimmedBio !== undefined
+						? trimmedBio.length
+							? trimmedBio
+							: null
+						: user.bio;
 
-			adminQueries.updateUser.run(
-				newUsername,
-				nameToPersist,
-				bioToPersist,
-				newVerified,
-				newAdminFlag,
-				newGold,
-				user.follower_count || 0,
-				user.following_count || 0,
-				newCharacterLimit,
-				newUserCreatedAt,
-				params.id,
-			);
-
-			db.query(
-				"UPDATE users SET affiliate = ?, affiliate_with = ? WHERE id = ?",
-			).run(newAffiliateFlag, affiliateWith, params.id);
-
-			logModerationAction(
-				moderator.id,
-				"edit_user_profile",
-				"user",
-				params.id,
-				{ username: user.username, changes },
-			);
-
-			const response = { success: true };
-
-			if (moderator.id === params.id) {
-				response.updatedUser = {
-					username: newUsername,
-					name: nameToPersist,
-					bio: bioToPersist,
-					verified: !!newVerified,
-					gold: !!newGold,
-					admin: !!newAdminFlag,
-					affiliate: !!newAffiliateFlag,
-					affiliate_with: affiliateWith,
-					character_limit: newCharacterLimit,
-				};
-
+				const changes = {};
+				const newUsername =
+					trimmedUsername !== undefined ? trimmedUsername : user.username;
 				if (newUsername !== user.username) {
-					const issuedAt = Math.floor(Date.now() / 1000);
-					response.token = await jwt.sign({
-						userId: params.id,
-						username: newUsername,
-						iat: issuedAt,
-						exp: issuedAt + 7 * 24 * 60 * 60,
-					});
+					changes.username = { old: user.username, new: newUsername };
 				}
-			}
+				if (trimmedName !== undefined && nameToPersist !== user.name) {
+					changes.name = { old: user.name, new: nameToPersist };
+				}
+				if (trimmedBio !== undefined && bioToPersist !== user.bio) {
+					changes.bio = {
+						old: user.bio?.substring(0, 50),
+						new: bioToPersist?.substring(0, 50),
+					};
+				}
 
-			return response;
-		} catch (err) {
-			console.error("Error in PATCH /admin/users/:id:", err);
-			return { error: "Internal server error" };
-		}
-	}, {
-		detail: {
-			description: "Updates a user's profile and settings",
+				let newVerified =
+					body.verified !== undefined
+						? body.verified
+							? 1
+							: 0
+						: user.verified
+							? 1
+							: 0;
+				let newGold =
+					body.gold !== undefined ? (body.gold ? 1 : 0) : user.gold ? 1 : 0;
+				if (newGold) newVerified = 0;
+				if (newVerified) newGold = 0;
+				if (body.verified !== undefined && body.verified !== user.verified) {
+					changes.verified = { old: user.verified, new: body.verified };
+				}
+				if (body.gold !== undefined && body.gold !== user.gold) {
+					changes.gold = { old: user.gold, new: body.gold };
+				}
+
+				const newAdminFlag =
+					body.admin !== undefined ? (body.admin ? 1 : 0) : user.admin ? 1 : 0;
+				if (body.admin !== undefined && body.admin !== user.admin) {
+					changes.admin = { old: user.admin, new: body.admin };
+				}
+
+				let affiliateWith = user.affiliate_with;
+				const newAffiliateFlag =
+					body.affiliate !== undefined
+						? body.affiliate
+							? 1
+							: 0
+						: user.affiliate
+							? 1
+							: 0;
+				if (body.affiliate !== undefined && body.affiliate !== user.affiliate) {
+					changes.affiliate = { old: user.affiliate, new: body.affiliate };
+				}
+
+				const affiliateUsername =
+					body.affiliate_with_username !== undefined
+						? body.affiliate_with_username === null
+							? ""
+							: String(body.affiliate_with_username).trim()
+						: undefined;
+
+				if (newAffiliateFlag && affiliateUsername) {
+					const affiliateUser = db
+						.query("SELECT id FROM users WHERE LOWER(username) = LOWER(?)")
+						.get(affiliateUsername);
+					if (affiliateUser) {
+						affiliateWith = affiliateUser.id;
+						if (affiliateWith !== user.affiliate_with) {
+							changes.affiliate_with = {
+								old: user.affiliate_with,
+								new: affiliateWith,
+							};
+						}
+					}
+				} else if (!newAffiliateFlag) {
+					if (user.affiliate_with !== null) {
+						changes.affiliate_with = { old: user.affiliate_with, new: null };
+					}
+					affiliateWith = null;
+				}
+
+				if (body.ghost_followers !== undefined) {
+					const currentGhostFollowers = db
+						.query(
+							"SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'follower' AND target_id = ?",
+						)
+						.get(params.id).count;
+
+					if (body.ghost_followers !== currentGhostFollowers) {
+						const diff = body.ghost_followers - currentGhostFollowers;
+
+						if (diff > 0) {
+							const values = [];
+							for (let i = 0; i < diff; i++) {
+								values.push(
+									`('${Bun.randomUUIDv7()}', 'follower', '${params.id}')`,
+								);
+							}
+							if (values.length > 0) {
+								db.exec(
+									`INSERT INTO ghost_follows (id, follower_type, target_id) VALUES ${values.join(
+										",",
+									)}`,
+								);
+							}
+						} else if (diff < 0) {
+							const toRemove = Math.abs(diff);
+							db.exec(
+								`DELETE FROM ghost_follows WHERE id IN (SELECT id FROM ghost_follows WHERE follower_type = 'follower' AND target_id = '${params.id}' LIMIT ${toRemove})`,
+							);
+						}
+
+						changes.ghost_followers = {
+							old: currentGhostFollowers,
+							new: body.ghost_followers,
+						};
+					}
+				}
+
+				if (body.ghost_following !== undefined) {
+					const currentGhostFollowing = db
+						.query(
+							"SELECT COUNT(*) as count FROM ghost_follows WHERE follower_type = 'following' AND target_id = ?",
+						)
+						.get(params.id).count;
+
+					if (body.ghost_following !== currentGhostFollowing) {
+						const diff = body.ghost_following - currentGhostFollowing;
+
+						if (diff > 0) {
+							const values = [];
+							for (let i = 0; i < diff; i++) {
+								values.push(
+									`('${Bun.randomUUIDv7()}', 'following', '${params.id}')`,
+								);
+							}
+							if (values.length > 0) {
+								db.exec(
+									`INSERT INTO ghost_follows (id, follower_type, target_id) VALUES ${values.join(
+										",",
+									)}`,
+								);
+							}
+						} else if (diff < 0) {
+							const toRemove = Math.abs(diff);
+							db.exec(
+								`DELETE FROM ghost_follows WHERE id IN (SELECT id FROM ghost_follows WHERE follower_type = 'following' AND target_id = '${params.id}' LIMIT ${toRemove})`,
+							);
+						}
+
+						changes.ghost_following = {
+							old: currentGhostFollowing,
+							new: body.ghost_following,
+						};
+					}
+				}
+
+				const newCharacterLimit =
+					body.character_limit !== undefined
+						? body.character_limit
+						: user.character_limit;
+				if (body.character_limit !== undefined) {
+					if (newCharacterLimit !== user.character_limit) {
+						changes.character_limit = {
+							old: user.character_limit,
+							new: newCharacterLimit,
+						};
+					}
+				}
+
+				if (
+					body.force_follow_usernames &&
+					Array.isArray(body.force_follow_usernames)
+				) {
+					const followedUsers = [];
+					const pendingUsers = [];
+					const failedUsers = [];
+
+					for (const usernameRaw of body.force_follow_usernames) {
+						const username =
+							typeof usernameRaw === "string" ? usernameRaw.trim() : "";
+						if (!username) continue;
+
+						const targetUser = db
+							.query("SELECT id FROM users WHERE LOWER(username) = LOWER(?)")
+							.get(username);
+
+						if (!targetUser) {
+							const forcedId = Bun.randomUUIDv7();
+							db.query(
+								"INSERT INTO forced_follows (id, follower_id, following_id) VALUES (?, ?, ?)",
+							).run(forcedId, params.id, username);
+							pendingUsers.push(username);
+							continue;
+						}
+
+						if (targetUser.id === params.id) {
+							failedUsers.push(`${username} (cannot follow self)`);
+							continue;
+						}
+
+						const blocked = db
+							.query(
+								"SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?)",
+							)
+							.get(params.id, targetUser.id, targetUser.id, params.id);
+
+						if (blocked) {
+							failedUsers.push(`${username} (blocked)`);
+							continue;
+						}
+
+						const existing = db
+							.query(
+								"SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?",
+							)
+							.get(targetUser.id, params.id);
+
+						if (!existing) {
+							const followId = Bun.randomUUIDv7();
+							db.query(
+								"INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)",
+							).run(followId, targetUser.id, params.id);
+							followedUsers.push(username);
+						}
+					}
+
+					if (followedUsers.length > 0 || pendingUsers.length > 0) {
+						changes.forced_follows = {
+							added: followedUsers.length > 0 ? followedUsers : undefined,
+							pending: pendingUsers.length > 0 ? pendingUsers : undefined,
+							failed: failedUsers.length > 0 ? failedUsers : undefined,
+						};
+					}
+				}
+
+				let newUserCreatedAt = user.created_at;
+				if (body.created_at !== undefined) {
+					try {
+						const parsed = new Date(body.created_at);
+						if (Number.isNaN(parsed.getTime())) throw new Error("Invalid date");
+						newUserCreatedAt = parsed.toISOString();
+						if (newUserCreatedAt !== user.created_at) {
+							changes.created_at = {
+								old: user.created_at,
+								new: newUserCreatedAt,
+							};
+						}
+					} catch (_err) {
+						return { error: "Invalid created_at value" };
+					}
+				}
+
+				adminQueries.updateUser.run(
+					newUsername,
+					nameToPersist,
+					bioToPersist,
+					newVerified,
+					newAdminFlag,
+					newGold,
+					user.follower_count || 0,
+					user.following_count || 0,
+					newCharacterLimit,
+					newUserCreatedAt,
+					params.id,
+				);
+
+				db.query(
+					"UPDATE users SET affiliate = ?, affiliate_with = ? WHERE id = ?",
+				).run(newAffiliateFlag, affiliateWith, params.id);
+
+				logModerationAction(
+					moderator.id,
+					"edit_user_profile",
+					"user",
+					params.id,
+					{ username: user.username, changes },
+				);
+
+				const response = { success: true };
+
+				if (moderator.id === params.id) {
+					response.updatedUser = {
+						username: newUsername,
+						name: nameToPersist,
+						bio: bioToPersist,
+						verified: !!newVerified,
+						gold: !!newGold,
+						admin: !!newAdminFlag,
+						affiliate: !!newAffiliateFlag,
+						affiliate_with: affiliateWith,
+						character_limit: newCharacterLimit,
+					};
+
+					if (newUsername !== user.username) {
+						const issuedAt = Math.floor(Date.now() / 1000);
+						response.token = await jwt.sign({
+							userId: params.id,
+							username: newUsername,
+							iat: issuedAt,
+							exp: issuedAt + 7 * 24 * 60 * 60,
+						});
+					}
+				}
+
+				return response;
+			} catch (err) {
+				console.error("Error in PATCH /admin/users/:id:", err);
+				return { error: "Internal server error" };
+			}
 		},
-		params: t.Object({
-			id: t.String(),
-		}),
-		body: t.Object({
-			username: t.Optional(t.String()),
-			name: t.Optional(t.String()),
-			bio: t.Optional(t.String()),
-			verified: t.Optional(t.Boolean()),
-			gold: t.Optional(t.Boolean()),
-			admin: t.Optional(t.Boolean()),
-			affiliate: t.Optional(t.Boolean()),
-			affiliate_with_username: t.Optional(t.String()),
-			ghost_followers: t.Optional(t.Number()),
-			ghost_following: t.Optional(t.Number()),
-			character_limit: t.Optional(t.Number()),
-			created_at: t.Optional(t.String()),
-			force_follow_usernames: t.Optional(t.Array(t.String())),
-		}),
-		response: t.Any(),
-	})
+		{
+			detail: {
+				description: "Updates a user's profile and settings",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			body: t.Object({
+				username: t.Optional(t.String()),
+				name: t.Optional(t.String()),
+				bio: t.Optional(t.String()),
+				verified: t.Optional(t.Boolean()),
+				gold: t.Optional(t.Boolean()),
+				admin: t.Optional(t.Boolean()),
+				affiliate: t.Optional(t.Boolean()),
+				affiliate_with_username: t.Optional(t.String()),
+				ghost_followers: t.Optional(t.Number()),
+				ghost_following: t.Optional(t.Number()),
+				character_limit: t.Optional(t.Number()),
+				created_at: t.Optional(t.String()),
+				force_follow_usernames: t.Optional(t.Array(t.String())),
+			}),
+			response: t.Any(),
+		},
+	)
 
 	.post(
 		"/impersonate/:id",
@@ -2572,7 +2588,9 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			).count;
 
 			for (const message of messages) {
-				message.attachments = adminQueries.getMessageAttachments.all(message.id);
+				message.attachments = adminQueries.getMessageAttachments.all(
+					message.id,
+				);
 			}
 
 			return {
@@ -2958,87 +2976,91 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		},
 	)
 
-	.post("/fact-check/:postId", async ({ params, body, user }) => {
-		const { note, severity = "warning" } = body;
-		if (!note || note.trim().length === 0) {
-			return { error: "Note is required" };
-		}
+	.post(
+		"/fact-check/:postId",
+		async ({ params, body, user }) => {
+			const { note, severity = "warning" } = body;
+			if (!note || note.trim().length === 0) {
+				return { error: "Note is required" };
+			}
 
-		const post = db
-			.query("SELECT * FROM posts WHERE id = ?")
-			.get(params.postId);
-		if (!post) return { error: "Post not found" };
+			const post = db
+				.query("SELECT * FROM posts WHERE id = ?")
+				.get(params.postId);
+			if (!post) return { error: "Post not found" };
 
-		const existing = adminQueries.getFactCheck.get(params.postId);
-		if (existing) {
-			return { error: "Fact-check already exists for this post" };
-		}
+			const existing = adminQueries.getFactCheck.get(params.postId);
+			if (existing) {
+				return { error: "Fact-check already exists for this post" };
+			}
 
-		const id = Bun.randomUUIDv7();
-		adminQueries.createFactCheck.run(
-			id,
-			params.postId,
-			user.id,
-			note.trim(),
-			severity,
-		);
+			const id = Bun.randomUUIDv7();
+			adminQueries.createFactCheck.run(
+				id,
+				params.postId,
+				user.id,
+				note.trim(),
+				severity,
+			);
 
-		const interactedUsers = adminQueries.getPostInteractions.all(
-			params.postId,
-			params.postId,
-			params.postId,
-			params.postId,
-			params.postId,
-		);
+			const interactedUsers = adminQueries.getPostInteractions.all(
+				params.postId,
+				params.postId,
+				params.postId,
+				params.postId,
+				params.postId,
+			);
 
-		for (const { user_id } of interactedUsers) {
-			if (user_id !== post.user_id && user_id !== user.id) {
+			for (const { user_id } of interactedUsers) {
+				if (user_id !== post.user_id && user_id !== user.id) {
+					addNotification(
+						user_id,
+						"fact_check",
+						`A tweet you have interacted with has been marked as misleading`,
+						params.postId,
+						undefined,
+						undefined,
+						undefined,
+					);
+				}
+			}
+
+			if (post.user_id !== user.id) {
 				addNotification(
-					user_id,
+					post.user_id,
 					"fact_check",
-					`A tweet you have interacted with has been marked as misleading`,
+					`Your post has been marked as misleading`,
 					params.postId,
 					undefined,
 					undefined,
 					undefined,
 				);
 			}
-		}
 
-		if (post.user_id !== user.id) {
-			addNotification(
-				post.user_id,
-				"fact_check",
-				`Your post has been marked as misleading`,
-				params.postId,
-				undefined,
-				undefined,
-				undefined,
-			);
-		}
+			logModerationAction(user.id, "add_fact_check", "post", params.postId, {
+				note,
+				severity,
+			});
 
-		logModerationAction(user.id, "add_fact_check", "post", params.postId, {
-			note,
-			severity,
-		});
-
-		return {
-			success: true,
-			factCheck: { id, post_id: params.postId, note, severity },
-		};
-	}, {
-		detail: {
-			description: "Adds a fact-check warning to a post",
+			return {
+				success: true,
+				factCheck: { id, post_id: params.postId, note, severity },
+			};
 		},
-		params: t.Object({
-			postId: t.String(),
-		}),
-		body: t.Object({
-			note: t.String(),
-			severity: t.Optional(t.String()),
-		}),
-		response: t.Any(),
-	})
+		{
+			detail: {
+				description: "Adds a fact-check warning to a post",
+			},
+			params: t.Object({
+				postId: t.String(),
+			}),
+			body: t.Object({
+				note: t.String(),
+				severity: t.Optional(t.String()),
+			}),
+			response: t.Any(),
+		},
+	)
 
 	.delete(
 		"/fact-check/:id",

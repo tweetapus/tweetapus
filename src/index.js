@@ -52,11 +52,12 @@ export function broadcastToUser(userId, message) {
 					userId,
 					error?.message || error,
 				);
-				try {
-					if (client.keepAlive) clearInterval(client.keepAlive);
-				} catch {}
+				if (client.keepAlive) clearInterval(client.keepAlive);
 				sseClients.delete(client);
 			}
+		}
+		if (!sseClients.size) {
+			sseConnections.delete(userId);
 		}
 	}
 }
@@ -226,6 +227,7 @@ new Elysia()
 
 			sseRateLimits.set(userId, now);
 
+			let streamClient;
 			const stream = new ReadableStream({
 				start(controller) {
 					controller.enqueue(`:ok\n\n`);
@@ -233,8 +235,8 @@ new Elysia()
 					if (!sseConnections.has(userId)) {
 						sseConnections.set(userId, new Set());
 					}
-					const client = { controller };
-					sseConnections.get(userId).add(client);
+					streamClient = { controller };
+					sseConnections.get(userId).add(streamClient);
 
 					const notifResult = getUnreadNotificationsCount.get(userId);
 					const dmResult = getUnreadDMCount.get(userId, userId);
@@ -250,42 +252,31 @@ new Elysia()
 					const keepAlive = setInterval(() => {
 						try {
 							controller.enqueue(`:ping\n\n`);
-						} catch (err) {
-							// If enqueue throws, clear this interval and remove client
-							try {
-								if (client.keepAlive) clearInterval(client.keepAlive);
-							} catch {}
+						} catch {
+							if (streamClient?.keepAlive)
+								clearInterval(streamClient.keepAlive);
 							const clients = sseConnections.get(userId);
-							if (clients) clients.delete(client);
+							if (clients) {
+								clients.delete(streamClient);
+								if (!clients.size) sseConnections.delete(userId);
+							}
+							streamClient = null;
 						}
 					}, 30000);
 
-					client.keepAlive = keepAlive;
-					// store client on the controller so cancel can find it
-					controller._sseClient = client;
+					streamClient.keepAlive = keepAlive;
 				},
 				cancel() {
-					// When this stream's cancel is called, only remove this specific client
-					try {
-						const client = this?._controller?._sseClient; // fallback below if unavailable
-					} catch {}
+					const client = streamClient;
+					if (!client) return;
 
-					// We can't reliably access `controller` from here, but we assigned _sseClient to it above.
-					// Let's iterate clients and remove the one whose controller is closed (best-effort cleanup).
-					if (!sseConnections.has(userId)) return;
 					const clients = sseConnections.get(userId);
-					for (const client of Array.from(clients)) {
-						try {
-							// detect closed state by attempting an enqueue (best-effort), or rely on keepAlive cleared
-							// If keepAlive is set and controller is closed, clear it and remove the client
-							if (client.keepAlive) clearInterval(client.keepAlive);
-						} catch (err) {}
-						// remove the client from the set
-						clients.delete(client);
-					}
+					if (!clients) return;
 
-					// If set becomes empty, delete the user entry
+					if (client.keepAlive) clearInterval(client.keepAlive);
+					clients.delete(client);
 					if (!clients.size) sseConnections.delete(userId);
+					streamClient = null;
 				},
 			});
 

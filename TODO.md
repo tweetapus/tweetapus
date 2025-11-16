@@ -5,14 +5,11 @@
 
 **OTHER:**
 
-- i cant close the edit community modal
-
 - tweetapus circles like twiter circle
 
 - keyboard shortcuts
 - db indexes for speed
 - switching between accounts
-- delegates
 
 **Joke:**
 
