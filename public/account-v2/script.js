@@ -272,7 +272,7 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 
 			const verifyData = await verifyResponse.json();
 
-			if (verifyData.verified && verifyData.token) {
+			if (verifyData.token) {
 				localStorage.setItem("authToken", verifyData.token);
 
 				try {

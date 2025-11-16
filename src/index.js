@@ -120,6 +120,17 @@ new Elysia()
 				showSidebar: true,
 				telemetry: false,
 			},
+			documentation: {
+				components: {
+					securitySchemes: {
+						bearerAuth: {
+							type: "http",
+							scheme: "bearer",
+							bearerFormat: "JWT",
+						},
+					},
+				},
+			},
 			exclude: {
 				paths: ["/*", "/public/*", "/legal", "/admin", "/api/admin/*"],
 				tags: ["admin"],
@@ -209,7 +220,7 @@ new Elysia()
 		},
 		{
 			detail: {
-				description: "Notifications & DMs stream"
+				description: "Notifications & DMs stream",
 			},
 		},
 	)
