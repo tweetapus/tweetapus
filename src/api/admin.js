@@ -926,99 +926,132 @@ export default new Elysia({ prefix: "/admin", tags: ["admin"] })
 
 			return { success: true };
 		},
+		{
+			detail: {
+				description: "Approves an affiliate request",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
 	)
 
-	.post("/affiliate-requests/:id/deny", async ({ params, user: moderator }) => {
-		const request = adminQueries.getAffiliateRequestById.get(params.id);
-		if (!request) {
-			return { error: "Affiliate request not found" };
-		}
-
-		adminQueries.updateAffiliateRequestStatus.run("denied", params.id);
-
-		const requester = adminQueries.findUserById.get(request.requester_id);
-		const targetUser = adminQueries.findUserById.get(request.target_id);
-
-		logModerationAction(
-			moderator.id,
-			"force_reject_affiliate",
-			"affiliate_request",
-			params.id,
-			{
-				requester: requester?.username,
-				target: targetUser?.username,
-			},
-		);
-
-		return { success: true };
-	})
-
-	.get("/users/:id", async ({ params }) => {
-		const user = adminQueries.getUserWithDetails.get(params.id);
-		if (!user) {
-			return { error: "User not found" };
-		}
-
-		if (user.affiliate && user.affiliate_with) {
-			const affiliateUser = db
-				.query("SELECT username FROM users WHERE id = ?")
-				.get(user.affiliate_with);
-			if (affiliateUser) {
-				user.affiliate_with_username = affiliateUser.username;
+	.post(
+		"/affiliate-requests/:id/deny",
+		async ({ params, user: moderator }) => {
+			const request = adminQueries.getAffiliateRequestById.get(params.id);
+			if (!request) {
+				return { error: "Affiliate request not found" };
 			}
-		}
 
-		const recentPosts = adminQueries.getUserRecentPosts.all(params.id);
-		const suspensions = adminQueries.getUserSuspensions.all(params.id);
-		const incomingAffiliateRequestsRaw =
-			adminQueries.getAffiliateRequestsForTarget.all(params.id);
-		const outgoingAffiliateRequestsRaw =
-			adminQueries.getAffiliateRequestsForRequester.all(params.id);
-		const managedAffiliates = adminQueries.getAffiliatesForUser.all(params.id);
+			adminQueries.updateAffiliateRequestStatus.run("denied", params.id);
 
-		const incomingAffiliateRequests = incomingAffiliateRequestsRaw.map(
-			(request) => ({
-				id: request.id,
-				status: request.status,
-				created_at: request.created_at,
-				responded_at: request.responded_at,
-				requester_id: request.requester_id,
-				requester_username: request.requester_username,
-				requester_name: request.requester_name,
-				requester_avatar: request.requester_avatar,
-				requester_verified: request.requester_verified,
-				requester_gold: request.requester_gold,
-				target_id: request.target_id,
-			}),
-		);
+			const requester = adminQueries.findUserById.get(request.requester_id);
+			const targetUser = adminQueries.findUserById.get(request.target_id);
 
-		const outgoingAffiliateRequests = outgoingAffiliateRequestsRaw.map(
-			(request) => ({
-				id: request.id,
-				status: request.status,
-				created_at: request.created_at,
-				responded_at: request.responded_at,
-				requester_id: request.requester_id,
-				target_id: request.target_id,
-				target_username: request.target_username,
-				target_name: request.target_name,
-				target_avatar: request.target_avatar,
-				target_verified: request.target_verified,
-				target_gold: request.target_gold,
-			}),
-		);
+			logModerationAction(
+				moderator.id,
+				"force_reject_affiliate",
+				"affiliate_request",
+				params.id,
+				{
+					requester: requester?.username,
+					target: targetUser?.username,
+				},
+			);
 
-		return {
-			user,
-			recentPosts,
-			suspensions,
-			affiliate: {
-				incoming: incomingAffiliateRequests,
-				outgoing: outgoingAffiliateRequests,
-				managed: managedAffiliates,
+			return { success: true };
+		},
+		{
+			detail: {
+				description: "Denies an affiliate request",
 			},
-		};
-	})
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
+
+	.get(
+		"/users/:id",
+		async ({ params }) => {
+			const user = adminQueries.getUserWithDetails.get(params.id);
+			if (!user) {
+				return { error: "User not found" };
+			}
+
+			if (user.affiliate && user.affiliate_with) {
+				const affiliateUser = db
+					.query("SELECT username FROM users WHERE id = ?")
+					.get(user.affiliate_with);
+				if (affiliateUser) {
+					user.affiliate_with_username = affiliateUser.username;
+				}
+			}
+
+			const recentPosts = adminQueries.getUserRecentPosts.all(params.id);
+			const suspensions = adminQueries.getUserSuspensions.all(params.id);
+			const incomingAffiliateRequestsRaw =
+				adminQueries.getAffiliateRequestsForTarget.all(params.id);
+			const outgoingAffiliateRequestsRaw =
+				adminQueries.getAffiliateRequestsForRequester.all(params.id);
+			const managedAffiliates = adminQueries.getAffiliatesForUser.all(params.id);
+
+			const incomingAffiliateRequests = incomingAffiliateRequestsRaw.map(
+				(request) => ({
+					id: request.id,
+					status: request.status,
+					created_at: request.created_at,
+					responded_at: request.responded_at,
+					requester_id: request.requester_id,
+					requester_username: request.requester_username,
+					requester_name: request.requester_name,
+					requester_avatar: request.requester_avatar,
+					requester_verified: request.requester_verified,
+					requester_gold: request.requester_gold,
+					target_id: request.target_id,
+				}),
+			);
+
+			const outgoingAffiliateRequests = outgoingAffiliateRequestsRaw.map(
+				(request) => ({
+					id: request.id,
+					status: request.status,
+					created_at: request.created_at,
+					responded_at: request.responded_at,
+					requester_id: request.requester_id,
+					target_id: request.target_id,
+					target_username: request.target_username,
+					target_name: request.target_name,
+					target_avatar: request.target_avatar,
+					target_verified: request.target_verified,
+					target_gold: request.target_gold,
+				}),
+			);
+
+			return {
+				user,
+				recentPosts,
+				suspensions,
+				affiliate: {
+					incoming: incomingAffiliateRequests,
+					outgoing: outgoingAffiliateRequests,
+					managed: managedAffiliates,
+				},
+			};
+		},
+		{
+			detail: {
+				description: "Gets detailed information for a specific user",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
 	.patch(
 		"/users/:id/verify",
@@ -1240,58 +1273,82 @@ export default new Elysia({ prefix: "/admin", tags: ["admin"] })
 		},
 	)
 
-	.post("/users/:id/unsuspend", async ({ params, user }) => {
-		const targetUser = adminQueries.findUserById.get(params.id);
-		const wasSuspended = !!targetUser?.suspended;
-		const wasRestricted = !!targetUser?.restricted;
-		const wasShadowbanned = !!targetUser?.shadowbanned;
+	.post(
+		"/users/:id/unsuspend",
+		async ({ params, user }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			const wasSuspended = !!targetUser?.suspended;
+			const wasRestricted = !!targetUser?.restricted;
+			const wasShadowbanned = !!targetUser?.shadowbanned;
 
-		adminQueries.updateUserSuspended.run(false, params.id);
-		adminQueries.updateUserRestricted.run(false, params.id);
-		// Also clear shadowbanned flag so users regain visibility after unsuspend
-		db.query("UPDATE users SET shadowbanned = FALSE WHERE id = ?").run(
-			params.id,
-		);
-		adminQueries.updateSuspensionStatus.run("lifted", params.id);
-		// Invalidate any cached suspension status server-side so it takes effect immediately
-		try {
-			clearSuspensionCache(params.id);
-		} catch (_e) {}
+			adminQueries.updateUserSuspended.run(false, params.id);
+			adminQueries.updateUserRestricted.run(false, params.id);
+			// Also clear shadowbanned flag so users regain visibility after unsuspend
+			db.query("UPDATE users SET shadowbanned = FALSE WHERE id = ?").run(
+				params.id,
+			);
+			adminQueries.updateSuspensionStatus.run("lifted", params.id);
+			// Invalidate any cached suspension status server-side so it takes effect immediately
+			try {
+				clearSuspensionCache(params.id);
+			} catch (_e) {}
 
-		if (wasSuspended) {
-			logModerationAction(user.id, "unsuspend_user", "user", params.id, {
-				username: targetUser?.username,
+			if (wasSuspended) {
+				logModerationAction(user.id, "unsuspend_user", "user", params.id, {
+					username: targetUser?.username,
+				});
+			}
+
+			// Invalidate any cached suspension/restriction for this user
+			try {
+				clearSuspensionCache(params.id);
+			} catch (_e) {}
+			if (wasRestricted) {
+				logModerationAction(user.id, "unrestrict_user", "user", params.id, {
+					username: targetUser?.username,
+				});
+			}
+			if (wasShadowbanned) {
+				logModerationAction(user.id, "unshadowban_user", "user", params.id, {
+					username: targetUser?.username,
+				});
+			}
+			return { success: true };
+		},
+		{
+			detail: {
+				description: "Unsuspends a user and removes all suspension flags",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
+
+	.delete(
+		"/users/:id",
+		async ({ params, user }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) return { error: "User not found" };
+
+			adminQueries.deleteUser.run(params.id);
+			logModerationAction(user.id, "delete_user", "user", params.id, {
+				username: targetUser.username,
 			});
-		}
 
-		// Invalidate any cached suspension/restriction for this user
-		try {
-			clearSuspensionCache(params.id);
-		} catch (_e) {}
-		if (wasRestricted) {
-			logModerationAction(user.id, "unrestrict_user", "user", params.id, {
-				username: targetUser?.username,
-			});
-		}
-		if (wasShadowbanned) {
-			logModerationAction(user.id, "unshadowban_user", "user", params.id, {
-				username: targetUser?.username,
-			});
-		}
-		return { success: true };
-	})
-
-	.delete("/users/:id", async ({ params, user }) => {
-		const targetUser = adminQueries.findUserById.get(params.id);
-		if (!targetUser) return { error: "User not found" };
-
-		adminQueries.deleteUser.run(params.id);
-		logModerationAction(user.id, "delete_user", "user", params.id, {
-			username: targetUser.username,
-		});
-
-		return { success: true };
-	})
+			return { success: true };
+		},
+		{
+			detail: {
+				description: "Deletes a user",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
 	.post(
 		"/users/:id/clone",
@@ -1676,81 +1733,138 @@ export default new Elysia({ prefix: "/admin", tags: ["admin"] })
 		},
 	)
 
-	.get("/posts", async ({ query }) => {
-		const page = parseInt(query.page) || 1;
-		const limit = parseInt(query.limit) || 20;
-		const search = query.search || "";
-		const offset = (page - 1) * limit;
+	.get(
+		"/posts",
+		async ({ query }) => {
+			const page = parseInt(query.page) || 1;
+			const limit = parseInt(query.limit) || 20;
+			const search = query.search || "";
+			const offset = (page - 1) * limit;
 
-		const searchPattern = `%${search}%`;
-		const posts = adminQueries.getPostsWithUsers.all(
-			searchPattern,
-			searchPattern,
-			searchPattern,
-			limit,
-			offset,
-		);
-		const totalCount = adminQueries.getPostsCount.get(
-			searchPattern,
-			searchPattern,
-			searchPattern,
-		);
-
-		return {
-			posts,
-			pagination: {
-				page,
+			const searchPattern = `%${search}%`;
+			const posts = adminQueries.getPostsWithUsers.all(
+				searchPattern,
+				searchPattern,
+				searchPattern,
 				limit,
-				total: totalCount.count,
-				pages: Math.ceil(totalCount.count / limit),
+				offset,
+			);
+			const totalCount = adminQueries.getPostsCount.get(
+				searchPattern,
+				searchPattern,
+				searchPattern,
+			);
+
+			return {
+				posts,
+				pagination: {
+					page,
+					limit,
+					total: totalCount.count,
+					pages: Math.ceil(totalCount.count / limit),
+				},
+			};
+		},
+		{
+			detail: {
+				description: "Lists posts with pagination and search",
 			},
-		};
-	})
+			query: t.Object({
+				page: t.Optional(t.Number()),
+				limit: t.Optional(t.Number()),
+				search: t.Optional(t.String()),
+			}),
+			response: t.Object({
+				posts: t.Array(t.Any()),
+				pagination: t.Any(),
+			}),
+		},
+	)
 
-	.delete("/posts/:id", async ({ params, user }) => {
-		const post = adminQueries.getPostById.get(params.id);
-		const postAuthor = post
-			? adminQueries.findUserById.get(post.user_id)
-			: null;
-		db.transaction(() => {
-			db.query("DELETE FROM likes WHERE post_id = ?").run(params.id);
-			db.query("DELETE FROM posts WHERE reply_to = ?").run(params.id);
-			db.query("DELETE FROM retweets WHERE post_id = ?").run(params.id);
-			adminQueries.deletePost.run(params.id);
-		})();
-		logModerationAction(user.id, "delete_post", "post", params.id, {
-			author: postAuthor?.username,
-			content: post?.content?.substring(0, 100),
-		});
-		return { success: true };
-	})
-
-	.get("/suspensions", async ({ query }) => {
-		const page = parseInt(query.page) || 1;
-		const limit = parseInt(query.limit) || 20;
-		const offset = (page - 1) * limit;
-
-		const suspensions = adminQueries.getSuspensionsWithUsers.all(limit, offset);
-		const totalCount = adminQueries.getSuspensionsCount.get();
-
-		return {
-			suspensions,
-			pagination: {
-				page,
-				limit,
-				total: totalCount.count,
-				pages: Math.ceil(totalCount.count / limit),
+	.delete(
+		"/posts/:id",
+		async ({ params, user }) => {
+			const post = adminQueries.getPostById.get(params.id);
+			const postAuthor = post
+				? adminQueries.findUserById.get(post.user_id)
+				: null;
+			db.transaction(() => {
+				db.query("DELETE FROM likes WHERE post_id = ?").run(params.id);
+				db.query("DELETE FROM posts WHERE reply_to = ?").run(params.id);
+				db.query("DELETE FROM retweets WHERE post_id = ?").run(params.id);
+				adminQueries.deletePost.run(params.id);
+			})();
+			logModerationAction(user.id, "delete_post", "post", params.id, {
+				author: postAuthor?.username,
+				content: post?.content?.substring(0, 100),
+			});
+			return { success: true };
+		},
+		{
+			detail: {
+				description: "Deletes a post and all associated data",
 			},
-		};
-	})
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.get("/posts/:id", async ({ params }) => {
-		const post = adminQueries.getPostById.get(params.id);
-		if (!post) {
-			return { error: "Post not found" };
-		}
-		return post;
-	})
+	.get(
+		"/suspensions",
+		async ({ query }) => {
+			const page = parseInt(query.page) || 1;
+			const limit = parseInt(query.limit) || 20;
+			const offset = (page - 1) * limit;
+
+			const suspensions = adminQueries.getSuspensionsWithUsers.all(limit, offset);
+			const totalCount = adminQueries.getSuspensionsCount.get();
+
+			return {
+				suspensions,
+				pagination: {
+					page,
+					limit,
+					total: totalCount.count,
+					pages: Math.ceil(totalCount.count / limit),
+				},
+			};
+		},
+		{
+			detail: {
+				description: "Lists active suspensions with pagination",
+			},
+			query: t.Object({
+				page: t.Optional(t.Number()),
+				limit: t.Optional(t.Number()),
+			}),
+			response: t.Object({
+				suspensions: t.Array(t.Any()),
+				pagination: t.Any(),
+			}),
+		},
+	)
+
+	.get(
+		"/posts/:id",
+		async ({ params }) => {
+			const post = adminQueries.getPostById.get(params.id);
+			if (!post) {
+				return { error: "Post not found" };
+			}
+			return post;
+		},
+		{
+			detail: {
+				description: "Gets details for a specific post",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
 	.patch(
 		"/posts/:id",
@@ -2267,158 +2381,272 @@ export default new Elysia({ prefix: "/admin", tags: ["admin"] })
 			console.error("Error in PATCH /admin/users/:id:", err);
 			return { error: "Internal server error" };
 		}
+	}, {
+		detail: {
+			description: "Updates a user's profile and settings",
+		},
+		params: t.Object({
+			id: t.String(),
+		}),
+		body: t.Object({
+			username: t.Optional(t.String()),
+			name: t.Optional(t.String()),
+			bio: t.Optional(t.String()),
+			verified: t.Optional(t.Boolean()),
+			gold: t.Optional(t.Boolean()),
+			admin: t.Optional(t.Boolean()),
+			affiliate: t.Optional(t.Boolean()),
+			affiliate_with_username: t.Optional(t.String()),
+			ghost_followers: t.Optional(t.Number()),
+			ghost_following: t.Optional(t.Number()),
+			character_limit: t.Optional(t.Number()),
+			created_at: t.Optional(t.String()),
+			force_follow_usernames: t.Optional(t.Array(t.String())),
+		}),
+		response: t.Any(),
 	})
 
-	.post("/impersonate/:id", async ({ params, jwt, user }) => {
-		const targetUser = adminQueries.findUserById.get(params.id);
-		if (!targetUser) {
-			return { error: "User not found" };
-		}
+	.post(
+		"/impersonate/:id",
+		async ({ params, jwt, user }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) {
+				return { error: "User not found" };
+			}
 
-		if (
-			targetUser.admin &&
-			!(
-				process.env.SUPERADMIN_IDS &&
-				SUPERADMIN_IDS.split(";").includes(user.id)
-			)
-		) {
-			return { error: "Cannot impersonate admin users" };
-		}
+			if (
+				targetUser.admin &&
+				!(
+					process.env.SUPERADMIN_IDS &&
+					SUPERADMIN_IDS.split(";").includes(user.id)
+				)
+			) {
+				return { error: "Cannot impersonate admin users" };
+			}
 
-		const impersonationToken = await jwt.sign({
-			userId: targetUser.id,
-			username: targetUser.username,
-			iat: Math.floor(Date.now() / 1000),
-			exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
-		});
-
-		return {
-			success: true,
-			token: impersonationToken,
-			user: {
-				id: targetUser.id,
+			const impersonationToken = await jwt.sign({
+				userId: targetUser.id,
 				username: targetUser.username,
-				name: targetUser.name,
+				iat: Math.floor(Date.now() / 1000),
+				exp: Math.floor(Date.now() / 1000) + 24 * 60 * 60,
+			});
+
+			return {
+				success: true,
+				token: impersonationToken,
+				user: {
+					id: targetUser.id,
+					username: targetUser.username,
+					name: targetUser.name,
+				},
+				copyLink: `${
+					process.env.BASE_URL || "http://localhost:3000"
+				}/?impersonate=${encodeURIComponent(impersonationToken)}`,
+			};
+		},
+		{
+			detail: {
+				description: "Creates an impersonation token for a user",
 			},
-			copyLink: `${
-				process.env.BASE_URL || "http://localhost:3000"
-			}/?impersonate=${encodeURIComponent(impersonationToken)}`,
-		};
-	})
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.get("/dms", async ({ query }) => {
-		const page = Math.max(1, Number.parseInt(query.page || "1"));
-		const limit = Math.min(
-			50,
-			Math.max(1, Number.parseInt(query.limit || "20")),
-		);
-		const offset = (page - 1) * limit;
+	.get(
+		"/dms",
+		async ({ query }) => {
+			const page = Math.max(1, Number.parseInt(query.page || "1"));
+			const limit = Math.min(
+				50,
+				Math.max(1, Number.parseInt(query.limit || "20")),
+			);
+			const offset = (page - 1) * limit;
 
-		const conversations = adminQueries.getAllConversations.all(limit, offset);
-		const totalCount = adminQueries.getConversationsCount.get().count;
+			const conversations = adminQueries.getAllConversations.all(limit, offset);
+			const totalCount = adminQueries.getConversationsCount.get().count;
 
-		return {
-			conversations,
-			pagination: {
-				page,
+			return {
+				conversations,
+				pagination: {
+					page,
+					limit,
+					total: totalCount,
+					pages: Math.ceil(totalCount / limit),
+				},
+			};
+		},
+		{
+			detail: {
+				description: "Lists all DM conversations with pagination",
+			},
+			query: t.Object({
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
+			}),
+			response: t.Any(),
+		},
+	)
+
+	.get(
+		"/dms/search",
+		async ({ query }) => {
+			const username = query.username;
+			if (!username) {
+				return { error: "Username parameter required" };
+			}
+
+			const page = Math.max(1, Number.parseInt(query.page || "1", 10)); // stuck cursor
+			const limit = Math.min(
+				50,
+				Math.max(1, Number.parseInt(query.limit || "20", 10)),
+			);
+			const offset = (page - 1) * limit;
+
+			const conversations = adminQueries.searchConversationsByUser.all(
+				`%${username}%`,
 				limit,
-				total: totalCount,
-				pages: Math.ceil(totalCount / limit),
+				offset,
+			);
+
+			return { conversations };
+		},
+		{
+			detail: {
+				description: "Searches DM conversations by username",
 			},
-		};
-	})
+			query: t.Object({
+				username: t.String(),
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.get("/dms/search", async ({ query }) => {
-		const username = query.username;
-		if (!username) {
-			return { error: "Username parameter required" };
-		}
+	.get(
+		"/dms/:id",
+		async ({ params }) => {
+			const conversation = adminQueries.getConversationDetails.get(params.id);
+			if (!conversation) {
+				return { error: "Conversation not found" };
+			}
 
-		const page = Math.max(1, Number.parseInt(query.page || "1", 10)); // stuck cursor
-		const limit = Math.min(
-			50,
-			Math.max(1, Number.parseInt(query.limit || "20", 10)),
-		);
-		const offset = (page - 1) * limit;
+			return { conversation };
+		},
+		{
+			detail: {
+				description: "Gets details for a specific DM conversation",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
-		const conversations = adminQueries.searchConversationsByUser.all(
-			`%${username}%`,
-			limit,
-			offset,
-		);
+	.get(
+		"/dms/:id/messages",
+		async ({ params, query }) => {
+			const conversation = adminQueries.getConversationDetails.get(params.id);
+			if (!conversation) {
+				return { error: "Conversation not found" };
+			}
 
-		return { conversations };
-	})
+			const page = Math.max(1, Number.parseInt(query.page || "1"));
+			const limit = Math.min(
+				100,
+				Math.max(1, Number.parseInt(query.limit || "20")),
+			);
+			const offset = (page - 1) * limit;
 
-	.get("/dms/:id", async ({ params }) => {
-		const conversation = adminQueries.getConversationDetails.get(params.id);
-		if (!conversation) {
-			return { error: "Conversation not found" };
-		}
-
-		return { conversation };
-	})
-
-	.get("/dms/:id/messages", async ({ params, query }) => {
-		const conversation = adminQueries.getConversationDetails.get(params.id);
-		if (!conversation) {
-			return { error: "Conversation not found" };
-		}
-
-		const page = Math.max(1, Number.parseInt(query.page || "1"));
-		const limit = Math.min(
-			100,
-			Math.max(1, Number.parseInt(query.limit || "20")),
-		);
-		const offset = (page - 1) * limit;
-
-		const messages = adminQueries.getConversationMessages.all(
-			params.id,
-			limit,
-			offset,
-		);
-		const totalCount = adminQueries.getConversationMessagesCount.get(
-			params.id,
-		).count;
-
-		for (const message of messages) {
-			message.attachments = adminQueries.getMessageAttachments.all(message.id);
-		}
-
-		return {
-			conversation,
-			messages,
-			pagination: {
-				page,
+			const messages = adminQueries.getConversationMessages.all(
+				params.id,
 				limit,
-				total: totalCount,
-				pages: Math.ceil(totalCount / limit),
+				offset,
+			);
+			const totalCount = adminQueries.getConversationMessagesCount.get(
+				params.id,
+			).count;
+
+			for (const message of messages) {
+				message.attachments = adminQueries.getMessageAttachments.all(message.id);
+			}
+
+			return {
+				conversation,
+				messages,
+				pagination: {
+					page,
+					limit,
+					total: totalCount,
+					pages: Math.ceil(totalCount / limit),
+				},
+			};
+		},
+		{
+			detail: {
+				description: "Gets messages for a specific DM conversation",
 			},
-		};
-	})
+			params: t.Object({
+				id: t.String(),
+			}),
+			query: t.Object({
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.delete("/dms/:id", async ({ params, user }) => {
-		const conversation = adminQueries.getConversationDetails.get(params.id);
-		if (!conversation) {
-			return { error: "Conversation not found" };
-		}
+	.delete(
+		"/dms/:id",
+		async ({ params, user }) => {
+			const conversation = adminQueries.getConversationDetails.get(params.id);
+			if (!conversation) {
+				return { error: "Conversation not found" };
+			}
 
-		adminQueries.deleteConversation.run(params.id);
-		logModerationAction(
-			user.id,
-			"delete_conversation",
-			"conversation",
-			params.id,
-			{ conversation: conversation.participants },
-		);
-		return { success: true };
-	})
+			adminQueries.deleteConversation.run(params.id);
+			logModerationAction(
+				user.id,
+				"delete_conversation",
+				"conversation",
+				params.id,
+				{ conversation: conversation.participants },
+			);
+			return { success: true };
+		},
+		{
+			detail: {
+				description: "Deletes a DM conversation",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.delete("/dms/messages/:id", async ({ params, user }) => {
-		adminQueries.deleteMessage.run(params.id);
-		logModerationAction(user.id, "delete_message", "message", params.id, {});
-		return { success: true };
-	})
+	.delete(
+		"/dms/messages/:id",
+		async ({ params, user }) => {
+			adminQueries.deleteMessage.run(params.id);
+			logModerationAction(user.id, "delete_message", "message", params.id, {});
+			return { success: true };
+		},
+		{
+			detail: {
+				description: "Deletes a DM message",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
 	.post(
 		"/fake-notification",
@@ -2563,60 +2791,112 @@ export default new Elysia({ prefix: "/admin", tags: ["admin"] })
 		},
 	)
 
-	.get("/moderation-logs", async ({ query }) => {
-		const page = parseInt(query.page) || 1;
-		const limit = parseInt(query.limit) || 50;
-		const offset = (page - 1) * limit;
+	.get(
+		"/moderation-logs",
+		async ({ query }) => {
+			const page = parseInt(query.page) || 1;
+			const limit = parseInt(query.limit) || 50;
+			const offset = (page - 1) * limit;
 
-		const logs = adminQueries.getModerationLogs.all(limit, offset);
-		const totalCount = adminQueries.getModerationLogsCount.get();
+			const logs = adminQueries.getModerationLogs.all(limit, offset);
+			const totalCount = adminQueries.getModerationLogsCount.get();
 
-		const logsWithDetails = logs.map((log) => ({
-			...log,
-			details: log.details ? JSON.parse(log.details) : null,
-		}));
+			const logsWithDetails = logs.map((log) => ({
+				...log,
+				details: log.details ? JSON.parse(log.details) : null,
+			}));
 
-		return {
-			logs: logsWithDetails,
-			pagination: {
-				page,
-				limit,
-				total: totalCount.count,
-				pages: Math.ceil(totalCount.count / limit),
+			return {
+				logs: logsWithDetails,
+				pagination: {
+					page,
+					limit,
+					total: totalCount.count,
+					pages: Math.ceil(totalCount.count / limit),
+				},
+			};
+		},
+		{
+			detail: {
+				description: "Lists moderation logs with pagination",
 			},
-		};
-	})
+			query: t.Object({
+				page: t.Optional(t.Number()),
+				limit: t.Optional(t.Number()),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.get("/moderation-logs/target/:id", async ({ params }) => {
-		const logs = adminQueries.getModerationLogsByTarget.all(params.id);
-		const logsWithDetails = logs.map((log) => ({
-			...log,
-			details: log.details ? JSON.parse(log.details) : null,
-		}));
-		return { logs: logsWithDetails };
-	})
+	.get(
+		"/moderation-logs/target/:id",
+		async ({ params }) => {
+			const logs = adminQueries.getModerationLogsByTarget.all(params.id);
+			const logsWithDetails = logs.map((log) => ({
+				...log,
+				details: log.details ? JSON.parse(log.details) : null,
+			}));
+			return { logs: logsWithDetails };
+		},
+		{
+			detail: {
+				description: "Gets moderation logs for a specific target",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.get("/moderation-logs/moderator/:id", async ({ params, query }) => {
-		const page = parseInt(query.page) || 1;
-		const limit = parseInt(query.limit) || 50;
-		const offset = (page - 1) * limit;
+	.get(
+		"/moderation-logs/moderator/:id",
+		async ({ params, query }) => {
+			const page = parseInt(query.page) || 1;
+			const limit = parseInt(query.limit) || 50;
+			const offset = (page - 1) * limit;
 
-		const logs = adminQueries.getModerationLogsByModerator.all(
-			params.id,
-			limit,
-			offset,
-		);
-		const logsWithDetails = logs.map((log) => ({
-			...log,
-			details: log.details ? JSON.parse(log.details) : null,
-		}));
-		return { logs: logsWithDetails };
-	})
+			const logs = adminQueries.getModerationLogsByModerator.all(
+				params.id,
+				limit,
+				offset,
+			);
+			const logsWithDetails = logs.map((log) => ({
+				...log,
+				details: log.details ? JSON.parse(log.details) : null,
+			}));
+			return { logs: logsWithDetails };
+		},
+		{
+			detail: {
+				description: "Gets moderation logs for a specific moderator",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			query: t.Object({
+				page: t.Optional(t.Number()),
+				limit: t.Optional(t.Number()),
+			}),
+			response: t.Any(),
+		},
+	)
 
-	.get("/emojis", async () => {
-		const emojis = adminQueries.getAllEmojis.all();
-		return { emojis };
-	})
+	.get(
+		"/emojis",
+		async () => {
+			const emojis = adminQueries.getAllEmojis.all();
+			return { emojis };
+		},
+		{
+			detail: {
+				description: "Lists all custom emojis",
+			},
+			response: t.Object({
+				emojis: t.Array(t.Any()),
+			}),
+		},
+	)
 
 	.post(
 		"/emojis",
@@ -2656,15 +2936,27 @@ export default new Elysia({ prefix: "/admin", tags: ["admin"] })
 		},
 	)
 
-	.delete("/emojis/:id", async ({ params, user }) => {
-		const e = adminQueries.getEmojiById.get(params.id);
-		if (!e) return { error: "Emoji not found" };
-		adminQueries.deleteEmoji.run(params.id);
-		logModerationAction(user.id, "delete_emoji", "emoji", params.id, {
-			name: e.name,
-		});
-		return { success: true };
-	})
+	.delete(
+		"/emojis/:id",
+		async ({ params, user }) => {
+			const e = adminQueries.getEmojiById.get(params.id);
+			if (!e) return { error: "Emoji not found" };
+			adminQueries.deleteEmoji.run(params.id);
+			logModerationAction(user.id, "delete_emoji", "emoji", params.id, {
+				name: e.name,
+			});
+			return { success: true };
+		},
+		{
+			detail: {
+				description: "Deletes a custom emoji",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: t.Any(),
+		},
+	)
 
 	.post("/fact-check/:postId", async ({ params, body, user }) => {
 		const { note, severity = "warning" } = body;
