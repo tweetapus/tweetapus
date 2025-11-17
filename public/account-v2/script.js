@@ -40,8 +40,9 @@ document
 			return;
 		}
 
-		document.querySelector(".create-account").style.width = `${document.querySelector(".create-account").offsetWidth
-			}px`;
+		document.querySelector(".create-account").style.width = `${
+			document.querySelector(".create-account").offsetWidth
+		}px`;
 
 		document.querySelector(".create-account").classList.add("loading");
 		document.querySelector(".create-account").disabled = true;
@@ -71,14 +72,16 @@ document
 
 			document.querySelector(".init-form label").innerText =
 				"Username taken, try another.";
-			document.querySelector(".init-form label").style.color = "var(--error-color)";
+			document.querySelector(".init-form label").style.color =
+				"var(--error-color)";
 			document.querySelector(".init-form label").style.transition =
 				"opacity .4s, filter .4s, transform .4s";
 
 			setTimeout(() => {
 				document.querySelector(".init-form label").style.opacity = "0";
 				document.querySelector(".init-form label").style.filter = "blur(2px)";
-				document.querySelector(".init-form label").style.transform = "scale(0.9)";
+				document.querySelector(".init-form label").style.transform =
+					"scale(0.9)";
 			}, 1500);
 			setTimeout(() => {
 				document.querySelector(".init-form label").innerText =
@@ -103,7 +106,9 @@ document
 			challengeToken = solution.token;
 		});
 
-		await new Promise((r) => { setTimeout(r, 300); });
+		await new Promise((r) => {
+			setTimeout(r, 300);
+		});
 
 		setTimeout(() => {
 			document.querySelector(".create-account").classList.remove("loading");
@@ -184,7 +189,7 @@ document
 						});
 						return;
 					}
-				} catch { }
+				} catch {}
 
 				Reflect.set(
 					document,
@@ -226,22 +231,15 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 	const passwordContent = document.createElement("div");
 	passwordContent.className = "login-modal-content";
 
-	const passwordTitle = document.createElement("h2");
-	passwordTitle.className = "login-modal-title";
-	passwordTitle.textContent = "Log in with password";
+	const passwordLogo = document.createElement("svg");
 
 	const passkeyLoginButton = document.createElement("button");
 	passkeyLoginButton.type = "button";
-	passkeyLoginButton.className = "btn btn-primary";
+	passkeyLoginButton.className = "passkey-login";
 	passkeyLoginButton.textContent = "Log in with passkey";
 
 	passkeyLoginButton.addEventListener("click", async () => {
 		try {
-			if (!window.SimpleWebAuthnBrowser) {
-				alert("WebAuthn not available. Please try password login.");
-				return;
-			}
-
 			const response = await fetch(
 				"/api/auth/generate-authentication-options",
 				{
@@ -291,7 +289,7 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 							`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
 						);
 					}
-				} catch { }
+				} catch {}
 
 				window.location.href = "/timeline/";
 			} else {
@@ -300,8 +298,11 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 		} catch (err) {
 			console.error("Passkey login error:", err);
 		}
-
 	});
+
+	if (!window.SimpleWebAuthnBrowser) {
+		passkeyLoginButton.style.display = "none";
+	}
 
 	const form = document.createElement("form");
 	form.className = "password-login-form";
@@ -326,8 +327,8 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 
 	const backBtn = document.createElement("button");
 	backBtn.type = "button";
-	backBtn.className = "secondary";
-	backBtn.textContent = "Back";
+	backBtn.className = "back-btn";
+	backBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 
 	form.addEventListener("submit", async (e) => {
 		e.preventDefault();
@@ -365,7 +366,7 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 							`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
 						);
 					}
-				} catch { }
+				} catch {}
 
 				window.location.href = "/timeline/";
 			} else {
@@ -386,11 +387,15 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 	form.appendChild(usernameInput);
 	form.appendChild(passwordInput);
 	form.appendChild(formActions);
-	passwordContent.appendChild(passwordTitle);
+	passwordContent.appendChild(passwordLogo);
 	passwordContent.appendChild(passkeyLoginButton);
 	passwordContent.appendChild(form);
 	passwordModal.appendChild(passwordContent);
 	document.body.appendChild(passwordModal);
+
+	passwordLogo.outerHTML = `<svg class="logo" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+  </svg>`;
 
 	usernameInput.focus();
 });
