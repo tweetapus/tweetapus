@@ -307,14 +307,24 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 	const form = document.createElement("form");
 	form.className = "password-login-form";
 
+	const usernameLabel = document.createElement("label");
+	usernameLabel.htmlFor = "login-username";
+	usernameLabel.textContent = "Username";
+
 	const usernameInput = document.createElement("input");
 	usernameInput.type = "text";
-	usernameInput.placeholder = "Username";
+	usernameInput.placeholder = "tiago";
+	usernameInput.id = "login-username";
 	usernameInput.required = true;
+
+	const passwordLabel = document.createElement("label");
+	passwordLabel.htmlFor = "login-password";
+	passwordLabel.textContent = "Password";
 
 	const passwordInput = document.createElement("input");
 	passwordInput.type = "password";
-	passwordInput.placeholder = "Password";
+	passwordInput.placeholder = "••••••••••••";
+	passwordInput.id = "login-password";
 	passwordInput.required = true;
 
 	const formActions = document.createElement("div");
@@ -384,7 +394,9 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 
 	formActions.appendChild(loginBtn);
 	formActions.appendChild(backBtn);
+	form.appendChild(usernameLabel);
 	form.appendChild(usernameInput);
+	form.appendChild(passwordLabel);
 	form.appendChild(passwordInput);
 	form.appendChild(formActions);
 	passwordContent.appendChild(passwordLogo);

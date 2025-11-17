@@ -4,7 +4,7 @@
 body {
   display: flex;
   flex-direction: column;
-  max-width: 400px;
+  max-width: 395px;
   margin: 0px auto;
   margin-top: 0.5em;
 }
@@ -16,7 +16,7 @@ body {
 }
 
 h1 {
-  font-size: 37px;
+  font-size: 33px;
   line-height: 1.2;
   margin-top: 0px;
   font-weight: bold;
@@ -247,7 +247,7 @@ button {
 
       label {
         display: block;
-        margin-bottom: 0.5em;
+        margin-bottom: 0px;
         font-weight: 400;
         color: var(--text-primary);
       }
@@ -371,18 +371,32 @@ button {
   align-items: center;
   justify-content: center;
   z-index: 9999;
+  transition: opacity .2s;
+
+  @starting-style {
+    & {
+      opacity: 0;
+    }
+  }
 
   .login-modal-content {
     position: relative;
     background: var(--bg-primary);
     border-radius: 9px;
-    max-width: 495px;
-    padding: 20px;
+    max-width: 455px;
+    padding: 14px;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
+    transition: transform .2s;
+
+    @starting-style {
+      & {
+        transform: scale(0.98);
+      }
+    }
 
     .logo {
       margin-top: 21px;
@@ -424,10 +438,23 @@ button {
     .password-login-form {
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0px;
       width: 100%;
       align-items: center;
       max-width: 330px;
+
+      label {
+        display: block;
+        width: 100%;
+        margin-bottom: 0.25em;
+        font-weight: 400;
+        font-size: 14px;
+        color: var(--text-primary);
+
+        &[for="login-password"] {
+          margin-top: 1.5em;
+        }
+      }
 
       input {
         padding: 11px 14px;
@@ -439,6 +466,7 @@ button {
         font-family: inherit;
         caret-color: var(--primary);
         width: 100%;
+        margin-top: 2px;
 
         &:focus {
           outline: none;
@@ -449,14 +477,6 @@ button {
         &::placeholder {
           color: var(--text-placeholder);
           font-weight: 350;
-        }
-
-        &[type="password"] {
-          background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22white%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20class%3D%22lucide%20lucide-key-icon%20lucide-key%22%3E%3Cpath%20d%3D%22m15.5%207.5%202.3%202.3a1%201%200%200%200%201.4%200l2.1-2.1a1%201%200%200%200%200-1.4L19%204%22%2F%3E%3Cpath%20d%3D%22m21%202-9.6%209.6%22%2F%3E%3Ccircle%20cx%3D%227.5%22%20cy%3D%2215.5%22%20r%3D%225.5%22%2F%3E%3C%2Fsvg%3E");
-          background-position: 13px 50%;
-          background-repeat: no-repeat;
-          padding-left: 41px;
-          background-size: 20px;
         }
       }
 
