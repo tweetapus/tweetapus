@@ -549,7 +549,12 @@ export default new Elysia({ prefix: "/dm", tags: ["DM"] })
 				if (shouldAIRespond) {
 					(async () => {
 						try {
-							const aiResponse = await generateAIDMResponse(id, content, attachments, db);
+							const aiResponse = await generateAIDMResponse(
+								id,
+								content,
+								attachments,
+								db,
+							);
 							if (aiResponse) {
 								const aiMessageId = Bun.randomUUIDv7();
 								const aiMessage = createMessage.get(
