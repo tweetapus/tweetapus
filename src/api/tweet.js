@@ -515,7 +515,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				community_only,
 				spoiler_flags,
 				interactive_card,
-				posted_as_user_id,
 			} = body;
 			const tweetContent = typeof content === "string" ? content : "";
 			const trimmedContent = tweetContent.trim();
@@ -523,42 +522,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const hasBody = trimmedContent.length > 0;
 			const targetArticleId = article_id ? String(article_id) : null;
 
-			let effectiveUserId = user.id;
-			let postedAsUserId = null;
-
-			if (posted_as_user_id && posted_as_user_id !== user.id) {
-				const delegation = db
-					.query(
-						"SELECT * FROM delegates WHERE owner_id = ? AND delegate_id = ? AND status = 'accepted'",
-					)
-					.get(posted_as_user_id, user.id);
-
-				if (!delegation) {
-					return {
-						error: "You are not authorized to post as this user",
-					};
-				}
-
-				const postedAsUser = getUserById.get(posted_as_user_id);
-				if (!postedAsUser) {
-					return { error: "Posted-as user not found" };
-				}
-
-				if (isUserSuspendedById(postedAsUser.id)) {
-					return {
-						error: "Cannot post as a suspended user",
-					};
-				}
-
-				if (isUserRestrictedById(postedAsUser.id)) {
-					return {
-						error: "Cannot post as a restricted user",
-					};
-				}
-
-				effectiveUserId = posted_as_user_id;
-				postedAsUserId = posted_as_user_id;
-			}
+			const effectiveUserId = user.id;
 
 			if (community_id) {
 				const isMember = db

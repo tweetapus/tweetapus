@@ -1,5 +1,5 @@
-import DOMPurify from "https://esm.sh/dompurify@2.4.0";
-import { marked } from "https://esm.sh/marked@16.3.0";
+import DOMPurify from "/public/shared/assets/js/dompurify.js";
+import { marked } from "/public/shared/assets/js/marked.js";
 import { showReportModal } from "../../shared/report-modal.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal, createPopup } from "../../shared/ui-utils.js";

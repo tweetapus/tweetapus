@@ -1258,11 +1258,6 @@ export const useComposer = (
 				community_only: communityOnly,
 			};
 
-			const postAsSelect = element.querySelector("#post-as-select");
-			if (postAsSelect?.value) {
-				requestBody.posted_as_user_id = postAsSelect.value;
-			}
-
 			const spoilerFlags = [];
 			document
 				.querySelectorAll(".attachment-preview-item")
@@ -1356,11 +1351,6 @@ export const createComposer = async ({
         <div class="compose-header">
           <img src="" alt="Your avatar" id="compose-avatar">
           <div class="compose-input">
-            <div id="delegation-selector" style="display: none; margin-bottom: 8px;">
-              <select id="post-as-select" style="padding: 6px 12px; border: 1px solid var(--border-primary); border-radius: 8px; background: var(--bg-secondary); color: var(--text-primary); font-size: 14px;">
-                <option value="">Post as yourself</option>
-              </select>
-            </div>
             <textarea id="tweet-textarea" style="overflow:hidden"${
 							autofocus ? "autofocus" : ""
 						}></textarea>
@@ -1500,45 +1490,6 @@ export const createComposer = async ({
 
 		const radius = user?.avatar_radius ?? (user?.gold ? 4 : 50);
 		avatarImg.style.borderRadius = `${radius}%`;
-
-		try {
-			const delegationsData = await query("/delegates/my-delegations");
-			if (
-				delegationsData.delegations &&
-				delegationsData.delegations.length > 0
-			) {
-				const delegationSelector = el.querySelector("#delegation-selector");
-				const postAsSelect = el.querySelector("#post-as-select");
-
-				delegationsData.delegations.forEach((delegation) => {
-					const option = document.createElement("option");
-					option.value = delegation.owner_id;
-					option.textContent = `Post as @${delegation.username}`;
-					postAsSelect.appendChild(option);
-				});
-
-				delegationSelector.style.display = "block";
-
-				postAsSelect.addEventListener("change", () => {
-					const selectedUserId = postAsSelect.value;
-					if (selectedUserId) {
-						const selectedDelegation = delegationsData.delegations.find(
-							(d) => d.owner_id === selectedUserId,
-						);
-						if (selectedDelegation) {
-							avatarImg.src =
-								selectedDelegation.avatar ||
-								"/public/shared/assets/default-avatar.svg";
-						}
-					} else {
-						avatarImg.src =
-							user?.avatar || "/public/shared/assets/default-avatar.svg";
-					}
-				});
-			}
-		} catch (error) {
-			console.error("Failed to load delegations:", error);
-		}
 	} catch (error) {
 		console.error("Error loading user avatar:", error);
 		const avatarImg = el.querySelector(".compose-header img");

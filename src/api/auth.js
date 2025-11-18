@@ -139,6 +139,25 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 							.all(user.id)
 					: [];
 
+				let isDelegate = false;
+				let delegateOwnerId = null;
+				let primaryUserId = payload.primaryUserId || user.id;
+
+				if (payload.delegateOwnerId) {
+					const delegation = db
+						.query(
+							"SELECT * FROM delegates WHERE owner_id = ? AND delegate_id = ? AND status = 'accepted'",
+						)
+						.get(payload.delegateOwnerId, payload.primaryUserId);
+
+					if (delegation) {
+						isDelegate = true;
+						delegateOwnerId = payload.delegateOwnerId;
+					} else {
+						return { error: "Delegation has been revoked" };
+					}
+				}
+
 				return {
 					user: {
 						id: user.id,
@@ -168,6 +187,9 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 						name: passkey.name || `Passkey ${passkey.cred_id.slice(0, 8)}...`,
 					})),
 					restricted: set.restricted,
+					isDelegate,
+					delegateOwnerId,
+					primaryUserId,
 				};
 			} catch (error) {
 				return { error: error.message };
@@ -177,6 +199,253 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 			detail: {
 				description: "Returns current user information",
 			}
+		},
+	)
+	.post(
+		"/switch-to-delegate",
+		async ({ jwt, headers, body }) => {
+			const authorization = headers.authorization;
+			if (!authorization) return { error: "Authentication required" };
+
+			try {
+				const token = authorization.replace("Bearer ", "");
+				const payload = await jwt.verify(token);
+				if (!payload) return { error: "Invalid token" };
+
+				const primaryUser = getUserByUsername.get(payload.username);
+				if (!primaryUser) return { error: "User not found" };
+
+				const { ownerId } = body;
+				if (!ownerId) return { error: "Owner ID is required" };
+
+				const delegation = db
+					.query(
+						"SELECT * FROM delegates WHERE owner_id = ? AND delegate_id = ? AND status = 'accepted'",
+					)
+					.get(ownerId, primaryUser.id);
+
+				if (!delegation) {
+					return { error: "You are not authorized to act as this user's delegate" };
+				}
+
+				const owner = db.query("SELECT * FROM users WHERE id = ?").get(ownerId);
+				if (!owner) return { error: "Owner account not found" };
+
+				const delegateToken = await jwt.sign({
+					userId: owner.id,
+					username: owner.username,
+					primaryUserId: primaryUser.id,
+					delegateOwnerId: ownerId,
+					isDelegate: true,
+					iat: Math.floor(Date.now() / 1000),
+					exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+				});
+
+				return {
+					success: true,
+					token: delegateToken,
+					user: {
+						id: owner.id,
+						username: owner.username,
+						name: owner.name,
+						avatar: owner.avatar,
+						verified: owner.verified,
+						gold: owner.gold,
+					},
+				};
+			} catch (error) {
+				console.error("Switch to delegate error:", error);
+				return { error: "Failed to switch to delegate" };
+			}
+		},
+		{
+			detail: {
+				description: "Switches to a delegate account",
+			},
+			body: t.Object({
+				ownerId: t.String(),
+			}),
+		},
+	)
+	.post(
+		"/switch-to-primary",
+		async ({ jwt, headers }) => {
+			const authorization = headers.authorization;
+			if (!authorization) return { error: "Authentication required" };
+
+			try {
+				const token = authorization.replace("Bearer ", "");
+				const payload = await jwt.verify(token);
+				if (!payload) return { error: "Invalid token" };
+
+				if (!payload.isDelegate || !payload.primaryUserId) {
+					return { error: "You are not currently in delegate mode" };
+				}
+
+				const primaryUser = db.query("SELECT * FROM users WHERE id = ?").get(payload.primaryUserId);
+				if (!primaryUser) return { error: "Primary account not found" };
+
+				const primaryToken = await jwt.sign({
+					userId: primaryUser.id,
+					username: primaryUser.username,
+					iat: Math.floor(Date.now() / 1000),
+					exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+				});
+
+				return {
+					success: true,
+					token: primaryToken,
+					user: {
+						id: primaryUser.id,
+						username: primaryUser.username,
+						name: primaryUser.name,
+						avatar: primaryUser.avatar,
+						verified: primaryUser.verified,
+						gold: primaryUser.gold,
+					},
+				};
+			} catch (error) {
+				console.error("Switch to primary error:", error);
+				return { error: "Failed to switch to primary account" };
+			}
+		},
+		{
+			detail: {
+				description: "Switches back to primary account from delegate",
+			},
+		},
+	)
+	.post(
+		"/add-account",
+		async ({ jwt, headers, body }) => {
+			const authorization = headers.authorization;
+			if (!authorization) return { error: "Authentication required" };
+
+			try {
+				const token = authorization.replace("Bearer ", "");
+				const payload = await jwt.verify(token);
+				if (!payload) return { error: "Invalid token" };
+
+				const { username, password, credential, expectedChallenge } = body;
+
+				if (password && username) {
+					const targetUser = getUserByUsername.get(username);
+					if (!targetUser || !targetUser.password_hash) {
+						return { error: "Invalid username or password" };
+					}
+
+					const isValidPassword = await Bun.password.verify(
+						password,
+						targetUser.password_hash,
+					);
+					if (!isValidPassword) {
+						return { error: "Invalid username or password" };
+					}
+
+					const newToken = await jwt.sign({
+						userId: targetUser.id,
+						username: targetUser.username,
+						iat: Math.floor(Date.now() / 1000),
+						exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+					});
+
+					return {
+						success: true,
+						token: newToken,
+						user: {
+							id: targetUser.id,
+							username: targetUser.username,
+							name: targetUser.name,
+							avatar: targetUser.avatar,
+							verified: targetUser.verified,
+							gold: targetUser.gold,
+						},
+					};
+				}
+
+				if (credential && expectedChallenge) {
+					const credId =
+						typeof credential.rawId === "string"
+							? credential.rawId
+							: isoBase64URL.fromBuffer(credential.rawId);
+
+					const passkey = getPasskeyByCredId(credId);
+					if (!passkey) {
+						return { error: "Passkey not found" };
+					}
+
+					const verification = await verifyAuthenticationResponse({
+						response: credential,
+						expectedChallenge: (await jwt.verify(expectedChallenge)).challenge,
+						expectedOrigin: origin,
+						expectedRPID: [rpID],
+						credential: {
+							id: isoBase64URL.toBuffer(passkey.cred_id),
+							publicKey: new Uint8Array(passkey.cred_public_key),
+							counter: passkey.counter,
+						},
+					});
+
+					if (!verification.verified || !verification.authenticationInfo) {
+						return {
+							verified: false,
+							error: "Authentication verification failed",
+						};
+					}
+
+					const targetUser = db
+						.query("SELECT * FROM users WHERE id = ?")
+						.get(passkey.internal_user_id);
+
+					if (!targetUser) {
+						return {
+							verified: false,
+							error: "User associated with this passkey no longer exists",
+						};
+					}
+
+					updatePasskeyCounter(
+						credId,
+						verification.authenticationInfo.newCounter,
+					);
+
+					const newToken = await jwt.sign({
+						userId: targetUser.id,
+						username: targetUser.username,
+						iat: Math.floor(Date.now() / 1000),
+						exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
+					});
+
+					return {
+						success: true,
+						token: newToken,
+						user: {
+							id: targetUser.id,
+							username: targetUser.username,
+							name: targetUser.name,
+							avatar: targetUser.avatar,
+							verified: targetUser.verified,
+							gold: targetUser.gold,
+						},
+					};
+				}
+
+				return { error: "Invalid authentication method" };
+			} catch (error) {
+				console.error("Add account error:", error);
+				return { error: "Failed to add account" };
+			}
+		},
+		{
+			detail: {
+				description: "Adds another account to the session",
+			},
+			body: t.Object({
+				username: t.Optional(t.String()),
+				password: t.Optional(t.String()),
+				credential: t.Optional(t.Any()),
+				expectedChallenge: t.Optional(t.String()),
+			}),
 		},
 	)
 	.get(

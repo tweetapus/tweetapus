@@ -8,6 +8,30 @@ export const authToken = localStorage.getItem("authToken");
 
 let _user;
 
+function saveAccountToStorage(user, token) {
+	const accounts = JSON.parse(localStorage.getItem("accounts") || "[]");
+	
+	const existingIndex = accounts.findIndex(acc => acc.userId === user.id);
+	const accountData = {
+		userId: user.id,
+		username: user.username,
+		name: user.name,
+		avatar: user.avatar,
+		verified: user.verified,
+		gold: user.gold,
+		avatar_radius: user.avatar_radius,
+		token: token,
+	};
+	
+	if (existingIndex >= 0) {
+		accounts[existingIndex] = accountData;
+	} else {
+		accounts.push(accountData);
+	}
+	
+	localStorage.setItem("accounts", JSON.stringify(accounts));
+}
+
 (async () => {
 	const { default: query } = await import("./api.js");
 
@@ -41,6 +65,8 @@ let _user;
 		return;
 	}
 	_user = user;
+
+	saveAccountToStorage(user, localStorage.getItem("authToken"));
 
 	if (user.theme) {
 		localStorage.setItem("theme", user.theme);
@@ -98,6 +124,15 @@ let _user;
 					icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>`,
 					onClick: () => {
 						openBookmarks();
+					},
+				},
+				{
+					title: "Change user",
+
+					icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+					onClick: async () => {
+						const { openAccountSwitcher } = await import("../../shared/account-switcher.js");
+						openAccountSwitcher();
 					},
 				},
 				{

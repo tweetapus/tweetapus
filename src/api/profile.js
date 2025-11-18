@@ -904,6 +904,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
 			if (!payload) return { error: "Invalid token" };
 
+			if (payload.isDelegate) {
+				return { error: "Delegates cannot edit profile settings" };
+			}
+
 			const currentUser = getUserByUsername.get(payload.username);
 			if (!currentUser) return { error: "User not found" };
 
@@ -1226,6 +1230,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
 			if (!payload) return { error: "Invalid token" };
 
+			if (payload.isDelegate) {
+				return { error: "Delegates cannot change avatars" };
+			}
+
 			const currentUser = getUserByUsername.get(payload.username);
 			if (!currentUser) return { error: "User not found" };
 
@@ -1313,6 +1321,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
 			if (!payload) return { error: "Invalid token" };
 
+			if (payload.isDelegate) {
+				return { error: "Delegates cannot change banners" };
+			}
+
 			const currentUser = getUserByUsername.get(payload.username);
 			if (!currentUser) return { error: "User not found" };
 
@@ -1376,6 +1388,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
 			if (!payload) return { error: "Invalid token" };
 
+			if (payload.isDelegate) {
+				return { error: "Delegates cannot change usernames" };
+			}
+
 			const currentUser = getUserByUsername.get(payload.username);
 			if (!currentUser) return { error: "User not found" };
 
@@ -1421,6 +1437,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
 			if (!payload) return { error: "Invalid token" };
 
+			if (payload.isDelegate) {
+				return { error: "Delegates cannot change passwords" };
+			}
+
 			const currentUser = getUserByUsername.get(payload.username);
 			if (!currentUser) return { error: "User not found" };
 
@@ -1465,6 +1485,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 		try {
 			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
 			if (!payload) return { error: "Invalid token" };
+
+			if (payload.isDelegate) {
+				return { error: "Delegates cannot delete accounts" };
+			}
 
 			const currentUser = getUserByUsername.get(payload.username);
 			if (!currentUser) return { error: "User not found" };

@@ -622,6 +622,19 @@ CREATE TABLE IF NOT EXISTS delegates (
 CREATE INDEX IF NOT EXISTS idx_delegates_owner_id ON delegates(owner_id);
 CREATE INDEX IF NOT EXISTS idx_delegates_delegate_id ON delegates(delegate_id);
 CREATE INDEX IF NOT EXISTS idx_delegates_status ON delegates(status);
+
+CREATE TABLE IF NOT EXISTS account_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  account_type TEXT DEFAULT 'primary',
+  delegate_owner_id TEXT DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (delegate_owner_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_account_sessions_user_id ON account_sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_account_sessions_account_type ON account_sessions(account_type);
 `,
 ).run();
 

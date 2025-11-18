@@ -4,176 +4,185 @@ import switchPage, { addRoute } from "./pages.js";
 import { createTweetElement } from "./tweets.js";
 
 export default async function openTweet(
-  tweet,
-  { repliesCache, threadPostsCache } = {}
+	tweet,
+	{ repliesCache, threadPostsCache } = {},
 ) {
-  const { default: query } = await import("./api.js");
+	const { default: query } = await import("./api.js");
 
-  if (!tweet?.id || !tweet) return;
+	if (!tweet?.id || !tweet) return;
 
-  if (!tweet?.author) {
-    const apiOutput = await query(`/tweets/${tweet.id}`);
+	if (!tweet?.author) {
+		const apiOutput = await query(`/tweets/${tweet.id}`);
 
-    if (!apiOutput || !apiOutput.tweet) {
-      switchPage("timeline");
-      toastQueue.add(
-        `<h1>Tweet not found</h1><p>It might have been deleted</p>`
-      );
-      return;
-    }
+		if (!apiOutput || !apiOutput.tweet) {
+			switchPage("timeline");
+			toastQueue.add(
+				`<h1>Tweet not found</h1><p>It might have been deleted</p>`,
+			);
+			return;
+		}
 
-    tweet = apiOutput.tweet;
-    threadPostsCache = apiOutput?.threadPosts || [
-      {
-        ...tweet,
-        content: "failed to load xeet. it might have been deleted",
-      },
-    ];
-    repliesCache = apiOutput?.replies || [];
-    tweet.extendedStats = apiOutput?.extendedStats || [];
-  }
+		tweet = apiOutput.tweet;
+		threadPostsCache = apiOutput?.threadPosts || [
+			{
+				...tweet,
+				content: "failed to load xeet. it might have been deleted",
+			},
+		];
+		repliesCache = apiOutput?.replies || [];
+		tweet.extendedStats = apiOutput?.extendedStats || [];
+	}
 
-  let isLoadingMoreReplies = false;
-  let hasMoreReplies = false;
-  let oldestReplyId = null;
-  let scrollHandler = null;
+	let isLoadingMoreReplies = false;
+	let hasMoreReplies = false;
+	let oldestReplyId = null;
+	let scrollHandler = null;
 
-  switchPage("tweet", {
-    path: `/tweet/${tweet.id}`,
-    cleanup: () => {
-      if (scrollHandler) {
-        window.removeEventListener("scroll", scrollHandler);
-        scrollHandler = null;
-      }
-    },
-    recoverState: async (page) => {
-      page.innerHTML = `<button class="back-button" onclick="history.back()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left-icon lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button>`;
+	switchPage("tweet", {
+		path: `/tweet/${tweet.id}`,
+		cleanup: () => {
+			if (scrollHandler) {
+				window.removeEventListener("scroll", scrollHandler);
+				scrollHandler = null;
+			}
+		},
+		recoverState: async (page) => {
+			page.innerHTML = `<button class="back-button" onclick="history.back()"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left-icon lucide-arrow-left"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg></button>`;
 
-      page.querySelector(".back-button").addEventListener("click", (e) => {
-        e.preventDefault();
-        history.back();
-      });
+			page.querySelector(".back-button").addEventListener("click", (e) => {
+				e.preventDefault();
+				history.back();
+			});
 
-      const tweetEl = createTweetElement(tweet, {
-        clickToOpen: false,
-      });
-      page.appendChild(tweetEl);
+			const tweetEl = createTweetElement(tweet, {
+				clickToOpen: false,
+			});
 
-      const composer = await createComposer({
-        placeholder: `Add a reply…`,
-        replyTo: tweet.id,
-        callback: (tweet) => {
-          const replyEl = createTweetElement(tweet, {
-            clickToOpen: true,
-          });
-          replyEl.classList.add("created");
+			if (tweet.reply_to) {
+				page.style.opacity = ".5";
+			}
 
-          composer.insertAdjacentElement("afterend", replyEl);
-        },
-      });
+			page.appendChild(tweetEl);
 
-      page.appendChild(composer);
+			const composer = await createComposer({
+				placeholder: `Add a reply…`,
+				replyTo: tweet.id,
+				callback: (tweet) => {
+					const replyEl = createTweetElement(tweet, {
+						clickToOpen: true,
+					});
+					replyEl.classList.add("created");
 
-      if (!threadPostsCache || !repliesCache) {
-        const apiOutput = await query(`/tweets/${tweet.id}`);
-        tweet = apiOutput.tweet;
-        threadPostsCache = apiOutput.threadPosts;
-        repliesCache = apiOutput.replies;
-        hasMoreReplies = apiOutput?.hasMoreReplies || false;
-        tweet.extendedStats = apiOutput.extendedStats;
-      }
+					composer.insertAdjacentElement("afterend", replyEl);
+				},
+			});
 
-      if (!tweet) {
-        switchPage("timeline");
-        toastQueue.add(
-          `<h1>Tweet not found</h1><p>It might have been deleted</p>`
-        );
-        return;
-      }
+			page.appendChild(composer);
 
-      if (threadPostsCache.length > 0) {
-        tweetEl.remove();
-        threadPostsCache.forEach((reply) => {
-          const postEl = createTweetElement(reply, {
-            clickToOpen: reply.id !== tweet.id,
-          });
-          if (reply.id === tweet.id) {
-            postEl.setAttribute("data-main-tweet", "true");
-          }
-          composer.insertAdjacentElement("beforebegin", postEl);
-        });
+			if (!threadPostsCache || !repliesCache) {
+				const apiOutput = await query(`/tweets/${tweet.id}`);
+				tweet = apiOutput.tweet;
+				threadPostsCache = apiOutput.threadPosts;
+				repliesCache = apiOutput.replies;
+				hasMoreReplies = apiOutput?.hasMoreReplies || false;
+				tweet.extendedStats = apiOutput.extendedStats;
+			}
 
-        setTimeout(() => {
-          const mainTweet = page.querySelector('[data-main-tweet="true"]');
-          if (mainTweet) {
-            mainTweet.scrollIntoView({ block: "start" });
-            window.scrollBy(0, -200);
-          }
-        }, 100);
-      }
+			if (!tweet) {
+				switchPage("timeline");
+				toastQueue.add(
+					`<h1>Tweet not found</h1><p>It might have been deleted</p>`,
+				);
+				return;
+			}
 
-      const repliesContainer = document.createElement("div");
-      repliesContainer.className = "tweet-replies-container";
+			if (threadPostsCache.length > 0) {
+				tweetEl.remove();
+				threadPostsCache.forEach((reply) => {
+					const postEl = createTweetElement(reply, {
+						clickToOpen: reply.id !== tweet.id,
+					});
+					if (reply.id === tweet.id) {
+						postEl.setAttribute("data-main-tweet", "true");
+					}
+					composer.insertAdjacentElement("beforebegin", postEl);
+				});
 
-      repliesCache.forEach((reply) => {
-        const replyEl = createTweetElement(reply, {
-          clickToOpen: true,
-        });
-        replyEl.setAttribute("data-reply-id", reply.id);
-        repliesContainer.appendChild(replyEl);
-        oldestReplyId = reply.id;
-      });
+				setTimeout(() => {
+					const mainTweet = page.querySelector('[data-main-tweet="true"]');
+					if (mainTweet) {
+						mainTweet.scrollIntoView({ block: "start" });
+						window.scrollBy(0, -200);
+					}
+				}, 100);
+			}
 
-      page.appendChild(repliesContainer);
+			if (tweet.reply_to) {
+				page.style.opacity = "";
+			}
 
-      if (scrollHandler) {
-        window.removeEventListener("scroll", scrollHandler);
-      }
+			const repliesContainer = document.createElement("div");
+			repliesContainer.className = "tweet-replies-container";
 
-      scrollHandler = async () => {
-        if (isLoadingMoreReplies || !hasMoreReplies) return;
+			repliesCache.forEach((reply) => {
+				const replyEl = createTweetElement(reply, {
+					clickToOpen: true,
+				});
+				replyEl.setAttribute("data-reply-id", reply.id);
+				repliesContainer.appendChild(replyEl);
+				oldestReplyId = reply.id;
+			});
 
-        const scrollPosition = window.innerHeight + window.scrollY;
-        const threshold = document.documentElement.scrollHeight - 800;
+			page.appendChild(repliesContainer);
 
-        if (scrollPosition >= threshold) {
-          isLoadingMoreReplies = true;
+			if (scrollHandler) {
+				window.removeEventListener("scroll", scrollHandler);
+			}
 
-          try {
-            const apiOutput = await query(
-              `/tweets/${tweet.id}?before=${oldestReplyId}&limit=20`
-            );
+			scrollHandler = async () => {
+				if (isLoadingMoreReplies || !hasMoreReplies) return;
 
-            if (apiOutput.replies && apiOutput.replies.length > 0) {
-              apiOutput.replies.forEach((reply) => {
-                const replyEl = createTweetElement(reply, {
-                  clickToOpen: true,
-                });
-                replyEl.setAttribute("data-reply-id", reply.id);
-                repliesContainer.appendChild(replyEl);
-                oldestReplyId = reply.id;
-              });
+				const scrollPosition = window.innerHeight + window.scrollY;
+				const threshold = document.documentElement.scrollHeight - 800;
 
-              hasMoreReplies = apiOutput.hasMoreReplies || false;
-            }
-          } catch (error) {
-            console.error("Error loading more replies:", error);
-          } finally {
-            isLoadingMoreReplies = false;
-          }
-        }
-      };
+				if (scrollPosition >= threshold) {
+					isLoadingMoreReplies = true;
 
-      window.addEventListener("scroll", scrollHandler);
-    },
-  });
+					try {
+						const apiOutput = await query(
+							`/tweets/${tweet.id}?before=${oldestReplyId}&limit=20`,
+						);
+
+						if (apiOutput.replies && apiOutput.replies.length > 0) {
+							apiOutput.replies.forEach((reply) => {
+								const replyEl = createTweetElement(reply, {
+									clickToOpen: true,
+								});
+								replyEl.setAttribute("data-reply-id", reply.id);
+								repliesContainer.appendChild(replyEl);
+								oldestReplyId = reply.id;
+							});
+
+							hasMoreReplies = apiOutput.hasMoreReplies || false;
+						}
+					} catch (error) {
+						console.error("Error loading more replies:", error);
+					} finally {
+						isLoadingMoreReplies = false;
+					}
+				}
+			};
+
+			window.addEventListener("scroll", scrollHandler);
+		},
+	});
 }
 
 addRoute(
-  (pathname) =>
-    pathname.startsWith("/tweet/") && pathname.split("/").length === 3,
-  (pathname) => {
-    const tweetId = pathname.split("/").pop();
-    openTweet({ id: tweetId });
-  }
+	(pathname) =>
+		pathname.startsWith("/tweet/") && pathname.split("/").length === 3,
+	(pathname) => {
+		const tweetId = pathname.split("/").pop();
+		openTweet({ id: tweetId });
+	},
 );
