@@ -2123,7 +2123,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				return { success: true };
 			}
 
-			const membership = getCommunityMembership.get(currentUser.id, community_id);
+			const membership = getCommunityMembership.get(
+				currentUser.id,
+				community_id,
+			);
 
 			if (!membership) {
 				return { error: "You are not a member of this community" };

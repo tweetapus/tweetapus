@@ -85,15 +85,38 @@ static double calculate_engagement_quality(
 static double calculate_age_diversity_boost(int like_count, int retweet_count, int reply_count, int quote_count, double age_hours) {
     int total_engagement = like_count + retweet_count + reply_count + quote_count;
     double engagement_density = (double)total_engagement / (age_hours + 1.0);
-    if (age_hours <= FRESH_TWEET_HOURS) return 1.0;
-    if (age_hours > MAX_AGE_HOURS) return 0.95; /* older than max age should be slightly penalized */
 
-    /* Slight boost for sustained engagement on older tweets */
-    if (engagement_density > 0.6) {
-        double boost = 1.05 + fmin(0.2, (engagement_density - 0.6) * 0.08);
-        return boost;
+    /* soften extremely new tweets so the feed does not over-index on the latest */
+    if (age_hours < 0.25) {
+        double early_penalty = 0.92 + age_hours * 0.32;
+        if (early_penalty < 0.9) early_penalty = 0.9;
+        if (early_penalty > 1.0) early_penalty = 1.0;
+        return early_penalty;
     }
-    return 1.0;
+
+    if (age_hours <= FRESH_TWEET_HOURS) {
+        return 1.0;
+    }
+
+    if (age_hours > MAX_AGE_HOURS) {
+        return 0.9;
+    }
+
+    double boost = 1.0;
+
+    if (age_hours >= 6.0 && age_hours <= 18.0) {
+        boost += 0.05 + fmin(0.12, engagement_density * 0.05);
+    } else if (age_hours > 18.0 && age_hours <= 30.0) {
+        boost += fmin(0.1, engagement_density * 0.04);
+    }
+
+    if (engagement_density > 0.6) {
+        boost += fmin(0.2, (engagement_density - 0.6) * 0.08);
+    }
+
+    if (boost > 1.35) boost = 1.35;
+    if (boost < 0.85) boost = 0.85;
+    return boost;
 }
 
 static inline double content_repeat_penalty(int content_repeats) {
