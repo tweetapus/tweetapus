@@ -1902,7 +1902,7 @@ export const createTweetElement = (tweet, config = {}) => {
 
 					const script = document.createElement("script");
 					script.src =
-						"https://html2canvas.hertzen.com/dist/html2canvas.min.js";
+						"/public/shared/assets/js/html2canvas.js";
 					script.onload = () => {
 						window
 							.html2canvas(wrapper, {

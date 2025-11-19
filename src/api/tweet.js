@@ -609,7 +609,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			if (gif_url) {
 				if (
 					typeof gif_url !== "string" ||
-					!gif_url.startsWith("https://media.tenor.com/")
+					!gif_url.startsWith(process.env.TENOR_MEDIA_HOST || "https://media.tenor.com/")
 				) {
 					return { error: "Invalid GIF URL" };
 				}

@@ -449,14 +449,14 @@ async function callOpenAI(messages, db) {
 			};
 		});
 
-		let response = await fetch("https://api.openai.com/v1/responses", {
+		let response = await fetch(`${OPENAPI_HOST || "https://api.openai.com/v1/"}responses`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 				Authorization: `Bearer ${OPENAI_API_KEY}`,
 			},
 			body: JSON.stringify({
-				model: process.env.ASSISTANT_MODEL,
+				model: process.env.OPENAI_MODEL,
 				instructions: instructions,
 				input: formattedInput,
 				tools: tools,
@@ -493,14 +493,14 @@ async function callOpenAI(messages, db) {
 				});
 			}
 
-			response = await fetch("https://api.openai.com/v1/responses", {
+			response = await fetch(`${OPENAPI_HOST || "https://api.openai.com/v1/"}responses`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${OPENAI_API_KEY}`,
 				},
 				body: JSON.stringify({
-					model: process.env.ASSISTANT_MODEL,
+					model: process.env.OPENAI_MODEL,
 					instructions: instructions,
 					input: [
 						...formattedInput,
