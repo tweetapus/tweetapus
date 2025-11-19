@@ -765,6 +765,10 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 				data.options,
 			);
 
+			passkeyLoginButton.disabled = true;
+			passkeyLoginButton.classList.add("loading");
+			passkeyLoginButton.innerHTML = `<svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20" style="color:#c5c5c8" class="iosspin"><rect width="2" height="4" x="2.35" y="3.764" opacity=".93" rx="1" transform="rotate(-45 2.35 3.764)"></rect><rect width="4" height="2" x="1" y="7" opacity=".78" rx="1"></rect><rect width="2" height="4" x="5.179" y="9.41" opacity=".69" rx="1" transform="rotate(45 5.179 9.41)"></rect><rect width="2" height="4" x="7" y="11" opacity=".62" rx="1"></rect><rect width="2" height="4" x="9.41" y="10.824" opacity=".48" rx="1" transform="rotate(-45 9.41 10.824)"></rect><rect width="4" height="2" x="11" y="7" opacity=".38" rx="1"></rect><rect width="2" height="4" x="12.239" y="2.35" opacity=".3" rx="1" transform="rotate(45 12.239 2.35)"></rect><rect width="2" height="4" x="7" y="1" rx="1"></rect></svg>`;
+
 			const verifyResponse = await fetch("/api/auth/verify-authentication", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -775,8 +779,11 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 			});
 
 			const verifyData = await verifyResponse.json();
+			passkeyLoginButton.disabled = false;
+			passkeyLoginButton.classList.remove("loading");
+			loginBtn.innerText = `Log in with passkey`;
 
-			if (!verifyData.token) {
+			if (verifyData.token) {
 				localStorage.setItem("authToken", verifyData.token);
 
 				if (window.cookieStore?.set) {

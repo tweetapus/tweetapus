@@ -619,6 +619,15 @@ button {
       margin-bottom: 23px;
       max-width: 330px;
       width: 100%;
+
+      &:disabled {
+        background-color: var(--border-primary);
+        border-color: var(--border-primary);
+        pointer-events: none;
+        padding: 0px;
+        box-shadow: none;
+        height: 39px;
+      }
     }
 
     .login-cancel-btn {
