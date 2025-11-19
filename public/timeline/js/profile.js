@@ -1289,7 +1289,7 @@ document
 function setupDmButton(username) {
 	const btn = document.getElementById("profileDmBtn");
 	if (!btn) return;
-	
+
 	btn.onclick = async () => {
 		try {
 			const pc = document.getElementById("profileContainer");
