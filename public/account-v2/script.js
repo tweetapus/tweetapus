@@ -776,31 +776,58 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 
 			const verifyData = await verifyResponse.json();
 
-			if (verifyData.token) {
+			if (!verifyData.token) {
 				localStorage.setItem("authToken", verifyData.token);
 
-				try {
-					if (window.cookieStore?.set) {
-						await window.cookieStore.set({
-							name: "agree",
-							value: "yes",
-							expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
-						});
-					} else {
-						Reflect.set(
-							document,
-							"cookie",
-							`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
-						);
-					}
-				} catch {}
+				if (window.cookieStore?.set) {
+					await window.cookieStore.set({
+						name: "agree",
+						value: "yes",
+						expires: new Date("Fri, 31 Dec 9999 23:59:59 GMT"),
+					});
+				} else {
+					Reflect.set(
+						document,
+						"cookie",
+						`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
+					);
+				}
 
 				window.location.href = "/timeline/";
 			} else {
-				alert(verifyData.error || "Authentication failed");
+				throw new Error(verifyData.error || "Authentication failed");
 			}
 		} catch (err) {
-			console.error("Passkey login error:", err);
+			if (
+				err?.message.includes(
+					"The operation either timed out or was not allowed.",
+				)
+			) {
+				return;
+			}
+			const errorEl = document.createElement("div");
+			errorEl.style.cssText = `
+				position: fixed;
+				left: 0;
+				right: 0;
+				bottom: 10px;
+				max-width: 400px;
+				width: fit-content;
+				margin: 0px auto;
+				border-radius: 4px;
+				text-align: center;
+				background-color: var(--error-color);
+				z-index: 10000000;
+				font-size: 16px;
+				color: black;
+				padding: 6px;
+			`;
+			errorEl.textContent = err.message;
+			document.body.appendChild(errorEl);
+
+			setTimeout(() => {
+				document.body.removeChild(errorEl);
+			}, 2500);
 		}
 	});
 
@@ -849,10 +876,21 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 		const username = usernameInput.value.trim();
 		const password = passwordInput.value.trim();
 
-		if (!username || !password) {
-			alert("Please enter both username and password");
+		if (!username) {
+			usernameInput.focus();
 			return;
 		}
+		if (!password) {
+			passwordInput.focus();
+			return;
+		}
+
+		loginBtn.disabled = true;
+		loginBtn.classList.add("loading");
+		loginBtn.innerHTML = `<svg fill="currentColor" viewBox="0 0 16 16" width="20" height="20" style="color:#c5c5c8" class="iosspin"><rect width="2" height="4" x="2.35" y="3.764" opacity=".93" rx="1" transform="rotate(-45 2.35 3.764)"></rect><rect width="4" height="2" x="1" y="7" opacity=".78" rx="1"></rect><rect width="2" height="4" x="5.179" y="9.41" opacity=".69" rx="1" transform="rotate(45 5.179 9.41)"></rect><rect width="2" height="4" x="7" y="11" opacity=".62" rx="1"></rect><rect width="2" height="4" x="9.41" y="10.824" opacity=".48" rx="1" transform="rotate(-45 9.41 10.824)"></rect><rect width="4" height="2" x="11" y="7" opacity=".38" rx="1"></rect><rect width="2" height="4" x="12.239" y="2.35" opacity=".3" rx="1" transform="rotate(45 12.239 2.35)"></rect><rect width="2" height="4" x="7" y="1" rx="1"></rect></svg>`;
+
+		usernameInput.blur();
+		passwordInput.blur();
 
 		try {
 			const { token, error } = await (
@@ -862,6 +900,11 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 					body: JSON.stringify({ username, password }),
 				})
 			).json();
+			loginBtn.disabled = false;
+			loginBtn.textContent = "Log in";
+			loginBtn.classList.remove("loading");
+
+			if (error) throw new Error(error);
 
 			if (token) {
 				localStorage.setItem("authToken", token);
@@ -884,11 +927,43 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 
 				window.location.href = "/timeline/";
 			} else {
-				alert(error || "Login failed");
+				throw new Error(error || "Login failed");
 			}
 		} catch (err) {
-			console.error("Login error:", err);
-			alert("Login failed. Please try again.");
+			loginBtn.disabled = false;
+			loginBtn.textContent = "Log in";
+			loginBtn.classList.remove("loading");
+
+			document.querySelector("label[for='login-password']").innerText =
+				err.message;
+			document.querySelector("label[for='login-password']").style.color =
+				"var(--error-color)";
+			document.querySelector("label[for='login-password']").style.transition =
+				"opacity .4s, filter .4s, transform .4s";
+
+			passwordInput.focus();
+
+			setTimeout(() => {
+				document.querySelector("label[for='login-password']").style.opacity =
+					"0";
+				document.querySelector("label[for='login-password']").style.filter =
+					"blur(2px)";
+				document.querySelector("label[for='login-password']").style.transform =
+					"scale(0.9)";
+			}, 1500);
+			setTimeout(() => {
+				document
+					.querySelectorAll("label[for='login-password']")
+					.forEach((label) => {
+						label.innerText = "Password";
+						label.style.color = "";
+						label.style.opacity = "";
+						label.style.filter = "";
+						label.style.transform = "";
+					});
+				document.querySelector("#login-form").style.opacity = "";
+				document.querySelector("#login-form").style.transform = "";
+			}, 1700);
 		}
 	});
 

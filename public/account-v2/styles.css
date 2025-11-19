@@ -659,6 +659,7 @@ button {
         font-weight: 400;
         font-size: 14px;
         color: var(--text-primary);
+        transform-origin: center left;
 
         &[for="login-password"] {
           margin-top: 1.5em;
@@ -695,6 +696,15 @@ button {
         button {
           width: 100%;
           margin-bottom: 30px;
+
+          &:disabled {
+            background-color: var(--border-primary);
+            border-color: var(--border-primary);
+            pointer-events: none;
+            padding: 0px;
+            box-shadow: none;
+            height: 39px;
+          }
         }
 
         .back-btn {
