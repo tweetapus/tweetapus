@@ -48,8 +48,6 @@ static double calculate_engagement_quality(
     
     if (total_engagement == 0) return 0.05;
     
-    double total_for_ratio = (double)(like_count + retweet_count + reply_count + quote_count);
-    if (total_for_ratio < 1.0) total_for_ratio = 1.0;
     
     double retweet_ratio = (double)retweet_count / total_for_ratio;
     double reply_ratio = (double)reply_count / total_for_ratio;
@@ -778,6 +776,25 @@ void rank_tweets(Tweet *tweets, size_t count) {
     free(final_idx);
     free(selected_flags);
     for (int i = 0; i < 5; i++) if (buckets[i]) free(buckets[i]);
+
+    /* Reduce adjacency duplicates in the top portion - try to swap duplicates out */
+    size_t top_limit_adj = (count < 10) ? count : 10;
+    for (size_t i = 0; i + 1 < top_limit_adj; i++) {
+        if (!tweets[i].id || !tweets[i+1].id) continue;
+        if (strcmp(tweets[i].id, tweets[i+1].id) == 0) {
+            /* find a later non-duplicate to swap with i+1 */
+            size_t swap_idx = SIZE_MAX;
+            for (size_t j = top_limit_adj; j < count; j++) {
+                if (!tweets[j].id) continue;
+                if (strcmp(tweets[j].id, tweets[i].id) != 0) { swap_idx = j; break; }
+            }
+            if (swap_idx != SIZE_MAX) {
+                Tweet tmp = tweets[i+1];
+                tweets[i+1] = tweets[swap_idx];
+                tweets[swap_idx] = tmp;
+            }
+        }
+    }
 }
 
 char *process_timeline(const char *json_input) {
