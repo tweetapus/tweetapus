@@ -243,11 +243,6 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 			body: t.Object({
 				postId: t.String(),
 			}),
-			response: t.Object({
-				success: t.Boolean(),
-				error: t.Optional(t.String()),
-				bookmarked: true,
-			}),
 		},
 	)
 	.post(
@@ -288,11 +283,6 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 			},
 			body: t.Object({
 				postId: t.String(),
-			}),
-			response: t.Object({
-				success: t.Boolean(),
-				error: t.Optional(t.String()),
-				bookmarked: false,
 			}),
 		},
 	)
@@ -391,12 +381,5 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 		},
 		query: t.Object({
 			limit: t.Optional(t.String()),
-		}),
-		response: t.Object({
-			success: t.Boolean(),
-			error: t.Optional(t.String()),
-			bookmarks: t.Array(
-				t.Object(),
-			),
 		}),
 	});
