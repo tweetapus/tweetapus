@@ -365,10 +365,10 @@ double calculate_score(
     double random_span = all_seen_flag ? 1.8 : 0.04;
     double random_offset = all_seen_flag ? 0.5 : 0.02;
     double random_component = random_offset + random_factor * random_span;
-    double random_multiplier = all_seen_flag ? (1.0 + random_component * 0.35) : (1.0 + random_component * 0.08);
+    double random_multiplier = all_seen_flag ? (1.0 + random_component * 0.25) : (1.0 + random_component * 0.05);
     
-    if (author_repeats > 3 || content_repeats > 2) {
-        random_multiplier *= (1.0 + random_factor * 0.5);
+    if (author_repeats > 1 || content_repeats > 0) {
+        random_multiplier *= 0.92;
     }
     
     /* content_repeat_penalty already applied; no further multiplicative adjustments */
@@ -648,9 +648,6 @@ void rank_tweets(Tweet *tweets, size_t count) {
         forced_old_needed = 1;
     }
 
-    /* author limit: maximum allowed slots from same author in top_limit */
-    size_t max_per_author = 2;
-
     size_t *final_idx = (size_t *)malloc(sizeof(size_t) * count);
     if (!final_idx) {
         for (int i = 0; i < 5; i++) { if (buckets[i]) free(buckets[i]); }
@@ -665,6 +662,7 @@ void rank_tweets(Tweet *tweets, size_t count) {
     /* author repetition heuristic: limit number of posts with repeated authors in top windows */
     size_t selected_author_repeat_count = 0;
     size_t max_author_repeat_slots = top_limit < 4 ? top_limit : 4;
+    size_t forced_old_selected = 0;
 
     /* pick function: attempt to pick one tweet from bucket b without violating constraints */
     for (size_t round = 0; round < (size_t)count && selected < count; round++) {
@@ -692,6 +690,14 @@ void rank_tweets(Tweet *tweets, size_t count) {
                 continue;
             }
 
+            if (forced_old_needed > 0) {
+                double age_hours = (double)(now_ts - (time_t)tweets[idx].created_at) / 3600.0;
+                if (age_hours < 24.0) {
+                    bucket_pos[b]++;
+                    continue;
+                }
+            }
+
             /* commit selection */
             final_idx[selected] = idx;
             selected_flags[idx] = 1;
@@ -699,9 +705,21 @@ void rank_tweets(Tweet *tweets, size_t count) {
                 selected_author_repeat_count++;
             }
             selected++;
+            if (forced_old_needed > 0) {
+                double age_hours = (double)(now_ts - (time_t)tweets[idx].created_at) / 3600.0;
+                if (age_hours >= 24.0) {
+                    forced_old_selected++;
+                    if (forced_old_selected >= forced_old_needed) {
+                        forced_old_needed = 0;
+                    }
+                }
+            }
             bucket_pos[b]++;
         }
         if (!tried_any) break; /* nothing left to pick */
+        if (forced_old_needed == 0) {
+            forced_old_selected = 0;
+        }
     }
 
     /* Fill remaining positions with any unselected tweets (including duplicates) */

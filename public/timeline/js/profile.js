@@ -284,8 +284,10 @@ const renderMediaGrid = async (posts) => {
 
 	for (const post of posts) {
 		const attachments = post.attachments || [];
-		const mediaAttachments = attachments.filter(att => att.type === "image" || att.type === "video");
-		
+		const mediaAttachments = attachments.filter(
+			(att) => att.type === "image" || att.type === "video",
+		);
+
 		if (mediaAttachments.length === 0) continue;
 
 		for (const attachment of mediaAttachments) {
@@ -298,25 +300,31 @@ const renderMediaGrid = async (posts) => {
 				img.src = attachment.url;
 				img.alt = "Media";
 				img.loading = "lazy";
-				img.style.cssText = "width: 100%; height: 100%; object-fit: cover; display: block;";
+				img.style.cssText =
+					"width: 100%; height: 100%; object-fit: cover; display: block;";
 				mediaItem.appendChild(img);
 			} else if (attachment.type === "video") {
 				const video = document.createElement("video");
 				video.src = attachment.url;
-				video.style.cssText = "width: 100%; height: 100%; object-fit: cover; display: block;";
+				video.style.cssText =
+					"width: 100%; height: 100%; object-fit: cover; display: block;";
 				video.muted = true;
 				video.loop = true;
 				video.playsInline = true;
-				
+
 				const playIcon = document.createElement("div");
-				playIcon.style.cssText = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none;";
-				playIcon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>';
-				
+				playIcon.style.cssText =
+					"position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none;";
+				playIcon.innerHTML =
+					'<svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>';
+
 				mediaItem.style.position = "relative";
 				mediaItem.appendChild(video);
 				mediaItem.appendChild(playIcon);
-				
-				mediaItem.addEventListener("mouseenter", () => video.play().catch(() => {}));
+
+				mediaItem.addEventListener("mouseenter", () =>
+					video.play().catch(() => {}),
+				);
 				mediaItem.addEventListener("mouseleave", () => {
 					video.pause();
 					video.currentTime = 0;
@@ -437,8 +445,10 @@ const loadMoreMedia = async () => {
 
 	for (const post of media) {
 		const attachments = post.attachments || [];
-		const mediaAttachments = attachments.filter(att => att.type === "image" || att.type === "video");
-		
+		const mediaAttachments = attachments.filter(
+			(att) => att.type === "image" || att.type === "video",
+		);
+
 		if (mediaAttachments.length === 0) continue;
 
 		for (const attachment of mediaAttachments) {
@@ -451,25 +461,31 @@ const loadMoreMedia = async () => {
 				img.src = attachment.url;
 				img.alt = "Media";
 				img.loading = "lazy";
-				img.style.cssText = "width: 100%; height: 100%; object-fit: cover; display: block;";
+				img.style.cssText =
+					"width: 100%; height: 100%; object-fit: cover; display: block;";
 				mediaItem.appendChild(img);
 			} else if (attachment.type === "video") {
 				const video = document.createElement("video");
 				video.src = attachment.url;
-				video.style.cssText = "width: 100%; height: 100%; object-fit: cover; display: block;";
+				video.style.cssText =
+					"width: 100%; height: 100%; object-fit: cover; display: block;";
 				video.muted = true;
 				video.loop = true;
 				video.playsInline = true;
-				
+
 				const playIcon = document.createElement("div");
-				playIcon.style.cssText = "position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none;";
-				playIcon.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>';
-				
+				playIcon.style.cssText =
+					"position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 48px; height: 48px; background: rgba(0,0,0,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none;";
+				playIcon.innerHTML =
+					'<svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>';
+
 				mediaItem.style.position = "relative";
 				mediaItem.appendChild(video);
 				mediaItem.appendChild(playIcon);
-				
-				mediaItem.addEventListener("mouseenter", () => video.play().catch(() => {}));
+
+				mediaItem.addEventListener("mouseenter", () =>
+					video.play().catch(() => {}),
+				);
 				mediaItem.addEventListener("mouseleave", () => {
 					video.pause();
 					video.currentTime = 0;
