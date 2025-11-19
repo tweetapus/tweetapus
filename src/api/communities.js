@@ -534,8 +534,8 @@ export default new Elysia({ tags: ["Communities"] })
 				id: t.String(),
 			}),
 			query: t.Object({
-				limit: t.Optional(t.Number()),
-				offset: t.Optional(t.Number()),
+				limit: t.Optional(t.String()),
+				offset: t.Optional(t.String()),
 			})
 		},
 	)
@@ -823,8 +823,8 @@ export default new Elysia({ tags: ["Communities"] })
 				id: t.String(),
 			}),
 			query: t.Object({
-				limit: t.Optional(t.Number()),
-				offset: t.Optional(t.Number()),
+				limit: t.Optional(t.String()),
+				offset: t.Optional(t.String()),
 			})
 		},
 	)
@@ -963,8 +963,8 @@ export default new Elysia({ tags: ["Communities"] })
 				userId: t.String(),
 			}),
 			query: t.Object({
-				limit: t.Optional(t.Number()),
-				offset: t.Optional(t.Number()),
+				limit: t.Optional(t.String()),
+				offset: t.Optional(t.String()),
 			})
 		},
 	)
@@ -1134,8 +1134,8 @@ export default new Elysia({ tags: ["Communities"] })
 				id: t.String(),
 			}),
 			query: t.Object({
-				limit: t.Optional(t.Number()),
-				offset: t.Optional(t.Number()),
+				limit: t.Optional(t.String()),
+				offset: t.Optional(t.String()),
 			})
 		},
 	);

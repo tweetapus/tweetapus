@@ -2145,29 +2145,27 @@ document
 		}
 	});
 
-document
-	.getElementById("profileDropdownBtn")
-	?.addEventListener("click", (e) => {
-		e.preventDefault();
-		e.stopPropagation();
-		const triggerEl = e.currentTarget;
+export const handleProfileDropdown = (e) => {
+	e.preventDefault();
+	e.stopPropagation();
+	const triggerEl = e.currentTarget;
 
-		getUser()
-			.then(async (currentUser) => {
-				try {
-					const baseItems = [
-						{
-							title: "Copy link",
-							icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
+	getUser()
+		.then(async (currentUser) => {
+			try {
+				const baseItems = [
+					{
+						title: "Copy link",
+						icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
 
-							action: () => {
-								const profileUrl = `${location.origin}/@${currentUsername}`;
+						action: () => {
+							const profileUrl = `${location.origin}/@${currentUsername}`;
 
-								navigator.clipboard.writeText(profileUrl);
-							},
+							navigator.clipboard.writeText(profileUrl);
 						},
-						{
-							id: "request-affiliate",
+					},
+					{
+						id: "request-affiliate",
 							icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18.6471 15.3333V18.6667M18.6471 18.6667L18.6471 22M18.6471 18.6667H22M18.6471 18.6667H15.2941M3 22C3 17.7044 6.69722 14.2222 11.258 14.2222C12.0859 14.2222 12.8854 14.3369 13.6394 14.5505M16.4118 6.44444C16.4118 8.89904 14.4102 10.8889 11.9412 10.8889C9.47214 10.8889 7.47059 8.89904 7.47059 6.44444C7.47059 3.98985 9.47214 2 11.9412 2C14.4102 2 16.4118 3.98985 16.4118 6.44444Z"></path></svg>`,
 							title: `Invite to be your affiliate`,
 							onClick: async () => {
@@ -2252,14 +2250,7 @@ document
 								}
 							},
 						});
-					}
 
-					if (
-						currentUser &&
-						currentProfile &&
-						currentProfile.profile &&
-						currentUser.id !== currentProfile.profile.id
-					) {
 						items.push({
 							id: "report-user",
 							icon: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-flag-icon lucide-flag"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></svg>`,
@@ -2503,19 +2494,12 @@ document
 					],
 				});
 			});
-	});
+};
 
 document.getElementById("editProfileModal").addEventListener("click", (e) => {
 	if (e.target === e.currentTarget) closeEditModal();
 });
 
-addRoute(
-	(pathname) => pathname.startsWith("/@") && pathname.length > 2,
-	(pathname) => {
-		const username = pathname.substring(2);
-		openProfile(username);
-	},
-);
 
 async function showFollowersList(username, type) {
 	try {

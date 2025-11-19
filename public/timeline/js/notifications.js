@@ -790,14 +790,7 @@ document
 		setTimeout(() => window.scrollTo(0, savedScroll), 0);
 	});
 
-document
-	.getElementById("markAllReadBtn")
-	?.addEventListener("click", markAllAsRead);
-
-addRoute(
-	(pathname) => pathname === "/notifications",
-	() => openNotifications(false),
-);
+export const handleMarkAllRead = markAllAsRead;
 
 export default { displayUnreadCount };
 export { openNotifications, loadNotifications, markAllAsRead };

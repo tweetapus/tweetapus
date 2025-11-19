@@ -5,10 +5,7 @@ import { createComposer } from "./composer.js";
 import dm from "./dm.js";
 import switchPage, { addRoute, showPage } from "./pages.js";
 import { addTweetToTimeline } from "./tweets.js";
-import "./profile.js";
-import "./notifications.js";
-import "./settings.js";
-import "./search.js";
+
 import {
 	activateArticlesTab,
 	deactivateArticlesTab,
@@ -224,6 +221,20 @@ let timelineScrollPosition = 0;
 			const { openNotifications } = await import("./notifications.js");
 			openNotifications(true);
 		});
+
+	document
+		.getElementById("profileDropdownBtn")
+		?.addEventListener("click", async (e) => {
+			const { handleProfileDropdown } = await import("./profile.js");
+			handleProfileDropdown(e);
+		});
+
+	document
+		.getElementById("markAllReadBtn")
+		?.addEventListener("click", async () => {
+			const { handleMarkAllRead } = await import("./notifications.js");
+			handleMarkAllRead();
+		});
 })();
 
 export function getTimelineScroll() {
@@ -250,6 +261,14 @@ addRoute(
 addRoute(
 	(pathname) => pathname === "/search",
 	() => showPage("search"),
+);
+
+addRoute(
+	(pathname) => pathname === "/notifications",
+	async () => {
+		const { openNotifications } = await import("./notifications.js");
+		openNotifications(false);
+	},
 );
 
 addRoute(

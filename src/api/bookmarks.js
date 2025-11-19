@@ -389,8 +389,8 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 		detail: {
 			description: "Gets a user's bookmarks",
 		},
-		params: t.Object({
-			limit: t.Optional(t.Number()),
+		query: t.Object({
+			limit: t.Optional(t.String()),
 		}),
 		response: t.Object({
 			success: t.Boolean(),

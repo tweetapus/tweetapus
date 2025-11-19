@@ -913,8 +913,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				description: "Lists users with pagination and search",
 			},
 			query: t.Object({
-				page: t.Optional(t.Number()),
-				limit: t.Optional(t.Number()),
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
 				search: t.Optional(t.String()),
 			}),
 			response: t.Object({
@@ -1949,8 +1949,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				description: "Lists posts with pagination and search",
 			},
 			query: t.Object({
-				page: t.Optional(t.Number()),
-				limit: t.Optional(t.Number()),
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
 				search: t.Optional(t.String()),
 			}),
 			response: t.Object({
@@ -2018,8 +2018,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				description: "Lists active suspensions with pagination",
 			},
 			query: t.Object({
-				page: t.Optional(t.Number()),
-				limit: t.Optional(t.Number()),
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
 			}),
 			response: t.Object({
 				suspensions: t.Array(t.Any()),
@@ -2576,16 +2576,16 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			}),
 			body: t.Object({
 				username: t.Optional(t.String()),
-				name: t.Optional(t.String()),
-				bio: t.Optional(t.String()),
+				name: t.Optional(t.Union([t.String(), t.Null()])),
+				bio: t.Optional(t.Union([t.String(), t.Null()])),
 				verified: t.Optional(t.Boolean()),
 				gold: t.Optional(t.Boolean()),
 				admin: t.Optional(t.Boolean()),
 				affiliate: t.Optional(t.Boolean()),
-				affiliate_with_username: t.Optional(t.String()),
+				affiliate_with_username: t.Optional(t.Union([t.String(), t.Null()])),
 				ghost_followers: t.Optional(t.Number()),
 				ghost_following: t.Optional(t.Number()),
-				character_limit: t.Optional(t.Number()),
+				character_limit: t.Optional(t.Union([t.Number(), t.Null()])),
 				created_at: t.Optional(t.String()),
 				force_follow_usernames: t.Optional(t.Array(t.String())),
 			}),
@@ -3010,8 +3010,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				description: "Lists moderation logs with pagination",
 			},
 			query: t.Object({
-				page: t.Optional(t.Number()),
-				limit: t.Optional(t.Number()),
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
 			}),
 			response: t.Any(),
 		},
@@ -3064,8 +3064,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				id: t.String(),
 			}),
 			query: t.Object({
-				page: t.Optional(t.Number()),
-				limit: t.Optional(t.Number()),
+				page: t.Optional(t.String()),
+				limit: t.Optional(t.String()),
 			}),
 			response: t.Any(),
 		},
