@@ -279,10 +279,6 @@ button {
     padding: 0px;
     box-shadow: none;
     height: 39px;
-
-    svg {
-      animation: spin 1s steps(8, end) infinite;
-    }
   }
 }
 
@@ -523,10 +519,6 @@ button {
         border-color: var(--border-secondary);
         background-color: var(--border-secondary);
         pointer-events: none;
-
-        svg {
-          animation: spin 1s steps(8, end) infinite;
-        }
       }
     }
   }

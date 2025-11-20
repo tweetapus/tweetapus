@@ -130,7 +130,7 @@
 
   <div class="main-content">
     <div class="timeline">
-      <h1>
+      <h1 class="tab-nav">
         <a href="javascript:" class="active" data-tab="home">Your feed</a>
         <a href="javascript:" data-tab="following">Following</a>
         <a href="javascript:" data-tab="articles">Articles</a>
@@ -164,7 +164,7 @@
         </div>
       </div>
 
-      <div class="search-filters">
+      <div class="search-filters tab-nav">
         <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="users">Users</button>
         <button class="filter-btn" data-filter="tweets">Tweets</button>
@@ -233,6 +233,11 @@
         </div>
       </div>
 
+      <div class="notifications-tabs tab-nav">
+        <button class="active" data-filter="all">All</button>
+        <button data-filter="mentions">Mentions</button>
+      </div>
+
       <div class="notifications-list" id="notificationsList"></div>
     </div>
 
@@ -250,7 +255,7 @@
         </div>
       </div>
 
-      <div class="communities-tabs">
+      <div class="communities-tabs tab-nav">
         <button class="communities-tab active" data-tab="all">Explore</button>
         <button class="communities-tab" data-tab="my">
           Your communities
@@ -280,7 +285,7 @@
       <div class="community-detail-banner" id="communityDetailBanner"></div>
 
       <div class="community-detail-content">
-        <div class="community-detail-tabs">
+        <div class="community-detail-tabs tab-nav">
           <button class="community-detail-tab active" data-tab="about">
             About
           </button>
@@ -649,7 +654,7 @@
         </div>
 
         <div class="profile-tabs">
-          <div class="profile-tab-nav">
+          <div class="profile-tab-nav tab-nav">
             <button class="profile-tab-btn active" data-tab="posts">
               Posts
             </button>

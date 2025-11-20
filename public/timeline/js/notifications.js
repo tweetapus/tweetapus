@@ -2,15 +2,17 @@ import {
 	NOTIFICATION_ICON_CLASSES,
 	NOTIFICATION_ICON_MAP,
 } from "../../shared/notification-icons.js";
+import { updateTabIndicator } from "../../shared/tab-indicator.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal } from "../../shared/ui-utils.js";
 import query from "./api.js";
 import { authToken } from "./auth.js";
-import switchPage, { addRoute } from "./pages.js";
+import switchPage from "./pages.js";
 import { openProfile } from "./profile.js";
 import { createTweetElement } from "./tweets.js";
 
 let currentNotifications = [];
+let currentFilter = "all";
 let isLoadingMoreNotifications = false;
 let hasMoreNotifications = true;
 let oldestNotificationId = null;
@@ -41,6 +43,27 @@ async function openNotifications(isDirectClick = true) {
 		},
 	});
 
+	const tabContainer = document.querySelector(".notifications-tabs");
+	if (tabContainer) {
+		const buttons = tabContainer.querySelectorAll("button");
+		buttons.forEach((btn) => {
+			btn.addEventListener("click", () => {
+				currentFilter = btn.dataset.filter;
+				buttons.forEach((b) => {
+					b.classList.remove("active");
+				});
+				btn.classList.add("active");
+				updateTabIndicator(tabContainer, btn);
+				renderNotifications();
+			});
+		});
+
+		const activeTab = tabContainer.querySelector(".active");
+		if (activeTab) {
+			setTimeout(() => updateTabIndicator(tabContainer, activeTab), 50);
+		}
+	}
+
 	if (isDirectClick) {
 		setTimeout(() => window.scrollTo(0, 0), 0);
 	}
@@ -51,8 +74,6 @@ async function loadNotifications() {
 		switchPage("timeline", { path: "/" });
 		return;
 	}
-
-	const listElement = document.getElementById("notificationsList");
 
 	isLoadingMoreNotifications = false;
 	hasMoreNotifications = true;
@@ -140,15 +161,26 @@ function renderNotifications() {
 
 	listElement.innerHTML = "";
 
-	if (currentNotifications.length === 0) {
+	let filteredNotifications = currentNotifications;
+	if (currentFilter === "mentions") {
+		filteredNotifications = currentNotifications.filter((n) => {
+			const type = n.type || n.notifications?.[0]?.type;
+			return type === "mention" || type === "reply";
+		});
+	}
+
+	if (filteredNotifications.length === 0) {
 		const noNotificationsEl = document.createElement("div");
 		noNotificationsEl.className = "no-notifications";
-		noNotificationsEl.textContent = "No notifications for now!";
+		noNotificationsEl.textContent =
+			currentFilter === "mentions"
+				? "No mentions yet!"
+				: "No notifications for now!";
 		listElement.appendChild(noNotificationsEl);
 		return;
 	}
 
-	const groupedNotifications = groupSimilarNotifications(currentNotifications);
+	const groupedNotifications = groupSimilarNotifications(filteredNotifications);
 
 	groupedNotifications.forEach((group) => {
 		const notificationEl = createNotificationElement(group);

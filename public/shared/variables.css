@@ -110,3 +110,46 @@
 .dark {
   scrollbar-color: #45475a transparent;
 }
+
+.tab-nav {
+  display: flex;
+  border-bottom: 1px solid var(--border-primary);
+  position: relative;
+
+  button,
+  a {
+    flex: 1;
+    padding: 16px;
+    background: none;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s;
+    font-family: inherit;
+    text-decoration: none;
+    text-align: center;
+
+    &:hover {
+      color: var(--text-primary);
+    }
+
+    &.active {
+      color: var(--text-primary);
+    }
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background-color: var(--primary);
+    transition: transform 0.3s var(--animation-smooth), width 0.3s var(--animation-smooth);
+    border-radius: 10px;
+    width: var(--indicator-width, 0);
+    transform: translateX(var(--indicator-left, 0));
+  }
+}

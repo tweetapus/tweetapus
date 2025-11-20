@@ -3,7 +3,7 @@ export function updateTabIndicator(container, activeTab) {
 	const tabs = Array.from(
 		container
 			.querySelectorAll(
-				"a, button, .filter-btn, .profile-tab-btn, .communities-tab, .community-detail-tab",
+				"a, button, .filter-btn, .profile-tab-btn, .communities-tab, .community-detail-tab, .notifications-tabs button",
 			)
 			.values(),
 	).filter((el) => !el.classList.contains("hidden"));
@@ -47,6 +47,7 @@ export function initTabIndicators() {
 		document.querySelector(".profile-tab-nav"),
 		document.querySelector(".communities-tabs"),
 		document.querySelector(".community-detail-tabs"),
+		document.querySelector(".notifications-tabs"),
 	].filter(Boolean);
 
 	tabContainers.forEach((container) => {
@@ -65,12 +66,12 @@ export function initTabIndicators() {
 
 		container.addEventListener("click", (e) => {
 			const target = e.target.closest(
-				"a, button, .filter-btn, .profile-tab-btn, .communities-tab, .community-detail-tab",
+				"a, button, .filter-btn, .profile-tab-btn, .communities-tab, .community-detail-tab, .notifications-tabs button",
 			);
 			if (target) {
 				const tabs = Array.from(
 					container.querySelectorAll(
-						"a, button, .filter-btn, .profile-tab-btn, .communities-tab, .community-detail-tab",
+						"a, button, .filter-btn, .profile-tab-btn, .communities-tab, .community-detail-tab, .notifications-tabs button",
 					),
 				);
 				tabs.forEach((tab) => tab.classList.remove("active"));
