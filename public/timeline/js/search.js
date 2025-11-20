@@ -255,6 +255,12 @@ ${
 				}
 			});
 		});
+
+	searchEmpty.querySelectorAll(".current-event .body a").forEach((link) => {
+		if (link.innerText.trim().startsWith("(") && link.innerText.endsWith(")")) {
+			link.classList.add("parenthetical-link");
+		}
+	});
 };
 
 const showNoResultsState = () => {
