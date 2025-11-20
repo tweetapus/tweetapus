@@ -82,7 +82,7 @@ const updatePassword = db.prepare(`
 `);
 
 const getUserReplies = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   WHERE posts.user_id = ? AND posts.reply_to IS NOT NULL
@@ -91,7 +91,7 @@ const getUserReplies = db.prepare(`
 `);
 
 const getUserRepliesPaginated = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   WHERE posts.user_id = ? AND posts.reply_to IS NOT NULL AND posts.id < ?
@@ -100,7 +100,7 @@ const getUserRepliesPaginated = db.prepare(`
 `);
 
 const getUserMedia = db.prepare(`
-  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   JOIN attachments ON posts.id = attachments.post_id
@@ -110,7 +110,7 @@ const getUserMedia = db.prepare(`
 `);
 
 const getUserMediaPaginated = db.prepare(`
-  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   JOIN attachments ON posts.id = attachments.post_id
@@ -120,7 +120,7 @@ const getUserMediaPaginated = db.prepare(`
 `);
 
 const getUserPostsPaginated = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   WHERE posts.user_id = ? AND posts.reply_to IS NULL AND users.suspended = 0 AND posts.id < ?
@@ -131,7 +131,7 @@ const getUserPostsPaginated = db.prepare(`
 const getUserRetweetsPaginated = db.prepare(`
   SELECT 
     original_posts.*,
-    original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold, original_users.avatar_radius, original_users.affiliate, original_users.affiliate_with,
+    original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold, original_users.avatar_radius, original_users.affiliate, original_users.affiliate_with, original_users.selected_community_tag,
     retweets.created_at as retweet_created_at,
     retweets.post_id as original_post_id,
     retweets.id as retweet_id
@@ -144,7 +144,7 @@ const getUserRetweetsPaginated = db.prepare(`
 `);
 
 const getUserPosts = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts 
   JOIN users ON posts.user_id = users.id 
 	WHERE posts.user_id = ? AND posts.reply_to IS NULL AND users.suspended = 0
@@ -154,7 +154,7 @@ const getUserPosts = db.prepare(`
 const getUserRetweets = db.prepare(`
   SELECT 
     original_posts.*,
-    original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold, original_users.avatar_radius, original_users.affiliate, original_users.affiliate_with,
+    original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold, original_users.avatar_radius, original_users.affiliate, original_users.affiliate_with, original_users.selected_community_tag,
     retweets.created_at as retweet_created_at,
     retweets.post_id as original_post_id
   FROM retweets
@@ -293,7 +293,7 @@ const getPollVoters = db.prepare(`
 `);
 
 const getQuotedTweet = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.id = ?
@@ -422,6 +422,22 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 		}
 	}
 
+	if (quotedTweet.selected_community_tag) {
+		const community = db
+			.query(
+				"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+			)
+			.get(quotedTweet.selected_community_tag);
+		if (community && community.tag_enabled) {
+			author.community_tag = {
+				community_id: community.id,
+				community_name: community.name,
+				emoji: community.tag_emoji,
+				text: community.tag_text,
+			};
+		}
+	}
+
 	return {
 		...quotedTweet,
 		author,
@@ -507,7 +523,7 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 
 			// Fetch limited initial data (first 20 posts/retweets)
 			const userPostsQuery = db.query(`
-				SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+				SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
 				FROM posts 
 				JOIN users ON posts.user_id = users.id 
 				WHERE posts.user_id = ? AND posts.reply_to IS NULL AND users.suspended = 0
@@ -517,7 +533,7 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const userRetweetsQuery = db.query(`
 				SELECT 
 					original_posts.*,
-					original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold, original_users.avatar_radius, original_users.affiliate, original_users.affiliate_with,
+					original_users.username, original_users.name, original_users.avatar, original_users.verified, original_users.gold, original_users.avatar_radius, original_users.affiliate, original_users.affiliate_with, original_users.selected_community_tag,
 					retweets.created_at as retweet_created_at,
 					retweets.post_id as original_post_id
 				FROM retweets
@@ -545,6 +561,22 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 						profile.affiliate_with_profile = aff;
 					}
 				} catch (_) {}
+			}
+
+			if (profile.selected_community_tag) {
+				const community = db
+					.query(
+						"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+					)
+					.get(profile.selected_community_tag);
+				if (community && community.tag_enabled) {
+					profile.community_tag = {
+						community_id: community.id,
+						community_name: community.name,
+						emoji: community.tag_emoji,
+						text: community.tag_text,
+					};
+				}
 			}
 
 			let isFollowing = false;
@@ -705,6 +737,23 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 						author.affiliate_with,
 					);
 				}
+
+				if (item.selected_community_tag) {
+					const community = db
+						.query(
+							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+						)
+						.get(item.selected_community_tag);
+					if (community && community.tag_enabled) {
+						author.community_tag = {
+							community_id: community.id,
+							community_name: community.name,
+							emoji: community.tag_emoji,
+							text: community.tag_text,
+						};
+					}
+				}
+
 				item.author = author;
 			}
 
@@ -870,6 +919,22 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 						}
 					}
 
+					if (reply.selected_community_tag) {
+						const community = db
+							.query(
+								"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+							)
+							.get(reply.selected_community_tag);
+						if (community && community.tag_enabled) {
+							author.community_tag = {
+								community_id: community.id,
+								community_name: community.name,
+								emoji: community.tag_emoji,
+								text: community.tag_text,
+							};
+						}
+					}
+
 					return {
 						...reply,
 						author,
@@ -966,6 +1031,22 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 					const affiliateProfile = getUserById.get(author.affiliate_with);
 					if (affiliateProfile) {
 						author.affiliate_with_profile = affiliateProfile;
+					}
+				}
+
+				if (post.selected_community_tag) {
+					const community = db
+						.query(
+							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+						)
+						.get(post.selected_community_tag);
+					if (community && community.tag_enabled) {
+						author.community_tag = {
+							community_id: community.id,
+							community_name: community.name,
+							emoji: community.tag_emoji,
+							text: community.tag_text,
+						};
 					}
 				}
 
@@ -1077,6 +1158,23 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 							author.affiliate_with,
 						);
 					}
+
+					if (item.selected_community_tag) {
+						const community = db
+							.query(
+								"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+							)
+							.get(item.selected_community_tag);
+						if (community && community.tag_enabled) {
+							author.community_tag = {
+								community_id: community.id,
+								community_name: community.name,
+								emoji: community.tag_emoji,
+								text: community.tag_text,
+							};
+						}
+					}
+
 					item.author = author;
 				}
 

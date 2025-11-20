@@ -16,7 +16,7 @@ const getUserByUsername = db.query(
 const getNotifications = db.prepare(`
   SELECT 
     n.id, n.type, n.content, n.related_id, n.actor_id, n.actor_username, n.actor_name, n.read, n.created_at,
-    u.avatar as actor_avatar, u.verified as actor_verified, u.gold as actor_gold, u.avatar_radius as actor_avatar_radius
+    u.avatar as actor_avatar, u.verified as actor_verified, u.gold as actor_gold, u.avatar_radius as actor_avatar_radius, u.selected_community_tag
   FROM notifications n
   LEFT JOIN users u ON n.actor_id = u.id
   WHERE n.user_id = ? 
@@ -27,7 +27,7 @@ const getNotifications = db.prepare(`
 const getNotificationsBefore = db.prepare(`
   SELECT 
     n.id, n.type, n.content, n.related_id, n.actor_id, n.actor_username, n.actor_name, n.read, n.created_at,
-    u.avatar as actor_avatar, u.verified as actor_verified, u.gold as actor_gold, u.avatar_radius as actor_avatar_radius
+    u.avatar as actor_avatar, u.verified as actor_verified, u.gold as actor_gold, u.avatar_radius as actor_avatar_radius, u.selected_community_tag
   FROM notifications n
   LEFT JOIN users u ON n.actor_id = u.id
   WHERE n.user_id = ? AND n.created_at < (SELECT created_at FROM notifications WHERE id = ?)
@@ -128,6 +128,24 @@ export default new Elysia({ prefix: "/notifications", tags: ["Notifications"] })
       const notifications = before
         ? getNotificationsBefore.all(user.id, before, parseInt(limit, 10))
         : getNotifications.all(user.id, parseInt(limit, 10));
+
+      notifications.forEach((notification) => {
+        if (notification.selected_community_tag) {
+          const community = db
+            .query(
+              "SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+            )
+            .get(notification.selected_community_tag);
+          if (community && community.tag_enabled) {
+            notification.actor_community_tag = {
+              community_id: community.id,
+              community_name: community.name,
+              emoji: community.tag_emoji,
+              text: community.tag_text,
+            };
+          }
+        }
+      });
 
       const enhancedNotifications = notifications.map((notification) => {
         const enhanced = { ...notification };

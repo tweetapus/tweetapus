@@ -1188,6 +1188,22 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 					user.affiliate_with_profile = affiliateProfile;
 				}
 			}
+
+			if (user.selected_community_tag) {
+				const community = db
+					.query(
+						"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+					)
+					.get(user.selected_community_tag);
+				if (community && community.tag_enabled) {
+					user.community_tag = {
+						community_id: community.id,
+						community_name: community.name,
+						emoji: community.tag_emoji,
+						text: community.tag_text,
+					};
+				}
+			}
 		});
 
 		const userMap = new Map(users.map((user) => [user.id, user]));

@@ -24,7 +24,7 @@ const removeBookmark = db.prepare(`
 `);
 
 const getBookmarkedTweets = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, b.created_at as bookmarked_at
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, b.created_at as bookmarked_at
   FROM bookmarks b
   JOIN posts ON b.post_id = posts.id
   JOIN users ON posts.user_id = users.id
@@ -63,7 +63,7 @@ const getAttachmentsByPostId = db.prepare(`
 `);
 
 const getQuotedTweet = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.id = ?
@@ -165,6 +165,22 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 			.get(author.affiliate_with);
 		if (affiliateProfile) {
 			author.affiliate_with_profile = affiliateProfile;
+		}
+	}
+
+	if (quotedTweet.selected_community_tag) {
+		const community = db
+			.query(
+				"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+			)
+			.get(quotedTweet.selected_community_tag);
+		if (community && community.tag_enabled) {
+			author.community_tag = {
+				community_id: community.id,
+				community_name: community.name,
+				emoji: community.tag_emoji,
+				text: community.tag_text,
+			};
 		}
 	}
 
@@ -353,6 +369,22 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 							.get(author.affiliate_with);
 						if (affiliateProfile) {
 							author.affiliate_with_profile = affiliateProfile;
+						}
+					}
+
+					if (tweet.selected_community_tag) {
+						const community = db
+							.query(
+								"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+							)
+							.get(tweet.selected_community_tag);
+						if (community && community.tag_enabled) {
+							author.community_tag = {
+								community_id: community.id,
+								community_name: community.name,
+								emoji: community.tag_emoji,
+								text: community.tag_text,
+							};
 						}
 					}
 

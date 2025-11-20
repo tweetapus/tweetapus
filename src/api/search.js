@@ -290,6 +290,23 @@ export default new Elysia({ prefix: "/search", tags: ["Search"] })
 					u.affiliate_with_profile = affiliateProfile;
 				}
 			}
+
+			if (u.selected_community_tag) {
+				const community = db
+					.query(
+						"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+					)
+					.get(u.selected_community_tag);
+				if (community && community.tag_enabled) {
+					u.community_tag = {
+						community_id: community.id,
+						community_name: community.name,
+						emoji: community.tag_emoji,
+						text: community.tag_text,
+					};
+				}
+			}
+
 			userMap[u.id] = u;
 		});
 

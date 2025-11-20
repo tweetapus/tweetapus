@@ -74,7 +74,7 @@ export function initTabIndicators() {
 						"a, button, .filter-btn, .profile-tab-btn, .communities-tab, .community-detail-tab, .notifications-tabs button",
 					),
 				);
-				tabs.forEach((tab) => tab.classList.remove("active"));
+				tabs.forEach((tab) => { tab.classList.remove("active") });
 				target.classList.add("active");
 				updateTabIndicator(container, target);
 			}

@@ -33,7 +33,7 @@ const getPublicTweetsBefore = db.query(`
 const getPostCreatedAt = db.query(`SELECT created_at FROM posts WHERE id = ?`);
 
 const getPostsAuthor = db.query(
-	`SELECT id, username, name, avatar, verified, gold, avatar_radius, affiliate, affiliate_with FROM users WHERE id = ?`,
+	`SELECT id, username, name, avatar, verified, gold, avatar_radius, affiliate, affiliate_with, selected_community_tag FROM users WHERE id = ?`,
 );
 
 const getAttachments = db.query(`SELECT * FROM attachments WHERE post_id = ?`);
@@ -80,6 +80,21 @@ export default new Elysia({ prefix: "/public-tweets", tags: ["Public"] })
 		for (const userId of userIds) {
 			const user = getPostsAuthor.get(userId);
 			if (user) {
+				if (user.selected_community_tag) {
+					const community = db
+						.query(
+							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+						)
+						.get(user.selected_community_tag);
+					if (community && community.tag_enabled) {
+						user.community_tag = {
+							community_id: community.id,
+							community_name: community.name,
+							emoji: community.tag_emoji,
+							text: community.tag_text,
+						};
+					}
+				}
 				users[userId] = user;
 			}
 		}
