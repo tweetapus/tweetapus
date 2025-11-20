@@ -3738,13 +3738,6 @@ nav {
   flex-direction: column;
   width: 100%;
 
-  .tweets-results-page,
-  .users-results-page {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
   .search-header {
     display: flex;
     align-items: center;
@@ -3933,6 +3926,7 @@ nav {
           }
         }
       }
+    }
 
       .users-section,
       .tweets-section {
