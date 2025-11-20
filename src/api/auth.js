@@ -183,7 +183,7 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 						createdAt: passkey.created_at,
 						lastUsed: passkey.last_used,
 						transports: JSON.parse(passkey.transports || "[]"),
-						backupEligible: passkey.backup_eligible,
+						backupEligible: !!passkey.backup_eligible,
 						name: passkey.name || `Passkey ${passkey.cred_id.slice(0, 8)}...`,
 					})),
 					restricted: set.restricted,
@@ -839,7 +839,7 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 						createdAt: passkey.created_at,
 						lastUsed: passkey.last_used,
 						transports: JSON.parse(passkey.transports || "[]"),
-						backupEligible: passkey.backup_eligible,
+						backupEligible: !!passkey.backup_eligible,
 						name: passkey.name || `Passkey ${passkey.cred_id.slice(0, 8)}...`,
 					})),
 				};
@@ -919,7 +919,7 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 						createdAt: passkey.created_at,
 						lastUsed: passkey.last_used,
 						transports: JSON.parse(passkey.transports || "[]"),
-						backupEligible: passkey.backup_eligible,
+						backupEligible: !!passkey.backup_eligible,
 						name: passkey.name || `Passkey ${passkey.cred_id.slice(0, 8)}...`,
 					})),
 				};
@@ -994,7 +994,7 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 						createdAt: passkey.created_at,
 						lastUsed: passkey.last_used,
 						transports: JSON.parse(passkey.transports || "[]"),
-						backupEligible: passkey.backup_eligible,
+						backupEligible: !!passkey.backup_eligible,
 						name: passkey.name || `Passkey ${passkey.cred_id.slice(0, 8)}...`,
 					})),
 				};
@@ -1133,7 +1133,7 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 						createdAt: passkey.created_at,
 						lastUsed: passkey.last_used,
 						transports: JSON.parse(passkey.transports || "[]"),
-						backupEligible: passkey.backup_eligible,
+						backupEligible: !!passkey.backup_eligible,
 						name: passkey.name || `Passkey ${passkey.cred_id.slice(0, 8)}...`,
 					})),
 				};

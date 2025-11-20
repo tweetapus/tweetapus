@@ -97,38 +97,35 @@ const createThemesContent = () => {
 	const themeControl = document.createElement("div");
 	themeControl.className = "setting-control";
 
-	const dropdown = document.createElement("div");
-	dropdown.className = "custom-dropdown";
-	dropdown.id = "themeDropdown";
-
-	const dropdownButton = document.createElement("button");
-	dropdownButton.className = "custom-dropdown-button";
-	dropdownButton.setAttribute("aria-label", "Theme mode");
-	dropdownButton.innerHTML = `
-		<span class="dropdown-text">Auto</span>
-		<svg class="custom-dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-			<polyline points="6,9 12,15 18,9"></polyline>
-		</svg>
+	const select = document.createElement("select");
+	select.id = "themeDropdown";
+	select.className = "theme-mode-select";
+	select.style.cssText = `
+		padding: 8px 12px;
+		border: 1px solid var(--border-primary);
+		border-radius: 8px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		font-size: 14px;
+		cursor: pointer;
 	`;
-
-	const dropdownMenu = document.createElement("div");
-	dropdownMenu.className = "custom-dropdown-menu";
 
 	[
 		{ v: "light", t: "Light" },
 		{ v: "dark", t: "Dark" },
 		{ v: "auto", t: "Auto" },
 	].forEach(({ v, t }) => {
-		const option = document.createElement("div");
-		option.className = "custom-dropdown-option";
-		option.dataset.value = v;
+		const option = document.createElement("option");
+		option.value = v;
 		option.textContent = t;
-		dropdownMenu.appendChild(option);
+		select.appendChild(option);
 	});
 
-	dropdown.appendChild(dropdownButton);
-	dropdown.appendChild(dropdownMenu);
-	themeControl.appendChild(dropdown);
+	select.addEventListener("change", () => {
+		handleThemeModeChange(select.value);
+	});
+
+	themeControl.appendChild(select);
 
 	themeItem.appendChild(themeLabel);
 	themeItem.appendChild(themeControl);
@@ -226,35 +223,26 @@ const createAccountContent = () => {
 	const communityTagControl = document.createElement("div");
 	communityTagControl.className = "setting-control";
 
-	const communityTagDropdown = document.createElement("div");
-	communityTagDropdown.className = "custom-dropdown";
-	communityTagDropdown.id = "communityTagDropdown";
-
-	const communityTagButton = document.createElement("button");
-	communityTagButton.className = "custom-dropdown-button";
-	communityTagButton.setAttribute("aria-label", "Community tag");
-	communityTagButton.innerHTML = `
-		<span class="dropdown-text">None</span>
-		<svg class="custom-dropdown-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-			<polyline points="6,9 12,15 18,9"></polyline>
-		</svg>
+	const select = document.createElement("select");
+	select.id = "communityTagDropdown";
+	select.className = "community-tag-select";
+	select.style.cssText = `
+		padding: 8px 12px;
+		border: 1px solid var(--border-primary);
+		border-radius: 8px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		font-size: 14px;
+		cursor: pointer;
+		min-width: 200px;
 	`;
 
-	const communityTagMenu = document.createElement("div");
-	communityTagMenu.className = "custom-dropdown-menu";
-	communityTagMenu.id = "communityTagMenu";
-
-	// Add "None" option
-	const noneOption = document.createElement("div");
-	noneOption.className = "custom-dropdown-option";
-	noneOption.dataset.value = "";
+	const noneOption = document.createElement("option");
+	noneOption.value = "";
 	noneOption.textContent = "None";
-	communityTagMenu.appendChild(noneOption);
+	select.appendChild(noneOption);
 
-	communityTagDropdown.appendChild(communityTagButton);
-	communityTagDropdown.appendChild(communityTagMenu);
-	communityTagControl.appendChild(communityTagDropdown);
-
+	communityTagControl.appendChild(select);
 	communityTagItem.appendChild(communityTagLabel);
 	communityTagItem.appendChild(communityTagControl);
 	communityTagGroup.appendChild(communityTagItem);
@@ -415,7 +403,6 @@ const loadCommunityTagOptions = async () => {
 	if (!user) return;
 
 	try {
-		// Fetch user's communities
 		const response = await query("/communities/user/me");
 		if (response.error) {
 			console.error("Failed to load communities:", response.error);
@@ -423,94 +410,63 @@ const loadCommunityTagOptions = async () => {
 		}
 
 		const communities = response.communities || [];
-		const communityTagMenu = document.getElementById("communityTagMenu");
-		const communityTagButton = document.querySelector(
-			"#communityTagDropdown .dropdown-text",
-		);
+		const select = document.getElementById("communityTagDropdown");
 
-		if (!communityTagMenu || !communityTagButton) return;
+		if (!select) return;
 
-		// Clear existing options except "None"
-		communityTagMenu.innerHTML = "";
+		select.innerHTML = "";
 
-		// Add "None" option
-		const noneOption = document.createElement("div");
-		noneOption.className = "custom-dropdown-option";
-		noneOption.dataset.value = "";
+		const noneOption = document.createElement("option");
+		noneOption.value = "";
 		noneOption.textContent = "None";
-		communityTagMenu.appendChild(noneOption);
+		select.appendChild(noneOption);
 
-		// Add communities with tags enabled
 		const communitiesWithTags = communities.filter((c) => c.tag_enabled);
 		communitiesWithTags.forEach((community) => {
-			const option = document.createElement("div");
-			option.className = "custom-dropdown-option";
-			option.dataset.value = community.id;
+			const option = document.createElement("option");
+			option.value = community.id;
 			option.textContent =
 				`${community.tag_emoji || ""} ${community.tag_text || ""} - ${community.name}`.trim();
-			communityTagMenu.appendChild(option);
+			select.appendChild(option);
 		});
 
-		// Set current selection
 		if (user.selected_community_tag) {
-			const selectedCommunity = communities.find(
-				(c) => c.id === user.selected_community_tag,
-			);
-			if (selectedCommunity && selectedCommunity.tag_enabled) {
-				communityTagButton.textContent =
-					`${selectedCommunity.tag_emoji || ""} ${selectedCommunity.tag_text || ""} - ${selectedCommunity.name}`.trim();
-			} else {
-				communityTagButton.textContent = "None";
-			}
+			select.value = user.selected_community_tag;
 		} else {
-			communityTagButton.textContent = "None";
+			select.value = "";
 		}
 
-		// Handle option selection
-		const options = communityTagMenu.querySelectorAll(
-			".custom-dropdown-option",
-		);
-		options.forEach((option) => {
-			option.addEventListener("click", async () => {
-				const communityId = option.dataset.value;
+		select.addEventListener("change", async () => {
+			const communityId = select.value;
 
-				try {
-					const result = await query("/profile/settings/community-tag", {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-						},
-						body: JSON.stringify({
-							community_id: communityId || null,
-						}),
-					});
+			try {
+				const result = await query("/profile/settings/community-tag", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({
+						community_id: communityId || null,
+					}),
+				});
 
-					if (result.success) {
-						communityTagButton.textContent = option.textContent;
-						toastQueue.add(
-							"<h1>Community Tag Updated</h1><p>Your community tag has been updated</p>",
-						);
+				if (result.success) {
+					toastQueue.add(
+						"<h1>Community Tag Updated</h1><p>Your community tag has been updated</p>",
+					);
 
-						// Update current user cache
-						if (currentUser) {
-							currentUser.selected_community_tag = communityId || null;
-						}
-					} else {
-						toastQueue.add(
-							`<h1>Error</h1><p>${result.error || "Failed to update community tag"}</p>`,
-						);
+					if (currentUser) {
+						currentUser.selected_community_tag = communityId || null;
 					}
-				} catch (error) {
-					console.error("Failed to update community tag:", error);
-					toastQueue.add("<h1>Error</h1><p>Failed to update community tag</p>");
+				} else {
+					toastQueue.add(
+						`<h1>Error</h1><p>${result.error || "Failed to update community tag"}</p>`,
+					);
 				}
-
-				// Close dropdown
-				const dropdown = document.getElementById("communityTagDropdown");
-				if (dropdown) {
-					dropdown.classList.remove("open");
-				}
-			});
+			} catch (error) {
+				console.error("Failed to update community tag:", error);
+				toastQueue.add("<h1>Error</h1><p>Failed to update community tag</p>");
+			}
 		});
 	} catch (error) {
 		console.error("Failed to load community tag options:", error);
@@ -616,6 +572,11 @@ const createPasskeysContent = () => {
 	addPasskeyBtn.className = "btn primary";
 	addPasskeyBtn.id = "addPasskeyBtn";
 	addPasskeyBtn.textContent = "Add Passkey";
+	addPasskeyBtn.addEventListener("click", async (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+		await handleAddPasskey();
+	});
 	addPasskeyControl.appendChild(addPasskeyBtn);
 	addPasskeyItem.appendChild(addPasskeyLabel);
 	addPasskeyItem.appendChild(addPasskeyControl);
@@ -1932,78 +1893,31 @@ const setupSettingsEventHandlers = async () => {
 	document.addEventListener("click", async (event) => {
 		const target = event.target;
 
-		if (target.closest?.(".custom-dropdown-button")) {
-			const dropdown = target.closest?.(".custom-dropdown");
-			const isOpen = dropdown?.classList?.contains("open");
-
-			document.querySelectorAll(".custom-dropdown").forEach((d) => {
-				d.classList.remove("open");
-			});
-
-			if (!isOpen) {
-				dropdown.classList.add("open");
-			}
-		}
-
-		const optionEl = target.closest?.(".custom-dropdown-option");
-		if (optionEl) {
-			const value = optionEl.dataset?.value;
-			if (!value) return;
-			const dropdown = optionEl.closest?.(".custom-dropdown");
-			const button = dropdown?.querySelector(
-				".custom-dropdown-button .dropdown-text",
-			);
-			const hiddenSelect =
-				dropdown?.parentElement?.querySelector(".theme-mode-select");
-
-			if (button) button.textContent = optionEl.textContent;
-
-			if (hiddenSelect) {
-				hiddenSelect.value = value;
-			}
-
-			dropdown?.querySelectorAll(".custom-dropdown-option").forEach((opt) => {
-				opt.classList.remove("selected");
-			});
-			optionEl.classList.add("selected");
-
-			dropdown?.classList.remove("open");
-
-			handleThemeModeChange(value);
-		}
-
-		if (target.closest?.("#saveThemeBtn")) {
-			saveThemeToServer();
-		}
-
-		if (!target.closest?.(".custom-dropdown")) {
-			document.querySelectorAll(".custom-dropdown").forEach((d) => {
-				d.classList.remove("open");
-			});
-		}
-
-		if (target.closest?.("#changeUsernameBtn")) {
+		if (target.closest("#changeUsernameBtn")) {
 			event.preventDefault();
 			await openChangeUsernameModal();
 			return;
 		}
 
-		if (target.closest?.("#addPasskeyBtn")) {
-			handleAddPasskey();
+		if (target.closest("#addPasskeyBtn")) {
+			event.preventDefault();
+			event.stopPropagation();
+			await handleAddPasskey();
+			return;
 		}
 
-		if (target.closest?.("#open-card-composer-btn")) {
+		if (target.closest("#open-card-composer-btn")) {
 			event.preventDefault();
 			openCardComposer();
 		}
 
-		if (target.closest?.("#changePasswordBtn")) {
+		if (target.closest("#changePasswordBtn")) {
 			event.preventDefault();
 			await openChangePasswordModal();
 			return;
 		}
 
-		if (target.closest?.("#deleteAccountBtn")) {
+		if (target.closest("#deleteAccountBtn")) {
 			event.preventDefault();
 			await openDeleteAccountModal();
 			return;
@@ -2015,8 +1929,7 @@ const setupSettingsEventHandlers = async () => {
 			target.id?.includes("close")
 		) {
 			const overlay =
-				target.closest?.(".settings-modal-overlay") ||
-				target.closest?.(".modal");
+				target.closest(".settings-modal-overlay") || target.closest(".modal");
 			if (overlay) hideModal(overlay);
 		}
 	});
@@ -2069,18 +1982,8 @@ const saveThemeToServer = async () => {
 		return;
 	}
 
-	const dropdown = document.querySelector("#themeDropdown");
-	let theme = "auto";
-	if (dropdown) {
-		const selected = dropdown.querySelector(".custom-dropdown-option.selected");
-		if (selected) theme = selected.dataset.value;
-		else {
-			const btnText = dropdown
-				.querySelector(".dropdown-text")
-				?.textContent?.trim();
-			if (btnText) theme = btnText.toLowerCase();
-		}
-	}
+	const select = document.querySelector("#themeDropdown");
+	const theme = select ? select.value : "auto";
 
 	try {
 		const data = await query(`/profile/${user.username}`, {
@@ -2113,7 +2016,7 @@ const saveThemeToServer = async () => {
 
 const handleThemeModeChange = (theme) => {
 	const root = document.documentElement;
-	const select = document.querySelector(".theme-mode-select");
+	const select = document.querySelector("#themeDropdown");
 	if (select) select.value = theme;
 	if (theme === "auto") {
 		localStorage.removeItem("theme");
@@ -2145,24 +2048,8 @@ const loadCurrentThemeMode = () => {
 		else if (savedTheme === "light") currentTheme = "light";
 	}
 
-	const select = document.querySelector(".theme-mode-select");
+	const select = document.querySelector("#themeDropdown");
 	if (select) select.value = currentTheme;
-
-	const dropdown = document.querySelector("#themeDropdown");
-	if (dropdown) {
-		const button = dropdown.querySelector(".dropdown-text");
-		const options = dropdown.querySelectorAll(".custom-dropdown-option");
-
-		options.forEach((option) => {
-			option.classList.remove("selected");
-			if (option.dataset.value === currentTheme) {
-				option.classList.add("selected");
-				if (button) {
-					button.textContent = option.textContent;
-				}
-			}
-		});
-	}
 };
 
 const loadPrivacySettings = async () => {
@@ -2261,11 +2148,20 @@ const hideModal = (element) => {
 
 const handleAddPasskey = async () => {
 	try {
-		const options = await query("/auth/passkey/register/start", {
+		const user = await ensureCurrentUser();
+		if (!user) {
+			toastQueue.add(
+				"<h1>Not Signed In</h1><p>Please sign in to add a passkey</p>",
+			);
+			return;
+		}
+
+		const options = await query("/auth/generate-registration-options", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
+			body: JSON.stringify({ username: user.username }),
 		});
 
 		if (options.error) {
@@ -2276,21 +2172,21 @@ const handleAddPasskey = async () => {
 		const { startRegistration } = window.SimpleWebAuthnBrowser;
 		let attResp;
 		try {
-			attResp = await startRegistration({ optionsJSON: options });
-		} catch (error) {
-			console.error("Registration failed:", error);
-			toastQueue.add(
-				`<h1>Registration Cancelled</h1><p>Passkey registration was cancelled or failed</p>`,
-			);
+			attResp = await startRegistration({ optionsJSON: options.options });
+		} catch {
 			return;
 		}
 
-		const verificationJSON = await query("/auth/passkey/register/finish", {
+		const verificationJSON = await query("/auth/verify-registration", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify(attResp),
+			body: JSON.stringify({
+				username: user.username,
+				credential: attResp,
+				challenge: options.challenge,
+			}),
 		});
 
 		if (verificationJSON.error) {
