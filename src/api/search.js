@@ -210,7 +210,9 @@ export default new Elysia({ prefix: "/search", tags: ["Search"] })
 
 			if (authorization) {
 				try {
-					const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+					const payload = await jwt.verify(
+						authorization.replace("Bearer ", ""),
+					);
 					if (payload) {
 						getUserByUsername.get(payload.username) || null;
 					}
@@ -238,138 +240,144 @@ export default new Elysia({ prefix: "/search", tags: ["Search"] })
 			response: t.Any(),
 		},
 	)
-	.get("/posts", async ({ query: { q }, jwt, headers }) => {
-		const authorization = headers.authorization;
-		let user = null;
+	.get(
+		"/posts",
+		async ({ query: { q }, jwt, headers }) => {
+			const authorization = headers.authorization;
+			let user = null;
 
-		if (authorization) {
-			try {
-				const payload = await jwt.verify(authorization.replace("Bearer ", ""));
-				if (payload) {
-					user = getUserByUsername.get(payload.username) || null;
-				}
-			} catch (e) {
-				console.error("Search posts: JWT verify failed", e);
-				user = null;
-			}
-		}
-
-		if (!q || q.trim().length === 0) return { posts: [] };
-
-		const raw = q.trim();
-		const searchTerm = `%${raw}%`;
-		const userId = user?.id || null;
-		const posts = searchPostsQuery.all(
-			userId,
-			searchTerm,
-			userId,
-			user?.admin ? 1 : 0,
-			userId,
-		);
-
-		if (posts.length === 0) return { posts: [] };
-
-		const userIds = [...new Set(posts.map((post) => post.user_id))];
-
-		const placeholders = userIds.map(() => "?").join(",");
-		const getUsersQuery = db.query(
-			`SELECT * FROM users WHERE id IN (${placeholders})`,
-		);
-
-		const users = getUsersQuery.all(...userIds);
-
-		const userMap = {};
-		users.forEach((u) => {
-			if (u.affiliate && u.affiliate_with) {
-				const affiliateProfile = db
-					.query(
-						"SELECT id, username, name, avatar, verified, gold, avatar_radius FROM users WHERE id = ?",
-					)
-					.get(u.affiliate_with);
-				if (affiliateProfile) {
-					u.affiliate_with_profile = affiliateProfile;
+			if (authorization) {
+				try {
+					const payload = await jwt.verify(
+						authorization.replace("Bearer ", ""),
+					);
+					if (payload) {
+						user = getUserByUsername.get(payload.username) || null;
+					}
+				} catch (e) {
+					console.error("Search posts: JWT verify failed", e);
+					user = null;
 				}
 			}
 
-			if (u.selected_community_tag) {
-				const community = db
-					.query(
-						"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
-					)
-					.get(u.selected_community_tag);
-				if (community && community.tag_enabled) {
-					u.community_tag = {
-						community_id: community.id,
-						community_name: community.name,
-						emoji: community.tag_emoji,
-						text: community.tag_text,
-					};
+			if (!q || q.trim().length === 0) return { posts: [] };
+
+			const raw = q.trim();
+			const searchTerm = `%${raw}%`;
+			const userId = user?.id || null;
+			const posts = searchPostsQuery.all(
+				userId,
+				searchTerm,
+				userId,
+				user?.admin ? 1 : 0,
+				userId,
+			);
+
+			if (posts.length === 0) return { posts: [] };
+
+			const userIds = [...new Set(posts.map((post) => post.user_id))];
+
+			const placeholders = userIds.map(() => "?").join(",");
+			const getUsersQuery = db.query(
+				`SELECT * FROM users WHERE id IN (${placeholders})`,
+			);
+
+			const users = getUsersQuery.all(...userIds);
+
+			const userMap = {};
+			users.forEach((u) => {
+				if (u.affiliate && u.affiliate_with) {
+					const affiliateProfile = db
+						.query(
+							"SELECT id, username, name, avatar, verified, gold, avatar_radius FROM users WHERE id = ?",
+						)
+						.get(u.affiliate_with);
+					if (affiliateProfile) {
+						u.affiliate_with_profile = affiliateProfile;
+					}
 				}
+
+				if (u.selected_community_tag) {
+					const community = db
+						.query(
+							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+						)
+						.get(u.selected_community_tag);
+					if (community && community.tag_enabled) {
+						u.community_tag = {
+							community_id: community.id,
+							community_name: community.name,
+							emoji: community.tag_emoji,
+							text: community.tag_text,
+						};
+					}
+				}
+
+				userMap[u.id] = u;
+			});
+
+			const postIds = posts.map((post) => post.id);
+			const likePlaceholders = postIds.map(() => "?").join(",");
+
+			// Only fetch likes/retweets if we have an authenticated user.
+			let userLikedPosts = new Set();
+			let userRetweetedPosts = new Set();
+
+			if (user?.id) {
+				const getUserLikesQuery = db.query(
+					`SELECT post_id FROM likes WHERE user_id = ? AND post_id IN (${likePlaceholders})`,
+				);
+
+				const userLikes = getUserLikesQuery.all(user.id, ...postIds);
+				userLikedPosts = new Set(userLikes.map((like) => like.post_id));
+
+				const getUserRetweetsQuery = db.query(
+					`SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${likePlaceholders})`,
+				);
+
+				const userRetweets = getUserRetweetsQuery.all(user.id, ...postIds);
+				userRetweetedPosts = new Set(
+					userRetweets.map((retweet) => retweet.post_id),
+				);
 			}
 
-			userMap[u.id] = u;
-		});
+			const enrichedPosts = posts.map((post) => {
+				const topReply = getTopReplyData(post.id, user ? user.id : null);
+				const shouldShowTopReply =
+					topReply &&
+					post.like_count > 0 &&
+					topReply.like_count / post.like_count >= 0.8;
 
-		const postIds = posts.map((post) => post.id);
-		const likePlaceholders = postIds.map(() => "?").join(",");
+				if (topReply) {
+					topReply.liked_by_user = userLikedPosts.has(topReply.id);
+					topReply.retweeted_by_user = userRetweetedPosts.has(topReply.id);
+				}
 
-		// Only fetch likes/retweets if we have an authenticated user.
-		let userLikedPosts = new Set();
-		let userRetweetedPosts = new Set();
+				return {
+					...post,
+					author: userMap[post.user_id],
+					liked_by_user: userLikedPosts.has(post.id),
+					retweeted_by_user: userRetweetedPosts.has(post.id),
+					poll: getPollDataForTweet(post.id, user ? user.id : null),
+					quoted_tweet: getQuotedTweetData(
+						post.quote_tweet_id,
+						user ? user.id : null,
+					),
+					top_reply: shouldShowTopReply ? topReply : null,
+					attachments: getTweetAttachments(post.id),
+					interactive_card: getCardDataForTweet(post.id),
+				};
+			});
 
-		if (user?.id) {
-			const getUserLikesQuery = db.query(
-				`SELECT post_id FROM likes WHERE user_id = ? AND post_id IN (${likePlaceholders})`,
-			);
-
-			const userLikes = getUserLikesQuery.all(user.id, ...postIds);
-			userLikedPosts = new Set(userLikes.map((like) => like.post_id));
-
-			const getUserRetweetsQuery = db.query(
-				`SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${likePlaceholders})`,
-			);
-
-			const userRetweets = getUserRetweetsQuery.all(user.id, ...postIds);
-			userRetweetedPosts = new Set(
-				userRetweets.map((retweet) => retweet.post_id),
-			);
-		}
-
-		const enrichedPosts = posts.map((post) => {
-			const topReply = getTopReplyData(post.id, user ? user.id : null);
-			const shouldShowTopReply =
-				topReply &&
-				post.like_count > 0 &&
-				topReply.like_count / post.like_count >= 0.8;
-
-			if (topReply) {
-				topReply.liked_by_user = userLikedPosts.has(topReply.id);
-				topReply.retweeted_by_user = userRetweetedPosts.has(topReply.id);
-			}
-
-			return {
-				...post,
-				author: userMap[post.user_id],
-				liked_by_user: userLikedPosts.has(post.id),
-				retweeted_by_user: userRetweetedPosts.has(post.id),
-				poll: getPollDataForTweet(post.id, user ? user.id : null),
-				quoted_tweet: getQuotedTweetData(
-					post.quote_tweet_id,
-					user ? user.id : null,
-				),
-				top_reply: shouldShowTopReply ? topReply : null,
-				attachments: getTweetAttachments(post.id),
-				interactive_card: getCardDataForTweet(post.id),
-			};
-		});
-
-		return { posts: enrichedPosts };
-	}, {
-		detail: {
-			description: "Searches for posts by content",
+			return { posts: enrichedPosts };
 		},
-		query: t.Object({
-			q: t.String(),
-		}),
-		response: t.Any(),
-	});
+		{
+			detail: {
+				description: "Searches for posts by content",
+			},
+			query: t.Object({
+				q: t.String(),
+			}),
+			response: t.Any(),
+		},
+	);

@@ -3,14 +3,14 @@ import db from "../db.js";
 
 let sendUnreadCounts;
 try {
-  const indexModule = await import("../index.js");
-  sendUnreadCounts = indexModule.sendUnreadCounts;
+	const indexModule = await import("../index.js");
+	sendUnreadCounts = indexModule.sendUnreadCounts;
 } catch {
-  sendUnreadCounts = () => {};
+	sendUnreadCounts = () => {};
 }
 
 const getUserByUsername = db.query(
-  "SELECT id FROM users WHERE LOWER(username) = LOWER(?)"
+	"SELECT id FROM users WHERE LOWER(username) = LOWER(?)",
 );
 
 const getNotifications = db.prepare(`
@@ -91,191 +91,191 @@ const createNotification = db.prepare(`
 `);
 
 export function addNotification(
-  userId,
-  type,
-  content,
-  relatedId = null,
-  actorId = null,
-  actorUsername = null,
-  actorName = null
+	userId,
+	type,
+	content,
+	relatedId = null,
+	actorId = null,
+	actorUsername = null,
+	actorName = null,
 ) {
-  const id = Bun.randomUUIDv7();
+	const id = Bun.randomUUIDv7();
 
-  createNotification.run(
-    id,
-    userId,
-    type,
-    content,
-    relatedId,
-    actorId,
-    actorUsername,
-    actorName
-  );
-  sendUnreadCounts(userId);
-  return id;
+	createNotification.run(
+		id,
+		userId,
+		type,
+		content,
+		relatedId,
+		actorId,
+		actorUsername,
+		actorName,
+	);
+	sendUnreadCounts(userId);
+	return id;
 }
 
 export default new Elysia({ prefix: "/notifications", tags: ["Notifications"] })
-  .get("/", ({ headers, query: { limit = 20, before } }) => {
-    try {
-      const token = headers.authorization?.replace("Bearer ", "");
-      if (!token) return { error: "Unauthorized" };
+	.get("/", ({ headers, query: { limit = 20, before } }) => {
+		try {
+			const token = headers.authorization?.replace("Bearer ", "");
+			if (!token) return { error: "Unauthorized" };
 
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      const user = getUserByUsername.get(payload.username);
-      if (!user) return { error: "User not found" };
+			const payload = JSON.parse(atob(token.split(".")[1]));
+			const user = getUserByUsername.get(payload.username);
+			if (!user) return { error: "User not found" };
 
-      const notifications = before
-        ? getNotificationsBefore.all(user.id, before, parseInt(limit, 10))
-        : getNotifications.all(user.id, parseInt(limit, 10));
+			const notifications = before
+				? getNotificationsBefore.all(user.id, before, parseInt(limit, 10))
+				: getNotifications.all(user.id, parseInt(limit, 10));
 
-      notifications.forEach((notification) => {
-        if (notification.selected_community_tag) {
-          const community = db
-            .query(
-              "SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
-            )
-            .get(notification.selected_community_tag);
-          if (community && community.tag_enabled) {
-            notification.actor_community_tag = {
-              community_id: community.id,
-              community_name: community.name,
-              emoji: community.tag_emoji,
-              text: community.tag_text,
-            };
-          }
-        }
-      });
+			notifications.forEach((notification) => {
+				if (notification.selected_community_tag) {
+					const community = db
+						.query(
+							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+						)
+						.get(notification.selected_community_tag);
+					if (community && community.tag_enabled) {
+						notification.actor_community_tag = {
+							community_id: community.id,
+							community_name: community.name,
+							emoji: community.tag_emoji,
+							text: community.tag_text,
+						};
+					}
+				}
+			});
 
-      const enhancedNotifications = notifications.map((notification) => {
-        const enhanced = { ...notification };
+			const enhancedNotifications = notifications.map((notification) => {
+				const enhanced = { ...notification };
 
-        try {
-          if (
-            notification.related_id &&
-            typeof notification.related_id === "string"
-          ) {
-            if (notification.related_id.startsWith("subtitle:")) {
-              const encoded = notification.related_id.substring(
-                "subtitle:".length
-              );
-              const decoded = Buffer.from(encoded, "base64").toString("utf8");
-              if (enhanced.content !== decoded)
-                enhanced.tweet = { content: decoded };
-            } else if (notification.related_id.startsWith("meta:")) {
-              const encoded = notification.related_id.substring("meta:".length);
-              const json = Buffer.from(encoded, "base64").toString("utf8");
-              try {
-                const meta = JSON.parse(json);
-                if (meta.subtitle) {
-                  if (enhanced.content !== meta.subtitle) {
-                    enhanced.tweet = { content: meta.subtitle };
-                  }
-                }
-                if (meta.url) enhanced.url = meta.url;
-                if (meta.customIcon) enhanced.customIcon = meta.customIcon;
-              } catch (e) {
-                console.error("Failed to parse meta related_id:", e);
-              }
-            }
-          }
-        } catch (err) {
-          console.error("Failed to decode related_id metadata:", err);
-        }
+				try {
+					if (
+						notification.related_id &&
+						typeof notification.related_id === "string"
+					) {
+						if (notification.related_id.startsWith("subtitle:")) {
+							const encoded = notification.related_id.substring(
+								"subtitle:".length,
+							);
+							const decoded = Buffer.from(encoded, "base64").toString("utf8");
+							if (enhanced.content !== decoded)
+								enhanced.tweet = { content: decoded };
+						} else if (notification.related_id.startsWith("meta:")) {
+							const encoded = notification.related_id.substring("meta:".length);
+							const json = Buffer.from(encoded, "base64").toString("utf8");
+							try {
+								const meta = JSON.parse(json);
+								if (meta.subtitle) {
+									if (enhanced.content !== meta.subtitle) {
+										enhanced.tweet = { content: meta.subtitle };
+									}
+								}
+								if (meta.url) enhanced.url = meta.url;
+								if (meta.customIcon) enhanced.customIcon = meta.customIcon;
+							} catch (e) {
+								console.error("Failed to parse meta related_id:", e);
+							}
+						}
+					}
+				} catch (err) {
+					console.error("Failed to decode related_id metadata:", err);
+				}
 
-        if (
-          notification.related_id &&
-          typeof notification.related_id === "string" &&
-          !notification.related_id.startsWith("meta:") &&
-          !notification.related_id.startsWith("subtitle:") &&
-          [
-            "like",
-            "retweet",
-            "reply",
-            "quote",
-            "mention",
-            "fact_check",
-          ].includes(notification.type)
-        ) {
-          try {
-            const tweet = getTweetById.get(
-              user.id,
-              user.id,
-              notification.related_id
-            );
-            if (tweet) {
-              enhanced.tweet = {
-                id: tweet.id,
-                content: tweet.content,
-                created_at: tweet.created_at,
-                user: {
-                  username: tweet.username,
-                  name: tweet.name,
-                  avatar: tweet.avatar,
-                  verified: tweet.verified,
-                  gold: tweet.gold,
-                  avatar_radius: tweet.avatar_radius,
-                },
-                like_count: tweet.like_count,
-                retweet_count: tweet.retweet_count,
-                reply_count: tweet.reply_count,
-                quote_count: tweet.quote_count,
-              };
-            }
-          } catch (error) {
-            console.error("Error fetching tweet for notification:", error);
-          }
-        }
+				if (
+					notification.related_id &&
+					typeof notification.related_id === "string" &&
+					!notification.related_id.startsWith("meta:") &&
+					!notification.related_id.startsWith("subtitle:") &&
+					[
+						"like",
+						"retweet",
+						"reply",
+						"quote",
+						"mention",
+						"fact_check",
+					].includes(notification.type)
+				) {
+					try {
+						const tweet = getTweetById.get(
+							user.id,
+							user.id,
+							notification.related_id,
+						);
+						if (tweet) {
+							enhanced.tweet = {
+								id: tweet.id,
+								content: tweet.content,
+								created_at: tweet.created_at,
+								user: {
+									username: tweet.username,
+									name: tweet.name,
+									avatar: tweet.avatar,
+									verified: tweet.verified,
+									gold: tweet.gold,
+									avatar_radius: tweet.avatar_radius,
+								},
+								like_count: tweet.like_count,
+								retweet_count: tweet.retweet_count,
+								reply_count: tweet.reply_count,
+								quote_count: tweet.quote_count,
+							};
+						}
+					} catch (error) {
+						console.error("Error fetching tweet for notification:", error);
+					}
+				}
 
-        return enhanced;
-      });
+				return enhanced;
+			});
 
-      const hasMoreNotifications = notifications.length === parseInt(limit);
+			const hasMoreNotifications = notifications.length === parseInt(limit);
 
-      return {
-        notifications: enhancedNotifications,
-        hasMoreNotifications,
-      };
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      return { error: "Failed to fetch notifications" };
-    }
-  })
+			return {
+				notifications: enhancedNotifications,
+				hasMoreNotifications,
+			};
+		} catch (error) {
+			console.error("Error fetching notifications:", error);
+			return { error: "Failed to fetch notifications" };
+		}
+	})
 
-  .get("/unread-count", ({ headers }) => {
-    const token = headers.authorization?.replace("Bearer ", "");
-    if (!token) return { error: "Unauthorized" };
+	.get("/unread-count", ({ headers }) => {
+		const token = headers.authorization?.replace("Bearer ", "");
+		if (!token) return { error: "Unauthorized" };
 
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const user = getUserByUsername.get(payload.username);
-    if (!user) return { error: "User not found" };
+		const payload = JSON.parse(atob(token.split(".")[1]));
+		const user = getUserByUsername.get(payload.username);
+		if (!user) return { error: "User not found" };
 
-    const result = getUnreadCount.get(user.id);
-    return { count: result.count };
-  })
+		const result = getUnreadCount.get(user.id);
+		return { count: result.count };
+	})
 
-  .patch("/:id/read", ({ headers, params: { id } }) => {
-    const token = headers.authorization?.replace("Bearer ", "");
-    if (!token) return { error: "Unauthorized" };
+	.patch("/:id/read", ({ headers, params: { id } }) => {
+		const token = headers.authorization?.replace("Bearer ", "");
+		if (!token) return { error: "Unauthorized" };
 
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const user = getUserByUsername.get(payload.username);
-    if (!user) return { error: "User not found" };
+		const payload = JSON.parse(atob(token.split(".")[1]));
+		const user = getUserByUsername.get(payload.username);
+		if (!user) return { error: "User not found" };
 
-    markAsRead.run(id, user.id);
-    sendUnreadCounts(user.id);
-    return { success: true };
-  })
+		markAsRead.run(id, user.id);
+		sendUnreadCounts(user.id);
+		return { success: true };
+	})
 
-  .patch("/mark-all-read", ({ headers }) => {
-    const token = headers.authorization?.replace("Bearer ", "");
-    if (!token) return { error: "Unauthorized" };
+	.patch("/mark-all-read", ({ headers }) => {
+		const token = headers.authorization?.replace("Bearer ", "");
+		if (!token) return { error: "Unauthorized" };
 
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    const user = getUserByUsername.get(payload.username);
-    if (!user) return { error: "User not found" };
+		const payload = JSON.parse(atob(token.split(".")[1]));
+		const user = getUserByUsername.get(payload.username);
+		if (!user) return { error: "User not found" };
 
-    markAllAsRead.run(user.id);
-    sendUnreadCounts(user.id);
-    return { success: true };
-  });
+		markAllAsRead.run(user.id);
+		sendUnreadCounts(user.id);
+		return { success: true };
+	});

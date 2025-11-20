@@ -611,7 +611,9 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			if (gif_url) {
 				if (
 					typeof gif_url !== "string" ||
-					!gif_url.startsWith(process.env.TENOR_MEDIA_HOST || "https://media.tenor.com/")
+					!gif_url.startsWith(
+						process.env.TENOR_MEDIA_HOST || "https://media.tenor.com/",
+					)
 				) {
 					return { error: "Invalid GIF URL" };
 				}
@@ -885,9 +887,9 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 					user_name: unsplash.photographer_name,
 					user_username: unsplash.photographer_username,
 					user_link: unsplash.photographer_url,
-					download_location: unsplash.download_location
+					download_location: unsplash.download_location,
 				});
-				
+
 				const attachment = saveAttachment.get(
 					attachmentId,
 					tweetId,
@@ -899,14 +901,16 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 					false,
 				);
 				attachments.push(attachment);
-				
+
 				// Trigger download tracking asynchronously
 				if (unsplash.download_location) {
 					fetch(unsplash.download_location, {
 						headers: {
-							"Authorization": `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`
-						}
-					}).catch(err => console.error("Failed to track unsplash download on post:", err));
+							Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+						},
+					}).catch((err) =>
+						console.error("Failed to track unsplash download on post:", err),
+					);
 				}
 			}
 
