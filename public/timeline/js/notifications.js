@@ -39,7 +39,7 @@ function initializeNotificationTabs() {
 	if (!tabContainer) return;
 
 	const buttons = tabContainer.querySelectorAll("button");
-	
+
 	buttons.forEach((btn) => {
 		btn.addEventListener("click", () => {
 			currentFilter = btn.dataset.filter || "all";
