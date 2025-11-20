@@ -17,6 +17,7 @@ let isLoadingMoreNotifications = false;
 let hasMoreNotifications = true;
 let oldestNotificationId = null;
 let notificationsScrollHandler = null;
+let tabsInitialized = false;
 
 function displayUnreadCount(count) {
 	const countElement = document.getElementById("notificationCount");
@@ -27,6 +28,32 @@ function displayUnreadCount(count) {
 		} else {
 			countElement.style.display = "none";
 		}
+	}
+}
+
+function initializeNotificationTabs() {
+	if (tabsInitialized) return;
+	tabsInitialized = true;
+
+	const tabContainer = document.querySelector(".notifications-tabs");
+	if (!tabContainer) return;
+
+	const buttons = tabContainer.querySelectorAll("button");
+	
+	buttons.forEach((btn) => {
+		btn.addEventListener("click", () => {
+			currentFilter = btn.dataset.filter || "all";
+			buttons.forEach((b) => b.classList.remove("active"));
+			btn.classList.add("active");
+			updateTabIndicator(tabContainer, btn);
+			renderNotifications();
+		});
+	});
+
+	const activeTab = tabContainer.querySelector(".active");
+	if (activeTab) {
+		currentFilter = activeTab.dataset.filter || "all";
+		setTimeout(() => updateTabIndicator(tabContainer, activeTab), 50);
 	}
 }
 
@@ -43,26 +70,7 @@ async function openNotifications(isDirectClick = true) {
 		},
 	});
 
-	const tabContainer = document.querySelector(".notifications-tabs");
-	if (tabContainer) {
-		const buttons = tabContainer.querySelectorAll("button");
-		buttons.forEach((btn) => {
-			btn.addEventListener("click", () => {
-				currentFilter = btn.dataset.filter;
-				buttons.forEach((b) => {
-					b.classList.remove("active");
-				});
-				btn.classList.add("active");
-				updateTabIndicator(tabContainer, btn);
-				renderNotifications();
-			});
-		});
-
-		const activeTab = tabContainer.querySelector(".active");
-		if (activeTab) {
-			setTimeout(() => updateTabIndicator(tabContainer, activeTab), 50);
-		}
-	}
+	initializeNotificationTabs();
 
 	if (isDirectClick) {
 		setTimeout(() => window.scrollTo(0, 0), 0);
