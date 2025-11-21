@@ -826,8 +826,8 @@ export default new Elysia({ tags: ["Communities"] })
 				return { error: "You don't have permission to view join requests" };
 			}
 
-			const limit = Math.min(parseInt(query.limit) || 20, 100);
-			const offset = parseInt(query.offset) || 0;
+			const limit = Math.min(parseInt(query.limit, 10) || 20, 100);
+			const offset = parseInt(query.offset, 10) || 0;
 
 			const requests = getPendingJoinRequests.all(params.id, limit, offset);
 			return { requests };

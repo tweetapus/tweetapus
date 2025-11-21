@@ -1371,7 +1371,7 @@ export const useComposer = (
 
 			poll = {
 				options: pollOptions,
-				duration: parseInt(pollDuration.value),
+				duration: parseInt(pollDuration.value, 10),
 			};
 		}
 

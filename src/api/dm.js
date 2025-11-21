@@ -288,8 +288,8 @@ export default new Elysia({ prefix: "/dm", tags: ["DM"] })
 			const participants = getConversationParticipants.all(id);
 			const messages = getConversationMessages.all(
 				id,
-				parseInt(limit),
-				parseInt(offset),
+				parseInt(limit, 10),
+				parseInt(offset, 10),
 			);
 
 			const enhancedMessages = messages.map((message) => {

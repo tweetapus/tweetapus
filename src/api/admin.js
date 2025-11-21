@@ -881,8 +881,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.get(
 		"/users",
 		async ({ query }) => {
-			const page = parseInt(query.page) || 1;
-			const limit = parseInt(query.limit) || 20;
+			const page = parseInt(query.page, 10) || 1;
+			const limit = parseInt(query.limit, 10) || 20;
 			const search = query.search || "";
 			const offset = (page - 1) * limit;
 
@@ -2645,10 +2645,10 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.get(
 		"/dms",
 		async ({ query }) => {
-			const page = Math.max(1, Number.parseInt(query.page || "1"));
+			const page = Math.max(1, Number.parseInt(query.page || "1", 10));
 			const limit = Math.min(
 				50,
-				Math.max(1, Number.parseInt(query.limit || "20")),
+				Math.max(1, Number.parseInt(query.limit || "20", 10)),
 			);
 			const offset = (page - 1) * limit;
 
@@ -2742,10 +2742,10 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				return { error: "Conversation not found" };
 			}
 
-			const page = Math.max(1, Number.parseInt(query.page || "1"));
+			const page = Math.max(1, Number.parseInt(query.page || "1", 10));
 			const limit = Math.min(
 				100,
-				Math.max(1, Number.parseInt(query.limit || "20")),
+				Math.max(1, Number.parseInt(query.limit || "20", 10)),
 			);
 			const offset = (page - 1) * limit;
 
@@ -2983,8 +2983,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.get(
 		"/moderation-logs",
 		async ({ query }) => {
-			const page = parseInt(query.page) || 1;
-			const limit = parseInt(query.limit) || 50;
+			const page = parseInt(query.page, 10) || 1;
+			const limit = parseInt(query.limit, 10) || 50;
 			const offset = (page - 1) * limit;
 
 			const logs = adminQueries.getModerationLogs.all(limit, offset);
@@ -3041,8 +3041,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.get(
 		"/moderation-logs/moderator/:id",
 		async ({ params, query }) => {
-			const page = parseInt(query.page) || 1;
-			const limit = parseInt(query.limit) || 50;
+			const page = parseInt(query.page, 10) || 1;
+			const limit = parseInt(query.limit, 10) || 50;
 			const offset = (page - 1) * limit;
 
 			const logs = adminQueries.getModerationLogsByModerator.all(
@@ -3267,8 +3267,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.get(
 		"/reports",
 		async ({ query }) => {
-			const limit = Number.parseInt(query.limit) || 50;
-			const offset = Number.parseInt(query.offset) || 0;
+			const limit = Number.parseInt(query.limit, 10) || 50;
+			const offset = Number.parseInt(query.offset, 10) || 0;
 
 			const totalRow = db.query("SELECT COUNT(*) AS count FROM reports").get();
 			const totalReports = totalRow?.count || 0;

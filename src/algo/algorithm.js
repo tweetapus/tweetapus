@@ -1,6 +1,6 @@
 import { dlopen, FFIType, suffix } from "bun:ffi";
-import { existsSync } from "fs";
-import path from "path";
+import { existsSync } from "node:fs";
+import path from "node:path";
 
 const libPath = path.join(import.meta.dir, `algorithm.${suffix}`);
 
