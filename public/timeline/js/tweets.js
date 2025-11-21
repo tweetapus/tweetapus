@@ -2821,13 +2821,15 @@ export const createTweetElement = (tweet, config = {}) => {
 
 		tweetEl.addEventListener("click", (e) => {
 			if (e.target.closest("button, a, .engagement")) {
+				// don't keep cursor stuck
 				return;
 			}
 			if (size === "preview") {
 				e.stopPropagation();
 			}
-			// If tweet's author is suspended, redirect to timeline instead of opening the tweet.
+
 			if (tweet.author?.suspended) {
+				// TODO: say "author suspended"
 				switchPage("timeline", { path: "/" });
 				return;
 			}

@@ -7,8 +7,6 @@
 
 - tweetapus circles like twiter circle
 
-- allow extensions to have their own settings
-
 - somewhat improve the C algo
 
 - nicer animations, such as when navigating between tweets and threads
