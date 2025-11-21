@@ -7607,6 +7607,7 @@ emoji-picker.emoji-picker-popup {
   align-items: center;
   padding: 20px 24px 0;
   margin-bottom: 20px;
+  width: 100%;
 }
 
 .modal-header h2 {

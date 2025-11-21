@@ -654,6 +654,79 @@ function createNotificationElement(group) {
 				console.error("Failed to open DM:", error);
 				window.location.href = `/dm/${relatedId}`;
 			}
+		} else if (notificationType === "delegate_invite") {
+			const notif = notifications.find((n) => n.id === notificationId) || {};
+			const actorName = notif.actor_username || notif.actor_name || "this user";
+			const inviteId = relatedId;
+
+			const content = document.createElement("div");
+			content.style.margin = "16px 18px";
+			content.style.textAlign = "center";
+
+			const text = document.createElement("p");
+			text.textContent = `${
+				actorName.startsWith("@") ? actorName : `@${actorName}`
+			} wants you to be their delegate. Do you accept?`;
+			content.appendChild(text);
+
+			const actions = document.createElement("div");
+			actions.className = "modal-actions";
+
+			const yesBtn = document.createElement("button");
+			yesBtn.type = "button";
+			yesBtn.className = "btn primary";
+			yesBtn.textContent = "Accept";
+
+			const noBtn = document.createElement("button");
+			noBtn.type = "button";
+			noBtn.className = "btn";
+			noBtn.textContent = "Decline";
+
+			actions.appendChild(yesBtn);
+			actions.appendChild(noBtn);
+			content.appendChild(actions);
+
+			const modal = createModal({
+				title: "Delegate Invitation",
+				content,
+				closeOnOverlayClick: true,
+			});
+
+			yesBtn.addEventListener("click", async () => {
+				yesBtn.disabled = true;
+				try {
+					await query(`/delegates/invitations/${inviteId}/accept`, {
+						method: "POST",
+					});
+					toastQueue.add("<h1>Invitation Accepted</h1><p>You are now a delegate</p>");
+					const n = currentNotifications.find((x) => x.id === notificationId);
+					if (n) n.read = true;
+					renderNotifications();
+					modal.close();
+				} catch (err) {
+					console.error(err);
+					toastQueue.add("<h1>Failed to accept invitation</h1>");
+					yesBtn.disabled = false;
+				}
+			});
+
+			noBtn.addEventListener("click", async () => {
+				noBtn.disabled = true;
+				try {
+					await query(`/delegates/invitations/${inviteId}/decline`, {
+						method: "POST",
+					});
+					toastQueue.add("<h1>Invitation Declined</h1>");
+					const n = currentNotifications.find((x) => x.id === notificationId);
+					if (n) n.read = true;
+					renderNotifications();
+					modal.close();
+				} catch (err) {
+					console.error(err);
+					toastQueue.add("<h1>Failed to decline invitation</h1>");
+					noBtn.disabled = false;
+				}
+			});
 		} else if (
 			notificationType === "affiliate_request" ||
 			relatedId?.startsWith("affiliate_request:")

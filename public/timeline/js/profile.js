@@ -2301,7 +2301,7 @@ document.querySelectorAll(".profile-tab-btn").forEach((btn) => {
 		switchTab(btn.dataset.tab);
 	});
 });
-
+// finally your cursor moved, but don't let it go stuck again
 document
 	.getElementById("editProfileBtn")
 	.addEventListener("click", showEditModal);

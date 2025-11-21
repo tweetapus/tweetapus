@@ -2603,10 +2603,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 
 			if (
 				targetUser.admin &&
-				!(
-					process.env.SUPERADMIN_IDS &&
-					SUPERADMIN_IDS.split(";").includes(user.id)
-				)
+				!process.env.SUPERADMIN_IDS?.split(";")?.includes(user.id)
 			) {
 				return { error: "Cannot impersonate admin users" };
 			}

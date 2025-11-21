@@ -1125,8 +1125,10 @@ export const createTweetElement = (tweet, config = {}) => {
 		const rawContent = tweet.content ? tweet.content.trim() : "";
 
 		// TODO: replace with real future tweetapus link
-		const tweetLinkRegex =
-			/https?:\/\/(?:www\.)?(?:localhost:3000|tweetapus\.com)\/tweet\/([a-zA-Z0-9_-]+)/g;
+		const tweetLinkRegex = new RegExp(
+			`https?://(?:www\\.)?(?:${location.host.replace(".", "\\.")})/tweet/([a-zA-Z0-9_-]+)`,
+			"g",
+		);
 		let contentWithoutLinks = rawContent;
 		const extractedTweetIds = [];
 		let match = tweetLinkRegex.exec(rawContent);

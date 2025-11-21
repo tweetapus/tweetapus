@@ -360,8 +360,12 @@ const openChangePasswordModal = async () => {
 	}
 
 	const currentPasswordGroup = document.getElementById("currentPasswordGroup");
+	const currentPasswordInput = document.getElementById("current-password");
 	if (currentPasswordGroup) {
 		currentPasswordGroup.style.display = hasPassword ? "flex" : "none";
+	}
+	if (currentPasswordInput) {
+		currentPasswordInput.required = hasPassword;
 	}
 
 	const form = document.getElementById("changePasswordForm");
@@ -618,6 +622,8 @@ const loadPasskeys = async () => {
 			return;
 		}
 
+		console.log("Loaded passkeys:", data.passkeys);
+
 		if (!data.passkeys || data.passkeys.length === 0) {
 			passkeyList.innerHTML = `<p style="color: var(--text-secondary); font-size: 14px;">No passkeys registered yet</p>`;
 			return;
@@ -625,6 +631,7 @@ const loadPasskeys = async () => {
 
 		passkeyList.innerHTML = "";
 		data.passkeys.forEach((passkey) => {
+			console.log("Passkey object:", passkey);
 			const item = document.createElement("div");
 			item.style.display = "flex";
 			item.style.justifyContent = "space-between";
@@ -646,8 +653,8 @@ const loadPasskeys = async () => {
 			const createdAt = document.createElement("div");
 			createdAt.style.fontSize = "12px";
 			createdAt.style.color = "var(--text-secondary)";
-			const date = passkey.created_at
-				? new Date(passkey.created_at)
+			const date = passkey.createdAt
+				? new Date(passkey.createdAt)
 				: new Date();
 			createdAt.textContent = `Created: ${date.toLocaleDateString()}`;
 
@@ -658,7 +665,7 @@ const loadPasskeys = async () => {
 			deleteBtn.className = "btn danger";
 			deleteBtn.textContent = "Remove";
 			deleteBtn.style.maxWidth = "120px";
-			deleteBtn.onclick = () => deletePasskey(passkey.cred_id);
+			deleteBtn.onclick = () => deletePasskey(passkey.id);
 
 			item.appendChild(info);
 			item.appendChild(deleteBtn);
@@ -671,6 +678,7 @@ const loadPasskeys = async () => {
 };
 
 const deletePasskey = async (passkeyId) => {
+	console.log("Deleting passkey with ID:", passkeyId);
 	if (!confirm("Are you sure you want to remove this passkey?")) return;
 
 	try {
@@ -1588,18 +1596,11 @@ const createChangePasswordModal = () => {
 
 	const header = document.createElement("div");
 	header.className = "modal-header";
-	header.style.display = "flex";
-	header.style.alignItems = "center";
-	header.style.justifyContent = "space-between";
-	header.style.padding = "16px 20px";
-	header.style.borderBottom = "1px solid var(--border-primary)";
+
 	const h2 = document.createElement("h2");
 	h2.id = "changePasswordHeading";
-	h2.textContent = "Change Password";
-	h2.style.margin = "0";
-	h2.style.fontSize = "20px";
-	h2.style.fontWeight = "600";
-	h2.style.color = "var(--text-primary)";
+	h2.textContent = "Change password";
+
 	const close = document.createElement("button");
 	close.className = "close-btn";
 	close.id = "closePasswordModal";
@@ -1618,6 +1619,9 @@ const createChangePasswordModal = () => {
 	close.style.display = "flex";
 	close.style.alignItems = "center";
 	close.style.justifyContent = "center";
+	close.style.position = "absolute";
+	close.style.top = "10px";
+	close.style.right = "10px";
 	close.style.transition = "background-color 0.2s ease, color 0.2s ease";
 	close.addEventListener("pointerenter", () => {
 		close.style.backgroundColor = "var(--bg-secondary)";
@@ -1663,7 +1667,7 @@ const createChangePasswordModal = () => {
 	inputCur.type = "password";
 	inputCur.id = "current-password";
 	inputCur.placeholder = "enter your current password";
-	inputCur.required = true;
+	inputCur.required = false;
 	inputCur.style.padding = "10px 12px";
 	inputCur.style.borderRadius = "10px";
 	inputCur.style.border = "1px solid var(--border-primary)";

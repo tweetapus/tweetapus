@@ -128,7 +128,7 @@ let timelineScrollPosition = 0;
 			isLoading = false;
 		}
 	};
-
+	
 	const feedLinks = document.querySelectorAll(".tab-nav a");
 	const tabContainer = document.querySelector(".timeline .tab-nav");
 
@@ -282,7 +282,9 @@ addRoute(
 	(pathname) => pathname === "/articles",
 	() => {
 		showPage("timeline");
-		const articleLink = document.querySelector('.tab-nav a[data-tab="articles"]');
+		const articleLink = document.querySelector(
+			'.tab-nav a[data-tab="articles"]',
+		);
 		articleLink?.click();
 	},
 );
