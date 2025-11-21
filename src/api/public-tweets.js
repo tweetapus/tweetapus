@@ -86,7 +86,7 @@ export default new Elysia({ prefix: "/public-tweets", tags: ["Public"] })
 							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
 						)
 						.get(user.selected_community_tag);
-					if (community && community.tag_enabled) {
+					if (community?.tag_enabled) {
 						user.community_tag = {
 							community_id: community.id,
 							community_name: community.name,

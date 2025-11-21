@@ -136,7 +136,7 @@ export default new Elysia({ prefix: "/notifications", tags: ["Notifications"] })
 							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
 						)
 						.get(notification.selected_community_tag);
-					if (community && community.tag_enabled) {
+					if (community?.tag_enabled) {
 						notification.actor_community_tag = {
 							community_id: community.id,
 							community_name: community.name,
@@ -230,7 +230,7 @@ export default new Elysia({ prefix: "/notifications", tags: ["Notifications"] })
 				return enhanced;
 			});
 
-			const hasMoreNotifications = notifications.length === parseInt(limit);
+			const hasMoreNotifications = notifications.length === parseInt(limit, 10);
 
 			return {
 				notifications: enhancedNotifications,

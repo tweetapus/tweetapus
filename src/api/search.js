@@ -303,7 +303,7 @@ export default new Elysia({ prefix: "/search", tags: ["Search"] })
 							"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
 						)
 						.get(u.selected_community_tag);
-					if (community && community.tag_enabled) {
+					if (community?.tag_enabled) {
 						u.community_tag = {
 							community_id: community.id,
 							community_name: community.name,

@@ -39,7 +39,6 @@ const checkReplyPermission = async (replier, originalAuthor, restriction) => {
 		case "verified":
 			return !!replier.verified || !!replier.gold;
 
-		// case "everyone":
 		default:
 			return true;
 	}
@@ -1081,7 +1080,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const tweet = getTweetById.get(id);
 			if (!tweet) return { error: "Tweet not found" };
 
-			const reactions = listReactionsForPost.all(id, parseInt(limit));
+			const reactions = listReactionsForPost.all(id, parseInt(limit, 10));
 			const total = countReactionsForPost.get(id)?.total || 0;
 			const topReactions = getTopReactionsForPost.all(id);
 
@@ -1141,8 +1140,8 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 		let threadPosts = getTweetWithThread.all(id);
 		let replies = before
-			? getTweetRepliesBefore.all(id, before, parseInt(limit))
-			: getTweetReplies.all(id, parseInt(limit));
+			? getTweetRepliesBefore.all(id, before, parseInt(limit, 10))
+			: getTweetReplies.all(id, parseInt(limit, 10));
 
 		const allPostIds = [
 			...threadPosts.map((p) => p.id),
@@ -1199,7 +1198,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 						"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
 					)
 					.get(user.selected_community_tag);
-				if (community && community.tag_enabled) {
+				if (community?.tag_enabled) {
 					user.community_tag = {
 						community_id: community.id,
 						community_name: community.name,
@@ -1212,7 +1211,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 		const userMap = new Map(users.map((user) => [user.id, user]));
 
-		// Remove any shadowbanned posts from the thread/replies unless the viewer is author or admin
 		if (
 			!(currentUser && (currentUser.admin || currentUser.id === tweet.user_id))
 		) {
@@ -1334,7 +1332,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			quotes: getTweetQuotes.all(tweet.id),
 		};
 
-		const hasMoreReplies = replies.length === parseInt(limit);
+		const hasMoreReplies = replies.length === parseInt(limit, 10);
 
 		const tweetReactionCount = countReactionsForPost.get(tweet.id)?.total || 0;
 		const tweetTopReactions = getTopReactionsForPost.all(tweet.id);
@@ -1588,12 +1586,12 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 			const tweet = getTweetById.get(id);
 			if (!tweet) return { error: "Tweet not found" };
-			// If the tweet's author is suspended, hide replies/can-reply info.
+
 			if (isUserSuspendedById(tweet.user_id)) {
 				return { canReply: false, error: "Tweet not found" };
 			}
 
-			const likers = getTweetLikers.all(id, parseInt(limit));
+			const likers = getTweetLikers.all(id, parseInt(limit, 10));
 
 			return {
 				success: true,
@@ -1622,7 +1620,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const tweet = getTweetById.get(id);
 			if (!tweet) return { error: "Tweet not found" };
 
-			const retweeters = getTweetRetweeters.all(id, parseInt(limit));
+			const retweeters = getTweetRetweeters.all(id, parseInt(limit, 10));
 
 			return {
 				success: true,
@@ -1651,7 +1649,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const tweet = getTweetById.get(id);
 			if (!tweet) return { error: "Tweet not found" };
 
-			const quoters = getTweetQuoters.all(id, parseInt(limit));
+			const quoters = getTweetQuoters.all(id, parseInt(limit, 10));
 
 			const quoteTweets = quoters
 				.map((quoter) => {

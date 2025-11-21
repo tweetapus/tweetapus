@@ -1,5 +1,5 @@
+import { promises as fs } from "node:fs";
 import ffmpeg from "fluent-ffmpeg";
-import { promises as fs } from "fs";
 
 export async function compressVideo(inputPath, outputPath, options = {}) {
 	const {
@@ -10,8 +10,6 @@ export async function compressVideo(inputPath, outputPath, options = {}) {
 	} = options;
 
 	try {
-		const originalStats = await fs.stat(inputPath);
-
 		return new Promise((resolve, reject) => {
 			const command = ffmpeg(inputPath)
 				.outputOptions([
@@ -32,7 +30,7 @@ export async function compressVideo(inputPath, outputPath, options = {}) {
 						resolve({
 							success: true,
 							outputPath,
-							compressedSize
+							compressedSize,
 						});
 					} catch (error) {
 						reject({

@@ -174,7 +174,7 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 				"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
 			)
 			.get(quotedTweet.selected_community_tag);
-		if (community && community.tag_enabled) {
+		if (community?.tag_enabled) {
 			author.community_tag = {
 				community_id: community.id,
 				community_name: community.name,
@@ -378,7 +378,7 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 								"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
 							)
 							.get(tweet.selected_community_tag);
-						if (community && community.tag_enabled) {
+						if (community?.tag_enabled) {
 							author.community_tag = {
 								community_id: community.id,
 								community_name: community.name,
