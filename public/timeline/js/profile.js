@@ -1159,24 +1159,111 @@ const renderProfile = (data) => {
 				)}</a>`,
 			);
 		}
-		try {
-			if (profile.created_at) {
-				const joinedDate = new Date(profile.created_at);
-				if (!Number.isNaN(joinedDate.getTime())) {
-					meta.push(
-						`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg> Joined ${joinedDate.toLocaleDateString(
-							"en-US",
-							{ month: "long", year: "numeric" },
-						)}`,
-					);
-				}
-			}
-		} catch (_) {}
+
+		const joinedDate = new Date(profile.created_at);
+		if (!Number.isNaN(joinedDate.getTime())) {
+			meta.push(
+				`<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg> <span class="tweeta-joindate">Joined ${joinedDate.toLocaleDateString(
+					"en-US",
+					{ month: "long", year: "numeric" },
+				)} <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" style="margin-bottom: -3px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-right-icon lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg></span>`,
+			);
+		}
 	}
 	if (metaEl)
 		metaEl.innerHTML = meta
 			.map((item) => `<div class="profile-meta-item">${item}</div>`)
 			.join("");
+
+	metaEl
+		.querySelector(".profile-meta-item:has(.tweeta-joindate)")
+		?.addEventListener("click", async (e) => {
+			e.preventDefault();
+			e.stopPropagation();
+
+			const transparencyReport = await query(
+				`/transparency/${profile.username}`,
+			);
+			console.log(transparencyReport);
+
+			// { "creation": ..., "login": { "cf-ipcity": "Lisbon", "cf-ipcountry": "PT", "cf-ipcontinent": "EU", "cf-iplatitude": "38.72509", "cf-iplongitude": "-9.14980", "cf-timezone": "Europe/Lisbon" } }
+
+			const modalWrapper = document.createElement("div");
+			modalWrapper.className = "modal";
+			modalWrapper.innerHTML = `
+				<div class="modal-content">
+        <div class="modal-header">
+          <h2>@${profile.username}</h2>
+          <button class="close-btn">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+					<div class="transparency-items">
+
+					${
+						transparencyReport.login
+							? `<div class="transparency-item">
+							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin-icon lucide-pin"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> <div class="transparency-data"><strong>Last login location</strong>
+							<span>${(transparencyReport.login["cf-ipcity"] || transparencyReport.login.city) || "Unknown"}, ${
+								(transparencyReport.login["cf-ipcountry"] || transparencyReport.login.country) || "Unknown"
+							}</span>
+
+						<iframe width="100%" style="width:100%;height: 259px;border:0;border-radius:3px;margin-top: 6px;" height="259" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=${transparencyReport.login["cf-iplatitude"] || transparencyReport.login.latitude},${transparencyReport.login["cf-iplongitude"] || transparencyReport.login.longitude}&hl=en&z=4&output=embed"></iframe></div></div>
+
+						<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
+						<div class="transparency-data"><strong>Last login timezone</strong> ${
+								transparencyReport.login["cf-timezone"]|| transparencyReport.login.timezone || "Unknown"
+							}</div></div>`
+							: `<p>Last login report unavailable.</p>`
+					}
+
+${
+	transparencyReport.creation
+		? `	<div class="transparency-item">
+							<strong>Account creation location</strong>
+							<span>${transparencyReport.creation?.["cf-ipcity"] || "Unknown"}, ${
+								transparencyReport.creation?.["cf-ipcountry"] || "Unknown"
+							} (${
+								transparencyReport.creation?.["cf-ipcontinent"] || "Unknown"
+							})</span>
+
+						<iframe width="100%" style="width:100%;height: 259px;border:0;border-radius:3px;" height="259" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=${transparencyReport.creation?.["cf-iplatitude"]},${transparencyReport.creation?.["cf-iplongitude"]}&hl=en&z=4&output=embed"></iframe>
+						</div>
+
+
+						<div class="transparency-item">
+							<strong>Creation timezone</strong> ${
+								transparencyReport.creation?.["cf-timezone"] || "Unknown"
+							}
+						</div>`
+		: ``
+}
+					
+					</div>
+        </div>
+				</div>
+			`;
+			document.body.appendChild(modalWrapper);
+
+			setTimeout(() => {
+				modalWrapper.style.display = "flex";
+			});
+
+			modalWrapper.querySelector(".close-btn").addEventListener("click", () => {
+				modalWrapper.remove();
+			});
+
+			modalWrapper.addEventListener("click", (event) => {
+				if (event.target === modalWrapper) {
+					modalWrapper.remove();
+				}
+			});
+		});
 
 	if (isOwnProfile) {
 		const editBtn = document.getElementById("editProfileBtn");

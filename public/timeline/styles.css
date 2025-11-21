@@ -2278,6 +2278,14 @@ nav {
             text-underline-offset: 3px;
             font-weight: 500;
           }
+
+          &:has(.tweeta-joindate) {
+            cursor: pointer;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          }
         }
       }
     }
@@ -7583,6 +7591,8 @@ emoji-picker.emoji-picker-popup {
   position: fixed;
   top: 0;
   left: 0;
+  right: 0px;
+  bottom: 0px;
   width: 100%;
   background-color: var(--bg-overlay);
   z-index: 1000;
@@ -8587,4 +8597,37 @@ emoji-picker.emoji-picker-popup {
 
 .community-tag:active {
   transform: translateY(0);
+}
+
+.transparency-items {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  width: 100%;
+
+  .transparency-item {
+    display: flex;
+    gap: 9px;
+    width: 100%;
+
+    svg {
+      margin-top: 6px;
+    }
+
+    strong {
+      margin-bottom: -6px;
+      font-weight: 500;
+    }
+
+    span {
+      color: var(--text-secondary);
+    }
+
+    .transparency-data {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 100%;
+    }
+  }
 }

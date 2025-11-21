@@ -1407,6 +1407,12 @@ const createChangeUsernameModal = () => {
 
 	form.appendChild(fg);
 	form.appendChild(actions);
+
+	form.addEventListener("submit", (event) => {
+		event.preventDefault();
+		handleUsernameChange();
+	});
+
 	body.appendChild(form);
 
 	modal.appendChild(header);
@@ -1551,6 +1557,12 @@ const createDeleteAccountModal = () => {
 
 	form.appendChild(fg);
 	form.appendChild(actions);
+
+	form.addEventListener("submit", (event) => {
+		event.preventDefault();
+		handleAccountDeletion();
+	});
+
 	body.appendChild(warning);
 	body.appendChild(form);
 
@@ -1728,6 +1740,12 @@ const createChangePasswordModal = () => {
 	form.appendChild(fgCur);
 	form.appendChild(fgNew);
 	form.appendChild(actions);
+
+	form.addEventListener("submit", (event) => {
+		event.preventDefault();
+		handlePasswordChange();
+	});
+
 	body.appendChild(description);
 	body.appendChild(form);
 

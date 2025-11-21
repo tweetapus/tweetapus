@@ -175,6 +175,103 @@ static double calculate_virality_boost(int like_count, int retweet_count, double
     return boost;
 }
 
+static size_t compute_adaptive_window(size_t total) {
+    if (total <= 10) return total;
+    if (total >= 30) return 30;
+    return total;
+}
+
+static size_t compute_display_window(size_t total) {
+    return (total < 10) ? total : 10;
+}
+
+static void randomize_front_window(Tweet *tweets, size_t count, size_t window, time_t now_ts) {
+    if (!tweets || window == 0 || count <= window) return;
+
+    double *weights = (double *)malloc(sizeof(double) * count);
+    int *picked = (int *)calloc(count, sizeof(int));
+    size_t *selected = (size_t *)malloc(sizeof(size_t) * window);
+    if (!weights || !picked || !selected) {
+        if (weights) free(weights);
+        if (picked) free(picked);
+        if (selected) free(selected);
+        return;
+    }
+
+    for (size_t i = 0; i < count; i++) {
+        double age_hours = (double)(now_ts - (time_t)tweets[i].created_at) / 3600.0;
+        if (age_hours < 0.0) age_hours = 0.0;
+        double freshness = 1.0 / (1.0 + age_hours * 0.35);
+        double repeat_penalty = 1.0 / (1.0 + tweets[i].author_repeats * 0.8 + tweets[i].content_repeats * 1.2);
+        double seen_penalty = (tweets[i].hours_since_seen >= 0.0)
+            ? 1.0 / (1.0 + tweets[i].hours_since_seen * 0.15)
+            : 1.15;
+        double weight = tweets[i].score * freshness * repeat_penalty * seen_penalty;
+        if (weight < 0.0001) weight = 0.0001;
+        weights[i] = weight;
+    }
+
+    for (size_t picked_count = 0; picked_count < window; picked_count++) {
+        double total = 0.0;
+        for (size_t i = 0; i < count; i++) {
+            if (!picked[i]) total += weights[i];
+        }
+        if (total <= 0.0) {
+            window = picked_count;
+            break;
+        }
+        double target = ((double)rand() / (double)RAND_MAX) * total;
+        double cumulative = 0.0;
+        size_t choice = 0;
+        for (size_t i = 0; i < count; i++) {
+            if (picked[i]) continue;
+            cumulative += weights[i];
+            if (cumulative >= target) {
+                choice = i;
+                break;
+            }
+        }
+        picked[choice] = 1;
+        selected[picked_count] = choice;
+    }
+
+    for (size_t i = 0; i + 1 < window; i++) {
+        for (size_t j = i + 1; j < window; j++) {
+            if (tweets[selected[j]].score > tweets[selected[i]].score) {
+                size_t tmp = selected[i];
+                selected[i] = selected[j];
+                selected[j] = tmp;
+            }
+        }
+    }
+
+    Tweet *buffer = (Tweet *)malloc(sizeof(Tweet) * count);
+    if (!buffer) {
+        free(weights);
+        free(picked);
+        free(selected);
+        return;
+    }
+
+    size_t write_idx = 0;
+    for (size_t i = 0; i < window; i++) {
+        buffer[write_idx++] = tweets[selected[i]];
+    }
+    for (size_t i = 0; i < count; i++) {
+        if (picked[i]) continue;
+        buffer[write_idx++] = tweets[i];
+    }
+
+    for (size_t i = 0; i < count; i++) {
+        tweets[i] = buffer[i];
+    }
+
+    free(buffer);
+    free(weights);
+    free(picked);
+    free(selected);
+}
+
 static char **recent_top_ids = NULL;
 static size_t recent_top_count = 0;
 
@@ -546,6 +643,8 @@ void rank_tweets(Tweet *tweets, size_t count) {
     }
 
     time_t now_ts = time(NULL);
+    size_t adaptive_window = compute_adaptive_window(count);
+    size_t display_window = compute_display_window(count);
 
     unsigned int *dup_counts = (unsigned int *)calloc(count, sizeof(unsigned int));
     if (!dup_counts) {
@@ -608,7 +707,7 @@ void rank_tweets(Tweet *tweets, size_t count) {
     
     qsort(tweets, count, sizeof(Tweet), compare_tweets);
 
-    for (size_t i = 0; i < count && i < 10; i++) {
+    for (size_t i = 0; i < count && i < adaptive_window; i++) {
         int effective_repeats = tweets[i].content_repeats;
         if (dup_counts) {
             effective_repeats += (int)dup_counts[i] * 2;
@@ -652,7 +751,7 @@ void rank_tweets(Tweet *tweets, size_t count) {
 
     qsort(tweets, count, sizeof(Tweet), compare_tweets);
 
-    size_t top_check = (count < 10) ? count : 10;
+    size_t top_check = adaptive_window;
     for (int pass = 0; pass < 3; pass++) {
         size_t unique_count = 0;
         for (size_t i = 0; i < top_check; i++) {
@@ -733,10 +832,11 @@ void rank_tweets(Tweet *tweets, size_t count) {
     }
 
     if (count > 1) {
-        size_t top_limit = (count < 10) ? count : 10;
-        size_t desired_older = (top_limit >= 6) ? 2 : 1;
+        size_t window_bound = adaptive_window;
+        if (window_bound > count) window_bound = count;
+        size_t desired_older = (window_bound >= 6) ? 2 : 1;
         size_t older_present = 0;
-        for (size_t i = 0; i < top_limit; i++) {
+        for (size_t i = 0; i < window_bound; i++) {
             double age_hours = (double)(now_ts - (time_t)tweets[i].created_at) / 3600.0;
             if (age_hours < 0.0) age_hours = 0.0;
             if (age_hours >= 6.0) {
@@ -745,14 +845,14 @@ void rank_tweets(Tweet *tweets, size_t count) {
         }
 
         if (older_present < desired_older) {
-            for (size_t k = top_limit; k < count && older_present < desired_older; k++) {
+            for (size_t k = window_bound; k < count && older_present < desired_older; k++) {
                 double candidate_age = (double)(now_ts - (time_t)tweets[k].created_at) / 3600.0;
                 if (candidate_age < 0.0) candidate_age = 0.0;
                 if (candidate_age < 6.0) continue;
 
                 int duplicate_id = 0;
                 if (tweets[k].id) {
-                    for (size_t i = 0; i < top_limit; i++) {
+                    for (size_t i = 0; i < window_bound; i++) {
                         if (tweets[i].id && strcmp(tweets[i].id, tweets[k].id) == 0) {
                             duplicate_id = 1;
                             break;
@@ -763,7 +863,7 @@ void rank_tweets(Tweet *tweets, size_t count) {
 
                 size_t swap_idx = SIZE_MAX;
                 double youngest_age = 1e9;
-                for (size_t i = 0; i < top_limit; i++) {
+                for (size_t i = 0; i < window_bound; i++) {
                     double age_hours = (double)(now_ts - (time_t)tweets[i].created_at) / 3600.0;
                     if (age_hours < 0.0) age_hours = 0.0;
                     if (age_hours < 6.0 && age_hours < youngest_age) {
@@ -806,16 +906,17 @@ void rank_tweets(Tweet *tweets, size_t count) {
         buckets[bucket][bucket_counts[bucket]++] = i;
     }
 
-    size_t top_limit = (count < 10) ? count : 10;
+    size_t window_bound = adaptive_window;
+    if (window_bound > count) window_bound = count;
     size_t forced_old_needed = 0;
     size_t fresh_count_in_top = 0;
-    for (size_t i = 0; i < top_limit; i++) {
+    for (size_t i = 0; i < window_bound; i++) {
         double age_hours = (double)(now_ts - (time_t)tweets[i].created_at) / 3600.0;
         if (age_hours < 6.0) fresh_count_in_top++;
     }
-    if (fresh_count_in_top > (top_limit * 60 / 100)) {
+    if (fresh_count_in_top > (window_bound * 60 / 100)) {
         forced_old_needed = 2;
-    } else if (fresh_count_in_top > (top_limit * 40 / 100)) {
+    } else if (fresh_count_in_top > (window_bound * 40 / 100)) {
         forced_old_needed = 1;
     }
 
@@ -830,7 +931,7 @@ void rank_tweets(Tweet *tweets, size_t count) {
     if (!selected_flags) { free(final_idx); for (int i = 0; i < 5; i++) { if (buckets[i]) free(buckets[i]); } return; }
 
     size_t selected_author_repeat_count = 0;
-    size_t max_author_repeat_slots = top_limit < 4 ? top_limit : 4;
+    size_t max_author_repeat_slots = window_bound < 4 ? window_bound : 4;
     size_t forced_old_selected = 0;
 
     for (size_t round = 0; round < (size_t)count && selected < count; round++) {
@@ -904,23 +1005,23 @@ void rank_tweets(Tweet *tweets, size_t count) {
 
     if (forced_old_needed > 0) {
         size_t current_older = 0;
-        for (size_t i = 0; i < top_limit; i++) {
+        for (size_t i = 0; i < window_bound; i++) {
             double age_hours = (double)(now_ts - (time_t)tweets[i].created_at) / 3600.0;
             if (age_hours >= 24.0) current_older++;
         }
         if (current_older < forced_old_needed) {
-            for (size_t k = top_limit; k < count && current_older < forced_old_needed; k++) {
+            for (size_t k = window_bound; k < count && current_older < forced_old_needed; k++) {
                 double candidate_age = (double)(now_ts - (time_t)tweets[k].created_at) / 3600.0;
                 if (candidate_age < 24.0) continue;
                 int conflict = 0;
                 if (tweets[k].id) {
-                    for (size_t t = 0; t < top_limit; t++) {
+                    for (size_t t = 0; t < window_bound; t++) {
                         if (tweets[t].id && strcmp(tweets[t].id, tweets[k].id) == 0) { conflict = 1; break; }
                     }
                 }
                 if (conflict) continue;
                 size_t youngest_idx = SIZE_MAX; double youngest_age = 1e9;
-                for (size_t t = 0; t < top_limit; t++) {
+                for (size_t t = 0; t < window_bound; t++) {
                     double age_hours = (double)(now_ts - (time_t)tweets[t].created_at) / 3600.0;
                     if (age_hours < youngest_age) { youngest_age = age_hours; youngest_idx = t; }
                 }
@@ -938,7 +1039,9 @@ void rank_tweets(Tweet *tweets, size_t count) {
     free(selected_flags);
     for (int i = 0; i < 5; i++) if (buckets[i]) free(buckets[i]);
 
-    size_t top_limit_adj = (count < 10) ? count : 10;
+    size_t primary_window = window_bound;
+    if (primary_window > display_window) primary_window = display_window;
+    size_t top_limit_adj = primary_window;
     for (size_t i = 0; i + 1 < top_limit_adj; i++) {
         if (!tweets[i].id || !tweets[i+1].id) continue;
         if (strcmp(tweets[i].id, tweets[i+1].id) == 0) {
@@ -1062,7 +1165,12 @@ void rank_tweets(Tweet *tweets, size_t count) {
         }
     }
 
-    size_t record_top = (count < 10) ? count : 10;
+    if (count > 1 && display_window > 0) {
+        randomize_front_window(tweets, count, display_window, now_ts);
+    }
+
+    size_t record_top = display_window;
+    if (record_top > count) record_top = count;
     for (size_t i = 0; i < record_top; i++) {
         if (tweets[i].id) record_top_shown(tweets[i].id);
     }
