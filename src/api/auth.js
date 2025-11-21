@@ -644,12 +644,12 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 					}
 
 					const loginTransparency = JSON.stringify({
-						city: headers['cf-ipcity'] || null,
-						country: headers['cf-ipcountry'] || null,
-						continent: headers['cf-ipcontinent'] || null,
-						latitude: headers['cf-iplatitude'] || null,
-						longitude: headers['cf-iplongitude'] || null,
-						timezone: headers['cf-timezone'] || null,
+						"cf-ipcity": headers["cf-ipcity"] || null,
+						"cf-ipcountry": headers["cf-ipcountry"] || null,
+						"cf-ipcontinent": headers["cf-ipcontinent"] || null,
+						"cf-iplatitude": headers["cf-iplatitude"] || null,
+						"cf-iplongitude": headers["cf-iplongitude"] || null,
+						"cf-timezone": headers["cf-timezone"] || null,
 					});
 
 					updateUserLoginTransparency.run(loginTransparency, user.id);
@@ -668,12 +668,12 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 
 				if (!user) {
 					const creationTransparency = JSON.stringify({
-						city: headers['cf-ipcity'] || null,
-						country: headers['cf-ipcountry'] || null,
-						continent: headers['cf-ipcontinent'] || null,
-						latitude: headers['cf-iplatitude'] || null,
-						longitude: headers['cf-iplongitude'] || null,
-						timezone: headers['cf-timezone'] || null,
+						"cf-ipcity": headers["cf-ipcity"] || null,
+						"cf-ipcountry": headers["cf-ipcountry"] || null,
+						"cf-ipcontinent": headers["cf-ipcontinent"] || null,
+						"cf-iplatitude": headers["cf-iplatitude"] || null,
+						"cf-iplongitude": headers["cf-iplongitude"] || null,
+						"cf-timezone": headers["cf-timezone"] || null,
 					});
 
 					user = db
@@ -1081,12 +1081,12 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 				const userId = Bun.randomUUIDv7();
 
 				const creationTransparency = JSON.stringify({
-					city: headers['cf-ipcity'] || null,
-					country: headers['cf-ipcountry'] || null,
-					continent: headers['cf-ipcontinent'] || null,
-					latitude: headers['cf-iplatitude'] || null,
-					longitude: headers['cf-iplongitude'] || null,
-					timezone: headers['cf-timezone'] || null,
+					city: headers["cf-ipcity"] || null,
+					country: headers["cf-ipcountry"] || null,
+					continent: headers["cf-ipcontinent"] || null,
+					latitude: headers["cf-iplatitude"] || null,
+					longitude: headers["cf-iplongitude"] || null,
+					timezone: headers["cf-timezone"] || null,
 				});
 
 				const user = db
@@ -1146,12 +1146,12 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 				}
 
 				const loginTransparency = JSON.stringify({
-					city: headers['cf-ipcity'] || null,
-					country: headers['cf-ipcountry'] || null,
-					continent: headers['cf-ipcontinent'] || null,
-					latitude: headers['cf-iplatitude'] || null,
-					longitude: headers['cf-iplongitude'] || null,
-					timezone: headers['cf-timezone'] || null,
+					"cf-ipcity": headers["cf-ipcity"] || null,
+					"cf-ipcountry": headers["cf-ipcountry"] || null,
+					"cf-ipcontinent": headers["cf-ipcontinent"] || null,
+					"cf-iplatitude": headers["cf-iplatitude"] || null,
+					"cf-iplongitude": headers["cf-iplongitude"] || null,
+					"cf-timezone": headers["cf-timezone"] || null,
 				});
 
 				updateUserLoginTransparency.run(loginTransparency, user.id);

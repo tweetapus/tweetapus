@@ -222,6 +222,48 @@ export default new Elysia({
 			}),
 		},
 	)
+	.get(
+		"/transparency/:user",
+		async ({ params, set }) => {
+			const { user } = params;
+			if (!user) {
+				set.status = 400;
+				return { error: "User parameter is required" };
+			}
+
+			const userRecord = db
+				.query(
+					"SELECT account_creation_transparency, account_login_transparency FROM users WHERE username = ?",
+				)
+				.get(user);
+
+			if (!userRecord) {
+				set.status = 404;
+				return { error: "User not found" };
+			}
+
+			const parseTransparency = (jsonStr) => {
+				if (!jsonStr) return null;
+				try {
+					return JSON.parse(jsonStr);
+				} catch {
+					return null;
+				}
+			};
+
+			return {
+				creation: parseTransparency(userRecord.account_creation_transparency),
+				login: parseTransparency(userRecord.account_login_transparency),
+			};
+		},
+		{
+			detail: {
+				description:
+					"Get account transparency data (city and country) for a user",
+				tags: ["Transparency"],
+			},
+		},
+	)
 	.use(auth)
 	.use(admin)
 	.use(blocking)

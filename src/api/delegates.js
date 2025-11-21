@@ -320,9 +320,10 @@ export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
 			if (!payload) return { error: "Invalid token" };
 
-			const actualUserId = payload.isDelegate && payload.primaryUserId 
-				? payload.primaryUserId 
-				: null;
+			const actualUserId =
+				payload.isDelegate && payload.primaryUserId
+					? payload.primaryUserId
+					: null;
 
 			let user;
 			if (actualUserId) {
@@ -330,7 +331,7 @@ export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 			} else {
 				user = getUserByUsername.get(payload.username);
 			}
-			
+
 			if (!user) return { error: "User not found" };
 
 			const delegations = getMyDelegations.all(user.id);
