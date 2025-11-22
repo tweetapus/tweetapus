@@ -53,7 +53,7 @@ export default async function openProfile(username) {
 
 			const loadingOverlay = document.createElement("div");
 			loadingOverlay.style.cssText =
-				"display: flex; justify-content: center; align-items: center; min-height: 400px; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-primary); z-index: 100;";
+				"display: flex; justify-content: center; align-items: center; min-height: 400px; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-primary); z-index: 100; margin-left: -24px; margin-right: -24px;";
 			const spinner = document.createElement("div");
 			spinner.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><style>.spinner_z9k8 {transform-origin: center;animation: spinner_StKS 0.75s infinite linear;}@keyframes spinner_StKS {100% {transform: rotate(360deg);}}</style><path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="currentColor"></path><path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" class="spinner_z9k8" fill="currentColor"></path></svg>`;
 			loadingOverlay.appendChild(spinner);
@@ -1241,9 +1241,9 @@ const renderProfile = (data) => {
 									?.slice(2) ||
 								transparencyReport.login.country ||
 								"Unknown"
-							}</span>
+							}${transparencyReport.login.country ? `<img src="/public/shared/assets/img/flags/${transparencyReport.login.country.toLowerCase()}.svg" class="flag" alt="${transparencyReport.login.country}" width="16" height="16" onerror="this.remove()">` : ""}</span>
 
-						${transparencyReport.login.latitude ? `<img draggable="false" alt="Apple Map" src="https://external-content.duckduckgo.com/ssv2/?scale=3&lang=en-US&colorScheme=dark&format=png&size=360x157&spn=36,36&center=${encodeURIComponent(`${transparencyReport.login.latitude},${transparencyReport.login.longitude}`)}&annotations=${encodeURIComponent(JSON.stringify([{ point: `${transparencyReport.login.latitude},${transparencyReport.login.longitude}`, color: "AC97FF" }]))}"}>` : ""}</div></div>
+						${transparencyReport.login.latitude ? `<img draggable="false" alt="Apple Map" class="map" src="https://external-content.duckduckgo.com/ssv2/?scale=3&lang=en-US&colorScheme=dark&format=png&size=360x157&spn=36,36&center=${encodeURIComponent(`${transparencyReport.login.latitude},${transparencyReport.login.longitude}`)}&annotations=${encodeURIComponent(JSON.stringify([{ point: `${transparencyReport.login.latitude},${transparencyReport.login.longitude}`, color: "AC97FF" }]))}"}>` : ""}</div></div>
 
             ${
 							transparencyReport.login?.vpn
@@ -1273,10 +1273,16 @@ ${
 		<div class="transparency-data">
 							<strong>Account creation location</strong>
 							<span>${transparencyReport.creation?.city ? `${esc(transparencyReport.creation.city)}, ` : ""}${
-								transparencyReport.creation?.country || "Unknown"
-							}</span>
+								countries
+									.find((country) =>
+										country.startsWith(
+											transparencyReport.login.country?.toUpperCase() || "XX",
+										),
+									)
+									?.slice(2) || "Unknown"
+							}${transparencyReport.creation.country ? `<img src="/public/shared/assets/img/flags/${transparencyReport.creation.country.toLowerCase()}.svg" alt="${transparencyReport.creation.country}" width="16" height="16" style="margin-left: 4px;" onerror="this.remove()">` : ""}</span>
 
-							${transparencyReport.creation.latitude && transparencyReport.creation.longitude ? `<img draggable="false" alt="Apple Map" src="https://external-content.duckduckgo.com/ssv2/?scale=3&lang=en-US&colorScheme=dark&format=png&size=360x157&spn=36,36&center=${encodeURIComponent(`${transparencyReport.creation.latitude},${transparencyReport.creation.longitude}`)}&annotations=${encodeURIComponent(JSON.stringify([{ point: `${transparencyReport.creation.latitude},${transparencyReport.creation.longitude}`, color: "AC97FF" }]))}"}>` : ""}</div></div>
+							${transparencyReport.creation.latitude && transparencyReport.creation.longitude ? `<img draggable="false" alt="Apple Map" class="map" src="https://external-content.duckduckgo.com/ssv2/?scale=3&lang=en-US&colorScheme=dark&format=png&size=360x157&spn=36,36&center=${encodeURIComponent(`${transparencyReport.creation.latitude},${transparencyReport.creation.longitude}`)}&annotations=${encodeURIComponent(JSON.stringify([{ point: `${transparencyReport.creation.latitude},${transparencyReport.creation.longitude}`, color: "AC97FF" }]))}"}>` : ""}</div></div>
 
 						<div class="transparency-item">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-history-icon lucide-history"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
@@ -1287,6 +1293,18 @@ ${
 						</div></div>`
 		: ``
 }
+
+<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-calendar-plus-icon lucide-calendar-plus"><path d="M16 19h6"/><path d="M16 2v4"/><path d="M19 16v6"/><path d="M21 12.598V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8.5"/><path d="M3 10h18"/><path d="M8 2v4"/></svg>
+						<div class="transparency-data"><strong>Account created</strong>${(new Date(profile.created_at)).toLocaleDateString(
+							"en-US",
+							{
+								month: "long",
+								year: "numeric",
+								day: "numeric",
+								hour: "2-digit",
+								minute: "2-digit",
+							},
+						)}</div></div>
 					</div>
         </div>
 				</div>

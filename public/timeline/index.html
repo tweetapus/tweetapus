@@ -139,12 +139,23 @@
       <div id="composer-container"></div>
 
       <div id="articles-container" class="articles-container hidden">
-        <div id="article-composer"></div>
+        <button type="button" id="open-article-composer" class="open-article-composer-button">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h9"></path>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+          </svg>
+          Write an Article
+        </button>
         <div id="articles-empty" class="articles-empty hidden"></div>
         <div id="articles-list" class="articles-list"></div>
         <button type="button" id="articles-load-more" class="articles-load-more hidden">
           Load more articles
         </button>
+      </div>
+
+      <div id="article-modal-overlay" class="article-modal-overlay hidden">
+        <div id="article-composer-modal" class="article-composer-modal"></div>
       </div>
 
       <div class="tweets"></div>
@@ -172,7 +183,25 @@
 
       <div class="search-results-page">
         <div class="search-empty" id="searchEmpty">
-          <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><style>.spinner_z9k8 {transform-origin: center;animation: spinner_StKS 0.75s infinite linear;}@keyframes spinner_StKS {100% {transform: rotate(360deg);}}</style><path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="currentColor"></path><path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" class="spinner_z9k8" fill="currentColor"></path></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <style>
+              .spinner_z9k8 {
+                transform-origin: center;
+                animation: spinner_StKS 0.75s infinite linear;
+              }
+
+              @keyframes spinner_StKS {
+                100% {
+                  transform: rotate(360deg);
+                }
+              }
+            </style>
+            <path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25"
+              fill="currentColor"></path>
+            <path
+              d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
+              class="spinner_z9k8" fill="currentColor"></path>
+          </svg>
         </div>
 
         <div class="users-section" id="usersSection" style="display: none">

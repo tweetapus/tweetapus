@@ -6,14 +6,16 @@ import query from "./api.js";
 
 let initialized = false;
 let container;
-let composerHost;
+let openComposerButton;
+let composerModal;
+let composerOverlay;
 let titleInput;
 let coverButton;
 let coverInput;
 let coverPreview;
 let markdownInput;
-let previewPane;
 let publishButton;
+let closeModalButton;
 let articlesList;
 let emptyState;
 let loadMoreButton;
@@ -116,18 +118,6 @@ const sanitizeMarkdown = (markdown) =>
 		},
 	);
 
-const updatePreview = () => {
-	if (!previewPane) return;
-	const markdown = markdownInput?.value?.trim() || "";
-	if (!markdown) {
-		previewPane.innerHTML = "";
-		previewPane.classList.add(hiddenClass);
-		return;
-	}
-	previewPane.innerHTML = sanitizeMarkdown(markdown);
-	previewPane.classList.remove(hiddenClass);
-};
-
 const resetComposer = () => {
 	uploadedCover = null;
 	if (titleInput) titleInput.value = "";
@@ -137,7 +127,21 @@ const resetComposer = () => {
 		coverPreview.style.backgroundImage = "";
 		coverPreview.classList.add(hiddenClass);
 	}
-	updatePreview();
+};
+
+const openComposerModal = () => {
+	if (!composerModal || !composerOverlay) return;
+	composerModal.classList.add("article-modal-open");
+	composerOverlay.classList.remove(hiddenClass);
+	document.body.style.overflow = "hidden";
+	if (titleInput) titleInput.focus();
+};
+
+const closeComposerModal = () => {
+	if (!composerModal || !composerOverlay) return;
+	composerModal.classList.remove("article-modal-open");
+	composerOverlay.classList.add(hiddenClass);
+	document.body.style.overflow = "";
 };
 
 const renderArticleCard = (article, { prepend = false } = {}) => {
@@ -355,6 +359,7 @@ const publishArticle = async () => {
 		}
 
 		resetComposer();
+		closeComposerModal();
 	} catch (error) {
 		console.error("Publish article error:", error);
 		toastQueue.add(`<h1>Failed to publish</h1>`);
@@ -365,24 +370,36 @@ const publishArticle = async () => {
 };
 
 const setupComposer = () => {
-	if (!composerHost) return;
+	if (!composerModal) return;
 
-	const wrapper = document.createElement("div");
-	wrapper.className = "article-composer";
+	const modalContent = document.createElement("div");
+	modalContent.className = "article-modal-content";
+
+	const modalHeader = document.createElement("div");
+	modalHeader.className = "article-modal-header";
+
+	closeModalButton = document.createElement("button");
+	closeModalButton.type = "button";
+	closeModalButton.className = "article-modal-close";
+	closeModalButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-icon lucide-x"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
+	closeModalButton.addEventListener("click", closeComposerModal);
+	modalHeader.appendChild(closeModalButton);
+
+	modalContent.appendChild(modalHeader);
 
 	titleInput = document.createElement("input");
 	titleInput.type = "text";
 	titleInput.placeholder = "Article title";
 	titleInput.maxLength = 160;
 	titleInput.className = "article-title-input";
-	wrapper.appendChild(titleInput);
+	modalContent.appendChild(titleInput);
 
 	const coverRow = document.createElement("div");
 	coverRow.className = "article-cover-row";
 
 	coverButton = document.createElement("button");
 	coverButton.type = "button";
-	coverButton.textContent = "Upload cover (optional)";
+	coverButton.textContent = "Upload cover image";
 	coverButton.className = "article-cover-button";
 	coverRow.appendChild(coverButton);
 
@@ -394,32 +411,74 @@ const setupComposer = () => {
 
 	coverPreview = document.createElement("div");
 	coverPreview.className = `article-cover-preview ${hiddenClass}`;
-	coverRow.appendChild(coverPreview);
 
-	wrapper.appendChild(coverRow);
+	const removeBtn = document.createElement("button");
+	removeBtn.type = "button";
+	removeBtn.className = "article-cover-remove";
+	removeBtn.textContent = "Remove";
+	removeBtn.addEventListener("click", () => {
+		uploadedCover = null;
+		coverPreview.style.backgroundImage = "";
+		coverPreview.classList.add(hiddenClass);
+		if (coverInput) coverInput.value = "";
+	});
+	coverPreview.appendChild(removeBtn);
+
+	coverRow.appendChild(coverPreview);
+	modalContent.appendChild(coverRow);
+
+	const editorContainer = document.createElement("div");
+	editorContainer.className = "article-editor-container";
+
+	const editorPane = document.createElement("div");
+	editorPane.className = "article-editor-pane";
+
+	const editorLabel = document.createElement("label");
+	editorLabel.textContent = "Markdown Editor";
+	editorLabel.className = "article-pane-label";
+	editorPane.appendChild(editorLabel);
 
 	markdownInput = document.createElement("textarea");
 	markdownInput.className = "article-markdown-input";
-	markdownInput.rows = 12;
-	markdownInput.placeholder = "Write your article in Markdown…";
-	wrapper.appendChild(markdownInput);
+	markdownInput.placeholder = "Tell your story...";
+	editorPane.appendChild(markdownInput);
 
-	previewPane = document.createElement("div");
-	previewPane.className = `article-markdown-preview ${hiddenClass}`;
-	wrapper.appendChild(previewPane);
+	editorContainer.appendChild(editorPane);
+	modalContent.appendChild(editorContainer);
 
 	const actionsRow = document.createElement("div");
 	actionsRow.className = "article-actions";
 
+	const cancelButton = document.createElement("button");
+	cancelButton.type = "button";
+	cancelButton.textContent = "Cancel";
+	cancelButton.className = "article-cancel-button";
+	cancelButton.addEventListener("click", () => {
+		if (
+			titleInput?.value.trim() ||
+			markdownInput?.value.trim() ||
+			uploadedCover
+		) {
+			if (
+				confirm("You have unsaved changes. Are you sure you want to close?")
+			) {
+				resetComposer();
+				closeComposerModal();
+			}
+		} else {
+			closeComposerModal();
+		}
+	});
+	actionsRow.appendChild(cancelButton);
+
 	publishButton = document.createElement("button");
 	publishButton.type = "button";
-	publishButton.textContent = "Publish article";
+	publishButton.textContent = "Publish Article";
 	publishButton.className = "article-publish-button";
 	actionsRow.appendChild(publishButton);
 
-	wrapper.appendChild(actionsRow);
-
-	composerHost.appendChild(wrapper);
+	modalContent.appendChild(actionsRow);
+	composerModal.appendChild(modalContent);
 
 	coverButton.addEventListener("click", () => coverInput?.click());
 	coverInput.addEventListener("change", (event) => {
@@ -429,23 +488,32 @@ const setupComposer = () => {
 		}
 	});
 
-	markdownInput.addEventListener("input", updatePreview);
 	publishButton.addEventListener("click", publishArticle);
+
+	composerOverlay.addEventListener("click", (e) => {
+		if (e.target === composerOverlay) {
+			closeComposerModal();
+		}
+	});
 };
 
 export const initArticles = () => {
 	if (initialized) return;
 	container = document.getElementById("articles-container");
-	composerHost = document.getElementById("article-composer");
+	openComposerButton = document.getElementById("open-article-composer");
+	composerModal = document.getElementById("article-composer-modal");
+	composerOverlay = document.getElementById("article-modal-overlay");
 	articlesList = document.getElementById("articles-list");
 	emptyState = document.getElementById("articles-empty");
 	loadMoreButton = document.getElementById("articles-load-more");
 
-	if (!container || !composerHost || !articlesList) {
+	if (!container || !openComposerButton || !composerModal || !articlesList) {
 		return;
 	}
 
 	setupComposer();
+
+	openComposerButton.addEventListener("click", openComposerModal);
 
 	if (loadMoreButton) {
 		loadMoreButton.addEventListener("click", () =>
