@@ -8617,8 +8617,8 @@ emoji-picker.emoji-picker-popup {
       border-radius: 3px;
       margin-top: 6px;
       pointer-events: none;
-      height: 183px;
       background-color: #213782;
+      aspect-ratio: 360 / 157;
     }
 
     .transparency-data {

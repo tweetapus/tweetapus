@@ -136,7 +136,7 @@ function connectSSE() {
 	};
 
 	eventSource.onerror = (error) => {
-		console.error("SSE error:", error);
+		console.debug("SSE error:", error);
 
 		if (eventSource) {
 			eventSource.close();

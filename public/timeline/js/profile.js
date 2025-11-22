@@ -37,6 +37,11 @@ let isAvatarTweetPromptOpen = false;
 const escapeHTML = (str) =>
 	str ? str.split("").join("").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
 
+const countries =
+	"AFAfghanistan;ALAlbania;DZAlgeria;ASAmerican Samoa;ADAndorra;AOAngola;AGAntigua and Barbuda;ARArgentina;AMArmenia;AWAruba;AUAustralia;ATAustria;AZAzerbaijan;BSBahamas;BHBahrain;BDBangladesh;BBBarbados;BYBelarus;BEBelgium;BZBelize;BJBenin;BMBermuda;BTBhutan;BOBolivia;BABosnia and Herzegovina;BWBotswana;BRBrazil;BNBrunei Darussalam;BGBulgaria;BFBurkina Faso;BIBurundi;KHCambodia;CMCameroon;CACanada;CVCape Verde;KYCayman Islands;CFCentral African Republic;TDChad;CLChile;CNChina;COColombia;KMComoros;CGRepublic of the Congo;CDDemocratic Republic of the Congo;CKCook Islands;CRCosta Rica;CIIvory Coast;HRCroatia;CUCuba;CYCyprus;CZCzech Republic;DKDenmark;DJDjibouti;DMDominica;DODominican Republic;ECEcuador;EGEgypt;SVEl Salvador;GQEquatorial Guinea;EREritrea;EEEstonia;ETEthiopia;FOFaroe Islands;FJFiji;FIFinland;FRFrance;GFFrench Guiana;PFFrench Polynesia;GAGabon;GMGambia;GEGeorgia;DEGermany;GHGhana;GIGibraltar;GRGreece;GLGreenland;GDGrenada;GPGuadeloupe;GUGuam;GTGuatemala;GNGuinea;GWGuinea-Bissau;GYGuyana;HTHaiti;HNHonduras;HKHong Kong;HUHungary;ISIceland;INIndia;IDIndonesia;IRIran;IQIraq;IEIreland;ILIsrael;ITItaly;JMJamaica;JPJapan;JOJordan;KZKazakhstan;KEKenya;KIKiribati;KPNorth Korea;KRSouth Korea;KWKuwait;KGKyrgyzstan;LALao People's Democratic Republic;LVLatvia;LBLebanon;LSLesotho;LRLiberia;LYLibya;LILiechtenstein;LTLithuania;LULuxembourg;MOMacao;MGMadagascar;MWMalawi;MYMalaysia;MVMaldives;MLMali;MTMalta;MHMarshall Islands;MQMartinique;MRMauritania;MUMauritius;YTMayotte;MXMexico;FMMicronesia, Federated States of;MDMoldova, Republic of;MCMonaco;MNMongolia;MAMorocco;MZMozambique;MMMyanmar;NANamibia;NRNauru;NPNepal;NLNetherlands;NCNew Caledonia;NZNew Zealand;NINicaragua;NENiger;NGNigeria;MKNorth Macedonia;MPNorthern Mariana Islands;NONorway;OMOman;PKPakistan;PWPalau;PSState of Palestine;PAPanama;PGPapua New Guinea;PYParaguay;PEPeru;PHPhilippines;PLPoland;PTPortugal;PRPuerto Rico;QAQatar;REReunion;RORomania;RURussia;RWRwanda;KNSaint Kitts and Nevis;LCSaint Lucia;VCSaint Vincent and the Grenadines;WSSamoa;SMSan Marino;STSao Tome and Principe;SASaudi Arabia;SNSenegal;SCSeychelles;SLSierra Leone;SGSingapore;SKSlovakia;SISlovenia;SBSolomon Islands;SOSomalia;ZASouth Africa;ESSpain;LKSri Lanka;SDSudan;SRSuriname;SZEswatini;SESweden;CHSwitzerland;SYSyrian Arab Republic;TWTaiwan;TJTajikistan;TZTanzania;THThailand;TLTimor-Leste;TGTogo;TOTonga;TTTrinidad and Tobago;TNTunisia;TRTurkey;TMTurkmenistan;TCTurks and Caicos Islands;TVTuvalu;UGUganda;UAUkraine;AEUnited Arab Emirates;GBUnited Kingdom;USUnited States of America;UYUruguay;UZUzbekistan;VUVanuatu;VEVenezuela;VNVietnam;VGVirgin Islands, British;VIVirgin Islands;WFWallis and Futuna;EHWestern Sahara;YEYemen;ZMZambia;ZWZimbabwe;AXAland Islands;BQBonaire, Sint Eustatius and Saba;CWCuraçao;GGGuernsey;IMIsle of Man;JEJersey;MEMontenegro;MFSaint Martin;RSSerbia;SXSint Maarten;SSSouth Sudan;XKKosovo;XXUnknown".split(
+		";",
+	);
+
 export default async function openProfile(username) {
 	currentUsername = username;
 
@@ -1171,13 +1176,13 @@ const renderProfile = (data) => {
 
 	metaEl
 		.querySelector(".profile-meta-item:has(.tweeta-joindate)")
-		?.addEventListener("click", async (e) => {
+		.addEventListener("click", async (e) => {
 			e.preventDefault();
 			e.stopPropagation();
 
-			const countries =
-				`AFAfghanistan;ALAlbania;DZAlgeria;ASAmerican Samoa;ADAndorra;AOAngola;AGAntigua and Barbuda;ARArgentina;AMArmenia;AWAruba;AUAustralia;ATAustria;AZAzerbaijan;BSBahamas;BHBahrain;BDBangladesh;BBBarbados;BYBelarus;BEBelgium;BZBelize;BJBenin;BMBermuda;BTBhutan;BOBolivia;BABosnia and Herzegovina;BWBotswana;BRBrazil;BNBrunei Darussalam;BGBulgaria;BFBurkina Faso;BIBurundi;KHCambodia;CMCameroon;CACanada;CVCape Verde;KYCayman Islands;CFCentral African Republic;TDChad;CLChile;CNChina;COColombia;KMComoros;CGRepublic of the Congo;CDDemocratic Republic of the Congo;CKCook Islands;CRCosta Rica;CIIvory Coast;HRCroatia;CUCuba;CYCyprus;CZCzech Republic;DKDenmark;DJDjibouti;DMDominica;DODominican Republic;ECEcuador;EGEgypt;SVEl Salvador;GQEquatorial Guinea;EREritrea;EEEstonia;ETEthiopia;FOFaroe Islands;FJFiji;FIFinland;FRFrance;GFFrench Guiana;PFFrench Polynesia;GAGabon;GMGambia;GEGeorgia;DEGermany;GHGhana;GIGibraltar;GRGreece;GLGreenland;GDGrenada;GPGuadeloupe;GUGuam;GTGuatemala;GNGuinea;GWGuinea-Bissau;GYGuyana;HTHaiti;HNHonduras;HKHong Kong;HUHungary;ISIceland;INIndia;IDIndonesia;IRIran;IQIraq;IEIreland;ILIsrael;ITItaly;JMJamaica;JPJapan;JOJordan;KZKazakhstan;KEKenya;KIKiribati;KPNorth Korea;KRSouth Korea;KWKuwait;KGKyrgyzstan;LALao People's Democratic Republic;LVLatvia;LBLebanon;LSLesotho;LRLiberia;LYLibya;LILiechtenstein;LTLithuania;LULuxembourg;MOMacao;MGMadagascar;MWMalawi;MYMalaysia;MVMaldives;MLMali;MTMalta;MHMarshall Islands;MQMartinique;MRMauritania;MUMauritius;YTMayotte;MXMexico;FMMicronesia, Federated States of;MDMoldova, Republic of;MCMonaco;MNMongolia;MAMorocco;MZMozambique;MMMyanmar;NANamibia;NRNauru;NPNepal;NLNetherlands;NCNew Caledonia;NZNew Zealand;NINicaragua;NENiger;NGNigeria;MKNorth Macedonia;MPNorthern Mariana Islands;NONorway;OMOman;PKPakistan;PWPalau;PSState of Palestine;PAPanama;PGPapua New Guinea;PYParaguay;PEPeru;PHPhilippines;PLPoland;PTPortugal;PRPuerto Rico;QAQatar;REReunion;RORomania;RURussia;RWRwanda;KNSaint Kitts and Nevis;LCSaint Lucia;VCSaint Vincent and the Grenadines;WSSamoa;SMSan Marino;STSao Tome and Principe;SASaudi Arabia;SNSenegal;SCSeychelles;SLSierra Leone;SGSingapore;SKSlovakia;SISlovenia;SBSolomon Islands;SOSomalia;ZASouth Africa;ESSpain;LKSri Lanka;SDSudan;SRSuriname;SZEswatini;SESweden;CHSwitzerland;SYSyrian Arab Republic;TWTaiwan;TJTajikistan;TZTanzania;THThailand;TLTimor-Leste;TGTogo;TOTonga;TTTrinidad and Tobago;TNTunisia;TRTurkey;TMTurkmenistan;TCTurks and Caicos Islands;TVTuvalu;UGUganda;UAUkraine;AEUnited Arab Emirates;GBUnited Kingdom;USUnited States of America;UYUruguay;UZUzbekistan;VUVanuatu;VEVenezuela;VNVietnam;VGVirgin Islands, British;VIVirgin Islands, U.S.;WFWallis and Futuna;EHWestern Sahara;YEYemen;ZMZambia;ZWZimbabwe;AXAland Islands;BQBonaire, Sint Eustatius and Saba;CWCuraçao;GGGuernsey;IMIsle of Man;JEJersey;MEMontenegro;MFSaint Martin;RSSerbia;SXSint Maarten;SSSouth Sudan;XKKosovo;XXUnknown`.split(
-					";",
+			const esc = (str) =>
+				new TextDecoder("utf-8").decode(
+					Uint8Array.from(str, (c) => c.charCodeAt(0)),
 				);
 
 			const transparencyReport = await query(
@@ -1226,7 +1231,7 @@ const renderProfile = (data) => {
 						transparencyReport.login.country !== "T1"
 							? `<div class="transparency-item">
 							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin-icon lucide-pin"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> <div class="transparency-data"><strong>Last login location</strong>
-							<span>${transparencyReport.login.city ? `${transparencyReport.login.city}, ` : ""}${
+							<span>${transparencyReport.login.city ? `${esc(transparencyReport.login.city)}, ` : ""}${
 								countries
 									.find((country) =>
 										country.startsWith(
@@ -1246,7 +1251,7 @@ const renderProfile = (data) => {
 						<div class="transparency-data"><strong>Last login from a datacenter IP</strong></div></div>`
 								: ""
 						}
-						
+
 <div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
 						<div class="transparency-data"><strong>Last login timezone</strong> ${
 							transparencyReport.login.timezone || "Unknown"
@@ -1267,7 +1272,7 @@ ${
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-icon lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
 		<div class="transparency-data">
 							<strong>Account creation location</strong>
-							<span>${transparencyReport.creation?.city ? `${transparencyReport.creation.city}, ` : ""}${
+							<span>${transparencyReport.creation?.city ? `${esc(transparencyReport.creation.city)}, ` : ""}${
 								transparencyReport.creation?.country || "Unknown"
 							}</span>
 
