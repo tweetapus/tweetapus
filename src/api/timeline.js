@@ -319,6 +319,7 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 
 		const beforeId = query.before;
 		const limit = Math.min(Math.max(parseInt(query.limit, 10) || 10, 1), 50);
+		const fetchLimit = Math.min(Math.max(limit * 3, 10), 60);
 		let posts = [];
 		if (beforeId) {
 			const cursor = getPostCreatedAt.get(beforeId);
@@ -334,7 +335,7 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 					cursor.created_at,
 					cursor.created_at,
 					beforeId,
-					limit,
+					fetchLimit,
 				);
 			}
 		} else {
@@ -344,7 +345,7 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 				user.id,
 				user.id,
 				user.admin ? 1 : 0,
-				limit,
+				fetchLimit,
 			);
 		}
 
@@ -395,11 +396,13 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 			const seenMeta = new Map(
 				seenTweets.map((row) => [row.tweet_id, row.seen_at]),
 			);
-			posts = rankTweets(posts, seenMeta);
+			// Rank across a larger candidate set to avoid repetition
+			posts = rankTweets(posts, seenMeta, limit);
 
-			for (const post of posts.slice(0, 10)) {
+			for (const post of posts.slice(0, Math.min(limit, posts.length))) {
 				markTweetsAsSeen.run(Bun.randomUUIDv7(), user.id, post.id);
 			}
+			posts = posts.slice(0, limit);
 		}
 
 		const userMap = {};
@@ -609,6 +612,7 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 
 		const beforeId = query.before;
 		const limit = Math.min(Math.max(parseInt(query.limit, 10) || 10, 1), 50);
+		const fetchLimit = Math.min(Math.max(limit * 3, 10), 60);
 		let posts = [];
 		if (beforeId) {
 			const cursor = getPostCreatedAt.get(beforeId);
@@ -623,7 +627,7 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 					cursor.created_at,
 					cursor.created_at,
 					beforeId,
-					limit,
+					fetchLimit,
 				);
 			}
 		} else {
@@ -632,7 +636,7 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 				user.id,
 				user.id,
 				user.admin ? 1 : 0,
-				limit,
+				fetchLimit,
 			);
 		}
 
@@ -703,11 +707,12 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 				}
 			}
 
-			posts = rankTweets(posts, seenMeta);
+			posts = rankTweets(posts, seenMeta, limit);
 
-			for (const post of posts.slice(0, 10)) {
+			for (const post of posts.slice(0, Math.min(limit, posts.length))) {
 				markTweetsAsSeen.run(Bun.randomUUIDv7(), user.id, post.id);
 			}
+			posts = posts.slice(0, limit);
 		}
 
 		const userMap = {};

@@ -5,6 +5,7 @@
 
 typedef struct {
     char *id;
+    char *content;
     long long created_at;
     int like_count;
     int retweet_count;
