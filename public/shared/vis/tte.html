@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Holognosis Experiment</title>
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --text-main: #e0e0e0;
+            --text-muted: #666;
+            --accent: #ffffff;
+            --panel-bg: rgba(255, 255, 255, 0.03);
+            --transition-speed: 0.8s;
+            
+            /* Layer Colors */
+            --c-surface: #e0e0e0;
+            --c-labor: #ff7b5f;
+            --c-chemistry: #5fd3ff;
+            --c-history: #ffcf5f;
+            --c-essence: #b05fff;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        /* Background ambient noise/grain */
+        .noise {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.05;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* Layout Container */
+        .container {
+            position: relative;
+            z-index: 10;
+            max-width: 800px;
+            width: 90%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                grid-template-columns: 1fr 1fr;
+                text-align: left;
+                align-items: center;
+            }
+        }
+
+        /* The Object Visualization */
+        .object-stage {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            perspective: 1000px;
+        }
+
+        .coffee-cup {
+            width: 120px;
+            height: 150px;
+            background: var(--accent);
+            border-radius: 10px;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255,255,255,0.1);
+            transition: all var(--transition-speed) cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Handle of the cup */
+        .coffee-cup::after {
+            content: '';
+            position: absolute;
+            right: -30px;
+            top: 20px;
+            width: 40px;
+            height: 60px;
+            border: 8px solid var(--accent);
+            border-left: none;
+            border-radius: 0 20px 20px 0;
+            transition: border-color var(--transition-speed) ease;
+        }
+
+        /* Steam Particles */
+        .steam {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            height: 40px;
+            opacity: 0;
+            transition: opacity var(--transition-speed);
+        }
+        .steam-line {
+            width: 2px;
+            height: 20px;
+            background: var(--accent);
+            display: inline-block;
+            margin: 0 4px;
+            animation: rise 2s infinite ease-in-out;
+            border-radius: 2px;
+        }
+        .steam-line:nth-child(2) { animation-delay: 0.5s; height: 30px; }
+        .steam-line:nth-child(3) { animation-delay: 1s; }
+
+        @keyframes rise {
+            0% { transform: translateY(0) scaleY(1); opacity: 0.5; }
+            100% { transform: translateY(-20px) scaleY(0.5); opacity: 0; }
+        }
+
+        /* Styles for specific Views */
+        
+        /* Labor: Wireframe/Blueprint look */
+        body.view-labor .coffee-cup {
+            background: transparent;
+            border: 2px solid var(--c-labor);
+            box-shadow: 0 0 0 transparent;
+        }
+        body.view-labor .coffee-cup::after {
+            border-color: var(--c-labor);
+        }
+
+        /* Chemistry: Molecule abstract look */
+        body.view-chemistry .coffee-cup {
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            background: radial-gradient(circle at 30% 30%, var(--c-chemistry), transparent);
+            filter: blur(8px);
+            transform: scale(0.8);
+        }
+        body.view-chemistry .coffee-cup::after {
+            display: none;
+        }
+
+        /* History: Old texture / Sepia */
+        body.view-history .coffee-cup {
+            background: var(--c-history);
+            clip-path: polygon(10% 0, 90% 0, 80% 100%, 20% 100%);
+            border-radius: 0;
+        }
+        body.view-history .coffee-cup::after {
+            display: none; /* Primitive cup */
+        }
+
+        /* Essence: Ghostly */
+        body.view-essence .coffee-cup {
+            background: transparent;
+            box-shadow: 0 0 60px var(--c-essence);
+            opacity: 0.5;
+            border-radius: 60px;
+            width: 2px;
+            height: 2px;
+            transform: scale(20);
+        }
+        body.view-essence .coffee-cup::after {
+            display: none;
+        }
+
+        /* Content Panel */
+        .text-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-weight: 300;
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .dynamic-title {
+            color: var(--accent);
+            font-weight: 700;
+            transition: color var(--transition-speed);
+        }
+
+        p.narrative {
+            font-family: 'Georgia', serif;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            min-height: 140px;
+            color: var(--text-main);
+            border-left: 1px solid var(--accent);
+            padding-left: 20px;
+            transition: opacity 0.4s;
+        }
+        
+        .fade-out {
+            opacity: 0;
+        }
+
+        /* Navigation / Lens Selector */
+        .lens-selector {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        button.lens {
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            color: var(--text-muted);
+            padding: 10px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        button.lens:hover {
+            border-color: var(--accent);
+            color: var(--text-main);
+        }
+
+        button.lens.active {
+            border-color: var(--accent);
+            color: var(--bg);
+            background-color: var(--accent);
+            font-weight: bold;
+        }
+
+        /* Message at bottom */
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 1px;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+<body class="view-surface">
+
+    <div class="noise"></div>
+
+    <div class="container">
+        <div class="object-stage">
+            <div class="coffee-cup">
+                <div class="steam">
+                    <div class="steam-line"></div>
+                    <div class="steam-line"></div>
+                    <div class="steam-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-panel">
+            <h1>Object: <span id="title-target" class="dynamic-title">The Cup</span></h1>
+            <p id="narrative-target" class="narrative">
+                This is what you see. A ceramic vessel, warm to the touch, containing 8oz of liquid. 
+                It is a functional object in your immediate present. It asks for nothing but to be held. 
+                This is the "Flat World" most of us live in.
+            </p>
+
+            <div class="lens-selector">
+                <button class="lens active" onclick="setLens('surface')">01. Surface</button>
+                <button class="lens" onclick="setLens('labor')">02. The Invisible Chain</button>
+                <button class="lens" onclick="setLens('chemistry')">03. Atomic Dance</button>
+                <button class="lens" onclick="setLens('history')">04. Deep Time</button>
+                <button class="lens" onclick="setLens('essence')">05. The Synthesis</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">THE HOLOGNOSIS PROJECT &mdash; AVOID FLAT VISION</div>
+
+    <script>
+        // Data for the narrative layers
+        const data = {
+            surface: {
+                title: "The Cup",
+                color: "#ffffff",
+                text: `This is the "Interface" of reality. A smooth, white ceramic curve. <br><br>
+                       It is efficient. It abstracts complexity into a simple user experience. 
+                       You don't think about where it came from; you only think about whether it is full or empty. 
+                       This view is necessary for survival, but fatal for empathy.`,
+                class: "view-surface"
+            },
+            labor: {
+                title: "The Network",
+                color: "#ff7b5f",
+                text: `Look deeper. This object is a crystallized frozen moment of human effort. <br><br>
+                       See the hands that mined the kaolin clay. The logistical algorithms that routed the shipping container. 
+                       The barista who woke up at 4:30 AM. The voltage traveling through the kiln. 
+                       The cup is not an object; it is a relationship between ten thousand strangers working in unison.`,
+                class: "view-labor"
+            },
+            chemistry: {
+                title: "The Physics",
+                color: "#5fd3ff",
+                text: `Dissolve the solid form. You are holding a violent suspension of alkaloids. <br><br>
+                       C8H10N4O2 (Caffeine) blocking adenosine receptors in your brain. 
+                       Thermodynamics dictating the escape of heat via steam. 
+                       The ceramic lattice holding fast against gravity. 
+                       There is no "stillness" here, only vibrating chaos that your eyes perceive as stability.`,
+                class: "view-chemistry"
+            },
+            history: {
+                title: "The Ancestry",
+                color: "#ffcf5f",
+                text: `Zoom out the timeline. 15th century Yemen. The Sufi shrines. The trade routes to Venice. <br><br>
+                       You are enacting a ritual 600 years old. The specific shape of this vessel has evolved 
+                       alongside the dexterity of the human hand over millennia. 
+                       You are not just drinking; you are quoting history with your body.`,
+                class: "view-history"
+            },
+            essence: {
+                title: "The Whole",
+                color: "#b05fff",
+                text: `When you combine the Surface, the Labor, the Physics, and the History, 
+                       you see the object's true weight. This is Holognosis (All-Knowing). <br><br>
+                       Everything around you is infinite in depth. 
+                       The person sitting next to you. The screen you are reading this on.
+                       <br><br>
+                       <strong>Do not let the world remain flat.</strong>`,
+                class: "view-essence"
+            }
+        };
+
+        function setLens(lensId) {
+            const info = data[lensId];
+            const titleEl = document.getElementById('title-target');
+            const textEl = document.getElementById('narrative-target');
+            const body = document.body;
+            const btns = document.querySelectorAll('.lens');
+
+            // Handle active button state
+            btns.forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // 1. Fade out text
+            textEl.classList.add('fade-out');
+
+            // 2. Change State (delayed slightly for visuals)
+            setTimeout(() => {
+                // Update colors CSS variables
+                document.documentElement.style.setProperty('--accent', info.color);
+                
+                // Change Body Class for visualization transformation
+                body.className = info.class;
+
+                // Update content
+                titleEl.textContent = info.title;
+                textEl.innerHTML = info.text;
+
+                // Fade in text
+                textEl.classList.remove('fade-out');
+            }, 200);
+        }
+    </script>
+</body>
+</html>

@@ -42,13 +42,17 @@ CREATE TABLE IF NOT EXISTS users (
   affiliate_with TEXT DEFAULT NULL,
   selected_community_tag TEXT DEFAULT NULL,
   account_creation_transparency TEXT DEFAULT NULL,
-  account_login_transparency TEXT DEFAULT NULL
+  account_login_transparency TEXT DEFAULT NULL,
+  super_tweeter BOOLEAN DEFAULT FALSE,
+  super_tweeter_boost REAL DEFAULT 50.0,
+  transparency_location_display TEXT DEFAULT 'full'
 );
 
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_lower ON users(LOWER(username));
 CREATE INDEX IF NOT EXISTS idx_users_suspended ON users(suspended);
 CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+CREATE INDEX IF NOT EXISTS idx_users_super_tweeter ON users(super_tweeter) WHERE super_tweeter = TRUE;
 
 CREATE TABLE IF NOT EXISTS passkeys (
   cred_id TEXT PRIMARY KEY,
@@ -142,6 +146,7 @@ CREATE TABLE IF NOT EXISTS posts (
   article_title TEXT DEFAULT NULL,
   article_body_markdown TEXT DEFAULT NULL,
   super_tweet BOOLEAN DEFAULT FALSE,
+  super_tweet_boost REAL DEFAULT 50.0,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
   FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE,
   FOREIGN KEY (quote_tweet_id) REFERENCES posts(id) ON DELETE CASCADE,

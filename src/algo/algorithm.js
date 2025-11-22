@@ -64,7 +64,7 @@ export const calculateScore = (
 	user_gold = 0,
 	follower_count = 0,
 	has_community_note = 0,
-	is_super_tweet = 0,
+	user_super_tweeter_boost = 0.0,
 ) => {
 	if (!lib) {
 		return 0;
@@ -93,7 +93,7 @@ export const calculateScore = (
 		user_gold,
 		follower_count,
 		has_community_note,
-		is_super_tweet,
+		user_super_tweeter_boost,
 	);
 };
 
@@ -208,7 +208,11 @@ export const rankTweets = (
 			tweet.follower_count || tweet.author?.follower_count || 0;
 		const hasCommunityNote =
 			tweet.has_community_note || tweet.fact_check ? 1 : 0;
-		const isSuperTweet = tweet.super_tweet ? 1 : 0;
+		const userBoost = tweet.super_tweeter
+			? tweet.super_tweeter_boost || 50.0
+			: 0.0;
+		const postBoost = tweet.super_tweet ? tweet.super_tweet_boost || 50.0 : 0.0;
+		const userSuperTweeterBoost = Math.max(userBoost, postBoost);
 
 		const score = calculateScore(
 			timestamp,
@@ -228,7 +232,7 @@ export const rankTweets = (
 			userGold,
 			followerCount,
 			hasCommunityNote,
-			isSuperTweet,
+			userSuperTweeterBoost,
 		);
 
 		return { ...tweet, _score: score };

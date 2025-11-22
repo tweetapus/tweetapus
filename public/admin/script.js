@@ -1371,10 +1371,10 @@ class AdminPanel {
 										}">
                       <i class="bi bi-pencil"></i> Edit
                     </button>
-                    <button class="btn ${post.super_tweet ? 'btn-warning' : 'btn-outline-secondary'} btn-sm toggle-super-tweet-btn" data-post-id="${
+                    <button class="btn ${post.super_tweet ? "btn-warning" : "btn-outline-secondary"} btn-sm toggle-super-tweet-btn" data-post-id="${
 											post.id
 										}" data-super-tweet="${!!post.super_tweet}">
-                      <i class="bi bi-star-fill"></i> ${post.super_tweet ? 'Remove SuperTweeta' : 'Make SuperTweeta'}
+                      <i class="bi bi-star-fill"></i> ${post.super_tweet ? "Remove SuperTweeta" : "Make SuperTweeta"}
                     </button>
                     <button class="btn btn-outline-warning btn-sm add-factcheck-btn" data-post-id="${
 											post.id
@@ -1424,7 +1424,7 @@ class AdminPanel {
 				return;
 			}
 			if (button.classList.contains("toggle-super-tweet-btn")) {
-				this.toggleSuperTweet(postId, button.dataset.superTweet === 'true');
+				this.toggleSuperTweet(postId, button.dataset.superTweet === "true");
 			}
 		});
 		this.postsTableListenerAttached = true;
@@ -1824,6 +1824,21 @@ class AdminPanel {
 								}" placeholder="Enter username">
                 <small class="text-muted">The user this account is affiliated with</small>
               </div>
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="editProfileSuperTweeter" ${
+									user.super_tweeter ? "checked" : ""
+								}>
+                <label class="form-check-label">SuperTweeter</label>
+              </div>
+              <div class="mb-3" id="superTweeterBoostSection" style="${
+								user.super_tweeter ? "" : "display: none;"
+							}">
+                <label class="form-label">SuperTweeter Boost Multiplier</label>
+                <input type="number" class="form-control" id="editProfileSuperTweeterBoost" value="${
+									user.super_tweeter_boost || 50.0
+								}" min="1" max="1000" step="0.1">
+                <small class="text-muted">Visibility boost multiplier (1-1000x, default: 50)</small>
+              </div>
               <div class="mb-3">
                 <label class="form-label">Character Limit Override</label>
                 <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">
@@ -2015,6 +2030,32 @@ class AdminPanel {
 					}
 				});
 			}
+
+			const superTweeterCheckbox = document.getElementById(
+				"editProfileSuperTweeter",
+			);
+			const superTweeterBoostSection = document.getElementById(
+				"superTweeterBoostSection",
+			);
+
+			if (superTweeterCheckbox && superTweeterBoostSection) {
+				const newSuperTweeter = superTweeterCheckbox.cloneNode(true);
+				superTweeterCheckbox.parentNode.replaceChild(
+					newSuperTweeter,
+					superTweeterCheckbox,
+				);
+
+				const stCheckbox = document.getElementById("editProfileSuperTweeter");
+
+				stCheckbox.addEventListener("change", () => {
+					const section = document.getElementById("superTweeterBoostSection");
+					if (stCheckbox.checked) {
+						section.style.display = "block";
+					} else {
+						section.style.display = "none";
+					}
+				});
+			}
 		} catch {
 			this.showError("Failed to load user details");
 		}
@@ -2195,6 +2236,24 @@ class AdminPanel {
 				method: "PATCH",
 				body: JSON.stringify(payload),
 			});
+
+			const superTweeterInput = document.getElementById(
+				"editProfileSuperTweeter",
+			);
+			const superTweeterBoostInput = document.getElementById(
+				"editProfileSuperTweeterBoost",
+			);
+			if (superTweeterInput) {
+				const isSuperTweeter = !!superTweeterInput.checked;
+				const boost = parseFloat(superTweeterBoostInput?.value) || 50.0;
+				await this.apiCall(`/api/admin/users/${userId}/super-tweeter`, {
+					method: "PATCH",
+					body: JSON.stringify({
+						super_tweeter: isSuperTweeter,
+						boost: boost,
+					}),
+				});
+			}
 
 			if (result?.token) {
 				localStorage.setItem("authToken", result.token);
@@ -3083,18 +3142,36 @@ class AdminPanel {
 
 	async toggleSuperTweet(postId, currentStatus) {
 		const newStatus = !currentStatus;
-		const action = newStatus ? 'enable' : 'disable';
-		
-		if (!confirm(`Are you sure you want to ${action} SuperTweeta status for this post?`)) return;
+		const action = newStatus ? "enable" : "disable";
+
+		let boost = 50.0;
+		if (newStatus) {
+			const boostInput = prompt(
+				"Enter boost multiplier (1-1000, default 50):",
+				"50",
+			);
+			if (boostInput === null) return;
+			const parsedBoost = parseFloat(boostInput);
+			if (isNaN(parsedBoost) || parsedBoost < 1 || parsedBoost > 1000) {
+				this.showError("Invalid boost value. Must be between 1 and 1000.");
+				return;
+			}
+			boost = parsedBoost;
+		}
 
 		try {
-			const response = await this.apiCall(`/api/admin/posts/${postId}/super-tweet`, {
-				method: "PATCH",
-				body: JSON.stringify({ super_tweet: newStatus }),
-			});
+			const response = await this.apiCall(
+				`/api/admin/posts/${postId}/super-tweet`,
+				{
+					method: "PATCH",
+					body: JSON.stringify({ super_tweet: newStatus, boost: boost }),
+				},
+			);
 
 			if (response.success) {
-				this.showSuccess(`SuperTweeta status ${newStatus ? 'enabled' : 'disabled'} successfully`);
+				this.showSuccess(
+					`SuperTweeta status ${newStatus ? "enabled (" + boost + "x boost)" : "disabled"} successfully`,
+				);
 				this.loadPosts(this.currentPage.posts);
 			} else {
 				this.showError(response.error || "Failed to update SuperTweeta status");

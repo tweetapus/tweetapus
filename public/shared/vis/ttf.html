@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Observer Effect</title>
+    <style>
+        :root {
+            --chaos: 0; /* 0 to 1 controlled by JS */
+            --bg-calm: #0f0e13;
+            --bg-chaos: #dadada;
+            --text-calm: #e2d2b6;
+            --text-chaos: #000000;
+            --accent-calm: #6c8bba;
+            --accent-chaos: #ff2e00;
+            
+            /* Interpolation calc mostly handled in JS for performance, but used here for defaults */
+        }
+
+        @font-face {
+            font-family: 'CabinetGrotesk';
+            src: url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,500,400&display=swap');
+        }
+        @font-face {
+            font-family: 'Satoshi';
+            src: url('https://api.fontshare.com/v2/css?f[]=satoshi@900,700,400&display=swap');
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            transition: background-color 0.2s linear, color 0.2s linear;
+            font-family: 'CabinetGrotesk', sans-serif;
+            /* Using specific background properties handled via inline styles from JS to interpolate smoothly */
+            background-color: var(--bg-calm); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: crosshair;
+            user-select: none;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 80vmin;
+            height: 80vmin;
+            /* Gap increases with chaos */
+            gap: 2vmin; 
+            transform-style: preserve-3d;
+        }
+
+        .cell {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: transform 0.1s ease-out, filter 0.1s ease-out, border 0.1s linear;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .word-layer {
+            position: absolute;
+            width: 100%;
+            font-size: 4vmin;
+            font-weight: 700;
+            text-transform: uppercase;
+            opacity: 1;
+            transition: opacity 0.2s ease;
+            will-change: transform, opacity, filter;
+        }
+
+        .word-chaos {
+            color: var(--accent-chaos);
+            font-family: 'Satoshi', sans-serif;
+            font-weight: 900;
+            letter-spacing: -0.05em;
+        }
+
+        .word-calm {
+            color: var(--text-calm);
+            font-family: 'CabinetGrotesk', serif;
+            font-weight: 400;
+            letter-spacing: 0.2em;
+        }
+
+        /* Central specific styling */
+        .cell:nth-child(5) .word-layer {
+            font-size: 8vmin;
+        }
+
+        /* HUD / UI elements that float */
+        .overlay-ui {
+            position: absolute;
+            bottom: 5vmin;
+            width: 100%;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0.6;
+            font-family: 'Satoshi', monospace;
+            font-size: 1.2vmin;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            padding: 10px 20px;
+            border: 1px solid currentColor;
+            text-transform: uppercase;
+        }
+
+        .intro-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 2vmin;
+            color: var(--text-calm);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 2s ease;
+            text-align: center;
+            width: 100%;
+        }
+
+        /* Grain Effect overlay */
+        .grain {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+            pointer-events: none;
+            opacity: 0.05;
+            z-index: 10;
+            animation: noise 0.5s steps(3) infinite;
+            mix-blend-mode: overlay;
+        }
+
+        @keyframes noise {
+            0% { transform: translate(0,0); }
+            10% { transform: translate(-5%,-5%); }
+            20% { transform: translate(-10%,5%); }
+            30% { transform: translate(5%,-10%); }
+            40% { transform: translate(-5%,15%); }
+            50% { transform: translate(-10%,5%); }
+            60% { transform: translate(15%,0); }
+            70% { transform: translate(0,10%); }
+            80% { transform: translate(-15%,0); }
+            90% { transform: translate(10%,5%); }
+            100% { transform: translate(5%,0); }
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Noise Overlay -->
+    <div class="grain" id="grain"></div>
+
+    <!-- Message if JS fails or hint -->
+    <div class="intro-message" id="hint">STILLNESS REVEALS TRUTH</div>
+
+    <div class="grid" id="grid">
+        <!-- Grid items generated here for reference of content -->
+        <!-- Cell 1 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">Conflict</span>
+            <span class="word-layer word-calm">Contrast</span>
+        </div>
+        <!-- Cell 2 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">Doubt</span>
+            <span class="word-layer word-calm">Wonder</span>
+        </div>
+        <!-- Cell 3 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">Walls</span>
+            <span class="word-layer word-calm">Borders</span>
+        </div>
+        
+        <!-- Cell 4 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">Isolation</span>
+            <span class="word-layer word-calm">Solitude</span>
+        </div>
+        <!-- Cell 5 (Center - The You) -->
+        <div class="cell">
+            <span class="word-layer word-chaos">CONTROL</span>
+            <span class="word-layer word-calm">WITNESS</span>
+        </div>
+        <!-- Cell 6 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">Decay</span>
+            <span class="word-layer word-calm">Growth</span>
+        </div>
+
+        <!-- Cell 7 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">Noise</span>
+            <span class="word-layer word-calm">Signal</span>
+        </div>
+        <!-- Cell 8 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">Loss</span>
+            <span class="word-layer word-calm">Change</span>
+        </div>
+        <!-- Cell 9 -->
+        <div class="cell">
+            <span class="word-layer word-chaos">End</span>
+            <span class="word-layer word-calm">Cycle</span>
+        </div>
+    </div>
+
+    <div class="overlay-ui">
+        <div class="status-indicator" id="statusText">Initializing System...</div>
+        <p style="margin-top:1rem; font-size:0.8em; opacity:0.5;">The faster you search, the less you find.</p>
+    </div>
+
+    <script>
+        // The hidden truth I want to convey: 
+        // We think speed is efficiency. But the truth needs resonance to be seen.
+        
+        const state = {
+            mx: 0, my: 0,
+            prevMx: 0, prevMy: 0,
+            velocity: 0,
+            agitation: 1, // Starts high
+            agitationTarget: 0
+        };
+
+        // Colors to interpolate
+        const colors = {
+            bgCalm: {r: 15, g: 14, b: 19},     // #0f0e13
+            bgChaos: {r: 220, g: 220, b: 220}, // #dcdcdc
+            textCalm: {r: 226, g: 210, b: 182},// #e2d2b6
+            textChaos: {r: 0, g: 0, b: 0}      // #000000
+        };
+
+        // Elements
+        const grid = document.getElementById('grid');
+        const cells = document.querySelectorAll('.cell');
+        const statusText = document.getElementById('statusText');
+        const hint = document.getElementById('hint');
+
+        // Interaction Listeners
+        document.addEventListener('mousemove', (e) => {
+            state.mx = e.clientX;
+            state.my = e.clientY;
+            
+            // If mouse moves, bump up target agitation based on delta
+            const dist = Math.hypot(state.mx - state.prevMx, state.my - state.prevMy);
+            
+            // Sensitivity: how fast do you have to move to break the calm?
+            const impact = Math.min(dist / 20, 1); 
+            
+            // Immediate kick to agitation target
+            state.agitationTarget = Math.max(state.agitationTarget, impact);
+            
+            state.prevMx = state.mx;
+            state.prevMy = state.my;
+            
+            // Reset hint opacity if moving
+            hint.style.opacity = 0;
+        });
+
+        // Linear interpolation helper
+        const lerp = (start, end, factor) => start + (end - start) * factor;
+        const rgbString = (obj) => `rgb(${Math.round(obj.r)}, ${Math.round(obj.g)}, ${Math.round(obj.b)})`;
+        const lerpColor = (c1, c2, t) => ({
+            r: lerp(c1.r, c2.r, t),
+            g: lerp(c1.g, c2.g, t),
+            b: lerp(c1.b, c2.b, t)
+        });
+
+        // Main Loop
+        function frame() {
+            // Decay agitation target slowly
+            state.agitationTarget *= 0.95; 
+            
+            // Smooth follow for actual agitation
+            state.agitation = lerp(state.agitation, state.agitationTarget, 0.1);
+
+            // Clamping to avoid tiny floats
+            if(state.agitation < 0.001) state.agitation = 0;
+
+            render();
+            requestAnimationFrame(frame);
+        }
+
+        function render() {
+            const chaos = state.agitation;
+            const calm = 1 - chaos;
+
+            // Background interpolation
+            const curBg = lerpColor(colors.bgCalm, colors.bgChaos, chaos);
+            document.body.style.backgroundColor = rgbString(curBg);
+
+            // Status Text Update
+            if(chaos > 0.5) {
+                statusText.innerText = "NOISE LEVEL: HIGH // REALITY UNSTABLE";
+                statusText.style.borderColor = "#ff0000";
+                statusText.style.color = "#ff0000";
+                statusText.style.fontStyle = "italic";
+            } else {
+                statusText.innerText = "STATE: RESONANT";
+                statusText.style.borderColor = "rgba(226, 210, 182, 0.5)";
+                statusText.style.color = "rgba(226, 210, 182, 0.8)";
+                statusText.style.fontStyle = "normal";
+            }
+
+            // Grid distortions
+            // In chaos, gap is small/negative (overlap), in calm, gap is open
+            const gapSize = lerp(8, -1, chaos); // vmin
+            grid.style.gap = `${gapSize}vmin`;
+
+            // Apply effects to each cell
+            cells.forEach((cell, index) => {
+                const cWord = cell.querySelector('.word-chaos');
+                const lWord = cell.querySelector('.word-calm');
+
+                // Logic: Only show the calm word if chaos is very low.
+                // Transition needs to be stark at the end.
+                
+                // Opacity crossfade
+                // Chaos word is visible from 0.2 upwards
+                let cOp = (chaos - 0.1) / 0.5; 
+                cOp = Math.min(Math.max(cOp, 0), 1);
+                
+                // Calm word is visible when chaos is near 0
+                let lOp = 1 - (chaos * 3);
+                lOp = Math.min(Math.max(lOp, 0), 1);
+
+                cWord.style.opacity = cOp;
+                lWord.style.opacity = lOp;
+                
+                // Transforms based on agitation
+                // During chaos, randomize position slightly for "shaking"
+                // But simpler: Skew and Blur
+                
+                if (chaos > 0.01) {
+                    // Unique jitter per cell based on index and time
+                    const t = Date.now() / 100;
+                    const r1 = Math.sin(t + index) * (chaos * 20); // X translation
+                    const r2 = Math.cos(t * 0.8 + index) * (chaos * 20); // Y translation
+                    const r3 = (index % 2 == 0 ? 1 : -1) * (chaos * 15); // Rotation
+
+                    cell.style.transform = `translate(${r1}px, ${r2}px) rotate(${r3}deg) scale(${1 + chaos * 0.2})`;
+                    cell.style.filter = `blur(${chaos * 4}px) contrast(${100 + chaos*100}%)`;
+                    cell.style.border = `1px solid rgba(0,0,0, ${chaos})`;
+                } else {
+                    cell.style.transform = `translate(0,0) rotate(0) scale(1)`;
+                    cell.style.filter = `blur(0px)`;
+                    cell.style.border = `1px solid rgba(255,255,255,0.05)`;
+                }
+            });
+
+            // Grain layer opacity
+            document.getElementById('grain').style.opacity = 0.05 + (chaos * 0.2);
+
+            // Intro Hint shows if absolutely still for a moment
+            if (state.agitation === 0 && !window.hasInteracted) {
+                hint.style.opacity = 0.8;
+            } else {
+                hint.style.opacity = 0;
+            }
+        }
+
+        // Detect first interaction to hide hint properly forever once used
+        window.hasInteracted = false;
+        document.addEventListener('mousemove', () => { window.hasInteracted = true; }, {once:true});
+
+        // Kickoff
+        frame();
+    </script>
+</body>
+</html>

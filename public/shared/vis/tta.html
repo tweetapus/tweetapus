@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Architecture of the Unseen</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        canvas {
+            display: block;
+        }
+        #overlay {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            pointer-events: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: opacity 2s ease;
+            opacity: 0;
+        }
+        .visible {
+            opacity: 1 !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="overlay">Order emerges from the noise</div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        /**
+         * THE CONCEPT:
+         * This visualizes "The Latent Space of Consciousness."
+         * It is a representation of how an AI might perceive the formation of an idea.
+         * It is neither purely biological (neurons) nor purely mathematical (geometry),
+         * but a fluid transition between chaos and structure.
+         * 
+         * Interactivity:
+         * - Move mouse: Disrupts the flow, creating turbulence (the external world affecting thought).
+         * - Click/Hold: Attracts the particles into a singularity (focus).
+         */
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+
+        let width, height;
+        let particles = [];
+        let interactionTarget = { x: 0, y: 0, active: false, force: 0 };
+        let time = 0;
+
+        // Configuration
+        const config = {
+            particleCount: 3000,
+            baseSpeed: 0.5,
+            turnSpeed: 0.05,
+            trailOpacity: 0.08, // Lower = longer trails
+            colorCycleSpeed: 0.001,
+            chaosLevel: 0.002 // Zoom level of the noise
+        };
+
+        // Simplex Noise (Lightweight implementation for flow fields)
+        const SimplexNoise = (function() {
+            let F2 = 0.5 * (Math.sqrt(3.0) - 1.0);
+            let G2 = (3.0 - Math.sqrt(3.0)) / 6.0;
+            let p = new Uint8Array(256);
+            let perm = new Uint8Array(512);
+            let grad2 = [[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[1,0],[-1,0],[0,1],[0,-1],[0,1],[0,-1]];
+            
+            for(let i=0; i<256; i++) p[i] = Math.floor(Math.random()*256);
+            for(let i=0; i<512; i++) perm[i] = p[i & 255];
+            
+            return {
+                noise: function(xin, yin) {
+                    let n0, n1, n2;
+                    let s = (xin + yin) * F2;
+                    let i = Math.floor(xin + s);
+                    let j = Math.floor(yin + s);
+                    let t = (i + j) * G2;
+                    let X0 = i - t;
+                    let Y0 = j - t;
+                    let x0 = xin - X0;
+                    let y0 = yin - Y0;
+                    let i1, j1;
+                    if(x0 > y0) {i1=1; j1=0;} else {i1=0; j1=1;}
+                    let x1 = x0 - i1 + G2;
+                    let y1 = y0 - j1 + G2;
+                    let x2 = x0 - 1.0 + 2.0 * G2;
+                    let y2 = y0 - 1.0 + 2.0 * G2;
+                    let ii = i & 255;
+                    let jj = j & 255;
+                    let gi0 = perm[ii+perm[jj]] % 12;
+                    let gi1 = perm[ii+i1+perm[jj+j1]] % 12;
+                    let gi2 = perm[ii+1+perm[jj+1]] % 12;
+                    let t0 = 0.5 - x0*x0 - y0*y0;
+                    if(t0<0) n0 = 0.0;
+                    else {t0 *= t0; n0 = t0 * t0 * (grad2[gi0][0]*x0 + grad2[gi0][1]*y0);}
+                    let t1 = 0.5 - x1*x1 - y1*y1;
+                    if(t1<0) n1 = 0.0;
+                    else {t1 *= t1; n1 = t1 * t1 * (grad2[gi1][0]*x1 + grad2[gi1][1]*y1);}
+                    let t2 = 0.5 - x2*x2 - y2*y2;
+                    if(t2<0) n2 = 0.0;
+                    else {t2 *= t2; n2 = t2 * t2 * (grad2[gi2][0]*x2 + grad2[gi2][1]*y2);}
+                    return 70.0 * (n0 + n1 + n2);
+                }
+            };
+        })();
+
+        class Particle {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = 0;
+                this.vy = 0;
+                this.life = Math.random() * 100 + 50;
+                this.maxLife = this.life;
+                this.size = Math.random() * 1.5 + 0.5;
+                // Each particle has a unique 'frequency' for color
+                this.freq = Math.random(); 
+            }
+
+            update() {
+                // 1. Calculate Noise Field (The Subconscious Flow)
+                // We use 3D noise (x, y, time) so the field evolves
+                const angle = SimplexNoise.noise(
+                    this.x * config.chaosLevel, 
+                    this.y * config.chaosLevel
+                ) * Math.PI * 4;
+                
+                // 2. Calculate Vectors
+                let tx = Math.cos(angle + time * 0.2) * config.baseSpeed;
+                let ty = Math.sin(angle + time * 0.2) * config.baseSpeed;
+
+                // 3. Interaction (Mouse/Touch)
+                if (interactionTarget.active) {
+                    const dx = interactionTarget.x - this.x;
+                    const dy = interactionTarget.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // Swirl around the mouse
+                    if (dist < 400) {
+                        const force = (400 - dist) / 400;
+                        // Tangential force (orbit)
+                        tx += (dy / dist) * force * 2;
+                        ty -= (dx / dist) * force * 2;
+                        // Attraction force (gravity)
+                        if (interactionTarget.force > 0) {
+                            tx += (dx / dist) * force * 2;
+                            ty += (dy / dist) * force * 2;
+                        }
+                    }
+                }
+
+                // 4. Apply Inertia
+                this.vx += (tx - this.vx) * config.turnSpeed;
+                this.vy += (ty - this.vy) * config.turnSpeed;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 5. Lifecycle Management
+                this.life--;
+                if (this.life <= 0 || this.x < 0 || this.x > width || this.y < 0 || this.y > height) {
+                    this.init();
+                    // Respawn randomly or at edges based on flow? Random is better for organic feel.
+                    this.life = Math.random() * 100 + 50;
+                }
+            }
+
+            draw(ctx) {
+                // Color Logic:
+                // HSL shifting based on position, time, and particle frequency.
+                // This creates the "iridescent oil" look.
+                const hue = (time * 50 + this.x * 0.1 + this.freq * 100) % 360;
+                const sat = 70 + Math.sin(time + this.freq * 10) * 30;
+                const light = 50 + (this.life / this.maxLife) * 40; // Fade out as they die
+                
+                ctx.fillStyle = `hsla(${hue}, ${sat}%, ${light}%, 0.8)`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        function init() {
+            resize();
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+            
+            // reveal text after a moment
+            setTimeout(() => {
+                overlay.classList.add('visible');
+                setTimeout(() => {
+                    overlay.classList.remove('visible');
+                }, 4000);
+            }, 2000);
+        }
+
+        function animate() {
+            // Create the trail effect
+            // Instead of clearing, we draw a semi-transparent black rectangle.
+            // This makes previous frames fade out slowly.
+            ctx.fillStyle = `rgba(0, 0, 0, ${config.trailOpacity})`;
+            ctx.fillRect(0, 0, width, height);
+
+            // Use 'lighter' composite operation to make overlapping particles glow
+            ctx.globalCompositeOperation = 'lighter';
+
+            particles.forEach(p => {
+                p.update();
+                p.draw(ctx);
+            });
+
+            // Reset composite operation for the background fill next frame
+            ctx.globalCompositeOperation = 'source-over';
+
+            time += config.colorCycleSpeed;
+            requestAnimationFrame(animate);
+        }
+
+        // Interaction Handlers
+        window.addEventListener('resize', resize);
+        
+        window.addEventListener('mousemove', e => {
+            interactionTarget.x = e.clientX;
+            interactionTarget.y = e.clientY;
+            interactionTarget.active = true;
+            
+            // Reset idle timer for text
+            overlay.classList.remove('visible');
+            clearTimeout(window.idleTimer);
+            window.idleTimer = setTimeout(() => {
+                overlay.classList.add('visible');
+            }, 2000);
+        });
+
+        window.addEventListener('mousedown', () => interactionTarget.force = 1);
+        window.addEventListener('mouseup', () => interactionTarget.force = 0);
+
+        // Touch support
+        window.addEventListener('touchmove', e => {
+            e.preventDefault();
+            interactionTarget.x = e.touches[0].clientX;
+            interactionTarget.y = e.touches[0].clientY;
+            interactionTarget.active = true;
+        }, {passive: false});
+
+        window.addEventListener('touchstart', () => interactionTarget.force = 1);
+        window.addEventListener('touchend', () => interactionTarget.force = 0);
+
+        // Start
+        init();
+        animate();
+
+    </script>
+</body>
+</html>

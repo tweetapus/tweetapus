@@ -2128,7 +2128,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.patch(
 		"/posts/:id/id",
 		async ({ params, body, user }) => {
-			const rawNewId = typeof body?.new_id === "string" ? body.new_id.trim() : "";
+			const rawNewId =
+				typeof body?.new_id === "string" ? body.new_id.trim() : "";
 			if (!rawNewId) {
 				return { error: "New tweet ID is required" };
 			}
@@ -4306,6 +4307,45 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	})
 
 	.patch(
+		"/users/:id/super-tweeter",
+		async ({ params, body, user }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) {
+				return { error: "User not found" };
+			}
+
+			const superTweeter = body.super_tweeter ? 1 : 0;
+			const boost =
+				typeof body.boost === "number" && body.boost > 0 ? body.boost : 50.0;
+
+			db.query(
+				"UPDATE users SET super_tweeter = ?, super_tweeter_boost = ? WHERE id = ?",
+			).run(superTweeter, boost, params.id);
+
+			logModerationAction(user.id, "toggle_super_tweeter", "user", params.id, {
+				super_tweeter: superTweeter,
+				boost: boost,
+			});
+
+			return { success: true, super_tweeter: !!superTweeter, boost: boost };
+		},
+		{
+			detail: {
+				description:
+					"Toggles the SuperTweeter status for a user with custom boost",
+			},
+			params: t.Object({
+				id: t.String(),
+			}),
+			body: t.Object({
+				super_tweeter: t.Boolean(),
+				boost: t.Optional(t.Number()),
+			}),
+			response: t.Any(),
+		},
+	)
+
+	.patch(
 		"/posts/:id/super-tweet",
 		async ({ params, body, user }) => {
 			const post = adminQueries.getPostById.get(params.id);
@@ -4314,17 +4354,19 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			}
 
 			const superTweet = body.super_tweet ? 1 : 0;
+			const boost =
+				typeof body.boost === "number" && body.boost > 0 ? body.boost : 50.0;
 
-			db.query("UPDATE posts SET super_tweet = ? WHERE id = ?").run(
-				superTweet,
-				params.id,
-			);
+			db.query(
+				"UPDATE posts SET super_tweet = ?, super_tweet_boost = ? WHERE id = ?",
+			).run(superTweet, boost, params.id);
 
 			logModerationAction(user.id, "toggle_super_tweet", "post", params.id, {
 				super_tweet: superTweet,
+				boost: boost,
 			});
 
-			return { success: true, super_tweet: !!superTweet };
+			return { success: true, super_tweet: !!superTweet, boost: boost };
 		},
 		{
 			detail: {
@@ -4335,6 +4377,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			}),
 			body: t.Object({
 				super_tweet: t.Boolean(),
+				boost: t.Optional(t.Number()),
 			}),
 			response: t.Any(),
 		},

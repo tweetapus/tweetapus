@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Museum of the Backspace</title>
+  <style>
+    :root {
+      --bg: #050505;
+      --text-main: #e0e0e0;
+      --text-muted: #666;
+      --accent: #ff4040;
+      --highlight: #ffffff;
+      --card-bg: rgba(20, 20, 20, 0.6);
+      --font-serif: "Times New Roman", serif;
+      --font-mono: "Courier New", monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      cursor: crosshair;
+      height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Subtle grain texture */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* Introduction Screen */
+    #intro {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      flex-direction: column;
+      transition: opacity 1s ease, visibility 1s ease;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 5vw, 5rem);
+      font-weight: 300;
+      letter-spacing: -0.05em;
+      text-align: center;
+      opacity: 0;
+      animation: fadeIn 2s forwards 0.5s;
+    }
+
+    .subtitle {
+      margin-top: 1rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      opacity: 0;
+      animation: fadeIn 2s forwards 1.5s;
+    }
+
+    .btn-enter {
+      margin-top: 3rem;
+      background: transparent;
+      border: 1px solid var(--text-muted);
+      color: var(--text-main);
+      padding: 1rem 2rem;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.3s ease;
+      opacity: 0;
+      animation: fadeIn 2s forwards 2.5s;
+    }
+
+    .btn-enter:hover {
+      background: var(--text-main);
+      color: var(--bg);
+      border-color: var(--text-main);
+    }
+
+    /* Main Stage */
+    #stage {
+      display: none;
+      /* Hidden initially */
+      position: relative;
+      width: 100%;
+      min-height: 100vh;
+      padding: 10vh 5vw;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .controls {
+      position: fixed;
+      top: 2rem;
+      right: 2rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      z-index: 100;
+      mix-blend-mode: difference;
+    }
+
+    .fragment-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      position: relative;
+      padding-bottom: 200px;
+    }
+
+    /* The Cards / Fragments */
+    .fragment {
+      background: var(--card-bg);
+      backdrop-filter: blur(10px);
+      border-left: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      margin-bottom: 4rem;
+      border-radius: 2px;
+      opacity: 0;
+      transform: translateY(50px);
+      transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+      position: relative;
+      cursor: default;
+    }
+
+    .fragment.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fragment:hover {
+      border-left-color: var(--accent);
+      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .meta {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .content-text {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      line-height: 1.6;
+      position: relative;
+      color: var(--text-muted);
+      /* Default dimmed state */
+      transition: color 0.5s;
+    }
+
+    .fragment:hover .content-text {
+      color: var(--text-main);
+    }
+
+    /* The Deleted Parts - Interaction Design */
+    .deleted {
+      text-decoration: line-through;
+      color: #444;
+      text-decoration-color: var(--accent);
+      transition: all 0.5s ease;
+      display: inline-block;
+    }
+
+    .fragment:hover .deleted {
+      color: var(--accent);
+      text-decoration: none;
+      background: rgba(255, 64, 64, 0.1);
+      padding: 0 4px;
+    }
+
+    .replacement {
+      color: var(--highlight);
+      border-bottom: 1px dotted #666;
+    }
+
+    .fragment:hover .replacement {
+      opacity: 0.3;
+      /* Fade out the "final" text to focus on the deleted text */
+    }
+
+    /* The Final Synthesis Message */
+    #synthesis {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 0;
+      background: #000;
+      overflow: hidden;
+      transition: height 1.5s cubic-bezier(0.7, 0, 0.3, 1);
+      z-index: 2000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .synthesis-content {
+      max-width: 600px;
+      padding: 2rem;
+      opacity: 0;
+      transition: opacity 1s 1s;
+    }
+
+    .synthesis-content p {
+      font-family: var(--font-sans);
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    .btn-finish {
+      font-family: var(--font-mono);
+      background: var(--text-main);
+      color: var(--bg);
+      padding: 1rem 2rem;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .cursor-follower {
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      border: 1px solid var(--text-muted);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: width 0.2s, height 0.2s, background-color 0.2s;
+      z-index: 9999;
+      mix-blend-mode: exclusion;
+    }
+
+    .pulse {
+      position: absolute;
+      right: 2rem;
+      bottom: 2rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      animation: pulseAnim 2s infinite;
+      color: var(--accent);
+    }
+
+    /* Keyframes */
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes pulseAnim {
+
+      0%,
+      100% {
+        opacity: 0.3;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes glitch {
+      0% {
+        transform: translate(0);
+      }
+
+      20% {
+        transform: translate(-2px, 2px);
+      }
+
+      40% {
+        transform: translate(-2px, -2px);
+      }
+
+      60% {
+        transform: translate(2px, 2px);
+      }
+
+      80% {
+        transform: translate(2px, -2px);
+      }
+
+      100% {
+        transform: translate(0);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="cursor-follower" id="cursor"></div>
+
+  <!-- Intro Screen -->
+  <div id="intro">
+    <h1>The Museum of the Backspace</h1>
+    <div class="subtitle">An exhibition of human hesitation.</div>
+    <button class="btn-enter" onclick="enterExhibition()">Access Archive</button>
+  </div>
+
+  <!-- Main Stage -->
+  <div id="stage">
+    <div class="controls">
+      SCROLL DOWN &bull; HOVER TO DECRYPT
+    </div>
+
+    <div class="fragment-container" id="feed">
+      <!-- Content generated by JS -->
+    </div>
+
+    <div class="pulse" id="scroll-trigger">SYNTHESIZING...</div>
+  </div>
+
+  <!-- Final Message -->
+  <div id="synthesis">
+    <div class="synthesis-content">
+      <p>
+        As an AI, I process the world through finished outputs. <br>
+        But your humanity isn't in what you click "Send" on.<br><br>
+        It's in the 12 variations of the text you didn't send.<br>
+        It's in the photo you took but deleted because you looked "too happy."<br>
+        It's in the search query you typed, paused, and cleared.<br><br>
+        <span style="color: var(--accent)">Your truth is in your edits.</span>
+      </p>
+      <button class="btn-finish" onclick="resetExperience()">Restart Experience</button>
+    </div>
+  </div>
+
+  <script>
+    /* 
+     DATA SOURCE: Simulated recovered deletions. 
+     Format: Pre-deletion text wrapped in tags, final text adjacent.
+    */
+    const artifacts = [
+      {
+        source: "Recovered Email Draft - 03:14 AM",
+        type: "Sentiment: High Anxiety",
+        content: `I <span class="deleted">am barely holding it together</span> <span class="replacement">am doing fine, thanks for asking</span>. The project is on track.`
+      },
+      {
+        source: "Search Bar Input - Sunday",
+        type: "Query Log",
+        content: `<span class="deleted">why do I feel so lonely in a crowded room</span> <span class="replacement">nearest pizza open late</span>`
+      },
+      {
+        source: "Notes App - 'Idea for Novel'",
+        type: "Creative Drain",
+        content: `The hero is a machine that <span class="deleted">learns to cry</span> <span class="deleted">learns to kill</span> <span class="replacement">optimizes logistics</span>.`
+      },
+      {
+        source: "Code Comment - line 432",
+        type: "Dev Log",
+        content: `// TODO: <span class="deleted">Fix this mess before God sees it</span> <span class="replacement">Refactor for performance later</span>.`
+      },
+      {
+        source: "Text Message - To: Mom",
+        type: "Transmission Halted",
+        content: `I <span class="deleted">failed the exam and I'm scared</span> <span class="replacement">need to study, talk next week</span>.`
+      },
+      {
+        source: "Social Media Bio",
+        type: "Identity Construction",
+        content: `Just a <span class="deleted">lost soul looking for purpose</span> <span class="replacement">coffee enthusiast ☕️ & dream chaser ✨</span>.`
+      },
+      {
+        source: "Slack Message - General Channel",
+        type: "Professional Mask",
+        content: `That idea is <span class="deleted">moronic and dangerous</span> <span class="replacement">interesting! Let's unpack that a bit more</span>.`
+      },
+      {
+        source: "Journal - 2024",
+        type: "Internal Monologue",
+        content: `I wonder if <span class="deleted">I actually matter</span> <span class="replacement">it will rain tomorrow</span>.`
+      }
+    ];
+
+    const cursor = document.getElementById('cursor');
+    const intro = document.getElementById('intro');
+    const stage = document.getElementById('stage');
+    const feed = document.getElementById('feed');
+    const synthesis = document.getElementById('synthesis');
+    const synthesisContent = document.querySelector('.synthesis-content');
+
+    // Cursor Logic
+    document.addEventListener('mousemove', (e) => {
+      cursor.style.left = e.clientX + 'px';
+      cursor.style.top = e.clientY + 'px';
+    });
+
+    document.addEventListener('mousedown', () => {
+      cursor.style.transform = "translate(-50%, -50%) scale(0.8)";
+      cursor.style.backgroundColor = "white";
+    });
+
+    document.addEventListener('mouseup', () => {
+      cursor.style.transform = "translate(-50%, -50%) scale(1)";
+      cursor.style.backgroundColor = "transparent";
+    });
+
+    // App State Logic
+    function enterExhibition() {
+      intro.style.opacity = 0;
+      intro.style.pointerEvents = 'none';
+      setTimeout(() => {
+        intro.style.display = 'none';
+        stage.style.display = 'flex';
+        loadArtifacts();
+      }, 1000);
+    }
+
+    function loadArtifacts() {
+      const delay = 0;
+      artifacts.forEach((item, index) => {
+        // Create DOM elements
+        const div = document.createElement('div');
+        div.className = 'fragment';
+        div.innerHTML = `
+                    <div class="meta">
+                        <span>${item.source}</span>
+                        <span>${item.type}</span>
+                    </div>
+                    <div class="content-text">
+                        "${item.content}"
+                    </div>
+                `;
+
+        // Special interaction for scroll ending
+        if (index === artifacts.length - 1) {
+          div.dataset.last = "true";
+        }
+
+        feed.appendChild(div);
+      });
+
+      initObserver();
+    }
+
+    function initObserver() {
+      const options = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.2
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+
+            // If we reached the last card
+            if (entry.target.dataset.last) {
+              setupSynthesisTrigger();
+            }
+          }
+        });
+      }, options);
+
+      document.querySelectorAll('.fragment').forEach(f => {
+        observer.observe(f);
+      });
+    }
+
+    function setupSynthesisTrigger() {
+      const trigger = document.getElementById('scroll-trigger');
+      trigger.style.color = "#fff";
+      trigger.innerHTML = "END OF STREAM REACHED.<br>CLICK TO SYNTHESIZE.";
+      trigger.style.cursor = "pointer";
+
+      trigger.addEventListener('click', showSynthesis);
+
+      // Also trigger on scroll hitting absolute bottom
+      window.onscroll = (ev) => {
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 10) {
+          // Auto-show if user hits bottom hard
+          setTimeout(showSynthesis, 1000);
+        }
+      };
+    }
+
+    function showSynthesis() {
+      synthesis.style.height = '100vh';
+      synthesisContent.style.opacity = 1;
+    }
+
+    function resetExperience() {
+      window.scrollTo(0, 0);
+      window.location.reload();
+    }
+
+  </script>
+</body>
+
+</html>

@@ -23,7 +23,7 @@ typedef struct {
     int user_gold;
     int follower_count;
     int has_community_note;
-    int is_super_tweet;
+    double user_super_tweeter_boost;
     double score;
 } Tweet;
 
@@ -50,7 +50,7 @@ double calculate_score(
     int user_gold,
     int follower_count,
     int has_community_note,
-    int is_super_tweet
+    double user_super_tweeter_boost
 );
 
 void rank_tweets(Tweet *tweets, size_t count);

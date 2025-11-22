@@ -599,7 +599,7 @@ double calculate_score(
     int user_gold,
     int follower_count,
     int has_community_note,
-    int is_super_tweet
+    double user_super_tweeter_boost
 ) {
     if (created_at < 0) created_at = 0;
     if (like_count < 0) like_count = 0;
@@ -620,7 +620,7 @@ double calculate_score(
     if (user_gold < 0) user_gold = 0;
     if (follower_count < 0) follower_count = 0;
     if (has_community_note < 0) has_community_note = 0;
-    if (is_super_tweet < 0) is_super_tweet = 0;
+    if (!isfinite(user_super_tweeter_boost) || user_super_tweeter_boost < 0.0) user_super_tweeter_boost = 0.0;
     
     time_t now = time(NULL);
     double age_hours = compute_age_hours(now, created_at);
@@ -639,10 +639,12 @@ double calculate_score(
     }
     
     double super_tweet_boost = 1.0;
-    if (is_super_tweet) {
-        super_tweet_boost = 50.0;
+    if (user_super_tweeter_boost > 0.0) {
+        super_tweet_boost = user_super_tweeter_boost;
         if (age_hours < 24.0) {
-            super_tweet_boost *= 2.0;
+            super_tweet_boost *= 4.0;
+        } else {
+            super_tweet_boost *= 2.5;
         }
     }
     
@@ -933,7 +935,7 @@ void rank_tweets(Tweet *tweets, size_t count) {
             tweets[i].user_gold,
             tweets[i].follower_count,
             tweets[i].has_community_note,
-            tweets[i].is_super_tweet
+            tweets[i].user_super_tweeter_boost
         );
 
         tweets[i].score = base_score;
@@ -1113,7 +1115,7 @@ void rank_tweets(Tweet *tweets, size_t count) {
             tweets[i].user_gold,
             tweets[i].follower_count,
             tweets[i].has_community_note,
-            tweets[i].is_super_tweet
+            tweets[i].user_super_tweeter_boost
         );
 
         double penalty2 = 1.0;

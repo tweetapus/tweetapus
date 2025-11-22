@@ -196,6 +196,92 @@ const createAccountContent = () => {
 	privateItem.appendChild(privateControl);
 	privacyGroup.appendChild(privateItem);
 
+	const transparencyItem = document.createElement("div");
+	transparencyItem.className = "setting-item";
+
+	const transparencyLabel = document.createElement("div");
+	transparencyLabel.className = "setting-label";
+	const transparencyTitle = document.createElement("div");
+	transparencyTitle.className = "setting-title";
+	transparencyTitle.textContent = "Transparency Location Display";
+	const transparencyDesc = document.createElement("div");
+	transparencyDesc.className = "setting-description";
+	transparencyDesc.textContent =
+		"Choose how much location detail to show in your transparency data";
+	transparencyLabel.appendChild(transparencyTitle);
+	transparencyLabel.appendChild(transparencyDesc);
+
+	const transparencyControl = document.createElement("div");
+	transparencyControl.className = "setting-control";
+
+	const transparencySelect = document.createElement("select");
+	transparencySelect.id = "transparency-location-select";
+	transparencySelect.className = "transparency-location-select";
+	transparencySelect.style.cssText = `
+		padding: 8px 12px;
+		border: 1px solid var(--border-primary);
+		border-radius: 8px;
+		background: var(--bg-primary);
+		color: var(--text-primary);
+		font-size: 14px;
+		cursor: pointer;
+		min-width: 200px;
+	`;
+
+	[
+		{ v: "full", t: "Full Location (City, Country)" },
+		{ v: "country", t: "Country Only" },
+		{ v: "continent", t: "Continent Only" },
+	].forEach(({ v, t }) => {
+		const option = document.createElement("option");
+		option.value = v;
+		option.textContent = t;
+		transparencySelect.appendChild(option);
+	});
+
+	transparencySelect.addEventListener("change", async (e) => {
+		const display = e.target.value;
+		console.log("Transparency location changed to:", display);
+		try {
+			const result = await query("/profile/settings/transparency-location", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ display }),
+			});
+
+			console.log("API response:", result);
+
+			if (result.success) {
+				if (currentUser) {
+					currentUser.transparency_location_display = display;
+				}
+				toastQueue.add(
+					`<h1>Setting Updated</h1><p>Transparency location display updated to ${
+						display === "full"
+							? "Full Location"
+							: display === "country"
+								? "Country Only"
+								: "Continent Only"
+					}</p>`,
+				);
+			} else {
+				toastQueue.add(
+					`<h1>Failed to update setting</h1><p>${result.error || "Unknown error"}</p>`,
+				);
+			}
+		} catch (error) {
+			console.error("Failed to update transparency location:", error);
+			toastQueue.add(`<h1>Failed to update setting</h1>`);
+		}
+	});
+
+	transparencyControl.appendChild(transparencySelect);
+	transparencyItem.appendChild(transparencyLabel);
+	transparencyItem.appendChild(transparencyControl);
+	privacyGroup.appendChild(transparencyItem);
+
 	section.appendChild(privacyGroup);
 
 	// Community Tag Group
@@ -1878,7 +1964,7 @@ const initializeSettings = () => {
 		if (tabKey === "account") {
 			setTimeout(() => {
 				loadPrivacySettings();
-			}, 50);
+			}, 100);
 		}
 	};
 
@@ -2084,6 +2170,55 @@ const loadPrivacySettings = async () => {
 		checkbox.dataset.serverState = serverEnabled ? "on" : "off";
 		checkbox.setAttribute("aria-checked", serverEnabled ? "true" : "false");
 		checkbox.disabled = !user;
+
+		const transparencySelect = document.getElementById(
+			"transparency-location-select",
+		);
+		
+		if (transparencySelect && user) {
+			transparencySelect.value = user.transparency_location_display || "full";
+
+			if (!transparencySelect.dataset.listenerAttached) {
+				transparencySelect.dataset.listenerAttached = "true";
+				transparencySelect.addEventListener("change", async (e) => {
+					const display = e.target.value;
+					console.log("Transparency location changed to:", display);
+					try {
+						const result = await query("/profile/settings/transparency-location", {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/json",
+							},
+							body: JSON.stringify({ display }),
+						});
+
+						console.log("API response:", result);
+
+						if (result.success) {
+							if (currentUser) {
+								currentUser.transparency_location_display = display;
+							}
+							toastQueue.add(
+								`<h1>Setting Updated</h1><p>Transparency location display updated to ${
+									display === "full"
+										? "Full Location"
+										: display === "country"
+											? "Country Only"
+											: "Continent Only"
+								}</p>`,
+							);
+						} else {
+							toastQueue.add(
+								`<h1>Failed to update setting</h1><p>${result.error || "Unknown error"}</p>`,
+							);
+						}
+					} catch (error) {
+						console.error("Failed to update transparency location:", error);
+						toastQueue.add(`<h1>Failed to update setting</h1>`);
+					}
+				});
+			}
+		}
 	} catch (error) {
 		console.error("Failed to load privacy setting:", error);
 		checkbox.checked = false;
@@ -2093,42 +2228,45 @@ const loadPrivacySettings = async () => {
 		checkbox.disabled = true;
 	}
 
-	checkbox.addEventListener("change", async (e) => {
-		const enabled = e.target.checked;
-		try {
-			const result = await query("/profile/settings/private", {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify({ enabled }),
-			});
+	if (!checkbox.dataset.listenerAttached) {
+		checkbox.dataset.listenerAttached = "true";
+		checkbox.addEventListener("change", async (e) => {
+			const enabled = e.target.checked;
+			try {
+				const result = await query("/profile/settings/private", {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					body: JSON.stringify({ enabled }),
+				});
 
-			if (result.success) {
-				checkbox.dataset.serverState = enabled ? "on" : "off";
-				checkbox.setAttribute("aria-checked", enabled ? "true" : "false");
-				currentUser = {
-					...(currentUser || {}),
-					private: enabled,
-				};
-				toastQueue.add(
-					`<h1>Privacy ${enabled ? "Enabled" : "Disabled"}</h1><p>${
-						enabled
-							? "Your account is now private. Only approved followers can see your posts."
-							: "Your account is now public. Anyone can see your posts."
-					}</p>`,
-				);
-			} else {
+				if (result.success) {
+					checkbox.dataset.serverState = enabled ? "on" : "off";
+					checkbox.setAttribute("aria-checked", enabled ? "true" : "false");
+					currentUser = {
+						...(currentUser || {}),
+						private: enabled,
+					};
+					toastQueue.add(
+						`<h1>Privacy ${enabled ? "Enabled" : "Disabled"}</h1><p>${
+							enabled
+								? "Your account is now private. Only approved followers can see your posts."
+								: "Your account is now public. Anyone can see your posts."
+						}</p>`,
+					);
+				} else {
+					e.target.checked = !enabled;
+					checkbox.setAttribute("aria-checked", !enabled ? "true" : "false");
+					toastQueue.add(`<h1>Failed to update setting</h1>`);
+				}
+			} catch {
 				e.target.checked = !enabled;
 				checkbox.setAttribute("aria-checked", !enabled ? "true" : "false");
 				toastQueue.add(`<h1>Failed to update setting</h1>`);
 			}
-		} catch {
-			e.target.checked = !enabled;
-			checkbox.setAttribute("aria-checked", !enabled ? "true" : "false");
-			toastQueue.add(`<h1>Failed to update setting</h1>`);
-		}
-	});
+		});
+	}
 };
 
 const showModal = (element) => {
@@ -2462,6 +2600,12 @@ export const openSettings = (section = "account") => {
 			setTimeout(() => {
 				loadCurrentThemeMode();
 			}, 50);
+		}
+
+		if (section === "account") {
+			setTimeout(() => {
+				loadPrivacySettings();
+			}, 100);
 		}
 	}
 

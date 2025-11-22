@@ -53,6 +53,12 @@ const updatePrivacy = db.prepare(`
   WHERE id = ?
 `);
 
+const updateTransparencyLocationDisplay = db.prepare(`
+  UPDATE users
+  SET transparency_location_display = ?
+  WHERE id = ?
+`);
+
 const updateBanner = db.prepare(`
   UPDATE users
   SET banner = ?
@@ -2345,6 +2351,31 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			return { success: true };
 		} catch (error) {
 			console.error("Update community tag setting error:", error);
+			return { error: "Failed to update setting" };
+		}
+	})
+	.post("/settings/transparency-location", async ({ jwt, headers, body }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const currentUser = getUserByUsername.get(payload.username);
+			if (!currentUser) return { error: "User not found" };
+
+			const { display } = body;
+
+			if (!["full", "country", "continent"].includes(display)) {
+				return { error: "Invalid display option" };
+			}
+
+			updateTransparencyLocationDisplay.run(display, currentUser.id);
+
+			return { success: true };
+		} catch (error) {
+			console.error("Update transparency location setting error:", error);
 			return { error: "Failed to update setting" };
 		}
 	});

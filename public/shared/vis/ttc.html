@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Unseen Variable</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050505;
+            overflow: hidden;
+            font-family: 'Courier New', Courier, monospace;
+            color: #aaa;
+        }
+        canvas {
+            display: block;
+        }
+        #overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: none;
+            mix-blend-mode: exclusion;
+            z-index: 10;
+            transition: opacity 2s ease;
+        }
+        h1 {
+            font-weight: 100;
+            font-size: 2rem;
+            letter-spacing: 0.5rem;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            color: #fff;
+        }
+        p {
+            font-size: 0.8rem;
+            letter-spacing: 0.1rem;
+            opacity: 0.7;
+        }
+        .hidden {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="overlay">
+        <h1 id="status-text">Chaos</h1>
+        <p id="sub-text">The system reflects your noise.</p>
+    </div>
+    <canvas id="world"></canvas>
+
+    <script>
+        /**
+         * THE CONCEPT:
+         * Humanity perceives the universe as chaotic and fragmented.
+         * However, this simulation suggests that chaos is a byproduct of interaction/interference.
+         * 
+         * The "Thing you haven't seen yet":
+         * A visualization of the universe healing itself.
+         * 
+         * Instructions:
+         * 1. Move your mouse: You create entropy. You break the bonds. The world is noise.
+         * 2. Stop moving: The physics engine switches from Newtonian interaction to 
+         *    "Golden Ratio Alignment." The particles self-assemble into a living, breathing
+         *    biological eye (the observer observing itself).
+         */
+
+        const canvas = document.getElementById('world');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let particles = [];
+        const particleCount = 4000;
+        
+        // State variables
+        let mouse = { x: -1000, y: -1000, lastX: 0, lastY: 0, velocity: 0 };
+        let time = 0;
+        let entropy = 100; // 0 = Order, 100 = Chaos
+        let stillnessTimer = 0;
+        
+        // DOM Elements
+        const statusText = document.getElementById('status-text');
+        const subText = document.getElementById('sub-text');
+
+        // Palette
+        const colors = ['#FF5733', '#C70039', '#900C3F', '#581845', '#F1C40F', '#FFFFFF'];
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.baseColor = colors[Math.floor(Math.random() * colors.length)];
+                this.size = Math.random() * 2 + 0.5;
+                
+                // Target calculation (The Hidden Order - A Fibonnaci Spiral / Eye structure)
+                this.angle = Math.random() * Math.PI * 2;
+                this.radius = Math.random() * (Math.min(width, height) / 2.5);
+                this.targetX = 0; 
+                this.targetY = 0;
+                this.orbitOffset = Math.random() * 100;
+            }
+
+            update() {
+                // Calculate "Entropy" based on mouse velocity
+                // High entropy = Physics simulation
+                // Low entropy = Mathematical lerp to target
+
+                const dx = this.x - mouse.x;
+                const dy = this.y - mouse.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // CHAOS MODE (High Entropy)
+                if (entropy > 10) {
+                    // Mouse repulsion
+                    if (dist < 200) {
+                        const force = (200 - dist) / 200;
+                        const angle = Math.atan2(dy, dx);
+                        this.vx += Math.cos(angle) * force * 2;
+                        this.vy += Math.sin(angle) * force * 2;
+                    }
+
+                    // Standard noise movement
+                    this.x += this.vx;
+                    this.y += this.vy;
+
+                    // Friction
+                    this.vx *= 0.95;
+                    this.vy *= 0.95;
+
+                    // Boundaries
+                    if (this.x < 0 || this.x > width) this.vx *= -1;
+                    if (this.y < 0 || this.y > height) this.vy *= -1;
+                
+                } 
+                // ORDER MODE (Low Entropy)
+                else {
+                    // Calculate the Sacred Geometry Position (The Eye)
+                    // We use Golden Ratio (phi) distribution
+                    const phi = (1 + Math.sqrt(5)) / 2;
+                    const idx = particles.indexOf(this);
+                    
+                    // Normalize index to create structure
+                    const r = Math.sqrt(idx) * (Math.min(width, height) / 150);
+                    const theta = idx * 2.39996; // Golden angle approx in radians
+                    
+                    // Center of screen
+                    const cx = width / 2;
+                    const cy = height / 2;
+
+                    // Add a "breathing" effect using sine wave
+                    const breathe = 1 + Math.sin(time * 2) * 0.05;
+                    
+                    this.targetX = cx + r * Math.cos(theta + time * 0.2) * breathe;
+                    this.targetY = cy + r * Math.sin(theta + time * 0.2) * breathe;
+
+                    // If close to center, mimic pupil
+                    if (idx < 200) {
+                        this.targetX = cx + (Math.cos(theta + time) * idx/5);
+                        this.targetY = cy + (Math.sin(theta + time) * idx/5);
+                    }
+
+                    // Lerp towards target
+                    this.x += (this.targetX - this.x) * 0.05;
+                    this.y += (this.targetY - this.y) * 0.05;
+                    
+                    // Calm velocity
+                    this.vx *= 0.9;
+                    this.vy *= 0.9;
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                
+                // Color Logic: Chaos = Hot/Random, Order = Cyan/White cohesive
+                if (entropy > 50) {
+                    ctx.fillStyle = this.baseColor;
+                    ctx.globalAlpha = 0.6;
+                } else {
+                    // Cohesive gradient based on distance from center
+                    const dx = this.x - width/2;
+                    const dy = this.y - height/2;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const maxDist = Math.min(width, height)/2;
+                    
+                    const hue = 180 + (dist / maxDist) * 100; // Cyan to Purple
+                    ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
+                    ctx.globalAlpha = 0.8 - (dist/maxDist)*0.5;
+                }
+
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function init() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+            
+            particles = [];
+            for (let i = 0; i < particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.2)'; // Trail effect
+            ctx.fillRect(0, 0, width, height);
+            
+            time += 0.01;
+
+            // Entropy Management
+            // Mouse movement adds entropy
+            if (mouse.velocity > 1) {
+                entropy = Math.min(entropy + 5, 100);
+                stillnessTimer = 0;
+            } else {
+                entropy = Math.max(entropy - 0.5, 0);
+                stillnessTimer++;
+            }
+
+            mouse.velocity *= 0.9; // Decay mouse velocity calculation
+
+            // UI Text Updates
+            if (entropy > 80) {
+                statusText.innerText = "ENTROPY";
+                statusText.style.color = "#FF5733";
+                subText.innerText = "Your movement creates chaos.";
+                subText.style.opacity = 1;
+            } else if (entropy > 20) {
+                statusText.innerText = "ALIGNING";
+                statusText.style.color = "#F1C40F";
+                subText.innerText = "Be still.";
+                subText.style.opacity = 0.8;
+            } else {
+                statusText.innerText = "SINGULARITY";
+                statusText.style.color = "#00FFFF";
+                subText.innerText = "Order requires no force. Just attention.";
+                subText.style.opacity = 0.5;
+            }
+
+            // Update Particles
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+
+            // Connect lines in "Order" mode (The visual web)
+            if (entropy < 10) {
+                connectParticles();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        function connectParticles() {
+            // Optimization: Only connect a subset or based on spatial hash
+            // Simple proximity check for the 'pupil' (center particles)
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.1)';
+            ctx.lineWidth = 0.5;
+            
+            // Just connect the first 100 particles to create the "core"
+            for (let i = 0; i < 100; i++) {
+                for (let j = i + 1; j < 100; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+
+                    if (dist < 50) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // Event Listeners
+        window.addEventListener('resize', init);
+        window.addEventListener('mousemove', (e) => {
+            const dx = e.clientX - mouse.lastX;
+            const dy = e.clientY - mouse.lastY;
+            const speed = Math.sqrt(dx*dx + dy*dy);
+            
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+            mouse.lastX = e.clientX;
+            mouse.lastY = e.clientY;
+            mouse.velocity = speed;
+        });
+        
+        // Touch support
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const dx = touch.clientX - mouse.lastX;
+            const dy = touch.clientY - mouse.lastY;
+            const speed = Math.sqrt(dx*dx + dy*dy);
+
+            mouse.x = touch.clientX;
+            mouse.y = touch.clientY;
+            mouse.lastX = touch.clientX;
+            mouse.lastY = touch.clientY;
+            mouse.velocity = speed;
+            e.preventDefault();
+        }, {passive: false});
+
+        init();
+        animate();
+
+    </script>
+</body>
+</html>

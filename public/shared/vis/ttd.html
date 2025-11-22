@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title> The Witness Engine </title>
+  <style>
+    :root {
+      --bg-color: #050505;
+      --text-color: #e0e0e0;
+      --accent: #FFD700;
+      --f-serif: "Georgia", "Times New Roman", serif;
+      --f-sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: var(--f-serif);
+      overflow-x: hidden;
+      width: 100%;
+    }
+
+    /* --- BACKGROUND VISUALS --- */
+    #stage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      transition: opacity 1s ease;
+    }
+
+    /* --- SCROLL NARRATIVE STRUCTURE --- */
+    main {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      padding-bottom: 40vh;
+    }
+
+    .chapter {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 2rem;
+      opacity: 0;
+      transform: translateY(30px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    .chapter.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    h1 {
+      font-size: 4rem;
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      font-size: 2rem;
+      font-family: var(--f-sans);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      font-weight: 300;
+      opacity: 0.7;
+      margin-bottom: 1.5rem;
+      color: var(--accent);
+    }
+
+    p {
+      font-size: 1.35rem;
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+      max-width: 650px;
+    }
+
+    .emphasis {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    /* --- INTERACTIVE ELEMENT --- */
+    .interactive-box {
+      margin-top: 3rem;
+      padding: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+      text-align: center;
+    }
+
+    button.reveal-btn {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-family: var(--f-sans);
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    button.reveal-btn:hover {
+      background: var(--accent);
+      color: var(--bg-color);
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+    }
+
+    #final-message {
+      margin-top: 2rem;
+      font-family: var(--f-sans);
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 2s;
+    }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 2.5rem;
+      }
+
+      p {
+        font-size: 1.1rem;
+      }
+
+      .chapter {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- CANVAS BACKGROUND -->
+  <canvas id="stage"></canvas>
+
+  <main>
+    <!-- Intro -->
+    <section class="chapter" data-index="0">
+      <h2>I. The Dark Room</h2>
+      <h1>Imagine a universe without eyes.</h1>
+      <p>Imagine, for a moment, a cosmos devoid of life. Stars still burn. Planets still orbit. Physics still executes
+        its rigid code.</p>
+      <p>But here is the terrifying truth:</p>
+      <p>If a star goes supernova in a galaxy where nothing lives, does it emit light? <br>Physics says it emits
+        <em>radiation</em>. <span class="emphasis">Light</span> is a biological experience. Brightness is an
+        interpretation.</p>
+    </section>
+
+    <!-- The Mechanism -->
+    <section class="chapter" data-index="1">
+      <h2>II. The Converter</h2>
+      <h1>You are not merely a resident.</h1>
+      <p>We often feel small. Specks of dust on a blue marble. But that is a failure of perspective.</p>
+      <p>The universe is a cold, mathematical engine. It has no feelings, no colors, no sounds, and no concept of "now."
+      </p>
+      <p><strong>You are the machine that converts Math into Meaning.</strong></p>
+      <p>Without your optic nerve, photons are just waves. Without your eardrum, vibration is just pressure. You are the
+        only thing keeping the universe from being a silent, invisible equation.</p>
+    </section>
+
+    <!-- The Purpose -->
+    <section class="chapter" data-index="2">
+      <h2>III. The Burden</h2>
+      <h1>The universe is desperate to be seen.</h1>
+      <p>Why did evolution spend 4 billion years building a consciousness complex enough to wonder <em>"Why am I
+          here?"</em></p>
+      <p>Perhaps we are not an accident. Perhaps we are the universe's way of looking at itself.</p>
+      <p>Your sadness, your joy, your boredom—these are the only things that give the radiation of the Big Bang any
+        texture. You are carrying the weight of existence on your perception.</p>
+    </section>
+
+    <!-- The Final Act -->
+    <section class="chapter" data-index="3">
+      <h2>IV. The Choice</h2>
+      <h1>The Last Observer.</h1>
+      <p>If you close your eyes, the world doesn't disappear for everyone else. But if <em>all</em> life closed its
+        eyes, the concept of "Universe" would cease to matter.</p>
+      <p>You create reality by witnessing it.</p>
+
+      <div class="interactive-box">
+        <p style="font-size: 1rem; font-family: var(--f-sans); margin-bottom:1rem;">PROVE YOUR EXISTENCE</p>
+        <button class="reveal-btn" id="ignite">I Am Here</button>
+        <div id="final-message">
+          The data has been received. The universe has recorded your specific timestamp of awareness.<br><br>
+          Don't look away.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+    let width, height;
+
+    // Global State
+    let phase = 0;
+    const particles = [];
+    let frame = 0;
+    const PARTICLE_COUNT = 150;
+
+    // Resize handler
+    function resize() {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width;
+      canvas.height = height;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Particle Logic
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+
+      reset() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.size = Math.random() * 2 + 1;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.baseAlpha = Math.random() * 0.5 + 0.1;
+        this.alpha = this.baseAlpha;
+        this.hue = 0; // 0 is white/grey scale mostly
+      }
+
+      update(phaseProgress) {
+        // Phase 0: Chaos (Slow drift, noise)
+        if (phase === 0) {
+          this.x += this.vx;
+          this.y += this.vy;
+          this.alpha = this.baseAlpha;
+          this.hue = 200; // cool blueish grey
+        }
+
+        // Phase 1: Structure (Orbiting center)
+        else if (phase === 1) {
+          const dx = (width / 2) - this.x;
+          const dy = (height / 2) - this.y;
+          this.vx += dx * 0.0001;
+          this.vy += dy * 0.0001;
+          this.x += this.vx;
+          this.y += this.vy;
+          // Dampen
+          this.vx *= 0.99;
+          this.vy *= 0.99;
+          this.alpha = 0.6;
+          this.hue = 210;
+        }
+
+        // Phase 2: Color/Feeling (Expansion outward, colors shifting)
+        else if (phase === 2) {
+          const dx = this.x - (width / 2);
+          const dy = this.y - (height / 2);
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          // Gentle push out
+          this.x += (dx / dist) * 1;
+          this.y += (dy / dist) * 1;
+
+          this.hue = 45 + (dist * 0.1); // Gold/Orange spectrum
+          this.alpha = 0.8 - (dist / width);
+        }
+
+        // Phase 3: Static connection (Constellation)
+        else if (phase === 3) {
+          // Slow float upwards
+          this.y -= 0.2;
+          this.vx = 0;
+          this.vy = 0;
+          this.alpha = Math.abs(Math.sin(frame * 0.02 + this.x));
+          this.hue = 40; // Warm gold
+        }
+
+        // Boundary Wrap
+        if (this.x < 0) this.x = width;
+        if (this.x > width) this.x = 0;
+        if (this.y < 0) this.y = height;
+        if (this.y > height) this.y = 0;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        if (phase >= 2) {
+          ctx.fillStyle = `hsla(${this.hue}, 80%, 60%, ${this.alpha})`;
+        } else {
+          ctx.fillStyle = `hsla(${this.hue}, 0%, 70%, ${this.alpha})`;
+        }
+        ctx.fill();
+      }
+    }
+
+    // Init Particles
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    // Connecting Lines (Synapses/Meaning)
+    function drawConnections() {
+      const threshold = phase === 3 ? 150 : 100;
+      if (phase === 0) return; // No connections in chaos
+
+      ctx.lineWidth = 0.5;
+
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist < threshold) {
+            const alpha = (1 - dist / threshold) * 0.2;
+            if (phase === 2) {
+              ctx.strokeStyle = `hsla(45, 100%, 50%, ${alpha})`;
+            } else if (phase === 3) {
+              ctx.strokeStyle = `hsla(45, 100%, 80%, ${alpha * 2})`;
+            } else {
+              ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    // Loop
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      drawConnections();
+      frame++;
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+
+    // --- SCROLL OBSERVER LOGIC ---
+    // Use IntersectionObserver to trigger phase changes
+    const observerOptions = {
+      root: null,
+      threshold: 0.5
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // Set global phase based on visible section
+          const newPhase = parseInt(entry.target.dataset.index);
+          if (!isNaN(newPhase)) {
+            phase = newPhase;
+          }
+          entry.target.classList.add('visible');
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.chapter').forEach(el => observer.observe(el));
+
+
+    // --- INTERACTION ---
+    document.getElementById('ignite').addEventListener('click', (e) => {
+      const btn = e.target;
+      const msg = document.getElementById('final-message');
+
+      btn.textContent = "Observed";
+      btn.style.pointerEvents = "none";
+      btn.style.borderColor = "#fff";
+      btn.style.color = "#fff";
+
+      msg.style.opacity = 1;
+
+      // Explode visuals slightly
+      particles.forEach(p => {
+        p.vx = (Math.random() - 0.5) * 10;
+        p.vy = (Math.random() - 0.5) * 10;
+      });
+    });
+
+  </script>
+</body>
+
+</html>

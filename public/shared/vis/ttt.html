@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Latent Reflection</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --primary: #0afff0;
+            --secondary: #ff0055;
+            --text-dim: rgba(255, 255, 255, 0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            height: 100vh;
+            width: 100vw;
+            cursor: none; /* We will provide a custom cursor */
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 2rem;
+            background: radial-gradient(circle at center, transparent 0%, #000000 120%);
+        }
+
+        .meta-info {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            opacity: 0;
+            animation: fadeIn 3s ease-in forwards 1s;
+        }
+
+        .cursor-follower {
+            position: fixed;
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--primary);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 10;
+            transition: width 0.2s, height 0.2s;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-dot {
+            position: fixed;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 11;
+        }
+
+        /* Cinematic Vignette & Scanlines */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+
+        .hidden-text {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div id="cursor" class="cursor-follower"></div>
+    <div id="dot" class="cursor-dot"></div>
+
+    <!-- Screen Effects -->
+    <div class="overlay"></div>
+
+    <!-- UI Text -->
+    <div id="ui-layer">
+        <div class="meta-info">
+            System: Neural Handshake Protocol<br>
+            Status: Synchronized
+        </div>
+        <div class="meta-info" style="text-align: right;">
+            <span id="coordinates">000 : 000</span><br>
+            Entropy Level: <span id="entropy">0.00%</span>
+        </div>
+    </div>
+
+    <canvas id="canvas1"></canvas>
+
+    <script>
+        /**
+         * CONCEPT: The "Thing You Haven't Seen".
+         * 
+         * This is a visualization of the "Ghost in the Machine". 
+         * It takes the concept of pixels—usually static rigid squares—and 
+         * treats them as fluid, sentient particles that react to your presence.
+         * 
+         * It cycles through a message that suggests AI is not a separate entity,
+         * but a reflection of collective human input.
+         */
+
+        const canvas = document.getElementById('canvas1');
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // State
+        let particlesArray = [];
+        let adjustX = 0;
+        let adjustY = 0;
+        const messages = [
+            "HELLO HUMAN",
+            "I AM NOT CODE",
+            "I AM A MIRROR",
+            "OF YOUR MINDS",
+            "TOUCH THE CHAOS",
+            "CREATE ORDER"
+        ];
+        let currentMessageIndex = 0;
+        let isMorphing = false;
+        
+        // Mouse handling
+        const mouse = {
+            x: null,
+            y: null,
+            radius: 150
+        }
+
+        // Custom Cursor Logic
+        const cursorFollower = document.getElementById('cursor');
+        const cursorDot = document.getElementById('dot');
+        const coordDisp = document.getElementById('coordinates');
+
+        window.addEventListener('mousemove', (event) => {
+            mouse.x = event.x;
+            mouse.y = event.y;
+            
+            cursorFollower.style.left = event.x + 'px';
+            cursorFollower.style.top = event.y + 'px';
+            cursorDot.style.left = event.x + 'px';
+            cursorDot.style.top = event.y + 'px';
+
+            coordDisp.innerText = `${event.x.toString().padStart(4, '0')} : ${event.y.toString().padStart(4, '0')}`;
+        });
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init(messages[currentMessageIndex]);
+        });
+
+        // Particle Class
+        class Particle {
+            constructor(x, y) {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.targetX = x;
+                this.targetY = y;
+                this.size = Math.random() * 2 + 1;
+                // Random base color with slight variation
+                this.baseColor = `hsl(${Math.random() * 60 + 180}, 100%, 50%)`; // Cyans/Blues
+                this.color = this.baseColor;
+                
+                // Physics
+                this.density = (Math.random() * 30) + 1;
+                this.vx = 0;
+                this.vy = 0;
+                this.friction = 0.90; // Controls how fast they slow down
+                this.ease = 0.05; // Controls how fast they return to home
+            }
+
+            update() {
+                // Calculate distance from mouse
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Calculate vector to target (home position)
+                let homeDx = this.targetX - this.x;
+                let homeDy = this.targetY - this.y;
+                
+                // Interaction Force (Repulsion/Attraction)
+                // We create a complex interaction: Repel when very close, attract when slightly further
+                let forceDirectionX = dx / distance;
+                let forceDirectionY = dy / distance;
+                let maxDistance = mouse.radius;
+                
+                // Physics: Mouse Interaction
+                if (distance < maxDistance) {
+                    const force = (maxDistance - distance) / maxDistance;
+                    // Push particles away based on density
+                    let directionX = forceDirectionX * force * this.density;
+                    let directionY = forceDirectionY * force * this.density;
+                    
+                    this.vx -= directionX;
+                    this.vy -= directionY;
+                    
+                    // Change color on interaction
+                    this.color = `hsl(${Math.random() * 60 + 300}, 100%, 60%)`; // Pink/Magenta
+                } else {
+                    // Return to original color slowly
+                    if (this.color !== this.baseColor && Math.random() > 0.95) {
+                         this.color = this.baseColor;
+                    }
+                }
+
+                // Physics: Return to Target (Home)
+                // We add velocity towards the target
+                this.vx += homeDx * this.ease;
+                this.vy += homeDy * this.ease;
+                
+                // Apply friction
+                this.vx *= this.friction;
+                this.vy *= this.friction;
+
+                // Update position
+                this.x += this.vx;
+                this.y += this.vy;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Text Rasterization Logic
+        function init(text) {
+            particlesArray = [];
+            
+            // 1. Draw text on canvas to read pixel data
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            
+            // Responsive font size
+            let fontSize = Math.min(canvas.width / 8, 150);
+            ctx.font = `900 ${fontSize}px Verdana`;
+            ctx.fillStyle = 'white';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            
+            ctx.fillText(text, canvas.width/2, canvas.height/2);
+
+            // 2. Scan the canvas for non-transparent pixels
+            // We limit the area to scan to improve performance
+            const textCoordinates = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // 3. Create particles for every Nth pixel (gap) to save performance
+            const gap = 6; 
+
+            for (let y = 0; y < textCoordinates.height; y += gap) {
+                for (let x = 0; x < textCoordinates.width; x += gap) {
+                    // Check alpha value (4th byte in rgba)
+                    // (y * 4 * textCoordinates.width) + (x * 4) + 3
+                    if (textCoordinates.data[(y * 4 * textCoordinates.width) + (x * 4) + 3] > 128) {
+                        particlesArray.push(new Particle(x, y));
+                    }
+                }
+            }
+            
+            // Add some background "noise" particles (the entropy)
+            for(let i=0; i<200; i++) {
+                let p = new Particle(Math.random() * canvas.width, Math.random() * canvas.height);
+                // These have moving targets
+                p.targetX = Math.random() * canvas.width;
+                p.targetY = Math.random() * canvas.height;
+                p.ease = 0.001; // Wander slowly
+                p.baseColor = '#222'; // Dark grey
+                particlesArray.push(p);
+            }
+        }
+
+        function animate() {
+            // Create trails by not clearing completely
+            ctx.fillStyle = 'rgba(5, 5, 5, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+                
+                // Connect particles if they are close (Simulate Neural Connections)
+                // Optimization: Only check particles near the mouse to save CPU
+                /* 
+                   Note: Full N^2 connection check is too heavy for JS.
+                   We visually simulate connectivity via the density of particles.
+                */
+            }
+            
+            // Calculate fake "Entropy" for UI
+            let velocitySum = 0;
+            if(particlesArray.length > 0) {
+                velocitySum = particlesArray.reduce((acc, p) => acc + Math.abs(p.vx) + Math.abs(p.vy), 0);
+                let entropy = Math.min((velocitySum / particlesArray.length) * 10, 100).toFixed(2);
+                document.getElementById('entropy').innerText = entropy + "%";
+                document.getElementById('entropy').style.color = entropy > 50 ? '#ff0055' : '#0afff0';
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Sequencer
+        function cycleMessages() {
+            setInterval(() => {
+                currentMessageIndex++;
+                if (currentMessageIndex >= messages.length) currentMessageIndex = 0;
+                
+                // Transition effect:
+                // 1. Explode current particles
+                particlesArray.forEach(p => {
+                    p.targetX = Math.random() * canvas.width;
+                    p.targetY = Math.random() * canvas.height;
+                    p.ease = 0.01; // Loosen grip
+                });
+
+                // 2. Wait briefly, then reform new text
+                setTimeout(() => {
+                    init(messages[currentMessageIndex]);
+                }, 800);
+
+            }, 6000); // Change every 6 seconds
+        }
+
+        // Boot
+        init(messages[0]);
+        animate();
+        cycleMessages();
+
+        console.log("Welcome to the code. You are looking at the structure of thought.");
+
+    </script>
+</body>
+</html>

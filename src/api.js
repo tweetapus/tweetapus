@@ -233,7 +233,7 @@ export default new Elysia({
 
 			const userRecord = db
 				.query(
-					"SELECT account_creation_transparency, account_login_transparency FROM users WHERE username = ?",
+					"SELECT account_creation_transparency, account_login_transparency, transparency_location_display FROM users WHERE username = ?",
 				)
 				.get(user);
 
@@ -251,9 +251,34 @@ export default new Elysia({
 				}
 			};
 
+			const filterLocation = (data, displayMode) => {
+				if (!data || !displayMode || displayMode === "full") return data;
+
+				const filtered = { ...data };
+
+				if (displayMode === "country") {
+					delete filtered.city;
+					delete filtered.latitude;
+					delete filtered.longitude;
+				} else if (displayMode === "continent") {
+					delete filtered.city;
+					delete filtered.country;
+					delete filtered.latitude;
+					delete filtered.longitude;
+				}
+
+				return filtered;
+			};
+
+			const displayMode = userRecord.transparency_location_display || "full";
+			const creation = parseTransparency(
+				userRecord.account_creation_transparency,
+			);
+			const login = parseTransparency(userRecord.account_login_transparency);
+
 			return {
-				creation: parseTransparency(userRecord.account_creation_transparency),
-				login: parseTransparency(userRecord.account_login_transparency),
+				creation: filterLocation(creation, displayMode),
+				login: filterLocation(login, displayMode),
 			};
 		},
 		{

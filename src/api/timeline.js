@@ -17,7 +17,7 @@ const normalizeContent = (value) => {
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const getTimelinePosts = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost
   FROM posts 
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
@@ -29,7 +29,7 @@ const getTimelinePosts = db.query(`
 `);
 
 const getTimelinePostsBefore = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost
   FROM posts 
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
@@ -42,7 +42,7 @@ const getTimelinePostsBefore = db.query(`
 `);
 
 const getFollowingTimelinePosts = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost
   FROM posts 
   JOIN follows ON posts.user_id = follows.following_id
   JOIN users ON posts.user_id = users.id
