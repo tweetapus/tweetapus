@@ -49,8 +49,9 @@ function ipToNum(ip) {
 }
 
 export const isVPN = async (ip) => {
+  console.log("VPN check:", ip);
   if (!ip) {
-    console.error("no ip");
+    console.error("VPN check: no ip");
     return null;
   }
 	if (!vpnRanges.length) {
@@ -63,6 +64,7 @@ export const isVPN = async (ip) => {
 	}
 
 	const ipNum = ipToNum(ip);
+  console.log("VPN check: ip num:", ipNum);
 	return vpnRanges.some(
 		(range) => (ipNum & range.mask) === (range.ipNum & range.mask),
 	);

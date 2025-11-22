@@ -1229,6 +1229,13 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 					return { error: "Invalid username or password" };
 				}
 
+				console.log(
+					"ip:",
+					headers["cf-ip"] ||
+						headers["cf-connecting-ip"] ||
+						headers["x-forwarded-for"],
+				);
+
 				const loginTransparency = JSON.stringify({
 					city: headers["cf-ipcity"] || null,
 					country: headers["cf-ipcountry"] || null,

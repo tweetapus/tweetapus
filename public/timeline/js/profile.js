@@ -1176,7 +1176,7 @@ const renderProfile = (data) => {
 			e.stopPropagation();
 
 			const countries =
-				`AFAfghanistan;ALAlbania;DZAlgeria;ASAmerican Samoa;ADAndorra;AOAngola;AGAntigua and Barbuda;ARArgentina;AMArmenia;AWAruba;AUAustralia;ATAustria;AZAzerbaijan;BSBahamas;BHBahrain;BDBangladesh;BBBarbados;BYBelarus;BEBelgium;BZBelize;BJBenin;BMBermuda;BTBhutan;BOBolivia;BABosnia and Herzegovina;BWBotswana;BRBrazil;BNBrunei Darussalam;BGBulgaria;BFBurkina Faso;BIBurundi;KHCambodia;CMCameroon;CACanada;CVCape Verde;KYCayman Islands;CFCentral African Republic;TDChad;CLChile;CNChina;COColombia;KMComoros;CGRepublic of the Congo;CDDemocratic Republic of the Congo;CKCook Islands;CRCosta Rica;CIIvory Coast;HRCroatia;CUCuba;CYCyprus;CZCzech Republic;DKDenmark;DJDjibouti;DMDominica;DODominican Republic;ECEcuador;EGEgypt;SVEl Salvador;GQEquatorial Guinea;EREritrea;EEEstonia;ETEthiopia;FOFaroe Islands;FJFiji;FIFinland;FRFrance;GFFrench Guiana;PFFrench Polynesia;GAGabon;GMGambia;GEGeorgia;DEGermany;GHGhana;GIGibraltar;GRGreece;GLGreenland;GDGrenada;GPGuadeloupe;GUGuam;GTGuatemala;GNGuinea;GWGuinea-Bissau;GYGuyana;HTHaiti;HNHonduras;HKHong Kong;HUHungary;ISIceland;INIndia;IDIndonesia;IRIran;IQIraq;IEIreland;ILIsrael;ITItaly;JMJamaica;JPJapan;JOJordan;KZKazakhstan;KEKenya;KIKiribati;KPNorth Korea;KRSouth Korea;KWKuwait;KGKyrgyzstan;LALao People's Democratic Republic;LVLatvia;LBLebanon;LSLesotho;LRLiberia;LYLibya;LILiechtenstein;LTLithuania;LULuxembourg;MOMacao;MGMadagascar;MWMalawi;MYMalaysia;MVMaldives;MLMali;MTMalta;MHMarshall Islands;MQMartinique;MRMauritania;MUMauritius;YTMayotte;MXMexico;FMMicronesia, Federated States of;MDMoldova, Republic of;MCMonaco;MNMongolia;MAMorocco;MZMozambique;MMMyanmar;NANamibia;NRNauru;NPNepal;NLNetherlands;NCNew Caledonia;NZNew Zealand;NINicaragua;NENiger;NGNigeria;MKNorth Macedonia;MPNorthern Mariana Islands;NONorway;OMOman;PKPakistan;PWPalau;PSState of Palestine;PAPanama;PGPapua New Guinea;PYParaguay;PEPeru;PHPhilippines;PLPoland;PTPortugal;PRPuerto Rico;QAQatar;REReunion;RORomania;RURussia;RWRwanda;KNSaint Kitts and Nevis;LCSaint Lucia;VCSaint Vincent and the Grenadines;WSSamoa;SMSan Marino;STSao Tome and Principe;SASaudi Arabia;SNSenegal;SCSeychelles;SLSierra Leone;SGSingapore;SKSlovakia;SISlovenia;SBSolomon Islands;SOSomalia;ZASouth Africa;ESSpain;LKSri Lanka;SDSudan;SRSuriname;SZEswatini;SESweden;CHSwitzerland;SYSyrian Arab Republic;TWTaiwan;TJTajikistan;TZTanzania;THThailand;TLTimor-Leste;TGTogo;TOTonga;TTTrinidad and Tobago;TNTunisia;TRTurkey;TMTurkmenistan;TCTurks and Caicos Islands;TVTuvalu;UGUganda;UAUkraine;AEUnited Arab Emirates;GBUnited Kingdom;USUnited States of America;UYUruguay;UZUzbekistan;VUVanuatu;VEVenezuela;VNVietnam;VGVirgin Islands, British;VIVirgin Islands, U.S.;WFWallis and Futuna;EHWestern Sahara;YEYemen;ZMZambia;ZWZimbabwe;AXAland Islands;BQBonaire, Sint Eustatius and Saba;CWCuraçao;GGGuernsey;IMIsle of Man;JEJersey;MEMontenegro;MFSaint Martin;RSSerbia;SXSint Maarten;SSSouth Sudan;XKKosovo`.split(
+				`AFAfghanistan;ALAlbania;DZAlgeria;ASAmerican Samoa;ADAndorra;AOAngola;AGAntigua and Barbuda;ARArgentina;AMArmenia;AWAruba;AUAustralia;ATAustria;AZAzerbaijan;BSBahamas;BHBahrain;BDBangladesh;BBBarbados;BYBelarus;BEBelgium;BZBelize;BJBenin;BMBermuda;BTBhutan;BOBolivia;BABosnia and Herzegovina;BWBotswana;BRBrazil;BNBrunei Darussalam;BGBulgaria;BFBurkina Faso;BIBurundi;KHCambodia;CMCameroon;CACanada;CVCape Verde;KYCayman Islands;CFCentral African Republic;TDChad;CLChile;CNChina;COColombia;KMComoros;CGRepublic of the Congo;CDDemocratic Republic of the Congo;CKCook Islands;CRCosta Rica;CIIvory Coast;HRCroatia;CUCuba;CYCyprus;CZCzech Republic;DKDenmark;DJDjibouti;DMDominica;DODominican Republic;ECEcuador;EGEgypt;SVEl Salvador;GQEquatorial Guinea;EREritrea;EEEstonia;ETEthiopia;FOFaroe Islands;FJFiji;FIFinland;FRFrance;GFFrench Guiana;PFFrench Polynesia;GAGabon;GMGambia;GEGeorgia;DEGermany;GHGhana;GIGibraltar;GRGreece;GLGreenland;GDGrenada;GPGuadeloupe;GUGuam;GTGuatemala;GNGuinea;GWGuinea-Bissau;GYGuyana;HTHaiti;HNHonduras;HKHong Kong;HUHungary;ISIceland;INIndia;IDIndonesia;IRIran;IQIraq;IEIreland;ILIsrael;ITItaly;JMJamaica;JPJapan;JOJordan;KZKazakhstan;KEKenya;KIKiribati;KPNorth Korea;KRSouth Korea;KWKuwait;KGKyrgyzstan;LALao People's Democratic Republic;LVLatvia;LBLebanon;LSLesotho;LRLiberia;LYLibya;LILiechtenstein;LTLithuania;LULuxembourg;MOMacao;MGMadagascar;MWMalawi;MYMalaysia;MVMaldives;MLMali;MTMalta;MHMarshall Islands;MQMartinique;MRMauritania;MUMauritius;YTMayotte;MXMexico;FMMicronesia, Federated States of;MDMoldova, Republic of;MCMonaco;MNMongolia;MAMorocco;MZMozambique;MMMyanmar;NANamibia;NRNauru;NPNepal;NLNetherlands;NCNew Caledonia;NZNew Zealand;NINicaragua;NENiger;NGNigeria;MKNorth Macedonia;MPNorthern Mariana Islands;NONorway;OMOman;PKPakistan;PWPalau;PSState of Palestine;PAPanama;PGPapua New Guinea;PYParaguay;PEPeru;PHPhilippines;PLPoland;PTPortugal;PRPuerto Rico;QAQatar;REReunion;RORomania;RURussia;RWRwanda;KNSaint Kitts and Nevis;LCSaint Lucia;VCSaint Vincent and the Grenadines;WSSamoa;SMSan Marino;STSao Tome and Principe;SASaudi Arabia;SNSenegal;SCSeychelles;SLSierra Leone;SGSingapore;SKSlovakia;SISlovenia;SBSolomon Islands;SOSomalia;ZASouth Africa;ESSpain;LKSri Lanka;SDSudan;SRSuriname;SZEswatini;SESweden;CHSwitzerland;SYSyrian Arab Republic;TWTaiwan;TJTajikistan;TZTanzania;THThailand;TLTimor-Leste;TGTogo;TOTonga;TTTrinidad and Tobago;TNTunisia;TRTurkey;TMTurkmenistan;TCTurks and Caicos Islands;TVTuvalu;UGUganda;UAUkraine;AEUnited Arab Emirates;GBUnited Kingdom;USUnited States of America;UYUruguay;UZUzbekistan;VUVanuatu;VEVenezuela;VNVietnam;VGVirgin Islands, British;VIVirgin Islands, U.S.;WFWallis and Futuna;EHWestern Sahara;YEYemen;ZMZambia;ZWZimbabwe;AXAland Islands;BQBonaire, Sint Eustatius and Saba;CWCuraçao;GGGuernsey;IMIsle of Man;JEJersey;MEMontenegro;MFSaint Martin;RSSerbia;SXSint Maarten;SSSouth Sudan;XKKosovo;XXUnknown`.split(
 					";",
 				);
 
@@ -1200,74 +1200,88 @@ const renderProfile = (data) => {
         </div>
         <div class="modal-body">
 					<div class="transparency-items">
+            ${
+							profile.verified
+								? `<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-badge-check-icon lucide-badge-check"><path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/></svg>
+						<div class="transparency-data"><strong>Verified account</strong></div></div>`
+								: ""
+						}
+
+            ${
+							transparencyReport.creation?.vpn
+								? `<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-alert-icon lucide-shield-alert"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+						<div class="transparency-data"><strong>Created from a datacenter IP</strong></div></div>`
+								: ""
+						}
+
+            ${
+							transparencyReport.creation?.country === "T1"
+								? `<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-alert-icon lucide-shield-alert"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+						<div class="transparency-data"><strong>Created from the Tor network</strong></div></div>`
+								: ""
+						}
 
 					${
-						transparencyReport.login
+						transparencyReport.login &&
+						transparencyReport.login.country !== "T1"
 							? `<div class="transparency-item">
 							<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pin-icon lucide-pin"><path d="M12 17v5"/><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg> <div class="transparency-data"><strong>Last login location</strong>
-							<span>${transparencyReport.login["cf-ipcity"] || transparencyReport.login.city || "Unknown"}, ${
+							<span>${transparencyReport.login.city ? `${transparencyReport.login.city}, ` : ""}${
 								countries
 									.find((country) =>
 										country.startsWith(
-											(
-												transparencyReport.login["cf-ipcountry"] ||
-												transparencyReport.login.country
-											).toUpperCase(),
+											transparencyReport.login.country?.toUpperCase() || "XX",
 										),
 									)
 									?.slice(2) ||
-								(
-									transparencyReport.login["cf-ipcountry"] ||
-										transparencyReport.login.country
-								) ||
+								transparencyReport.login.country ||
 								"Unknown"
 							}</span>
 
-						<iframe width="100%" style="width:100%;height: 259px;border:0;border-radius:3px;margin-top: 6px;" height="259" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=${transparencyReport.login["cf-iplatitude"] || transparencyReport.login.latitude},${transparencyReport.login["cf-iplongitude"] || transparencyReport.login.longitude}&hl=en&z=4&output=embed"></iframe></div></div>
+						${transparencyReport.login.latitude ? `<img draggable="false" alt="Apple Map" src="https://external-content.duckduckgo.com/ssv2/?scale=3&lang=en-US&colorScheme=dark&format=png&size=360x157&spn=36,36&center=${encodeURIComponent(`${transparencyReport.login.latitude},${transparencyReport.login.longitude}`)}&annotations=${encodeURIComponent(JSON.stringify([{ point: `${transparencyReport.login.latitude},${transparencyReport.login.longitude}`, color: "AC97FF" }]))}"}>` : ""}</div></div>
 
-						${transparencyReport.login?.vpn ? "VPN detected on last login." : ""}
-
-						<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
+            ${
+							transparencyReport.login?.vpn
+								? `<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-alert-icon lucide-shield-alert"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+						<div class="transparency-data"><strong>Last login from a datacenter IP</strong></div></div>`
+								: ""
+						}
+						
+<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clock-icon lucide-clock"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="10"/></svg>
 						<div class="transparency-data"><strong>Last login timezone</strong> ${
-							transparencyReport.login["cf-timezone"] ||
-							transparencyReport.login.timezone ||
-							"Unknown"
+							transparencyReport.login.timezone || "Unknown"
 						}</div></div>`
-							: `<p>Last login report unavailable.</p>`
+							: ""
 					}
 
+            ${
+							transparencyReport.login?.country === "T1"
+								? `<div class="transparency-item"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shield-alert-icon lucide-shield-alert"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+						<div class="transparency-data"><strong>Last login from the Tor network</strong></div></div>`
+								: ""
+						}
+
 ${
-	transparencyReport.creation
+	transparencyReport.creation && transparencyReport.creation.country !== "T1"
 		? `	<div class="transparency-item">
 		<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user-icon lucide-user"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
 		<div class="transparency-data">
 							<strong>Account creation location</strong>
-							<span>${transparencyReport.creation?.["cf-ipcity"] || "Unknown"}, ${
-								transparencyReport.creation?.["cf-ipcountry"] ||
-								transparencyReport.creation?.country ||
-								"Unknown"
-							} (${
-								transparencyReport.creation?.["cf-ipcontinent"] ||
-								transparencyReport.creation?.continent ||
-								"Unknown"
-							})</span>
+							<span>${transparencyReport.creation?.city ? `${transparencyReport.creation.city}, ` : ""}${
+								transparencyReport.creation?.country || "Unknown"
+							}</span>
 
-						<iframe width="100%" style="width:100%;height: 259px;border:0;border-radius:3px;" height="259" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=${transparencyReport.creation?.["cf-iplatitude"] || transparencyReport.creation?.latitude},${transparencyReport.creation?.["cf-iplongitude"] || transparencyReport.creation?.longitude}&hl=en&z=4&output=embed"></iframe>
-						</div></div>
-
+							${transparencyReport.creation.latitude && transparencyReport.creation.longitude ? `<img draggable="false" alt="Apple Map" src="https://external-content.duckduckgo.com/ssv2/?scale=3&lang=en-US&colorScheme=dark&format=png&size=360x157&spn=36,36&center=${encodeURIComponent(`${transparencyReport.creation.latitude},${transparencyReport.creation.longitude}`)}&annotations=${encodeURIComponent(JSON.stringify([{ point: `${transparencyReport.creation.latitude},${transparencyReport.creation.longitude}`, color: "AC97FF" }]))}"}>` : ""}</div></div>
 
 						<div class="transparency-item">
 						<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-history-icon lucide-history"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
 						<div class="transparency-data">
 							<strong>Creation timezone</strong> ${
-								transparencyReport.creation?.["cf-timezone"] ||
-								transparencyReport.creation?.timezone ||
-								"Unknown"
+								transparencyReport.creation?.timezone || "Unknown"
 							}
 						</div></div>`
 		: ``
 }
-						${transparencyReport.creation?.vpn ? "VPN detected on account ." : ""}
 					</div>
         </div>
 				</div>

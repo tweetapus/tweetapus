@@ -146,8 +146,6 @@ export const useComposer = (
 		}
 	};
 
-	textarea.addEventListener("input", updateCharacterCount);
-
 	if (cardOnly) {
 		if (fileUploadBtn) fileUploadBtn.style.display = "none";
 		if (gifBtn) gifBtn.style.display = "none";
@@ -155,10 +153,12 @@ export const useComposer = (
 	}
 
 	textarea.addEventListener("input", () => {
+		updateCharacterCount();
+
 		textarea.style.height = "0px";
 		void textarea.offsetHeight;
-		if (textarea.scrollHeight === 30) {
-			textarea.style.height = `25px`;
+		if (textarea.scrollHeight === 54) {
+			textarea.style.height = `45px`;
 		} else {
 			textarea.style.height = `${Math.max(textarea.scrollHeight, 25)}px`;
 		}
@@ -771,7 +771,13 @@ export const useComposer = (
 		});
 	}
 
-	if (unsplashBtn && unsplashPicker && unsplashSearchInput && unsplashResults && unsplashPickerClose) {
+	if (
+		unsplashBtn &&
+		unsplashPicker &&
+		unsplashSearchInput &&
+		unsplashResults &&
+		unsplashPickerClose
+	) {
 		let searchTimeout;
 
 		unsplashBtn.addEventListener("click", () => {
@@ -840,7 +846,7 @@ export const useComposer = (
 				results.forEach((img) => {
 					const imgEl = document.createElement("div");
 					imgEl.className = "unsplash-item";
-					
+
 					imgEl.innerHTML = `
 						<img src="${img.thumb}" alt="${img.description}" loading="lazy" />
 						<div class="unsplash-attribution-overlay">
@@ -854,9 +860,9 @@ export const useComposer = (
 							download_location: img.download_location,
 							photographer_name: img.user.name,
 							photographer_username: img.user.username,
-							photographer_url: img.user.link
+							photographer_url: img.user.link,
 						};
-						
+
 						pendingFiles = [];
 						selectedGif = null;
 						attachmentPreview.innerHTML = "";

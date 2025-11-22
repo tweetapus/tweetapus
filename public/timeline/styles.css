@@ -23,11 +23,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scrollbar-gutter: stable;
-  box-sizing: border-box;
-}
-
-* {
-  box-sizing: border-box;
 }
 
 #profileContainer.suspended .profile-banner {
@@ -143,7 +138,6 @@ body {
     border-radius: 16px;
     padding: 16px;
     width: 460px;
-    box-sizing: border-box;
   }
 
   .tweet-share-attribution {
@@ -480,6 +474,7 @@ nav {
       flex: 1;
       position: relative;
       max-width: 100%;
+      overflow-x: hidden;
 
       textarea {
         width: 100%;
@@ -489,7 +484,7 @@ nav {
         font-size: 16px;
         line-height: 1.5;
         resize: none;
-        min-height: 25px;
+        min-height: 45px;
         max-height: 250px;
         height: 0px;
         padding: 6px 0;
@@ -522,32 +517,29 @@ nav {
         margin-bottom: 10px;
       }
 
-      /* Styled to match other selects across the site */
       #reply-restriction-select {
         -webkit-appearance: none;
         -moz-appearance: none;
         appearance: none;
-        padding: 6px 10px;
         font-family: inherit;
         font-size: 14px;
         line-height: 1;
-        border: 1px solid var(--border-primary);
-        border-radius: 8px;
         background-color: var(--bg-primary);
         color: var(--text-primary);
         outline: none;
         margin-bottom: 4px;
-        margin-left: -3px;
         cursor: pointer;
-        background-image: linear-gradient(45deg,
-            transparent 50%,
-            var(--text-secondary) 50%),
-          linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
-        background-position: calc(100% - 12px) calc(1em + -2px),
-          calc(100% - 8px) calc(1em + -2px);
+        background-image: linear-gradient(45deg, transparent 50%, var(--text-secondary) 50%), linear-gradient(135deg, var(--text-secondary) 50%, transparent 50%);
+        background-position: calc(100% - 12px) calc(1em + -7px), calc(100% - 8px) calc(1em + -7px);
         background-size: 4px 4px, 4px 4px;
         background-repeat: no-repeat;
         padding-right: 23px;
+        border: none;
+        transition: opacity .1s;
+
+        &:not(:hover) {
+          opacity: .6;
+        }
       }
 
       #reply-restriction-select option {
@@ -561,12 +553,27 @@ nav {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        gap: 8px;
 
         .compose-actions {
           display: flex;
           gap: 12px;
           max-width: 100%;
           overflow: auto;
+          position: relative;
+          width: 100%;
+
+          &:after {
+            position: absolute;
+            content: "";
+            height: 100%;
+            width: 35px;
+            background: linear-gradient(to right, transparent, var(--bg-secondary));
+            right: 0;
+            top: 0px;
+            bottom: 0px;
+            pointer-events: none;
+          }
 
           button {
             background-color: transparent;
@@ -2313,7 +2320,6 @@ nav {
     color: var(--text-primary);
     border: 1px solid rgba(220, 38, 38, 0.15);
     width: calc(100% - 0px);
-    box-sizing: border-box;
   }
 
   .profile-block-banner .banner-icon {
@@ -2495,7 +2501,6 @@ nav {
   color: var(--text-primary);
   border: 1px solid var(--border-primary);
   width: calc(100%);
-  box-sizing: border-box;
 }
 
 .profile-suspended .suspended-sub {
@@ -2967,24 +2972,11 @@ nav {
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  transition: opacity 0.15s ease;
-
-  @starting-style {
-    & {
-      opacity: 0;
-    }
-  }
 
   .modal {
     position: relative;
     transition: none;
     display: block;
-
-    @starting-style {
-      & {
-        transform: scale(0.95);
-      }
-    }
   }
 
   .modal-close {
@@ -3157,13 +3149,6 @@ nav {
     width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    transition: transform 0.2s;
-
-    @starting-style {
-      & {
-        transform: scale(0.95);
-      }
-    }
 
     &.settings-modal {
       max-width: 1400px;
@@ -6437,7 +6422,6 @@ nav {
 .community-detail-content,
 .community-detail-tab-content,
 .community-detail-banner {
-  box-sizing: border-box;
   width: 100%;
   overflow-x: hidden;
 }
@@ -6484,7 +6468,6 @@ nav {
 
 .community-detail-content.tab-tweets-active .community-detail-tab-content>* {
   max-width: 100%;
-  box-sizing: border-box;
   overflow-wrap: anywhere;
 }
 
@@ -6519,7 +6502,6 @@ nav {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  box-sizing: border-box;
 }
 
 .community-only-checkbox {
@@ -6850,7 +6832,6 @@ nav {
       background-color: var(--bg-secondary);
       color: var(--text-primary);
       transition: border-color 0.2s;
-      box-sizing: border-box;
 
       &:focus {
         outline: none;
@@ -7365,7 +7346,6 @@ emoji-picker.emoji-picker-popup {
 }
 
 .settings-modal-overlay {
-  /* make sure overlay covers viewport */
   position: fixed;
   inset: 0;
   display: none;
@@ -7373,15 +7353,12 @@ emoji-picker.emoji-picker-popup {
 }
 
 .settings-modal-overlay .settings-form-modal {
-  /* center the modal box precisely in the viewport */
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
   margin: 0;
-  /* override any auto margins */
   max-height: 85vh;
-  box-sizing: border-box;
 }
 
 .settings-section h1 {
@@ -7598,6 +7575,13 @@ emoji-picker.emoji-picker-popup {
   z-index: 1000;
   align-items: center;
   justify-content: center;
+  transition: opacity .2s;
+
+  @starting-style {
+    & {
+      opacity: 0;
+    }
+  }
 }
 
 .modal-content {
@@ -7609,6 +7593,13 @@ emoji-picker.emoji-picker-popup {
   overflow-y: auto;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
     0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s;
+
+  @starting-style {
+    & {
+      transform: scale(0.95);
+    }
+  }
 }
 
 .modal-header {
@@ -7671,7 +7662,6 @@ emoji-picker.emoji-picker-popup {
   background: var(--bg-primary);
   color: var(--text-primary);
   transition: border-color 0.2s;
-  box-sizing: border-box;
 }
 
 .form-group input:focus {
@@ -7893,7 +7883,6 @@ emoji-picker.emoji-picker-popup {
 }
 
 .modal.settings-modal {
-  box-sizing: border-box;
   width: min(1400px, calc(100vw - 32px));
   height: min(90vh, 900px);
   padding: 0;
@@ -8623,11 +8612,24 @@ emoji-picker.emoji-picker-popup {
       color: var(--text-secondary);
     }
 
+    img {
+      width: 100%;
+      border-radius: 3px;
+      margin-top: 6px;
+      pointer-events: none;
+      height: 183px;
+      background-color: #213782;
+    }
+
     .transparency-data {
       display: flex;
       flex-direction: column;
       gap: 5px;
       width: 100%;
+
+      &:not(:has(span)) {
+        margin-top: 6px;
+      }
     }
   }
 }
