@@ -6,23 +6,175 @@ import ratelimit from "../helpers/ratelimit.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-const searchUsersQuery = db.query(`
-	SELECT * FROM users 
-	WHERE (LOWER(username) LIKE LOWER(?) OR LOWER(name) LIKE LOWER(?)) AND suspended = 0 AND shadowbanned = 0
-	ORDER BY created_at DESC 
-	LIMIT 20
-`);
+// Utility: basic cleanup & normalize
+const normalizeQuery = (q) => (q || "").trim();
 
-const searchPostsQuery = db.query(`
-	SELECT posts.* FROM posts 
-	JOIN users ON posts.user_id = users.id
-	LEFT JOIN follows ON (posts.user_id = follows.following_id AND follows.follower_id = ?)
-	WHERE LOWER(posts.content) LIKE LOWER(?) AND users.suspended = 0
-	AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
-	AND (users.private = 0 OR follows.id IS NOT NULL OR posts.user_id = ?)
-	ORDER BY posts.created_at DESC 
-	LIMIT 20
-`);
+// For user search we prioritize prefix matches and fall back to contains.
+// We accept a limit param.
+const buildSearchUsersQuery = (limit = 20) => {
+	return db.query(`
+		SELECT * FROM users
+		WHERE suspended = 0 AND shadowbanned = 0
+		AND (
+			LOWER(username) LIKE LOWER(?)
+			OR LOWER(name) LIKE LOWER(?)
+		)
+		ORDER BY CASE WHEN LOWER(username) LIKE LOWER(?) THEN 0 ELSE 1 END, follower_count DESC, created_at DESC
+		LIMIT ${limit}
+	`);
+};
+
+// Build a dynamic posts search query based on filters. We intentionally build
+// this in JS to support many operators like from:, has:media, since:, until:, etc.
+const buildSearchPostsQuery = ({
+	userId = null,
+	q = "",
+	limit = 20,
+	cursor = null, // created_at cursor YYYY-mm-dd HH:MM:SS or epoch milliseconds
+	sort = "latest",
+	fromUsername = null,
+	hasMedia = null,
+	hasLink = null,
+	onlyReplies = null,
+	onlyOriginal = null,
+	hasPoll = null,
+	since = null,
+	until = null,
+	exactPhrase = null,
+	excludeTerms = [],
+	hashtags = [],
+	mentions = [],
+}) => {
+	const where = ["users.suspended = 0"];
+	const params = [];
+
+	// Shadowban/admin handling
+	if (userId) {
+		where.push("(users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)");
+		const adminRow = db
+			.query("SELECT admin FROM users WHERE id = ?")
+			.get(userId);
+		const isAdmin = adminRow?.admin ? 1 : 0;
+		params.push(userId, isAdmin);
+	} else {
+		where.push("users.shadowbanned = 0");
+	}
+
+	// Private posts handling
+	if (userId) {
+		where.push(
+			"(users.private = 0 OR follows.id IS NOT NULL OR posts.user_id = ?)",
+		);
+		params.push(userId);
+	} else {
+		where.push("users.private = 0");
+	}
+
+	// Search term
+	if (q && q.length > 0) {
+		if (exactPhrase) {
+			where.push("posts.content LIKE ?");
+			params.push(`%${exactPhrase}%`);
+		} else {
+			// Break into words, all must be present
+			const terms = q
+				.split(/\s+/)
+				.filter(Boolean)
+				.map((t) => t.replace(/["'\\%_]/g, ""));
+			terms.forEach((t) => {
+				where.push("LOWER(posts.content) LIKE LOWER(?)");
+				params.push(`%${t}%`);
+			});
+		}
+	}
+
+	// from:username filter
+	if (fromUsername) {
+		where.push("LOWER(users.username) = LOWER(?)");
+		params.push(fromUsername);
+	}
+
+	// has:media
+	if (hasMedia !== null) {
+		if (hasMedia) {
+			where.push(
+				"EXISTS(SELECT 1 FROM attachments a WHERE a.post_id = posts.id)",
+			);
+		} else {
+			where.push(
+				"NOT EXISTS(SELECT 1 FROM attachments a WHERE a.post_id = posts.id)",
+			);
+		}
+	}
+
+	// has:link
+	if (hasLink !== null) {
+		if (hasLink) {
+			where.push("posts.content LIKE '%http%'");
+		} else {
+			where.push("posts.content NOT LIKE '%http%'");
+		}
+	}
+
+	// reply filters
+	if (onlyReplies) {
+		where.push("posts.reply_to IS NOT NULL");
+	}
+	if (onlyOriginal) {
+		where.push(
+			"posts.reply_to IS NULL AND posts.retweet_id IS NULL AND posts.quote_tweet_id IS NULL",
+		);
+	}
+
+	// polls/cards
+	if (hasPoll) {
+		where.push("EXISTS(SELECT 1 FROM polls p WHERE p.post_id = posts.id)");
+	}
+
+	// date filters
+	if (since) {
+		where.push("posts.created_at >= ?");
+		params.push(since);
+	}
+	if (until) {
+		where.push("posts.created_at <= ?");
+		params.push(until);
+	}
+
+	// cursor
+	if (cursor) {
+		where.push("posts.created_at < ?");
+		params.push(cursor);
+	}
+
+	// hashtags and mentions
+	hashtags.forEach((ht) => {
+		where.push("posts.content LIKE ?");
+		params.push(`%#${ht}%`);
+	});
+	mentions.forEach((m) => {
+		where.push("posts.content LIKE ?");
+		params.push(`@${m}`);
+	});
+
+	let orderClause = "posts.created_at DESC";
+	if (sort === "latest") orderClause = "posts.created_at DESC";
+	else if (sort === "oldest") orderClause = "posts.created_at ASC";
+	else if (sort === "top")
+		orderClause = "(posts.like_count + posts.retweet_count) DESC";
+
+	const finalQuery = `
+		SELECT posts.* FROM posts
+		JOIN users ON posts.user_id = users.id
+		LEFT JOIN follows ON (posts.user_id = follows.following_id AND follows.follower_id = ?)
+		WHERE ${where.join(" AND ")}
+		ORDER BY ${orderClause}
+		LIMIT ${limit}
+	`;
+
+	params.unshift(userId || null);
+	return db.query(finalQuery).all(...params);
+};
 
 const getUserByUsername = db.query(
 	"SELECT * FROM users WHERE LOWER(username) = LOWER(?)",
@@ -221,12 +373,18 @@ export default new Elysia({ prefix: "/search", tags: ["Search"] })
 				}
 			}
 
-			if (!q || q.trim().length === 0) return { users: [] };
+			q = normalizeQuery(q);
+			if (!q || q.length === 0) return { users: [] };
 
-			const raw = q.trim();
-			// Always use a contains match so short queries behave like normal searches
-			const searchTerm = `%${raw}%`;
-			const users = searchUsersQuery.all(searchTerm, searchTerm);
+			const limit =
+				parseInt(
+					new URLSearchParams(headers["x-query-params"] || "").get("limit"),
+				) || 20;
+			// Prefer prefix matches
+			const searchQuery = buildSearchUsersQuery(
+				Math.max(5, Math.min(limit, 100)),
+			);
+			const users = searchQuery.all(`${q}%`, `${q}%`, `${q}%`);
 
 			return { users };
 		},
@@ -260,18 +418,93 @@ export default new Elysia({ prefix: "/search", tags: ["Search"] })
 				}
 			}
 
-			if (!q || q.trim().length === 0) return { posts: [] };
+			q = normalizeQuery(q);
+			if (!q || q.length === 0) return { posts: [] };
 
-			const raw = q.trim();
-			const searchTerm = `%${raw}%`;
-			const userId = user?.id || null;
-			const posts = searchPostsQuery.all(
-				userId,
-				searchTerm,
-				userId,
-				user?.admin ? 1 : 0,
-				userId,
+			const queryParams = new URLSearchParams(headers["x-query-params"] || "");
+			const limit = Math.min(
+				100,
+				Math.max(1, parseInt(queryParams.get("limit") || "20")),
 			);
+			const cursor = queryParams.get("cursor") || null;
+			const sort = queryParams.get("sort") || "latest";
+
+			// Parse the query string for operators
+			const parsed = (() => {
+				const obj = {
+					terms: [],
+					from: null,
+					hasMedia: null,
+					hasLink: null,
+					onlyReplies: null,
+					onlyOriginal: null,
+					hasPoll: null,
+					since: null,
+					until: null,
+					exact: null,
+					hashtags: [],
+					mentions: [],
+				};
+				let remaining = q;
+				// exact phrase
+				const exactRe = /"([^"]+)"/g;
+				const exactMatch = exactRe.exec(remaining);
+				if (exactMatch) {
+					obj.exact = exactMatch[1];
+					remaining = remaining.replace(exactMatch[0], "");
+				}
+				const parts = remaining.split(/\s+/).filter(Boolean);
+				parts.forEach((part) => {
+					const lower = part.toLowerCase();
+					if (lower.startsWith("from:")) {
+						obj.from = part.substr(5);
+					} else if (lower.startsWith("has:media")) {
+						obj.hasMedia = true;
+					} else if (
+						lower.startsWith("has:link") ||
+						lower.startsWith("has:links")
+					) {
+						obj.hasLink = true;
+					} else if (lower === "filter:replies") {
+						obj.onlyReplies = true;
+					} else if (lower === "filter:original" || lower === "only:original") {
+						obj.onlyOriginal = true;
+					} else if (lower === "has:poll") {
+						obj.hasPoll = true;
+					} else if (lower.startsWith("since:")) {
+						obj.since = part.substr(6);
+					} else if (lower.startsWith("until:")) {
+						obj.until = part.substr(6);
+					} else if (lower.startsWith("#")) {
+						obj.hashtags.push(part.substr(1));
+					} else if (lower.startsWith("@")) {
+						obj.mentions.push(part.substr(1));
+					} else {
+						obj.terms.push(part);
+					}
+				});
+				return obj;
+			})();
+
+			const userId = user?.id || null;
+			const posts = buildSearchPostsQuery({
+				userId,
+				q: parsed.terms.join(" "),
+				limit,
+				cursor,
+				sort,
+				fromUsername: parsed.from,
+				hasMedia: parsed.hasMedia,
+				hasLink: parsed.hasLink,
+				onlyReplies: parsed.onlyReplies,
+				onlyOriginal: parsed.onlyOriginal,
+				hasPoll: parsed.hasPoll,
+				since: parsed.since,
+				until: parsed.until,
+				exactPhrase: parsed.exact,
+				hashtags: parsed.hashtags,
+				mentions: parsed.mentions,
+			});
 
 			if (posts.length === 0) return { posts: [] };
 
@@ -355,6 +588,25 @@ export default new Elysia({ prefix: "/search", tags: ["Search"] })
 
 				return {
 					...post,
+					// mark an excerpt with highlighted terms
+					highlighted_content: (() => {
+						try {
+							const escaped = post.content;
+							const rawTerms = q.split(/\s+/).filter(Boolean);
+							let html = escaped;
+							rawTerms.forEach((t) => {
+								if (!t) return;
+								const re = new RegExp(
+									`(${t.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&")})`,
+									"ig",
+								);
+								html = html.replace(re, "<em>$1</em>");
+							});
+							return html;
+						} catch (e) {
+							return post.content;
+						}
+					})(),
 					author: userMap[post.user_id],
 					liked_by_user: userLikedPosts.has(post.id),
 					retweeted_by_user: userRetweetedPosts.has(post.id),

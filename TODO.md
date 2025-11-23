@@ -1,9 +1,11 @@
 **IMPORTANT:**
 
-- proper rate-limiting
-- use Bun's SQL driver instead of sqlite since it's async
+- idk?
 
 **OTHER:**
+
+- finish proper rate-limiting
+- use Bun's SQL driver instead of sqlite since it's async
 
 - tweetapus circles like twiter circle
 
@@ -11,8 +13,7 @@
 
 - nicer animations, such as when navigating between tweets and threads
 - look into all XSS vulnerabitilies
-- optimize client
-- spinners on things that take time to load
+- optimize client and server
 
 **Joke:**
 
