@@ -7725,6 +7725,10 @@ emoji-picker.emoji-picker-popup {
 
 .setting-group {
   margin-bottom: 24px;
+
+  button {
+    width: fit-content
+  }
 }
 
 .setting-group h2 {

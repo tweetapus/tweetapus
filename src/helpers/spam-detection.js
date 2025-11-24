@@ -1,6 +1,5 @@
 import db from "../db.js";
 
-// Database queries
 const updateSpamScore = db.prepare(
 	"UPDATE users SET spam_score = ? WHERE id = ?",
 );
@@ -31,7 +30,6 @@ const getUserReplies = db.prepare(`
   LIMIT 30
 `);
 
-// Suspicious domain patterns (common spam/scam domains)
 const SUSPICIOUS_DOMAINS = [
 	"bit.ly",
 	"tinyurl.com",
@@ -69,7 +67,6 @@ const SUSPICIOUS_DOMAINS = [
 	"cutt.ly",
 ];
 
-// Common spam keywords
 const SPAM_KEYWORDS = [
 	"crypto",
 	"bitcoin",
@@ -98,7 +95,6 @@ const SPAM_KEYWORDS = [
 	"airdrop",
 ];
 
-// Utility functions
 const normalizeContent = (text) => {
 	if (!text) return "";
 	return text
@@ -141,7 +137,6 @@ const hasSuspiciousDomain = (url) => {
 const calculateRepeatedCharScore = (text) => {
 	if (!text || text.length < 10) return 0;
 
-	// Detect excessive repeated characters (e.g., "!!!!!!!", "aaaaa")
 	const repeatedPattern = /(.)\1{4,}/g;
 	const matches = text.match(repeatedPattern);
 	if (!matches) return 0;
@@ -159,14 +154,12 @@ const calculateCapitalizationScore = (text) => {
 	const uppercase = letters.replace(/[^A-Z]/g, "");
 	const ratio = uppercase.length / letters.length;
 
-	// More than 70% uppercase is suspicious
 	return ratio > 0.7 ? Math.min(1.0, (ratio - 0.7) / 0.3) : 0;
 };
 
 const calculateEmojiDensity = (text) => {
 	if (!text) return 0;
 
-	// Simplified emoji detection (Unicode ranges)
 	const emojiPattern =
 		/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu;
 	const emojis = text.match(emojiPattern) || [];
@@ -184,11 +177,9 @@ const calculateKeywordSpamScore = (text) => {
 	for (const keyword of SPAM_KEYWORDS) {
 		if (lower.includes(keyword)) matches++;
 	}
-	// High density of spam keywords is suspicious
 	return Math.min(1.0, matches * 0.3);
 };
 
-// Core analysis function
 const getSpamAnalysis = (userId) => {
 	try {
 		const posts = getUserPosts.all(userId);
@@ -205,7 +196,6 @@ const getSpamAnalysis = (userId) => {
 
 		const indicators = [];
 
-		// 1. DUPLICATE CONTENT DETECTION (Weight: 0.15)
 		const recentPosts = posts.slice(0, 30);
 		const contentMap = new Map();
 
@@ -240,7 +230,6 @@ const getSpamAnalysis = (userId) => {
 			details: `${(duplicateRatio * 100).toFixed(1)}% duplicate posts, max ${maxDuplicates} repeats`,
 		});
 
-		// 2. POSTING FREQUENCY ANALYSIS (Weight: 0.12)
 		const now = Date.now();
 		const oneHourAgo = now - 3600000;
 		const sixHoursAgo = now - 6 * 3600000;
@@ -277,7 +266,6 @@ const getSpamAnalysis = (userId) => {
 			details: `${postsInLastHour} posts/hour, ${postsInLastDay} posts/day`,
 		});
 
-		// 3. URL SPAM DETECTION (Weight: 0.14)
 		const urlAnalysis = posts.slice(0, 30).map((p) => {
 			const urls = extractUrls(p.content);
 			const suspiciousUrls = urls.filter(hasSuspiciousDomain);
@@ -313,7 +301,6 @@ const getSpamAnalysis = (userId) => {
 			details: `${(urlRatio * 100).toFixed(1)}% posts with URLs, ${suspiciousUrlCount} suspicious`,
 		});
 
-		// 4. HASHTAG SPAM DETECTION (Weight: 0.10)
 		const hashtagAnalysis = posts.slice(0, 30).map((p) => {
 			const hashtags = extractHashtags(p.content);
 			return {
@@ -325,10 +312,7 @@ const getSpamAnalysis = (userId) => {
 		const avgHashtags =
 			hashtagAnalysis.reduce((sum, a) => sum + a.count, 0) /
 			Math.max(hashtagAnalysis.length, 1);
-		const maxHashtags = Math.max(
-			...hashtagAnalysis.map((a) => a.count),
-			0,
-		);
+		const maxHashtags = Math.max(...hashtagAnalysis.map((a) => a.count), 0);
 		const lowDiversityPosts = hashtagAnalysis.filter(
 			(a) => a.count > 3 && a.unique / Math.max(a.count, 1) < 0.5,
 		).length;
@@ -345,11 +329,10 @@ const getSpamAnalysis = (userId) => {
 			name: "hashtag_spam",
 			displayName: "Hashtag Spam",
 			score: hashtagScore,
-			weight: 0.10,
+			weight: 0.1,
 			details: `Avg ${avgHashtags.toFixed(1)} hashtags/post, max ${maxHashtags}`,
 		});
 
-		// 5. MENTION SPAM DETECTION (Weight: 0.09)
 		const mentionAnalysis = posts.slice(0, 30).map((p) => {
 			const mentions = extractMentions(p.content);
 			const uniqueMentions = new Set(mentions.map((m) => m.toLowerCase()));
@@ -362,10 +345,7 @@ const getSpamAnalysis = (userId) => {
 		const avgMentions =
 			mentionAnalysis.reduce((sum, a) => sum + a.count, 0) /
 			Math.max(mentionAnalysis.length, 1);
-		const maxMentions = Math.max(
-			...mentionAnalysis.map((a) => a.count),
-			0,
-		);
+		const maxMentions = Math.max(...mentionAnalysis.map((a) => a.count), 0);
 		const repetitiveMentions = mentionAnalysis.filter(
 			(a) => a.count > 5 && a.unique / Math.max(a.count, 1) < 0.4,
 		).length;
@@ -386,7 +366,6 @@ const getSpamAnalysis = (userId) => {
 			details: `Avg ${avgMentions.toFixed(1)} mentions/post, max ${maxMentions}`,
 		});
 
-		// 6. CONTENT QUALITY ANALYSIS (Weight: 0.11)
 		const qualityAnalysis = posts.slice(0, 30).map((p) => {
 			const content = p.content || "";
 			return {
@@ -430,7 +409,6 @@ const getSpamAnalysis = (userId) => {
 			details: `${lowQualityPosts} low quality posts, avg keyword score ${(avgKeywordScore * 100).toFixed(1)}%`,
 		});
 
-		// 7. REPLY SPAM DETECTION (Weight: 0.08)
 		if (replies.length > 0) {
 			const replyTargets = replies.map((r) => r.reply_to);
 			const uniqueTargets = new Set(replyTargets);
@@ -475,7 +453,6 @@ const getSpamAnalysis = (userId) => {
 			});
 		}
 
-		// 8. ENGAGEMENT MANIPULATION DETECTION (Weight: 0.09)
 		const engagementAnalysis = posts.slice(0, 30).map((p) => {
 			const totalEngagement =
 				(p.like_count || 0) + (p.retweet_count || 0) + (p.reply_count || 0);
@@ -492,7 +469,6 @@ const getSpamAnalysis = (userId) => {
 			noEngagementPosts / Math.max(engagementAnalysis.length, 1);
 
 		let engagementScore = 0;
-		// High volume + zero engagement is suspicious
 		if (postsInLastDay > 30 && noEngagementRatio > 0.9 && posts.length > 20) {
 			engagementScore = 0.8;
 		} else if (
@@ -517,7 +493,6 @@ const getSpamAnalysis = (userId) => {
 			details: `${(noEngagementRatio * 100).toFixed(1)}% posts with 0 engagement`,
 		});
 
-		// 9. ACCOUNT BEHAVIOR ANALYSIS (Weight: 0.12)
 		let accountScore = 0;
 
 		if (userInfo) {
@@ -528,15 +503,13 @@ const getSpamAnalysis = (userId) => {
 			const followingCount = userInfo.following_count || 0;
 			const totalPosts = userInfo.total_posts || 0;
 
-			// Strong positive signal: Good follower count means legitimate account
 			let followerBonus = 0;
-			if (followersCount >= 100) followerBonus = 1.0; // Completely negate spam
-			else if (followersCount >= 50) followerBonus = 0.8; // Almost completely negate
+			if (followersCount >= 100) followerBonus = 1.0;
+			else if (followersCount >= 50) followerBonus = 0.8;
 			else if (followersCount >= 20) followerBonus = 0.6;
 			else if (followersCount >= 10) followerBonus = 0.4;
 			else if (followersCount >= 5) followerBonus = 0.2;
 
-			// New account with high activity (only flag if very few followers)
 			if (followersCount < 10) {
 				if (accountAgeDays < 7 && totalPosts > 100) {
 					accountScore = 0.6;
@@ -547,7 +520,6 @@ const getSpamAnalysis = (userId) => {
 				}
 			}
 
-			// Following/follower ratio analysis (only if low follower count)
 			if (followingCount > 0 && followersCount < 20) {
 				const followRatio = followingCount / Math.max(followersCount, 1);
 				if (followRatio > 20 && followingCount > 200)
@@ -558,14 +530,12 @@ const getSpamAnalysis = (userId) => {
 					accountScore = Math.max(accountScore, 0.4);
 			}
 
-			// Zero followers but lots of posts (clear spam signal)
 			if (followersCount === 0 && totalPosts > 50) {
 				accountScore = Math.max(accountScore, 0.7);
 			} else if (followersCount < 3 && totalPosts > 100) {
 				accountScore = Math.max(accountScore, 0.6);
 			}
 
-			// Apply follower bonus (reduces spam score)
 			accountScore = accountScore * (1.0 - followerBonus);
 			if (accountScore < 0) accountScore = 0;
 		}
@@ -580,7 +550,6 @@ const getSpamAnalysis = (userId) => {
 				: "No info",
 		});
 
-		// Calculate weighted spam score
 		let spamScore = 0.0;
 		let totalWeight = 0;
 		for (const indicator of indicators) {
@@ -588,14 +557,11 @@ const getSpamAnalysis = (userId) => {
 			totalWeight += indicator.weight;
 		}
 
-		// Normalize to 0-1 range
 		spamScore = spamScore / totalWeight;
 
-		// Apply ceiling
 		spamScore = Math.min(1.0, spamScore);
 		spamScore = Math.max(0.0, spamScore);
 
-		// Round to 3 decimal places for consistency
 		spamScore = Math.round(spamScore * 1000) / 1000;
 
 		return {
@@ -613,7 +579,6 @@ const getSpamAnalysis = (userId) => {
 	}
 };
 
-// Main spam detection function
 export const calculateSpamScore = (userId) => {
 	const analysis = getSpamAnalysis(userId);
 
@@ -623,53 +588,34 @@ export const calculateSpamScore = (userId) => {
 
 	const spamScore = analysis.score;
 
-	// Update database
 	updateSpamScore.run(spamScore, userId);
 
-	// Log detailed breakdown for debugging
-	if (spamScore > 0.1) {
-		console.log(
-			`\n🔍 Spam Score Analysis for user ${userId}: ${(spamScore * 100).toFixed(1)}%`,
-		);
-		console.log("─".repeat(60));
-		analysis.indicators
-			.sort((a, b) => b.score * b.weight - a.score * a.weight)
-			.forEach((i) => {
-				const contribution = ((i.score * i.weight) / spamScore) * 100;
-				const icon = i.score > 0.5 ? "🔴" : i.score > 0.3 ? "🟡" : "🟢";
-				console.log(
-					`  ${icon} ${i.name.padEnd(25)} Score: ${(i.score * 100).toFixed(1)}% | Weight: ${(i.weight * 100).toFixed(0)}% | Contribution: ${contribution.toFixed(1)}%`,
-				);
-			});
-		console.log("─".repeat(60) + "\n");
-	}
-
-	// Automated Action: Shadowban if score is very high
 	if (spamScore > 0.95) {
-		const user = db.prepare("SELECT shadowbanned FROM users WHERE id = ?").get(userId);
+		const user = db
+			.prepare("SELECT shadowbanned FROM users WHERE id = ?")
+			.get(userId);
 		if (user && !user.shadowbanned) {
 			const suspensionId = Bun.randomUUIDv7();
 			const reportId = Bun.randomUUIDv7();
 			const now = new Date().toISOString();
 
-			// 1. Shadowban user
-			db.prepare("UPDATE users SET shadowbanned = TRUE WHERE id = ?").run(userId);
+			db.prepare("UPDATE users SET shadowbanned = TRUE WHERE id = ?").run(
+				userId,
+			);
 
-			// 2. Create suspension record
 			db.prepare(`
 				INSERT INTO suspensions (id, user_id, suspended_by, reason, action, status, created_at)
 				VALUES (?, ?, ?, ?, ?, ?, ?)
 			`).run(
 				suspensionId,
 				userId,
-				"system", // System ID
+				"system",
 				"Automated: High Spam Score",
 				"shadowban",
 				"active",
 				now,
 			);
 
-			// 3. Create report for moderators
 			db.prepare(`
 				INSERT INTO reports (id, reporter_id, reported_type, reported_id, reason, status, created_at)
 				VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -683,17 +629,15 @@ export const calculateSpamScore = (userId) => {
 				now,
 			);
 
-			// 4. Delete DMs (as per stricter rules)
 			db.prepare("DELETE FROM dm_messages WHERE sender_id = ?").run(userId);
 
-			// 5. Log moderation action
 			const logId = Bun.randomUUIDv7();
 			db.prepare(`
 				INSERT INTO moderation_logs (id, moderator_id, action, target_type, target_id, details, created_at)
 				VALUES (?, ?, ?, ?, ?, ?, ?)
 			`).run(
 				logId,
-				"system", // System ID
+				"system",
 				"shadowban_user",
 				"user",
 				userId,
@@ -726,11 +670,11 @@ export const getSpamScoreBreakdown = (userId) => {
 			return {
 				spamScore: 0.0,
 				indicators: [],
-				message: "Not enough posts to calculate spam score (minimum 5 required)",
+				message:
+					"Not enough posts to calculate spam score (minimum 5 required)",
 			};
 		}
 
-		// Get user's current spam score from DB
 		const user = db
 			.prepare("SELECT spam_score FROM users WHERE id = ?")
 			.get(userId);
@@ -754,7 +698,6 @@ export const getSpamScoreBreakdown = (userId) => {
 	}
 };
 
-// New function that returns detailed indicator breakdown
 export const calculateSpamScoreWithDetails = (userId) => {
 	const analysis = getSpamAnalysis(userId);
 
