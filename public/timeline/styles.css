@@ -1455,6 +1455,10 @@ nav {
 
   &.tweet-preview {
     gap: 0px;
+
+    .tweet-attachments {
+      margin-top: 8px;
+    }
   }
 
   .tweet-header {
