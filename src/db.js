@@ -678,6 +678,8 @@ CREATE TABLE IF NOT EXISTS pastes (
   expires_at TIMESTAMP DEFAULT NULL,
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   updated_at TIMESTAMP DEFAULT NULL,
+  password_hash TEXT DEFAULT NULL,
+  show_author BOOLEAN DEFAULT TRUE,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 

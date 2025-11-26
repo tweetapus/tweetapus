@@ -1,0 +1,47 @@
+[
+  {
+    "text": "bun is insanely fast ngl",
+    "date": "2024-10-16T12:20:00Z",
+    "likes": 1200,
+    "retweets": 340,
+    "comments": 70,
+    "author": "dev1",
+    "followedAuthor": true
+  },
+  {
+    "text": "rust makes me question life",
+    "date": "2024-10-10T18:20:00Z",
+    "likes": 540,
+    "retweets": 80,
+    "comments": 40,
+    "author": "random1",
+    "followedAuthor": false
+  },
+  {
+    "text": "i/o 2024 was pretty cool ngl",
+    "date": "2024-10-17T01:00:00Z",
+    "likes": 2100,
+    "retweets": 640,
+    "comments": 130,
+    "author": "technews",
+    "followedAuthor": true
+  },
+  {
+    "text": "why doesn’t twitter fix the for you page algorithm",
+    "date": "2025-10-15T09:00:00Z",
+    "likes": 310,
+    "retweets": 20,
+    "comments": 200,
+    "author": "rantuser",
+    "followedAuthor": false
+  },
+  {
+    "text": "this vr headset is sick",
+    "date": "2025-10-17T22:10:00Z",
+    "likes": 50,
+    "retweets": 5,
+    "comments": 2,
+    "author": "techkid",
+    "followedAuthor": false
+  }
+]

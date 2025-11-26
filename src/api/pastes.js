@@ -18,8 +18,8 @@ const getPasteById = db.query("SELECT * FROM pastes WHERE id = ?");
 const checkSlugExists = db.query("SELECT 1 FROM pastes WHERE slug = ?");
 
 const createPaste = db.query(`
-	INSERT INTO pastes (id, user_id, title, content, language, is_public, burn_after_reading, secret_key, slug, expires_at, created_at)
-	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'utc'))
+	INSERT INTO pastes (id, user_id, title, content, language, is_public, burn_after_reading, secret_key, slug, expires_at, password_hash, show_author, created_at)
+	VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'utc'))
 	RETURNING *
 `);
 
@@ -28,7 +28,7 @@ const incrementViews = db.query(
 	"UPDATE pastes SET view_count = view_count + 1 WHERE id = ?",
 );
 const listPublicPastes = db.query(`
-	SELECT id, slug, title, language, view_count, created_at, is_public, burn_after_reading, expires_at, user_id
+	SELECT id, slug, title, language, view_count, created_at, is_public, burn_after_reading, expires_at, user_id, password_hash, show_author
 	FROM pastes
 	WHERE is_public = 1 AND (expires_at IS NULL OR datetime(expires_at) > datetime('now'))
 	ORDER BY created_at DESC
@@ -37,7 +37,7 @@ const listPublicPastes = db.query(`
 
 const updatePaste = db.query(`
 	UPDATE pastes
-	SET title = ?, content = ?, language = ?, is_public = ?, burn_after_reading = ?, secret_key = ?, expires_at = ?, updated_at = datetime('now', 'utc')
+	SET title = ?, content = ?, language = ?, is_public = ?, burn_after_reading = ?, secret_key = ?, expires_at = ?, password_hash = ?, show_author = ?, updated_at = datetime('now', 'utc')
 	WHERE id = ?
 `);
 
@@ -102,7 +102,21 @@ const canAccessPrivatePaste = async (paste, headers, query, jwtPlugin) => {
 	}
 };
 
-const serializePaste = (row) => ({
+const verifyPastePassword = async (paste, providedPassword) => {
+	if (!paste.password_hash) return true;
+	if (!providedPassword) return false;
+	return Bun.password.verify(providedPassword, paste.password_hash);
+};
+
+const listUserPastes = db.query(`
+	SELECT id, slug, title, language, view_count, created_at, is_public, burn_after_reading, expires_at, user_id, password_hash, show_author
+	FROM pastes
+	WHERE user_id = ?
+	ORDER BY created_at DESC
+	LIMIT ? OFFSET ?
+`);
+
+const serializePaste = (row, includeAuthor = true) => ({
 	id: row.id,
 	slug: row.slug ?? null,
 	title: row.title ?? null,
@@ -115,7 +129,9 @@ const serializePaste = (row) => ({
 	expires_at: row.expires_at ?? null,
 	created_at: row.created_at ?? null,
 	updated_at: row.updated_at ?? null,
-	user_id: row.user_id ?? null,
+	user_id: includeAuthor && row.show_author ? (row.user_id ?? null) : null,
+	has_password: !!row.password_hash,
+	show_author: !!row.show_author,
 });
 
 export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
@@ -139,6 +155,11 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 		const isPublic = payload.is_public !== false;
 		const burnAfterReading = !!payload.burn_after_reading;
 		const expiresAt = parseExpiry(payload.expires_at || null);
+		const showAuthor = payload.show_author !== false;
+		const rawPassword =
+			typeof payload.password === "string" && payload.password.trim().length > 0
+				? payload.password.trim()
+				: null;
 
 		if (!validateContent(content)) {
 			return { error: "Content is required and must be under 200k characters" };
@@ -160,6 +181,9 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 
 		const slug = ensureSlug();
 		const secretKey = isPublic ? null : Bun.randomUUIDv7();
+		const passwordHash = rawPassword
+			? await Bun.password.hash(rawPassword)
+			: null;
 		const paste = createPaste.get(
 			Bun.randomUUIDv7(),
 			creatorId,
@@ -171,6 +195,8 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 			secretKey,
 			slug,
 			expiresAt,
+			passwordHash,
+			showAuthor ? 1 : 0,
 		);
 
 		return {
@@ -211,6 +237,16 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 			}
 		}
 
+		if (row.password_hash) {
+			const providedPassword =
+				query.password || headers["x-paste-password"] || null;
+			const passwordValid = await verifyPastePassword(row, providedPassword);
+			if (!passwordValid) {
+				set.status = 401;
+				return "Password required";
+			}
+		}
+
 		incrementViews.run(row.id);
 		if (row.burn_after_reading) deletePasteById.run(row.id);
 		set.headers = { "Content-Type": "text/plain; charset=utf-8" };
@@ -230,6 +266,15 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 			if (!allowed) return { error: "Paste not found" };
 		}
 
+		if (row.password_hash) {
+			const providedPassword =
+				query.password || headers["x-paste-password"] || null;
+			const passwordValid = await verifyPastePassword(row, providedPassword);
+			if (!passwordValid) {
+				return { error: "Password required", password_protected: true };
+			}
+		}
+
 		incrementViews.run(row.id);
 		const result = serializePaste(row);
 		if (row.burn_after_reading) deletePasteById.run(row.id);
@@ -247,6 +292,15 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 		if (!row.is_public) {
 			const allowed = await canAccessPrivatePaste(row, headers, query, jwt);
 			if (!allowed) return { error: "Paste not found" };
+		}
+
+		if (row.password_hash) {
+			const providedPassword =
+				query.password || headers["x-paste-password"] || null;
+			const passwordValid = await verifyPastePassword(row, providedPassword);
+			if (!passwordValid) {
+				return { error: "Password required", password_protected: true };
+			}
 		}
 
 		incrementViews.run(row.id);
@@ -333,12 +387,25 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 				patch.burn_after_reading === undefined
 					? !!row.burn_after_reading
 					: !!patch.burn_after_reading;
+			const showAuthor =
+				patch.show_author === undefined
+					? !!row.show_author
+					: !!patch.show_author;
 			let secretKey = row.secret_key;
 			if (!isPublic && !secretKey) {
 				secretKey = Bun.randomUUIDv7();
 			}
 			if (isPublic) {
 				secretKey = null;
+			}
+			let passwordHash = row.password_hash;
+			if (patch.password === null || patch.password === "") {
+				passwordHash = null;
+			} else if (
+				typeof patch.password === "string" &&
+				patch.password.trim().length > 0
+			) {
+				passwordHash = await Bun.password.hash(patch.password.trim());
 			}
 			updatePaste.run(
 				title,
@@ -348,6 +415,8 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 				burnAfterReading ? 1 : 0,
 				secretKey,
 				expiresAt,
+				passwordHash,
+				showAuthor ? 1 : 0,
 				row.id,
 			);
 			const updated = getPasteById.get(row.id);
@@ -358,5 +427,36 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 		} catch (error) {
 			console.error("Update paste error:", error);
 			return { error: "Failed to update paste" };
+		}
+	})
+	.get("/mine/list", async ({ headers, query, jwt }) => {
+		if (!headers.authorization) return { error: "Authentication required" };
+		try {
+			const token = headers.authorization.replace("Bearer ", "");
+			const payload = await jwt.verify(token);
+			if (!payload?.username) return { error: "Unauthorized" };
+			const user = getUserByUsername.get(payload.username);
+			if (!user) return { error: "Unauthorized" };
+			const limit = clamp(Number(query.limit) || 20, 1, 50);
+			const page = Math.max(0, Number(query.page) || 0);
+			const rows = listUserPastes.all(user.id, limit, page * limit);
+			return {
+				success: true,
+				pastes: rows.map((r) => ({
+					id: r.id,
+					slug: r.slug,
+					title: r.title,
+					language: r.language,
+					view_count: r.view_count,
+					created_at: r.created_at,
+					is_public: !!r.is_public,
+					burn_after_reading: !!r.burn_after_reading,
+					expires_at: r.expires_at,
+					has_password: !!r.password_hash,
+					show_author: !!r.show_author,
+				})),
+			};
+		} catch {
+			return { error: "Unauthorized" };
 		}
 	});

@@ -8,6 +8,7 @@ const EXPIRY_OPTIONS = [
 	{ label: "6 hours", minutes: "360" },
 	{ label: "1 day", minutes: "1440" },
 	{ label: "1 week", minutes: "10080" },
+	{ label: "Custom", minutes: "custom" },
 ];
 
 const baseHref = (() => {
@@ -34,8 +35,17 @@ const state = {
 	view: {
 		slug: null,
 		secret: "",
+		password: "",
 		loading: false,
 		data: null,
+		error: "",
+		needsPassword: false,
+	},
+	myPastes: {
+		items: [],
+		page: 0,
+		loading: false,
+		done: false,
 		error: "",
 	},
 };
@@ -158,6 +168,9 @@ const renderApp = () => {
 	if (state.mode === "view") {
 		shell.append(renderViewCard());
 	}
+	if (state.mode === "mine") {
+		shell.append(renderMyPastesCard());
+	}
 	app.append(shell);
 };
 
@@ -182,6 +195,7 @@ const renderNav = () => {
 		state.view.slug = null;
 		state.view.data = null;
 		state.view.error = "";
+		state.view.needsPassword = false;
 		updateUrl(null, null);
 		renderApp();
 	});
@@ -196,9 +210,28 @@ const renderNav = () => {
 		state.view.slug = null;
 		state.view.data = null;
 		state.view.error = "";
+		state.view.needsPassword = false;
 		updateUrl(null, null);
 		if (!state.publicList.items.length && !state.publicList.loading) {
 			loadPublicPastes(true);
+		}
+		renderApp();
+	});
+
+	const mineBtn = createEl("button", {
+		className: `nav-btn${state.mode === "mine" ? " active" : ""}`,
+		text: "My Pastes",
+		type: "button",
+	});
+	mineBtn.addEventListener("click", () => {
+		state.mode = "mine";
+		state.view.slug = null;
+		state.view.data = null;
+		state.view.error = "";
+		state.view.needsPassword = false;
+		updateUrl(null, null);
+		if (!state.myPastes.items.length && !state.myPastes.loading) {
+			loadMyPastes(true);
 		}
 		renderApp();
 	});
@@ -234,7 +267,7 @@ const renderNav = () => {
 	});
 	openForm.append(slugInput, openButton);
 
-	actions.append(createBtn, exploreBtn, viewBtn, openForm);
+	actions.append(createBtn, exploreBtn, mineBtn, viewBtn, openForm);
 	nav.append(left, actions);
 	return nav;
 };
@@ -298,6 +331,45 @@ const renderCreateCard = () => {
 	});
 	controlsRow.append(expireLabel, expireSelect);
 
+	const customExpiryRow = createEl("div", {
+		className: "form-row custom-expiry-row hidden",
+	});
+	const customExpiryLabel = createEl("label", {
+		text: "Custom expiry (minutes)",
+		htmlFor: "paste-custom-expiry",
+	});
+	const customExpiryInput = createEl("input", {
+		id: "paste-custom-expiry",
+		name: "customExpiry",
+		type: "number",
+		placeholder: "e.g. 120 for 2 hours",
+		autocomplete: "off",
+	});
+	customExpiryInput.min = "1";
+	customExpiryRow.append(customExpiryLabel, customExpiryInput);
+
+	expireSelect.addEventListener("change", () => {
+		if (expireSelect.value === "custom") {
+			customExpiryRow.classList.remove("hidden");
+		} else {
+			customExpiryRow.classList.add("hidden");
+		}
+	});
+
+	const passwordRow = createEl("div", { className: "form-row" });
+	const passwordLabel = createEl("label", {
+		text: "Password (optional)",
+		htmlFor: "paste-password",
+	});
+	const passwordInput = createEl("input", {
+		id: "paste-password",
+		name: "password",
+		type: "password",
+		placeholder: "Leave empty for no password",
+		autocomplete: "new-password",
+	});
+	passwordRow.append(passwordLabel, passwordInput);
+
 	const toggleRow = createEl("div", { className: "toggle-row" });
 	const privateLabel = createEl("label");
 	const privateInput = createEl("input", {
@@ -314,7 +386,20 @@ const renderCreateCard = () => {
 		id: "paste-burn",
 	});
 	burnLabel.append(burnInput, createEl("span", { text: "Burn after reading" }));
-	toggleRow.append(privateLabel, burnLabel);
+
+	const showAuthorLabel = createEl("label");
+	const showAuthorInput = createEl("input", {
+		type: "checkbox",
+		name: "showAuthor",
+		id: "paste-show-author",
+	});
+	showAuthorInput.checked = true;
+	showAuthorLabel.append(
+		showAuthorInput,
+		createEl("span", { text: "Show author" }),
+	);
+
+	toggleRow.append(privateLabel, burnLabel, showAuthorLabel);
 
 	const submitRow = createEl("div", { className: "form-row" });
 	const submitBtn = createEl("button", {
@@ -336,6 +421,8 @@ const renderCreateCard = () => {
 		languageRow,
 		contentRow,
 		controlsRow,
+		customExpiryRow,
+		passwordRow,
 		toggleRow,
 		submitRow,
 	);
@@ -541,6 +628,11 @@ const renderViewCard = () => {
 		return card;
 	}
 
+	if (state.view.needsPassword) {
+		card.append(renderPasswordForm());
+		return card;
+	}
+
 	if (state.view.error) {
 		card.append(
 			createEl("div", { className: "error-text", text: state.view.error }),
@@ -578,13 +670,28 @@ const renderViewCard = () => {
 			text: formatRelative(paste.expires_at),
 		}),
 	);
+	if (paste.has_password) {
+		chips.append(
+			createEl("div", {
+				className: "chip",
+				text: "🔒 Password",
+			}),
+		);
+	}
 	card.append(chips);
 
 	const codeBlock = createEl("div", { className: "code-block" });
 	const pre = createEl("pre");
-	pre.textContent = paste.content || "";
+	const code = createEl("code");
+	code.textContent = paste.content || "";
+	if (paste.language) {
+		code.className = `language-${paste.language.toLowerCase()}`;
+	}
+	pre.append(code);
 	codeBlock.append(pre);
 	card.append(codeBlock);
+
+	highlightCode(code, paste.language);
 
 	const commands = createEl("div", { className: "command-bar" });
 	const shareBtn = createEl("button", {
@@ -610,10 +717,13 @@ const renderViewCard = () => {
 		type: "button",
 	});
 	rawBtn.addEventListener("click", () => {
-		window.open(
-			buildRawLink(paste.slug || paste.id, state.view.secret || ""),
-			"_blank",
-		);
+		let rawUrl = buildRawLink(paste.slug || paste.id, state.view.secret || "");
+		if (state.view.password) {
+			const url = new URL(rawUrl);
+			url.searchParams.set("password", state.view.password);
+			rawUrl = url.toString();
+		}
+		window.open(rawUrl, "_blank");
 	});
 
 	const newBtn = createEl("button", {
@@ -626,6 +736,8 @@ const renderViewCard = () => {
 		state.view.slug = null;
 		state.view.data = null;
 		state.view.error = "";
+		state.view.needsPassword = false;
+		state.view.password = "";
 		updateUrl(null, null);
 		renderApp();
 	});
@@ -643,6 +755,36 @@ const renderViewCard = () => {
 	}
 
 	return card;
+};
+
+const renderPasswordForm = () => {
+	const form = createEl("form", { className: "secret-form" });
+	form.append(
+		createEl("div", {
+			className: "status-line",
+			text: "This paste is password-protected. Enter the password to view.",
+		}),
+	);
+	const input = createEl("input", {
+		placeholder: "Password",
+		type: "password",
+		value: state.view.password,
+		autocomplete: "off",
+	});
+	const submit = createEl("button", {
+		className: "btn primary",
+		text: "Unlock",
+		type: "submit",
+	});
+	form.addEventListener("submit", (event) => {
+		event.preventDefault();
+		state.view.password = input.value.trim();
+		state.view.needsPassword = false;
+		if (!state.view.slug) return;
+		loadPaste(state.view.slug, state.view.secret, state.view.password);
+	});
+	form.append(input, submit);
+	return form;
 };
 
 const renderSecretForm = () => {
@@ -680,13 +822,19 @@ const minutesToISO = (value) => {
 };
 
 const handleCreate = async (form) => {
+	let expiryMinutes = form.expiry.value;
+	if (expiryMinutes === "custom") {
+		expiryMinutes = form.customExpiry.value;
+	}
 	const formData = {
 		title: form.title.value.trim() || null,
 		language: form.language.value.trim() || null,
 		content: form.content.value,
 		is_public: !form.private.checked,
 		burn_after_reading: form.burn.checked,
-		expires_at: minutesToISO(form.expiry.value),
+		expires_at: minutesToISO(expiryMinutes),
+		password: form.password.value.trim() || null,
+		show_author: form.showAuthor.checked,
 	};
 
 	state.createStatus.loading = true;
@@ -700,6 +848,8 @@ const handleCreate = async (form) => {
 		is_public: formData.is_public,
 		burn_after_reading: formData.burn_after_reading,
 		expires_at: formData.expires_at,
+		password: formData.password,
+		show_author: formData.show_author,
 	};
 
 	const response = await api("/pastes", {
@@ -747,33 +897,42 @@ const loadPublicPastes = async (reset) => {
 	renderApp();
 };
 
-const openPaste = (slug, secret = "") => {
+const openPaste = (slug, secret = "", password = "") => {
 	const trimmedSlug = slug.trim();
 	if (!trimmedSlug) return;
 	state.mode = "view";
 	state.view.slug = trimmedSlug;
 	state.view.secret = secret.trim();
+	state.view.password = password.trim();
 	state.view.data = null;
 	state.view.error = "";
+	state.view.needsPassword = false;
 	updateUrl(trimmedSlug, state.view.secret || null, false);
-	loadPaste(trimmedSlug, state.view.secret);
+	loadPaste(trimmedSlug, state.view.secret, state.view.password);
 	renderApp();
-
-	// DONT register popstate here; only one top-level handler is used
 };
 
-const loadPaste = async (slug, secret) => {
+const loadPaste = async (slug, secret, password = "") => {
 	if (!slug) return;
 	state.view.loading = true;
 	state.view.error = "";
 	state.view.data = null;
+	state.view.needsPassword = false;
 	renderApp();
-	const secretQuery = secret ? `?secret=${encodeURIComponent(secret)}` : "";
+	const queryParams = [];
+	if (secret) queryParams.push(`secret=${encodeURIComponent(secret)}`);
+	if (password) queryParams.push(`password=${encodeURIComponent(password)}`);
+	const queryString = queryParams.length ? `?${queryParams.join("&")}` : "";
 	const response = await api(
-		`/pastes/${encodeURIComponent(slug)}${secretQuery}`,
+		`/pastes/${encodeURIComponent(slug)}${queryString}`,
 	);
 	state.view.loading = false;
 	if (!response || response.error) {
+		if (response?.password_protected) {
+			state.view.needsPassword = true;
+			renderApp();
+			return;
+		}
 		state.view.error = response?.error || "Unable to load paste";
 		renderApp();
 		return;
