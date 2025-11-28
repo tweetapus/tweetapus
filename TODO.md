@@ -2,6 +2,9 @@
 
 - personalized algorithm
 - fix ui
+- heavy "ratelimits" that show and automatically solve a Cap captcha to fix
+
+- Tr Happies
 
 **OTHER:**
 

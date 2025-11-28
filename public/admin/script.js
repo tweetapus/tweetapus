@@ -2538,9 +2538,479 @@ class AdminPanel {
 		this.userCache.set(userId, fetchPromise);
 	}
 
+	setupLocationPickerControls() {
+		const form = document.getElementById("editProfileForm");
+		if (!form) return;
+		form
+			.querySelectorAll(".location-picker-btn")
+			.forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const target = btn.dataset.locationPicker;
+					if (!target) return;
+					if (!this.profileEditEnabled) {
+						this.showError("Enable profile editing to change locations");
+						return;
+					}
+					this.openLocationPicker(target);
+				});
+			});
+		form
+			.querySelectorAll(".location-clear-btn")
+			.forEach((btn) => {
+				btn.addEventListener("click", () => {
+					const target = btn.dataset.locationClear;
+					if (!target) return;
+					this.clearLocationInputs(target, true);
+				});
+			});
+		for (const [key, fields] of Object.entries(this.locationFieldMap)) {
+			const ids = [fields.city, fields.country, fields.latitude, fields.longitude, fields.timezone];
+			ids.forEach((id) => {
+				const el = document.getElementById(id);
+				if (!el) return;
+				el.addEventListener("input", () => this.syncLocationPreview(key));
+			});
+			const torToggle = document.getElementById(fields.tor);
+			if (torToggle) {
+				torToggle.addEventListener("change", () => this.syncLocationPreview(key));
+			}
+		}
+		form
+			.querySelectorAll("[data-location-control]")
+			.forEach((btn) => {
+				btn.disabled = !this.profileEditEnabled;
+			});
+	}
+
+	syncLocationPreview(type) {
+		const fields = this.locationFieldMap[type];
+		if (!fields) return;
+		const preview = document.getElementById(fields.preview);
+		if (!preview) return;
+		const city = document.getElementById(fields.city)?.value?.trim();
+		const country = document.getElementById(fields.country)?.value?.trim();
+		const lat = document.getElementById(fields.latitude)?.value?.trim();
+		const lon = document.getElementById(fields.longitude)?.value?.trim();
+		const tor = document.getElementById(fields.tor)?.checked;
+		let summary = "No transparency override set.";
+		if (tor) {
+			summary = "Marked as Tor/hidden.";
+		} else if (city || country) {
+			summary = [city, country].filter(Boolean).join(", ");
+		} else if (lat && lon) {
+			summary = `Lat ${lat}, Lng ${lon}`;
+		}
+		preview.textContent = summary || "No transparency override set.";
+	}
+
+	clearLocationInputs(type, syncPreview = false) {
+		const fields = this.locationFieldMap[type];
+		if (!fields) return;
+		[fields.city, fields.country, fields.latitude, fields.longitude, fields.timezone].forEach((id) => {
+			const el = document.getElementById(id);
+			if (el) el.value = "";
+		});
+		const torToggle = document.getElementById(fields.tor);
+		if (torToggle) torToggle.checked = false;
+		if (syncPreview) this.syncLocationPreview(type);
+	}
+
+	setLocationInputs(type, data) {
+		const fields = this.locationFieldMap[type];
+		if (!fields) return;
+		const cityInput = document.getElementById(fields.city);
+		if (cityInput && data.city !== undefined) cityInput.value = data.city || "";
+		const countryInput = document.getElementById(fields.country);
+		if (countryInput && data.country !== undefined) countryInput.value = data.country || "";
+		const latInput = document.getElementById(fields.latitude);
+		if (latInput && data.latitude !== undefined)
+			latInput.value = data.latitude || "";
+		const lonInput = document.getElementById(fields.longitude);
+		if (lonInput && data.longitude !== undefined)
+			lonInput.value = data.longitude || "";
+		const tzInput = document.getElementById(fields.timezone);
+		if (tzInput && data.timezone !== undefined)
+			tzInput.value = data.timezone || "";
+		const torToggle = document.getElementById(fields.tor);
+		if (torToggle && data.clearTor) torToggle.checked = false;
+	}
+
+	async loadAdminConfig() {
+		if (this.adminConfig) return this.adminConfig;
+		if (this.adminConfigPromise) return this.adminConfigPromise;
+		this.adminConfigPromise = (async () => {
+			try {
+				const config = await this.apiCall("/api/admin/config");
+				this.adminConfig = config || {};
+				return this.adminConfig;
+			} catch {
+				this.adminConfig = {};
+				return this.adminConfig;
+			}
+		})();
+		const result = await this.adminConfigPromise;
+		this.adminConfigPromise = null;
+		return result;
+	}
+
+	async ensureGoogleMaps() {
+		if (window.google?.maps) {
+			this.googleMapsLoaded = true;
+			return window.google;
+		}
+		if (this.googleMapsLoadingPromise) return this.googleMapsLoadingPromise;
+		const loader = (async () => {
+			const config = await this.loadAdminConfig();
+			const apiKey = config?.googleMapsApiKey;
+			if (!apiKey) throw new Error("Google Maps API key is not configured");
+			const existing = document.querySelector("script[data-google-maps='1']");
+			if (existing) {
+				await new Promise((resolve, reject) => {
+					existing.addEventListener("load", resolve, { once: true });
+					existing.addEventListener(
+						"error",
+						() => reject(new Error("Failed to load Google Maps")),
+						{ once: true },
+					);
+				});
+			} else {
+				const src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+					apiKey,
+				)}&libraries=places`;
+				await this.loadScript(src, { "data-google-maps": "1" });
+			}
+			if (!window.google?.maps) {
+				throw new Error("Google Maps failed to initialize");
+			}
+			this.googleMapsLoaded = true;
+			return window.google;
+		})();
+		this.googleMapsLoadingPromise = loader;
+		try {
+			return await loader;
+		} finally {
+			if (this.googleMapsLoadingPromise === loader) {
+				this.googleMapsLoadingPromise = null;
+			}
+		}
+	}
+
+	loadScript(src, attributes = {}) {
+		return new Promise((resolve, reject) => {
+			const script = document.createElement("script");
+			script.src = src;
+			script.async = true;
+			script.defer = true;
+			Object.entries(attributes).forEach(([key, value]) => {
+				script.setAttribute(key, value);
+			});
+			script.addEventListener("load", () => resolve());
+			script.addEventListener("error", () => {
+				script.remove();
+				reject(new Error(`Failed to load script: ${src}`));
+			});
+			document.head.appendChild(script);
+		});
+	}
+
+	prepareLocationPickerModal() {
+		if (this.locationPickerModalInstance) return;
+		const modalEl = document.getElementById("locationPickerModal");
+		if (!modalEl) return;
+		this.locationPickerModalInstance = new bootstrap.Modal(modalEl, {
+			backdrop: "static",
+		});
+		this.locationPickerSummaryEl = document.getElementById("locationPickerSummary");
+		this.locationPickerStatusEl = document.getElementById("locationPickerStatus");
+		this.locationPickerApplyBtn = document.getElementById("locationPickerApplyBtn");
+		this.locationPickerSearchInput = document.getElementById("locationPickerSearch");
+		if (this.locationPickerApplyBtn) {
+			this.locationPickerApplyBtn.addEventListener("click", () =>
+				this.applyLocationPickerSelection(),
+			);
+		}
+		modalEl.addEventListener("hidden.bs.modal", () => {
+			this.activeLocationSelection = null;
+			this.locationPickerContext = null;
+			if (this.locationPickerApplyBtn) this.locationPickerApplyBtn.disabled = true;
+			if (this.locationPickerSummaryEl)
+				this.locationPickerSummaryEl.textContent =
+					"Click on the map or use the search box to choose a location.";
+			if (this.locationPickerStatusEl) this.locationPickerStatusEl.textContent = "";
+			if (this.locationPickerSearchInput) this.locationPickerSearchInput.value = "";
+		});
+	}
+
+	async openLocationPicker(type) {
+		const fields = this.locationFieldMap[type];
+		if (!fields) return;
+		this.prepareLocationPickerModal();
+		if (!this.locationPickerModalInstance) {
+			this.showError("Location picker is unavailable right now");
+			return;
+		}
+		try {
+			await this.ensureGoogleMaps();
+		} catch (err) {
+			this.showError(err?.message || "Google Maps is unavailable");
+			return;
+		}
+		const titleEl = document.getElementById("locationPickerTitle");
+		if (titleEl) {
+			titleEl.textContent =
+				type === "login"
+					? "Select Last Login Location"
+					: "Select Account Creation Location";
+		}
+		if (this.locationPickerApplyBtn) this.locationPickerApplyBtn.disabled = true;
+		if (this.locationPickerStatusEl) this.locationPickerStatusEl.textContent = "";
+		if (this.locationPickerSummaryEl)
+			this.locationPickerSummaryEl.textContent =
+				"Click on the map or use the search box to choose a location.";
+		if (this.locationPickerSearchInput)
+			this.locationPickerSearchInput.value = "";
+		this.locationPickerContext = type;
+		this.locationPickerModalInstance.show();
+		setTimeout(() => {
+			this.initializeLocationPickerMap(type);
+			if (this.locationPickerSearchInput) {
+				this.locationPickerSearchInput.focus();
+			}
+		}, 150);
+	}
+
+	initializeLocationPickerMap(type) {
+		const googleRef = window.google;
+		if (!googleRef?.maps) return;
+		const mapEl = document.getElementById("locationPickerMap");
+		if (!mapEl) return;
+		if (!this.locationPickerMap) {
+			this.locationPickerMap = new googleRef.maps.Map(mapEl, {
+				center: { lat: 20, lng: 0 },
+				zoom: 2,
+				mapTypeControl: false,
+				streetViewControl: false,
+				fullscreenControl: false,
+			});
+			this.locationPickerMarker = new googleRef.maps.Marker({
+				map: this.locationPickerMap,
+				visible: false,
+			});
+			this.locationPickerGeocoder = new googleRef.maps.Geocoder();
+			this.locationPickerMap.addListener("click", (event) => {
+				if (!event?.latLng) return;
+				this.handleLatLngSelection(event.latLng, null);
+			});
+			if (this.locationPickerSearchInput) {
+				this.locationPickerAutocomplete = new googleRef.maps.places.Autocomplete(
+					this.locationPickerSearchInput,
+					{
+						fields: [
+							"geometry",
+							"formatted_address",
+							"address_components",
+							"place_id",
+							"name",
+						],
+					},
+				);
+				this.locationPickerAutocomplete.addListener("place_changed", () => {
+					const place = this.locationPickerAutocomplete.getPlace();
+					this.handleLatLngSelection(place?.geometry?.location, place);
+				});
+			}
+		}
+		const fields = this.locationFieldMap[type];
+		const lat = parseFloat(document.getElementById(fields.latitude)?.value);
+		const lng = parseFloat(document.getElementById(fields.longitude)?.value);
+		if (Number.isFinite(lat) && Number.isFinite(lng)) {
+			const target = { lat, lng };
+			this.locationPickerMap.setCenter(target);
+			this.locationPickerMap.setZoom(6);
+			if (this.locationPickerMarker) {
+				this.locationPickerMarker.setPosition(target);
+				this.locationPickerMarker.setVisible(true);
+			}
+		} else {
+			this.locationPickerMap.setCenter({ lat: 20, lng: 0 });
+			this.locationPickerMap.setZoom(2);
+			if (this.locationPickerMarker) this.locationPickerMarker.setVisible(false);
+		}
+	}
+
+	handleLatLngSelection(latLng, place) {
+		if (!latLng) {
+			this.showError("Unable to determine coordinates for that selection");
+			return;
+		}
+		const selection = {
+			latitude: latLng.lat(),
+			longitude: latLng.lng(),
+			formattedAddress:
+				place?.formatted_address ||
+				place?.name ||
+				`Lat ${latLng.lat().toFixed(3)}, Lng ${latLng.lng().toFixed(3)}`,
+			city: place?.address_components
+				? this.extractAddressComponent(place.address_components, [
+						"locality",
+						"postal_town",
+						"administrative_area_level_2",
+						"administrative_area_level_1",
+				  ])
+				: null,
+			country: place?.address_components
+				? this.extractAddressComponent(place.address_components, ["country"])
+				: null,
+		};
+		if (!place && this.locationPickerGeocoder) {
+			if (this.locationPickerStatusEl)
+				this.locationPickerStatusEl.textContent = "Resolving address…";
+			this.locationPickerGeocoder.geocode(
+				{ location: { lat: selection.latitude, lng: selection.longitude } },
+				(results, status) => {
+					if (this.locationPickerStatusEl)
+						this.locationPickerStatusEl.textContent = "";
+					if (status === "OK" && results?.length) {
+						const best = results[0];
+						selection.formattedAddress =
+							best.formatted_address || selection.formattedAddress;
+						selection.city = this.extractAddressComponent(
+							best.address_components,
+							[
+								"locality",
+								"postal_town",
+								"administrative_area_level_2",
+								"administrative_area_level_1",
+							],
+						);
+						selection.country = this.extractAddressComponent(
+							best.address_components,
+							["country"],
+						);
+					}
+					this.setLocationPickerSelection(selection);
+				},
+			);
+			return;
+		}
+		this.setLocationPickerSelection(selection);
+	}
+
+	setLocationPickerSelection(selection) {
+		this.activeLocationSelection = selection;
+		if (this.locationPickerMarker && selection) {
+			this.locationPickerMarker.setPosition({
+				lat: selection.latitude,
+				lng: selection.longitude,
+			});
+			this.locationPickerMarker.setVisible(true);
+			if (this.locationPickerMap) {
+				this.locationPickerMap.panTo({
+					lat: selection.latitude,
+					lng: selection.longitude,
+				});
+				if (this.locationPickerMap.getZoom() < 6) {
+					this.locationPickerMap.setZoom(6);
+				}
+			}
+		}
+		if (this.locationPickerApplyBtn) this.locationPickerApplyBtn.disabled = false;
+		this.updateLocationPickerSummary(
+			selection?.formattedAddress ||
+				`Lat ${selection.latitude.toFixed(3)}, Lng ${selection.longitude.toFixed(3)}`,
+		);
+	}
+
+	updateLocationPickerSummary(text) {
+		if (this.locationPickerSummaryEl) this.locationPickerSummaryEl.textContent = text;
+	}
+
+	async applyLocationPickerSelection() {
+		if (!this.locationPickerContext || !this.activeLocationSelection) {
+			this.showError("Select a location first");
+			return;
+		}
+		if (this.locationPickerApplyBtn) this.locationPickerApplyBtn.disabled = true;
+		if (this.locationPickerStatusEl)
+			this.locationPickerStatusEl.textContent = "Applying selection…";
+		try {
+			let timezone = null;
+			if (
+				Number.isFinite(this.activeLocationSelection.latitude) &&
+				Number.isFinite(this.activeLocationSelection.longitude)
+			) {
+				timezone = await this.lookupTimezone(
+					this.activeLocationSelection.latitude,
+					this.activeLocationSelection.longitude,
+				);
+			}
+			const latString = Number.isFinite(this.activeLocationSelection.latitude)
+				? this.activeLocationSelection.latitude.toFixed(6)
+				: "";
+			const lngString = Number.isFinite(this.activeLocationSelection.longitude)
+				? this.activeLocationSelection.longitude.toFixed(6)
+				: "";
+			this.setLocationInputs(this.locationPickerContext, {
+				city: this.activeLocationSelection.city,
+				country: this.activeLocationSelection.country,
+				latitude: latString,
+				longitude: lngString,
+				timezone: timezone || undefined,
+				clearTor: true,
+			});
+			this.syncLocationPreview(this.locationPickerContext);
+			this.locationPickerModalInstance?.hide();
+		} catch (err) {
+			this.showError(err?.message || "Failed to apply location");
+		} finally {
+			if (this.locationPickerStatusEl)
+				this.locationPickerStatusEl.textContent = "";
+			if (this.locationPickerApplyBtn) this.locationPickerApplyBtn.disabled = false;
+		}
+	}
+
+	extractAddressComponent(components, typeList) {
+		if (!Array.isArray(components)) return null;
+		for (const targetType of typeList) {
+			const component = components.find((entry) =>
+				entry?.types?.includes(targetType),
+			);
+			if (component?.long_name) return component.long_name;
+		}
+		return null;
+	}
+
+	async lookupTimezone(lat, lng) {
+		const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+		if (this.timezoneCache.has(key)) return this.timezoneCache.get(key);
+		try {
+			const config = await this.loadAdminConfig();
+			const apiKey = config?.googleMapsApiKey;
+			if (!apiKey) return null;
+			const url = new URL("https://maps.googleapis.com/maps/api/timezone/json");
+			url.searchParams.set("location", `${lat},${lng}`);
+			url.searchParams.set(
+				"timestamp",
+				Math.floor(Date.now() / 1000).toString(),
+			);
+			url.searchParams.set("key", apiKey);
+			const response = await fetch(url.toString());
+			if (!response.ok) return null;
+			const data = await response.json();
+			if (data.status === "OK" && data.timeZoneId) {
+				this.timezoneCache.set(key, data.timeZoneId);
+				return data.timeZoneId;
+			}
+			return null;
+		} catch {
+			return null;
+		}
+	}
+
 	toggleEditMode(enable) {
 		const form = document.getElementById("editProfileForm");
 		if (!form) return;
+		this.profileEditEnabled = enable;
 
 		const controls = form.querySelectorAll("input, textarea, select");
 		controls.forEach((field) => {
@@ -2585,6 +3055,12 @@ class AdminPanel {
 		const saveBtn = document.getElementById("saveProfileBtn");
 		if (editBtn) editBtn.classList.toggle("d-none", enable);
 		if (saveBtn) saveBtn.classList.toggle("d-none", !enable);
+
+		form
+			.querySelectorAll("[data-location-control]")
+			.forEach((btn) => {
+				btn.disabled = !enable;
+			});
 
 		if (enable) {
 			const firstEditable = form.querySelector(

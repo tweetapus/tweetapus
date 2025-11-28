@@ -205,6 +205,7 @@ ${
 			const date = new Date(
 				event
 					.querySelector(".current-events-title .summary")
+					.replace(/\u00A0/g, " ")
 					.innerText.split(" (")[0],
 			);
 
