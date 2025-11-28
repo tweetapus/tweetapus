@@ -867,6 +867,24 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	})
 
 	.get(
+		"/config",
+		async () => {
+			const key = process.env.GOOGLE_MAPS_API_KEY?.trim();
+			return {
+				googleMapsApiKey: key?.length ? key : null,
+			};
+		},
+		{
+			detail: {
+				description: "Returns admin runtime configuration flags",
+			},
+			response: t.Object({
+				googleMapsApiKey: t.Union([t.String(), t.Null()]),
+			}),
+		},
+	)
+
+	.get(
 		"/stats",
 		async () => {
 			const userStats = adminQueries.getUserStats.get();

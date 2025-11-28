@@ -110,11 +110,16 @@ body {
 
 .tweet-preview.unavailable-quote {
   padding: 16px;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border-secondary);
   border-radius: 12px;
   color: var(--text-secondary);
   text-align: center;
   margin-top: 8px;
+
+  &:hover {
+    background-color: transparent;
+    border-color: var(--border-secondary);
+  }
 }
 
 .tweet-share-wrapper {
@@ -2448,7 +2453,7 @@ nav {
 
       .profile-algo-stats {
         background: var(--bg-secondary);
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--border-secondary);
         border-radius: 12px;
         padding: 16px;
         margin-top: 16px;
@@ -2479,7 +2484,7 @@ nav {
             &.algo-stat-full {
               grid-column: 1 / -1;
               padding-top: 8px;
-              border-top: 1px solid var(--border-color);
+              border-top: 1px solid var(--border-secondary);
               flex-direction: row;
               justify-content: space-between;
               align-items: center;
@@ -6243,7 +6248,7 @@ nav {
     blockquote {
       margin: 0 0 16px;
       padding-left: 14px;
-      border-left: 4px solid var(--border-color);
+      border-left: 4px solid var(--border-secondary);
       color: var(--text-secondary);
     }
 
@@ -6268,7 +6273,7 @@ nav {
     align-self: flex-start;
     margin-top: 8px;
     background-color: transparent;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-secondary);
     border-radius: 9999px;
     padding: 6px 14px;
     font-size: 14px;

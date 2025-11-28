@@ -1,6 +1,7 @@
 **IMPORTANT:**
 
-- idk?
+- personalized algorithm
+- fix ui
 
 **OTHER:**
 
