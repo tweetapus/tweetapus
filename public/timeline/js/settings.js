@@ -1037,14 +1037,16 @@ const createNotificationsContent = () => {
 
 async function initPushNotifications(checkbox, statusText) {
 	if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-		statusText.textContent = "Push notifications are not supported in this browser";
+		statusText.textContent =
+			"Push notifications are not supported in this browser";
 		return;
 	}
 
 	try {
 		const vapidResponse = await query("/push/vapid-key");
 		if (vapidResponse.error) {
-			statusText.textContent = "Push notifications are not configured on this server";
+			statusText.textContent =
+				"Push notifications are not configured on this server";
 			return;
 		}
 
@@ -1054,7 +1056,9 @@ async function initPushNotifications(checkbox, statusText) {
 		try {
 			registration = await navigator.serviceWorker.getRegistration("/");
 			if (!registration) {
-				registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+				registration = await navigator.serviceWorker.register("/sw.js", {
+					scope: "/",
+				});
 			}
 			await navigator.serviceWorker.ready;
 		} catch (swErr) {
@@ -1120,7 +1124,8 @@ async function initPushNotifications(checkbox, statusText) {
 				}
 			} else {
 				try {
-					const currentSubscription = await registration.pushManager.getSubscription();
+					const currentSubscription =
+						await registration.pushManager.getSubscription();
 					if (currentSubscription) {
 						await query("/push/unsubscribe", {
 							method: "POST",
@@ -3481,4 +3486,4 @@ async function showSpamScoreDetails(username) {
 		console.error("Failed to load spam score details:", error);
 		toastQueue.add("<h1>Error</h1><p>Failed to load spam score details</p>");
 	}
-};
+}

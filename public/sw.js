@@ -19,7 +19,9 @@ self.addEventListener("push", (event) => {
 		},
 	};
 
-	event.waitUntil(self.registration.showNotification(data.title || "Tweetapus", options));
+	event.waitUntil(
+		self.registration.showNotification(data.title || "Tweetapus", options),
+	);
 });
 
 self.addEventListener("notificationclick", (event) => {
@@ -28,16 +30,18 @@ self.addEventListener("notificationclick", (event) => {
 	const url = event.notification.data?.url || "/";
 
 	event.waitUntil(
-		clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-			for (const client of clientList) {
-				if (client.url.includes(self.location.origin) && "focus" in client) {
-					client.focus();
-					client.navigate(url);
-					return;
+		clients
+			.matchAll({ type: "window", includeUncontrolled: true })
+			.then((clientList) => {
+				for (const client of clientList) {
+					if (client.url.includes(self.location.origin) && "focus" in client) {
+						client.focus();
+						client.navigate(url);
+						return;
+					}
 				}
-			}
-			return clients.openWindow(url);
-		}),
+				return clients.openWindow(url);
+			}),
 	);
 });
 

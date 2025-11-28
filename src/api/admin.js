@@ -362,7 +362,9 @@ WHERE u.id = ?
 	deleteEmoji: db.prepare("DELETE FROM emojis WHERE id = ?"),
 	getUserIp: db.prepare("SELECT ip_address FROM users WHERE id = ?"),
 	getUsersByIp: db.prepare("SELECT * FROM users WHERE ip_address = ?"),
-	getUserIpHistory: db.prepare("SELECT ip_address, use_count, last_used_at FROM user_ips WHERE user_id = ? ORDER BY last_used_at DESC"),
+	getUserIpHistory: db.prepare(
+		"SELECT ip_address, use_count, last_used_at FROM user_ips WHERE user_id = ? ORDER BY last_used_at DESC",
+	),
 	banIp: db.prepare(
 		"INSERT INTO ip_bans (ip_address, banned_by, reason) VALUES (?, ?, ?)",
 	),
