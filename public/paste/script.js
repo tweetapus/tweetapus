@@ -11,13 +11,6 @@ const EXPIRY_OPTIONS = [
 	{ label: "Custom", minutes: "custom" },
 ];
 
-const baseHref = (() => {
-	const url = new URL("/pastes", window.location.origin);
-	url.search = "";
-	url.hash = "";
-	return url.toString();
-})();
-
 const state = {
 	mode: "create",
 	createStatus: {
@@ -941,6 +934,191 @@ const loadPaste = async (slug, secret, password = "") => {
 	renderApp();
 };
 
+let hljsLoaded = false;
+const loadHighlightJS = () => {
+	if (hljsLoaded) return Promise.resolve();
+	return new Promise((resolve) => {
+		const link = document.createElement("link");
+		link.rel = "stylesheet";
+		link.href =
+			"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css";
+		document.head.appendChild(link);
+		const script = document.createElement("script");
+		script.src =
+			"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js";
+		script.onload = () => {
+			hljsLoaded = true;
+			resolve();
+		};
+		script.onerror = () => resolve();
+		document.head.appendChild(script);
+	});
+};
+
+const highlightCode = async (codeElement, language) => {
+	await loadHighlightJS();
+	if (!window.hljs) return;
+	if (language) {
+		try {
+			const result = window.hljs.highlight(codeElement.textContent, {
+				language: language.toLowerCase(),
+				ignoreIllegals: true,
+			});
+			codeElement.innerHTML = result.value;
+			codeElement.classList.add("hljs");
+		} catch {
+			window.hljs.highlightElement(codeElement);
+		}
+	} else {
+		window.hljs.highlightElement(codeElement);
+	}
+};
+
+const loadMyPastes = async (reset) => {
+	if (state.myPastes.loading) return;
+	if (reset) {
+		state.myPastes.items = [];
+		state.myPastes.page = 0;
+		state.myPastes.done = false;
+		state.myPastes.error = "";
+	}
+	state.myPastes.loading = true;
+	renderApp();
+	const response = await api(
+		`/pastes/mine/list?limit=${PUBLIC_PAGE_SIZE}&page=${state.myPastes.page}`,
+	);
+	state.myPastes.loading = false;
+	if (!response || response.error) {
+		state.myPastes.error = response?.error || "Unable to load your pastes";
+		renderApp();
+		return;
+	}
+	const rows = response.pastes || [];
+	state.myPastes.items = reset ? rows : state.myPastes.items.concat(rows);
+	state.myPastes.page += 1;
+	if (rows.length < PUBLIC_PAGE_SIZE) {
+		state.myPastes.done = true;
+	}
+	renderApp();
+};
+
+const deletePaste = async (slug) => {
+	if (!confirm("Are you sure you want to delete this paste?")) return;
+	const response = await api(`/pastes/${encodeURIComponent(slug)}`, {
+		method: "DELETE",
+	});
+	if (!response || response.error) {
+		alert(response?.error || "Failed to delete paste");
+		return;
+	}
+	state.myPastes.items = state.myPastes.items.filter((p) => p.slug !== slug);
+	renderApp();
+};
+
+const renderMyPastesCard = () => {
+	const card = createEl("div", { className: "card" });
+	card.append(createEl("strong", { text: "My Pastes" }));
+
+	if (state.myPastes.error) {
+		card.append(
+			createEl("div", {
+				className: "error-text",
+				text: state.myPastes.error,
+			}),
+		);
+	}
+
+	if (!state.myPastes.items.length && state.myPastes.loading) {
+		card.append(
+			createEl("div", { className: "status-line", text: "Loading..." }),
+		);
+		return card;
+	}
+
+	if (!state.myPastes.items.length) {
+		card.append(
+			createEl("div", {
+				className: "empty-state",
+				text: "You haven't created any pastes yet.",
+			}),
+		);
+	} else {
+		const list = createEl("div", { className: "public-list" });
+		state.myPastes.items.forEach((item) => {
+			list.append(renderMyPasteItem(item));
+		});
+		card.append(list);
+	}
+
+	const controls = createEl("div", { className: "command-bar" });
+	const reloadBtn = createEl("button", {
+		className: "btn secondary",
+		text: "Refresh",
+		type: "button",
+		disabled: state.myPastes.loading,
+	});
+	reloadBtn.addEventListener("click", () => loadMyPastes(true));
+	controls.append(reloadBtn);
+
+	if (!state.myPastes.done) {
+		const moreBtn = createEl("button", {
+			className: "btn secondary",
+			text: state.myPastes.loading ? "Loading..." : "Load more",
+			type: "button",
+			disabled: state.myPastes.loading,
+		});
+		moreBtn.addEventListener("click", () => loadMyPastes(false));
+		controls.append(moreBtn);
+	}
+
+	card.append(controls);
+	return card;
+};
+
+const renderMyPasteItem = (item) => {
+	const entry = createEl("div", { className: "list-item" });
+	entry.append(
+		createEl("div", {
+			className: "item-title",
+			text: item.title || item.slug,
+		}),
+	);
+	const metaParts = [
+		`Views ${item.view_count || 0}`,
+		formatDate(item.created_at),
+	];
+	if (!item.is_public) metaParts.push("Private");
+	if (item.has_password) metaParts.push("🔒");
+	if (item.burn_after_reading) metaParts.push("Burn");
+	entry.append(
+		createEl("div", {
+			className: "item-meta",
+			text: metaParts.join(" • "),
+		}),
+	);
+	const lang = createEl("div", {
+		className: "status-line",
+		text: item.language ? `Language: ${item.language}` : "Language: Plain",
+	});
+	entry.append(lang);
+	const btnRow = createEl("div", { className: "item-actions" });
+	const openBtn = createEl("button", {
+		className: "btn secondary",
+		text: "Open",
+		type: "button",
+	});
+	openBtn.addEventListener("click", () => openPaste(item.slug));
+	const deleteBtn = createEl("button", {
+		className: "btn danger",
+		text: "Delete",
+		type: "button",
+	});
+	deleteBtn.addEventListener("click", () => deletePaste(item.slug));
+	btnRow.append(openBtn, deleteBtn);
+	entry.append(btnRow);
+	return entry;
+};
+
 const boot = () => {
 	const { slug, secret } = readLocation();
 	if (slug) {
@@ -955,7 +1133,7 @@ const boot = () => {
 	// single handler registered in boot
 };
 
-window.addEventListener("popstate", (event) => {
+window.addEventListener("popstate", () => {
 	// Ensure paste UI updates when user navigates back or forward
 	const path = window.location.pathname || "";
 	if (!path.startsWith("/pastes")) return;

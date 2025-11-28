@@ -102,14 +102,9 @@ const createFactCheck = (fact_check) => {
 				}</a>`,
 		);
 	note.innerHTML = DOMPurify.sanitize(htmlString, DOMPURIFY_CONFIG);
-
-	const footer = document.createElement("p");
-	footer.className = "fact-check-footer";
-	footer.innerText = `This note has been added by a trusted Tweetapus admin`;
-
+	
 	content.appendChild(title);
 	content.appendChild(note);
-	content.appendChild(footer);
 
 	factCheckEl.appendChild(icon);
 	factCheckEl.appendChild(content);

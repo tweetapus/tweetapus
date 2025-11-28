@@ -27,3 +27,4 @@
 - BEWARE of XSS, SANITIZE EVERYTHING.
 - ALWAYS make sure db.js is up-to-date with the schema. Tr.
 - If you want to fix a corrupted file, just write the fixed version of it in the same file (not in a separate file and then asking me to execute a command just to move or remove the first/second file)
+- NEVER inline CSS or JS.

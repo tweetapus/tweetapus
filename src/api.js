@@ -15,6 +15,7 @@ import notifications from "./api/notifications.js";
 import pastes from "./api/pastes.js";
 import profile from "./api/profile.js";
 import publicTweets from "./api/public-tweets.js";
+import push from "./api/push.js";
 import reports from "./api/reports.js";
 import scheduled from "./api/scheduled.js";
 import search from "./api/search.js";
@@ -338,6 +339,7 @@ export default new Elysia({
 	.use(pastes)
 	.use(notifications)
 	.use(dm)
+	.use(push)
 	.use(tenor)
 	.use(unsplash)
 	.use(scheduled)

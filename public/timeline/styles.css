@@ -1645,18 +1645,6 @@ nav {
         a {
           color: var(--primary);
         }
-
-        &.fact-check-footer {
-          margin-top: 8px;
-          line-height: 1.4;
-          color: var(--text-secondary);
-          opacity: 0.7;
-          font-size: 13px;
-
-          a {
-            color: white;
-          }
-        }
       }
     }
 
@@ -7756,6 +7744,13 @@ emoji-picker.emoji-picker-popup {
   color: var(--text-secondary);
 }
 
+.settings-status-text {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
 .setting-control {
   flex-shrink: 0;
   min-width: 0;
@@ -8280,7 +8275,8 @@ emoji-picker.emoji-picker-popup {
 
 .settings-modal-tab.active {
   background: var(--primary);
-  color: #fff;
+  border-color: var(--primary);
+  color: var(--primary-fg);
   font-weight: 500;
 }
 
@@ -8617,13 +8613,6 @@ emoji-picker.emoji-picker-popup {
     background-color: var(--bg-secondary);
     transition: background-color 0.2s ease, color 0.2s ease,
       border-color 0.2s ease;
-
-    &.active {
-      background-color: var(--primary);
-      border-color: var(--primary);
-      color: var(--primary-fg);
-      font-weight: 600;
-    }
 
     &:focus-visible {
       outline: 2px solid rgba(var(--primary-rgb), 0.5);
@@ -9082,11 +9071,31 @@ emoji-picker.emoji-picker-popup {
   border-radius: 20px;
 }
 
-.rating-excellent { background-color: rgba(76, 175, 80, 0.15); color: #4caf50; }
-.rating-good { background-color: rgba(33, 150, 243, 0.15); color: #2196f3; }
-.rating-average { background-color: rgba(255, 152, 0, 0.15); color: #ff9800; }
-.rating-below-average { background-color: rgba(255, 87, 34, 0.15); color: #ff5722; }
-.rating-poor, .rating-bad { background-color: rgba(244, 67, 54, 0.15); color: #f44336; }
+.rating-excellent {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+}
+
+.rating-good {
+  background-color: rgba(33, 150, 243, 0.15);
+  color: #2196f3;
+}
+
+.rating-average {
+  background-color: rgba(255, 152, 0, 0.15);
+  color: #ff9800;
+}
+
+.rating-below-average {
+  background-color: rgba(255, 87, 34, 0.15);
+  color: #ff5722;
+}
+
+.rating-poor,
+.rating-bad {
+  background-color: rgba(244, 67, 54, 0.15);
+  color: #f44336;
+}
 
 .algo-stats-grid {
   display: grid;

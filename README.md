@@ -1,6 +1,6 @@
 # tweetapus
 
-an independent, fully-featured Twitter/X clone built with Bun.
+an independent, fully-featured Twitter/X clone built with Bun. badly vibe-coded.
 
 **warning:** this is still very much a work in progress. there's still a lot of vibe-coded code, xss vulnerabilities, and scaling issues to be fixed.
 
@@ -11,7 +11,8 @@ an independent, fully-featured Twitter/X clone built with Bun.
 3. run `bun install`
 4. create the following directories: `.data`, `.data/uploads`, `.data/extensions`
 5. fill in your API credentials in `.env`
-6. `bun run start`
+6. (optional) generate VAPID keys for push notifications: `npx web-push generate-vapid-keys` and add them to `.env` as `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY`
+7. `bun run start`
 
 ## features
 
@@ -43,4 +44,5 @@ an independent, fully-featured Twitter/X clone built with Bun.
 - editing tweets
 - replying to dms
 - reacting to dms
+- push notifications
 - user account creation location transparency report, powered by a VPN detection list and cloudflare headers

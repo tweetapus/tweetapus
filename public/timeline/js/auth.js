@@ -68,6 +68,10 @@ function saveAccountToStorage(user, token) {
 
 	saveAccountToStorage(user, localStorage.getItem("authToken"));
 
+	if ("serviceWorker" in navigator) {
+		navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {});
+	}
+
 	if (user.theme) {
 		localStorage.setItem("theme", user.theme);
 		const root = document.documentElement;

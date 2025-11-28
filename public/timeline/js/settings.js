@@ -50,6 +50,11 @@ const settingsPages = [
 	},
 	{ key: "themes", title: "Themes", content: () => createThemesContent() },
 	{
+		key: "notifications",
+		title: "Notifications",
+		content: () => createNotificationsContent(),
+	},
+	{
 		key: "scheduled",
 		title: "Scheduled",
 		content: () => createScheduledContent(),
@@ -966,6 +971,198 @@ const deletePasskey = async (passkeyId) => {
 		toastQueue.add(`<h1>Error</h1><p>Failed to remove passkey</p>`);
 	}
 };
+
+const createNotificationsContent = () => {
+	const section = document.createElement("div");
+	section.className = "settings-section";
+
+	const h1 = document.createElement("h1");
+	h1.textContent = "Notifications";
+	section.appendChild(h1);
+
+	const group = document.createElement("div");
+	group.className = "setting-group";
+
+	const h2 = document.createElement("h2");
+	h2.textContent = "Push notifications";
+	group.appendChild(h2);
+
+	const pushItem = document.createElement("div");
+	pushItem.className = "setting-item";
+
+	const pushLabel = document.createElement("div");
+	pushLabel.className = "setting-label";
+	const pushTitle = document.createElement("div");
+	pushTitle.className = "setting-title";
+	pushTitle.textContent = "Enable push notifications";
+	const pushDesc = document.createElement("div");
+	pushDesc.className = "setting-description";
+	pushDesc.textContent = "Receive notifications even when the app is closed";
+	pushLabel.appendChild(pushTitle);
+	pushLabel.appendChild(pushDesc);
+
+	const pushControl = document.createElement("div");
+	pushControl.className = "setting-control";
+
+	const pushToggle = document.createElement("label");
+	pushToggle.className = "toggle-switch";
+
+	const pushCheckbox = document.createElement("input");
+	pushCheckbox.type = "checkbox";
+	pushCheckbox.id = "push-notifications-toggle";
+	pushCheckbox.disabled = true;
+
+	const pushSlider = document.createElement("span");
+	pushSlider.className = "toggle-slider";
+
+	pushToggle.appendChild(pushCheckbox);
+	pushToggle.appendChild(pushSlider);
+	pushControl.appendChild(pushToggle);
+
+	pushItem.appendChild(pushLabel);
+	pushItem.appendChild(pushControl);
+	group.appendChild(pushItem);
+	section.appendChild(group);
+
+	const statusText = document.createElement("p");
+	statusText.className = "settings-status-text";
+	statusText.id = "push-status-text";
+	statusText.textContent = "Checking push notification support...";
+	section.appendChild(statusText);
+
+	initPushNotifications(pushCheckbox, statusText);
+
+	return section;
+};
+
+async function initPushNotifications(checkbox, statusText) {
+	if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+		statusText.textContent = "Push notifications are not supported in this browser";
+		return;
+	}
+
+	try {
+		const vapidResponse = await query("/push/vapid-key");
+		if (vapidResponse.error) {
+			statusText.textContent = "Push notifications are not configured on this server";
+			return;
+		}
+
+		const vapidPublicKey = vapidResponse.publicKey;
+
+		let registration;
+		try {
+			registration = await navigator.serviceWorker.getRegistration("/");
+			if (!registration) {
+				registration = await navigator.serviceWorker.register("/sw.js", { scope: "/" });
+			}
+			await navigator.serviceWorker.ready;
+		} catch (swErr) {
+			console.error("Service worker registration failed:", swErr);
+			statusText.textContent = "Failed to register service worker";
+			return;
+		}
+
+		checkbox.disabled = false;
+		const subscription = await registration.pushManager.getSubscription();
+
+		if (subscription) {
+			checkbox.checked = true;
+			statusText.textContent = "Push notifications are enabled";
+		} else {
+			checkbox.checked = false;
+			statusText.textContent = "Push notifications are disabled";
+		}
+
+		checkbox.addEventListener("change", async () => {
+			checkbox.disabled = true;
+
+			if (checkbox.checked) {
+				try {
+					const permission = await Notification.requestPermission();
+					if (permission !== "granted") {
+						checkbox.checked = false;
+						statusText.textContent = "Notification permission denied";
+						checkbox.disabled = false;
+						return;
+					}
+
+					const newSubscription = await registration.pushManager.subscribe({
+						userVisibleOnly: true,
+						applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+					});
+
+					const subscriptionData = {
+						subscription: {
+							endpoint: newSubscription.endpoint,
+							keys: {
+								p256dh: arrayBufferToBase64(newSubscription.getKey("p256dh")),
+								auth: arrayBufferToBase64(newSubscription.getKey("auth")),
+							},
+						},
+					};
+					const response = await query("/push/subscribe", {
+						method: "POST",
+						body: JSON.stringify(subscriptionData),
+					});
+
+					if (response.success) {
+						statusText.textContent = "Push notifications are enabled";
+					} else {
+						await newSubscription.unsubscribe();
+						checkbox.checked = false;
+						statusText.textContent = "Failed to enable push notifications";
+					}
+				} catch (err) {
+					console.error("Push subscription error:", err);
+					checkbox.checked = false;
+					statusText.textContent = "Failed to enable push notifications";
+				}
+			} else {
+				try {
+					const currentSubscription = await registration.pushManager.getSubscription();
+					if (currentSubscription) {
+						await query("/push/unsubscribe", {
+							method: "POST",
+							body: JSON.stringify({ endpoint: currentSubscription.endpoint }),
+						});
+						await currentSubscription.unsubscribe();
+					}
+					statusText.textContent = "Push notifications are disabled";
+				} catch (err) {
+					console.error("Push unsubscribe error:", err);
+					checkbox.checked = true;
+					statusText.textContent = "Failed to disable push notifications";
+				}
+			}
+
+			checkbox.disabled = false;
+		});
+	} catch (err) {
+		console.error("Push init error:", err);
+		statusText.textContent = "Failed to initialize push notifications";
+	}
+}
+
+function urlBase64ToUint8Array(base64String) {
+	const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+	const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+	const rawData = atob(base64);
+	const outputArray = new Uint8Array(rawData.length);
+	for (let i = 0; i < rawData.length; i++) {
+		outputArray[i] = rawData.charCodeAt(i);
+	}
+	return outputArray;
+}
+
+function arrayBufferToBase64(buffer) {
+	const bytes = new Uint8Array(buffer);
+	let binary = "";
+	for (let i = 0; i < bytes.byteLength; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary);
+}
 
 const createOthersContent = () => {
 	const section = document.createElement("div");

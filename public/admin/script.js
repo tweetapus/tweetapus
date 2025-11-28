@@ -2304,6 +2304,38 @@ class AdminPanel {
             `
 								: ""
 						}
+
+            ${
+							userData.ipHistory?.length
+								? `
+              <h5 class="mt-4">IP History</h5>
+              <div style="max-height: 200px; overflow-y: auto;">
+                <table class="table table-sm table-striped">
+                  <thead>
+                    <tr>
+                      <th>IP Address</th>
+                      <th>Use Count</th>
+                      <th>Last Used</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${userData.ipHistory
+											.map(
+												(ip) => `
+                      <tr>
+                        <td><code>${this.escapeHtml(ip.ip_address)}</code></td>
+                        <td>${ip.use_count}</td>
+                        <td>${this.formatDate(ip.last_used_at)}</td>
+                      </tr>
+                    `,
+											)
+											.join("")}
+                  </tbody>
+                </table>
+              </div>
+            `
+								: ""
+						}
           </div>
         </div>
       `;

@@ -299,6 +299,11 @@ new Elysia()
 			},
 		},
 	)
+	.get("/sw.js", ({ set }) => {
+		set.headers["Service-Worker-Allowed"] = "/";
+		set.headers["Content-Type"] = "application/javascript";
+		return file("./public/sw.js");
+	})
 	.get("/admin", () => file("./public/admin/index.html"))
 	.get("/legal", () => file("./public/legal.html"))
 	.get("/pastes", () => file("./public/timeline/index.html"))

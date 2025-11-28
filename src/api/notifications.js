@@ -1,5 +1,6 @@
 import { Elysia } from "elysia";
 import db from "../db.js";
+import { sendPushNotification } from "./push.js";
 
 let sendUnreadCounts;
 try {
@@ -114,7 +115,39 @@ export function addNotification(
 		actorName,
 	);
 	sendUnreadCounts(userId);
+
+	sendPushNotification(userId, {
+		type,
+		title: getPushTitle(type, actorName || actorUsername),
+		body: content,
+		relatedId,
+		actorUsername,
+	}).catch(() => {});
+
 	return id;
+}
+
+function getPushTitle(type, actorName) {
+	switch (type) {
+		case "like":
+			return `${actorName} liked your tweet`;
+		case "retweet":
+			return `${actorName} retweeted your tweet`;
+		case "follow":
+			return `${actorName} followed you`;
+		case "reply":
+			return `${actorName} replied to your tweet`;
+		case "mention":
+			return `${actorName} mentioned you`;
+		case "quote":
+			return `${actorName} quoted your tweet`;
+		case "reaction":
+			return `${actorName} reacted to your tweet`;
+		case "dm_message":
+			return `New message from ${actorName}`;
+		default:
+			return "New notification";
+	}
 }
 
 export default new Elysia({ prefix: "/notifications", tags: ["Notifications"] })

@@ -2,6 +2,7 @@ import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
+import { decryptText, encryptText } from "../helpers/encryption.js";
 import ratelimit from "../helpers/ratelimit.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -105,7 +106,12 @@ const canAccessPrivatePaste = async (paste, headers, query, jwtPlugin) => {
 const verifyPastePassword = async (paste, providedPassword) => {
 	if (!paste.password_hash) return true;
 	if (!providedPassword) return false;
-	return Bun.password.verify(providedPassword, paste.password_hash);
+	try {
+		const storedPassword = await decryptText(paste.password_hash);
+		return storedPassword === providedPassword;
+	} catch {
+		return false;
+	}
 };
 
 const listUserPastes = db.query(`
@@ -181,9 +187,7 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 
 		const slug = ensureSlug();
 		const secretKey = isPublic ? null : Bun.randomUUIDv7();
-		const passwordHash = rawPassword
-			? await Bun.password.hash(rawPassword)
-			: null;
+		const passwordHash = rawPassword ? await encryptText(rawPassword) : null;
 		const paste = createPaste.get(
 			Bun.randomUUIDv7(),
 			creatorId,
@@ -405,7 +409,7 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 				typeof patch.password === "string" &&
 				patch.password.trim().length > 0
 			) {
-				passwordHash = await Bun.password.hash(patch.password.trim());
+				passwordHash = await encryptText(patch.password.trim());
 			}
 			updatePaste.run(
 				title,

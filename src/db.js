@@ -735,6 +735,19 @@ CREATE TABLE IF NOT EXISTS tweet_edit_history (
 
 CREATE INDEX IF NOT EXISTS idx_tweet_edit_history_post_id ON tweet_edit_history(post_id);
 CREATE INDEX IF NOT EXISTS idx_tweet_edit_history_edited_at ON tweet_edit_history(edited_at);
+
+CREATE TABLE IF NOT EXISTS push_subscriptions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  endpoint TEXT NOT NULL,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  UNIQUE(user_id, endpoint)
+);
+
+CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user_id ON push_subscriptions(user_id);
 `,
 ).run();
 
