@@ -11,14 +11,39 @@ import query from "./api.js";
 
 const ARTICLE_DOMPURIFY_CONFIG = {
 	ALLOWED_TAGS: [
-		"h1", "h2", "h3", "h4", "h5", "h6",
-		"p", "br", "hr",
-		"ul", "ol", "li",
-		"blockquote", "pre", "code",
-		"strong", "em", "b", "i", "u", "s", "del", "ins",
-		"a", "img",
-		"table", "thead", "tbody", "tr", "th", "td",
-		"span", "div",
+		"h1",
+		"h2",
+		"h3",
+		"h4",
+		"h5",
+		"h6",
+		"p",
+		"br",
+		"hr",
+		"ul",
+		"ol",
+		"li",
+		"blockquote",
+		"pre",
+		"code",
+		"strong",
+		"em",
+		"b",
+		"i",
+		"u",
+		"s",
+		"del",
+		"ins",
+		"a",
+		"img",
+		"table",
+		"thead",
+		"tbody",
+		"tr",
+		"th",
+		"td",
+		"span",
+		"div",
 	],
 	ALLOWED_ATTR: ["href", "src", "alt", "title", "class", "target", "rel"],
 	ALLOW_DATA_ATTR: false,
@@ -426,7 +451,8 @@ const setupComposer = () => {
 
 	markdownInput = document.createElement("textarea");
 	markdownInput.className = "article-markdown-input";
-	markdownInput.placeholder = "Write your article in Markdown...\n\n# Heading 1\n## Heading 2\n\n**bold** and *italic*\n\n- List item\n- Another item\n\n> Blockquote\n\n`inline code`";
+	markdownInput.placeholder =
+		"Write your article in Markdown...\n\n# Heading 1\n## Heading 2\n\n**bold** and *italic*\n\n- List item\n- Another item\n\n> Blockquote\n\n`inline code`";
 
 	const previewPane = document.createElement("div");
 	previewPane.className = "article-preview-pane";
@@ -442,7 +468,7 @@ const setupComposer = () => {
 		const raw = markdownInput.value;
 		previewContent.innerHTML = DOMPurify.sanitize(
 			marked.parse(raw, { gfm: true, breaks: true }),
-			ARTICLE_DOMPURIFY_CONFIG
+			ARTICLE_DOMPURIFY_CONFIG,
 		);
 	};
 
