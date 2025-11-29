@@ -19,10 +19,10 @@ const RATE_LIMITS = {
 	retweetBurst: { max: 60, duration: 3600000 },
 	follow: { max: 5, duration: 5000 },
 	followBurst: { max: 50, duration: 3600000 },
-	block: { max: 5, duration: 5000 },
-	blockBurst: { max: 30, duration: 3600000 },
-	mute: { max: 5, duration: 5000 },
-	muteBurst: { max: 30, duration: 3600000 },
+	block: { max: 2, duration: 5000 },
+	blockBurst: { max: 10, duration: 3600000 },
+	mute: { max: 2, duration: 5000 },
+	muteBurst: { max: 10, duration: 3600000 },
 };
 
 function cleanupExpired() {
@@ -156,4 +156,12 @@ export function getActionRateLimiter(shortLimit, burstLimit) {
 	};
 }
 
-export default { checkRateLimit, checkMultipleRateLimits, getRateLimitMiddleware, getActionRateLimiter, grantCapBypass, hasCapBypass, RATE_LIMITS };
+export default {
+	checkRateLimit,
+	checkMultipleRateLimits,
+	getRateLimitMiddleware,
+	getActionRateLimiter,
+	grantCapBypass,
+	hasCapBypass,
+	RATE_LIMITS,
+};

@@ -2,8 +2,8 @@ import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
-import ratelimit from "../helpers/ratelimit.js";
 import { checkMultipleRateLimits } from "../helpers/customRateLimit.js";
+import ratelimit from "../helpers/ratelimit.js";
 import { calculateSpamScoreWithDetails } from "../helpers/spam-detection.js";
 import { addNotification } from "./notifications.js";
 
@@ -11,7 +11,10 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const getIdentifier = (headers) => {
 	const token = headers.authorization?.split(" ")[1];
-	const ip = headers["cf-connecting-ip"] || headers["x-forwarded-for"]?.split(",")[0] || "0.0.0.0";
+	const ip =
+		headers["cf-connecting-ip"] ||
+		headers["x-forwarded-for"]?.split(",")[0] ||
+		"0.0.0.0";
 	return token || ip;
 };
 
@@ -1348,10 +1351,16 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			if (!currentUser) return { error: "User not found" };
 
 			const identifier = getIdentifier(headers, currentUser.id);
-			const rateLimitResult = checkMultipleRateLimits(identifier, ["follow", "followBurst"]);
-			if (!rateLimitResult.allowed) {
+			const rateLimitResult = checkMultipleRateLimits(identifier, [
+				"follow",
+				"followBurst",
+			]);
+			if (rateLimitResult.isLimited) {
 				set.status = 429;
-				return { error: "Rate limited", retryAfter: rateLimitResult.retryAfter };
+				return {
+					error: "Too many requests",
+					resetIn: rateLimitResult.resetIn,
+				};
 			}
 
 			const { username } = params;
@@ -1437,10 +1446,16 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			if (!currentUser) return { error: "User not found" };
 
 			const identifier = getIdentifier(headers, currentUser.id);
-			const rateLimitResult = checkMultipleRateLimits(identifier, ["follow", "followBurst"]);
-			if (!rateLimitResult.allowed) {
+			const rateLimitResult = checkMultipleRateLimits(identifier, [
+				"follow",
+				"followBurst",
+			]);
+			if (rateLimitResult.isLimited) {
 				set.status = 429;
-				return { error: "Rate limited", retryAfter: rateLimitResult.retryAfter };
+				return {
+					error: "Too many requests",
+					resetIn: rateLimitResult.resetIn,
+				};
 			}
 
 			const { username } = params;

@@ -166,7 +166,6 @@ export default async function openTweet(
 
 				if (!apiOutput || !apiOutput.tweet) {
 					removeSkeletons(skeletons);
-					switchPage("timeline");
 					toastQueue.add(
 						`<h1>Tweet not found</h1><p>It might have been deleted</p>`,
 					);

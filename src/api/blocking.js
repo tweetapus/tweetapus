@@ -2,14 +2,18 @@ import { jwt } from "@elysiajs/jwt";
 import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
-import ratelimit from "../helpers/ratelimit.js";
-import { getSubnetPrefix } from "../helpers/ip.js";
 import { checkMultipleRateLimits } from "../helpers/customRateLimit.js";
+import { getSubnetPrefix } from "../helpers/ip.js";
+import ratelimit from "../helpers/ratelimit.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const getIdentifier = (headers, userId) => {
-	return headers["cf-connecting-ip"] || headers["x-forwarded-for"]?.split(",")[0] || userId;
+	return (
+		headers["cf-connecting-ip"] ||
+		headers["x-forwarded-for"]?.split(",")[0] ||
+		userId
+	);
 };
 
 const getUserByUsername = db.prepare(
@@ -106,10 +110,16 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				if (!user) return { error: "User not found" };
 
 				const identifier = getIdentifier(headers, user.id);
-				const rateLimitResult = checkMultipleRateLimits(identifier, ["block", "blockBurst"]);
-				if (!rateLimitResult.allowed) {
+				const rateLimitResult = checkMultipleRateLimits(identifier, [
+					"block",
+					"blockBurst",
+				]);
+				if (rateLimitResult.isLimited) {
 					set.status = 429;
-					return { error: "Rate limited", retryAfter: rateLimitResult.retryAfter };
+					return {
+						error: "Too many requests",
+						resetIn: rateLimitResult.resetIn,
+					};
 				}
 
 				const { userId } = body;
@@ -203,10 +213,16 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				if (!user) return { error: "User not found" };
 
 				const identifier = getIdentifier(headers, user.id);
-				const rateLimitResult = checkMultipleRateLimits(identifier, ["block", "blockBurst"]);
-				if (!rateLimitResult.allowed) {
+				const rateLimitResult = checkMultipleRateLimits(identifier, [
+					"block",
+					"blockBurst",
+				]);
+				if (rateLimitResult.isLimited) {
 					set.status = 429;
-					return { error: "Rate limited", retryAfter: rateLimitResult.retryAfter };
+					return {
+						error: "Too many requests",
+						resetIn: rateLimitResult.resetIn,
+					};
 				}
 
 				const { userId } = body;
@@ -324,10 +340,16 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				if (!user) return { error: "User not found" };
 
 				const identifier = getIdentifier(headers, user.id);
-				const rateLimitResult = checkMultipleRateLimits(identifier, ["mute", "muteBurst"]);
-				if (!rateLimitResult.allowed) {
+				const rateLimitResult = checkMultipleRateLimits(identifier, [
+					"mute",
+					"muteBurst",
+				]);
+				if (rateLimitResult.isLimited) {
 					set.status = 429;
-					return { error: "Rate limited", retryAfter: rateLimitResult.retryAfter };
+					return {
+						error: "Too many requests",
+						resetIn: rateLimitResult.resetIn,
+					};
 				}
 
 				const { userId } = body;
@@ -383,10 +405,16 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				if (!user) return { error: "User not found" };
 
 				const identifier = getIdentifier(headers, user.id);
-				const rateLimitResult = checkMultipleRateLimits(identifier, ["mute", "muteBurst"]);
-				if (!rateLimitResult.allowed) {
+				const rateLimitResult = checkMultipleRateLimits(identifier, [
+					"mute",
+					"muteBurst",
+				]);
+				if (rateLimitResult.isLimited) {
 					set.status = 429;
-					return { error: "Rate limited", retryAfter: rateLimitResult.retryAfter };
+					return {
+						error: "Too many requests",
+						resetIn: rateLimitResult.resetIn,
+					};
 				}
 
 				const { userId } = body;

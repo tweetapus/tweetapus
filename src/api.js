@@ -6,7 +6,6 @@ import articles from "./api/articles.js";
 import auth from "./api/auth.js";
 import blocking from "./api/blocking.js";
 import bookmarks from "./api/bookmarks.js";
-import captcha from "./api/captcha.js";
 import communities from "./api/communities.js";
 import delegates from "./api/delegates.js";
 import dm from "./api/dm.js";
@@ -325,7 +324,6 @@ export default new Elysia({
 	.use(admin)
 	.use(blocking)
 	.use(bookmarks)
-	.use(captcha)
 	.use(communities)
 	.use(delegates)
 	.use(tweet)

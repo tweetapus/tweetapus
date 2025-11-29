@@ -3,8 +3,8 @@ import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
 import { generateAIResponse } from "../helpers/ai-assistant.js";
-import ratelimit from "../helpers/ratelimit.js";
 import { checkMultipleRateLimits } from "../helpers/customRateLimit.js";
+import ratelimit from "../helpers/ratelimit.js";
 import { updateUserSpamScore } from "../helpers/spam-detection.js";
 import { addNotification } from "./notifications.js";
 
@@ -12,7 +12,10 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 const getIdentifier = (headers) => {
 	const token = headers.authorization?.split(" ")[1];
-	const ip = headers["cf-connecting-ip"] || headers["x-forwarded-for"]?.split(",")[0] || "0.0.0.0";
+	const ip =
+		headers["cf-connecting-ip"] ||
+		headers["x-forwarded-for"]?.split(",")[0] ||
+		"0.0.0.0";
 	return token || ip;
 };
 
@@ -519,7 +522,10 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 		const identifier = getIdentifier(headers);
 		const isReply = !!body.reply_to;
 		if (isReply) {
-			const rateCheck = checkMultipleRateLimits(identifier, ["reply", "replyBurst"]);
+			const rateCheck = checkMultipleRateLimits(identifier, [
+				"reply",
+				"replyBurst",
+			]);
 			if (rateCheck.isLimited) {
 				set.status = 429;
 				return { error: "Too many requests", resetIn: rateCheck.resetIn };
@@ -1445,7 +1451,10 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 		if (!authorization) return { error: "Authentication required" };
 
 		const identifier = getIdentifier(headers);
-		const rateCheck = checkMultipleRateLimits(identifier, ["like", "likeBurst"]);
+		const rateCheck = checkMultipleRateLimits(identifier, [
+			"like",
+			"likeBurst",
+		]);
 		if (rateCheck.isLimited) {
 			set.status = 429;
 			return { error: "Too many requests", resetIn: rateCheck.resetIn };
@@ -1511,7 +1520,10 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 		if (!authorization) return { error: "Authentication required" };
 
 		const identifier = getIdentifier(headers);
-		const rateCheck = checkMultipleRateLimits(identifier, ["retweet", "retweetBurst"]);
+		const rateCheck = checkMultipleRateLimits(identifier, [
+			"retweet",
+			"retweetBurst",
+		]);
 		if (rateCheck.isLimited) {
 			set.status = 429;
 			return { error: "Too many requests", resetIn: rateCheck.resetIn };

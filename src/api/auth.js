@@ -8,8 +8,8 @@ import { isoBase64URL, isoUint8Array } from "@simplewebauthn/server/helpers";
 import { Elysia, t } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
 import db from "./../db.js";
-import ratelimit from "../helpers/ratelimit.js";
 import { grantCapBypass } from "../helpers/customRateLimit.js";
+import ratelimit from "../helpers/ratelimit.js";
 import { isVPN } from "../helpers/vpn-detect.js";
 import cap from "./cap.js";
 
@@ -170,7 +170,10 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 				return { success: false, error: "Invalid Cap token" };
 			}
 			const token = headers.authorization?.split(" ")[1];
-			const ip = headers["cf-connecting-ip"] || headers["x-forwarded-for"]?.split(",")[0] || "0.0.0.0";
+			const ip =
+				headers["cf-connecting-ip"] ||
+				headers["x-forwarded-for"]?.split(",")[0] ||
+				"0.0.0.0";
 			const identifier = token || ip;
 			grantCapBypass(identifier);
 			return { success: true, message: "Rate limit bypass granted" };
