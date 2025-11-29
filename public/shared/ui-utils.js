@@ -68,7 +68,7 @@ export function createPopup(options) {
 	try {
 		overlay.style.zIndex = "9999";
 		popup.style.zIndex = "10000";
-	} catch (_) {}
+	} catch {}
 	popup.style.position = "fixed";
 	popup.style.left = "0px";
 	popup.style.top = "0px";
@@ -93,7 +93,7 @@ export function createPopup(options) {
 					height: initialRect.height,
 				};
 			}
-		} catch (_) {}
+		} catch {}
 	}
 
 	const computeTriggerRect = () => {
@@ -128,7 +128,7 @@ export function createPopup(options) {
 								return lastKnownRect;
 							}
 						}
-					} catch (_) {}
+					} catch {}
 				}
 				if (r) {
 					lastKnownRect = {
@@ -254,7 +254,7 @@ export function createPopup(options) {
 				popup.style.transformOrigin = `${transformOriginX} ${transformOriginY}`;
 				try {
 					popupContent.style.transformOrigin = `${transformOriginX} ${transformOriginY}`;
-				} catch (_) {}
+				} catch {}
 			} else {
 				const left = Math.max(
 					12,
@@ -277,13 +277,13 @@ export function createPopup(options) {
 				popup.style.transformOrigin = "center center";
 				try {
 					popupContent.style.transformOrigin = "center center";
-				} catch (_) {}
+				} catch {}
 			}
 		};
 
 		try {
 			firstPositioning = false;
-		} catch (_) {}
+		} catch {}
 		doMeasure();
 	};
 
@@ -292,21 +292,21 @@ export function createPopup(options) {
 	popup.classList.add("visible");
 	try {
 		if (popupContent.parentElement !== popup) popup.appendChild(popupContent);
-	} catch (_) {}
+	} catch {}
 	try {
 		if (popup.parentElement !== document.body) document.body.appendChild(popup);
-	} catch (_) {}
+	} catch {}
 	try {
 		if (overlay.parentElement !== document.body)
 			document.body.appendChild(overlay);
-	} catch (_) {}
+	} catch {}
 
 	reposition();
 	popup.style.opacity = "1";
 	try {
 		popupContent.style.transform = "";
 		popupContent.style.opacity = "";
-	} catch (_) {}
+	} catch {}
 
 	let scheduled = false;
 	const scheduleReposition = () => {
@@ -334,14 +334,14 @@ export function createPopup(options) {
 			childList: true,
 			subtree: false,
 		});
-	} catch (_) {
+	} catch {
 		try {
 			observer.observe(document.body, {
 				attributes: true,
 				childList: true,
 				subtree: false,
 			});
-		} catch (_) {}
+		} catch {}
 	}
 
 	overlay._reposition = reposition;
@@ -351,11 +351,11 @@ export function createPopup(options) {
 	const popupContentObserver = new MutationObserver(() => {
 		try {
 			if (popupContent.parentElement !== popup) popup.appendChild(popupContent);
-		} catch (_) {}
+		} catch {}
 	});
 	try {
 		popupContentObserver.observe(popup, { childList: true });
-	} catch (_) {}
+	} catch {}
 	overlay._popupContentObserver = popupContentObserver;
 	overlay._popup = popup;
 
@@ -377,14 +377,14 @@ export function createPopup(options) {
 			if (overlay._observer) overlay._observer.disconnect();
 			if (overlay._popupContentObserver)
 				overlay._popupContentObserver.disconnect();
-		} catch (_) {}
+		} catch {}
 
 		try {
 			overlay.remove();
-		} catch (_) {}
+		} catch {}
 		try {
 			popup.remove();
-		} catch (_) {}
+		} catch {}
 		onClose();
 	};
 
@@ -482,7 +482,7 @@ export function createModal(options) {
 			modal.style.setProperty("height", "min(90vh, 900px)", "important");
 			modal.style.setProperty("max-height", "90vh", "important");
 			modal.style.setProperty("overflow", "hidden", "important");
-		} catch (_) {}
+		} catch {}
 	}
 
 	if (closeOnOverlayClick) {

@@ -4091,7 +4091,7 @@ class AdminPanel {
 						.toISOString()
 						.slice(0, 16);
 				}
-			} catch (_) {}
+			} catch {}
 		}
 		const affiliateWithValue = user.affiliate_with_username
 			? this.escapeHtml(user.affiliate_with_username)

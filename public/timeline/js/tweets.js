@@ -2855,7 +2855,7 @@ export const createTweetElement = (tweet, config = {}) => {
 					disableButton(tweetInteractionsReactionEl);
 					disableButton(tweetInteractionsOptionsEl);
 				}
-			} catch (_) {}
+			} catch {}
 		})();
 
 		tweetEl.appendChild(tweetInteractionsEl);

@@ -1360,7 +1360,7 @@ ${
 					dmBtnCheck.title = "";
 				}
 			}
-		} catch (_) {}
+		} catch {}
 	} else {
 		const dmBtn = document.getElementById("profileDmBtn");
 		const dropdown = document.getElementById("profileDropdown");
@@ -1530,7 +1530,7 @@ function updateFollowButton(isFollowing, isBlocked) {
 					toastQueue.add(`<h1>You have been blocked by this user</h1>`);
 					return;
 				}
-			} catch (_) {}
+			} catch {}
 
 			const { success } = await query(`/profile/${currentUsername}/follow`, {
 				method: "POST",
@@ -1701,7 +1701,7 @@ function setupDmButton(username) {
 				toastQueue.add(`<h1>You have been blocked by this user</h1>`);
 				return;
 			}
-		} catch (_) {}
+		} catch {}
 
 		const { openOrCreateConversation } = await import("./dm.js");
 		openOrCreateConversation(username);
@@ -2289,7 +2289,7 @@ const postNewProfilePicTweet = async (avatarUrl) => {
 
 	try {
 		addTweetToTimeline(tweet, true);
-	} catch (_) {}
+	} catch {}
 
 	return tweet;
 };
@@ -2653,15 +2653,23 @@ export const handleProfileDropdown = (e) => {
 								)
 									return;
 
-								await query("/blocking/block", {
+								const result = await query("/blocking/block", {
 									method: "POST",
 									headers: { "Content-Type": "application/json" },
 									body: JSON.stringify({ userId: currentProfile.profile.id }),
 								});
 
-								toastQueue.add(`<h1>User blocked</h1>`);
+								if (result.success) {
+									currentProfile.profile.blockedProfile = true;
+									updateFollowButton(false, true);
+									toastQueue.add(`<h1>User blocked</h1>`);
+								} else {
+									toastQueue.add(
+										`<h1>${result.error || "Failed to block"}</h1>`,
+									);
+								}
 							} catch (err) {
-								console.error("Block/unblock error:", err);
+								console.error("Block error:", err);
 								toastQueue.add(`<h1>Network error. Please try again.</h1>`);
 							}
 						},
@@ -2677,6 +2685,32 @@ export const handleProfileDropdown = (e) => {
 								id: currentProfile.profile.id,
 								username: currentProfile.profile.username,
 							});
+						},
+					});
+				} else {
+					items.push({
+						id: "unblock-user",
+						icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><line x1="15" y1="9" x2="9" y2="15"></line></svg>`,
+						title: `Unblock`,
+						onClick: async () => {
+							try {
+								const result = await query("/blocking/unblock", {
+									method: "POST",
+									headers: { "Content-Type": "application/json" },
+									body: JSON.stringify({ userId: currentProfile.profile.id }),
+								});
+
+								if (result.success) {
+									currentProfile.profile.blockedProfile = false;
+									updateFollowButton(false, false);
+									toastQueue.add(`<h1>User unblocked</h1>`);
+								} else {
+									toastQueue.add(`<h1>${result.error || "Failed to unblock"}</h1>`);
+								}
+							} catch (err) {
+								console.error("Unblock error:", err);
+								toastQueue.add(`<h1>Network error. Please try again.</h1>`);
+							}
 						},
 					});
 				}

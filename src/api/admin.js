@@ -1391,7 +1391,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 
 				try {
 					clearSuspensionCache(params.id);
-				} catch (_) {}
+				} catch {}
 
 				return { success: true };
 			}

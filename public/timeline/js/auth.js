@@ -146,14 +146,14 @@ function saveAccountToStorage(user, token) {
 							const { openPastesPage } = await import("./pastes.js");
 							openPastesPage();
 							return true;
-						} catch (_) {}
+						} catch {}
 						try {
 							const { openPastesPage } = await import(
 								"/public/timeline/js/pastes.js"
 							);
 							openPastesPage();
 							return true;
-						} catch (_) {}
+						} catch {}
 						try {
 							const { openPastesPage } = await import("/timeline/js/pastes.js");
 							openPastesPage();
@@ -165,7 +165,7 @@ function saveAccountToStorage(user, token) {
 
 					try {
 						popupObj?.close?.();
-					} catch (_) {}
+					} catch {}
 
 					tryImports().then((ok) => {
 						if (!ok) {

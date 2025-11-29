@@ -335,7 +335,7 @@ export function openImageCropper(file, options = {}) {
 		function cleanup() {
 			try {
 				overlay.remove();
-			} catch (_) {}
+			} catch {}
 			URL.revokeObjectURL(objectUrl);
 		}
 	});

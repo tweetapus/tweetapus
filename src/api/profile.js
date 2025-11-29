@@ -543,7 +543,7 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 					if (aff) {
 						profile.affiliate_with_profile = aff;
 					}
-				} catch (_) {}
+				} catch {}
 			}
 
 			if (profile.selected_community_tag) {
@@ -642,7 +642,7 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 						};
 						return { error: "User is shadowbanned", profile: minimalProfile };
 					}
-				} catch (_) {}
+				} catch {}
 			}
 
 			const allContent = [
