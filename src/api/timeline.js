@@ -201,7 +201,6 @@ const getCardDataForTweet = (tweetId) => {
 	};
 };
 
-// Fetch posts by ID list while applying per-user visibility filters similar to getTimelinePosts
 const getTimelinePostsByIds = (ids, userId, isAdmin) => {
 	if (!ids || ids.length === 0) return [];
 	const placeholders = ids.map(() => "?").join(",");
@@ -213,7 +212,6 @@ const getTimelinePostsByIds = (ids, userId, isAdmin) => {
 			WHERE posts.id IN (${placeholders}) AND posts.reply_to IS NULL AND blocks.id IS NULL AND posts.pinned = 0 AND users.suspended = 0 AND posts.community_only = FALSE AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1) AND (users.private = 0 OR follows.id IS NOT NULL OR posts.user_id = ?)
 			ORDER BY posts.created_at DESC, posts.id DESC`;
 	const stmt = db.query(query);
-	// Arguments: blocker_id, follower_id, shadowbanned_userid, adminFlag, private_userid, ...ids
 	return stmt.all(userId, userId, userId, isAdmin ? 1 : 0, userId, ...ids);
 };
 
@@ -371,7 +369,6 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 			);
 		}
 
-		// Compute per-batch author/content repeat counts to aid debugging
 		const authorCounts = new Map();
 		const contentCounts = new Map();
 		posts.forEach((p) => {

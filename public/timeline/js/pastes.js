@@ -133,17 +133,6 @@ const buildPageLink = (slug, secret) => {
 	return url.toString();
 };
 
-const buildRawLink = (id, secret) => {
-	const url = new URL(
-		`/api/pastes/raw/${encodeURIComponent(id)}`,
-		window.location.origin,
-	);
-	if (secret) {
-		url.searchParams.set("secret", secret);
-	}
-	return url.toString();
-};
-
 const renderApp = (container) => {
 	if (!container) return;
 	if (!container.classList.contains("paste-app")) {
@@ -446,10 +435,6 @@ const renderResultCard = (result) => {
 
 	const linkRow = createEl("div", { className: "link-row" });
 	const pageLink = buildPageLink(result.slug, result.secret_key || "");
-	const rawLink = buildRawLink(
-		result.slug || result.id,
-		result.secret_key || "",
-	);
 
 	const pageBtn = createEl("button", {
 		className: "btn secondary",
@@ -466,21 +451,6 @@ const renderResultCard = (result) => {
 		} catch {}
 	});
 
-	const rawBtn = createEl("button", {
-		className: "btn secondary",
-		text: "Copy raw link",
-		type: "button",
-	});
-	rawBtn.addEventListener("click", async () => {
-		try {
-			await navigator.clipboard.writeText(rawLink);
-			rawBtn.textContent = "Copied";
-			setTimeout(() => {
-				rawBtn.textContent = "Copy raw link";
-			}, 1500);
-		} catch {}
-	});
-
 	const viewBtn = createEl("button", {
 		className: "btn secondary",
 		text: "View paste",
@@ -489,8 +459,8 @@ const renderResultCard = (result) => {
 	viewBtn.addEventListener("click", () => {
 		openPaste(result.slug, result.secret_key || "");
 	});
-
-	linkRow.append(pageBtn, rawBtn, viewBtn);
+	
+	linkRow.append(pageBtn, viewBtn);
 	card.append(linkRow);
 
 	if (result.secret_key) {
@@ -705,21 +675,6 @@ const renderViewCard = () => {
 		} catch {}
 	});
 
-	const rawBtn = createEl("button", {
-		className: "btn secondary",
-		text: "Open raw",
-		type: "button",
-	});
-	rawBtn.addEventListener("click", () => {
-		let rawUrl = buildRawLink(paste.slug || paste.id, state.view.secret || "");
-		if (state.view.password) {
-			const url = new URL(rawUrl);
-			url.searchParams.set("password", state.view.password);
-			rawUrl = url.toString();
-		}
-		window.open(rawUrl, "_blank");
-	});
-
 	const newBtn = createEl("button", {
 		className: "btn secondary",
 		text: "New paste",
@@ -736,7 +691,7 @@ const renderViewCard = () => {
 		renderApp(document.querySelector(".pastes-page"));
 	});
 
-	commands.append(shareBtn, rawBtn, newBtn);
+	commands.append(shareBtn, newBtn); //
 	card.append(commands);
 
 	if (paste.burn_after_reading) {

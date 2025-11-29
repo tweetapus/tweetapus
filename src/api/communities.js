@@ -480,10 +480,7 @@ export default new Elysia({ tags: ["Communities"] })
 			},
 			params: t.Object({
 				id: t.String(),
-			}),
-			body: t.Object({
-				username: t.String(),
-			}),
+			})
 		},
 	)
 	.post(

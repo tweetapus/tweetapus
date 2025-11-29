@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 
 const URL =
 	"https://raw.githubusercontent.com/josephrocca/is-vpn/main/vpn-or-datacenter-ipv4-ranges.txt";
@@ -49,9 +49,9 @@ function ipToNum(ip) {
 }
 
 export const isVPN = async (ip) => {
-  if (!ip) {
-    return null;
-  }
+	if (!ip) {
+		return null;
+	}
 	if (!vpnRanges.length) {
 		try {
 			const text = await readFile(OUTPUT_FILE, "utf-8");

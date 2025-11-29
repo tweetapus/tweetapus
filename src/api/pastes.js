@@ -217,45 +217,6 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 		const rows = listPublicPastes.all(limit, page * limit);
 		return { success: true, pastes: rows.map(serializePaste) };
 	})
-	.get("/raw/:idOrSlug", async ({ params, headers, query, set, jwt }) => {
-		let row = getPasteById.get(params.idOrSlug);
-		if (!row) {
-			row = getPasteBySlug.get(params.idOrSlug);
-		}
-		if (!row) {
-			set.status = 404;
-			return "Paste not found";
-		}
-
-		if (row.expires_at && new Date(row.expires_at) <= new Date()) {
-			purgeExpiredPaste.run(row.id);
-			set.status = 404;
-			return "Paste not found";
-		}
-
-		if (!row.is_public) {
-			const allowed = await canAccessPrivatePaste(row, headers, query, jwt);
-			if (!allowed) {
-				set.status = 404;
-				return "Paste not found";
-			}
-		}
-
-		if (row.password_hash) {
-			const providedPassword =
-				query.password || headers["x-paste-password"] || null;
-			const passwordValid = await verifyPastePassword(row, providedPassword);
-			if (!passwordValid) {
-				set.status = 401;
-				return "Password required";
-			}
-		}
-
-		incrementViews.run(row.id);
-		if (row.burn_after_reading) deletePasteById.run(row.id);
-		set.headers = { "Content-Type": "text/plain; charset=utf-8" };
-		return row.content;
-	})
 	.get("/id/:id", async ({ params, headers, query, jwt }) => {
 		const row = getPasteById.get(params.id);
 		if (!row) return { error: "Paste not found" };
@@ -313,32 +274,6 @@ export default new Elysia({ prefix: "/pastes", tags: ["Pastes"] })
 			deletePasteById.run(row.id);
 		}
 		return { success: true, paste: result };
-	})
-	.get("/:slug/raw", async ({ params, headers, query, set, jwt }) => {
-		const row = getPasteBySlug.get(params.slug);
-		if (!row) {
-			set.status = 404;
-			return "Paste not found";
-		}
-
-		if (row.expires_at && new Date(row.expires_at) <= new Date()) {
-			purgeExpiredPaste.run(row.id);
-			set.status = 404;
-			return "Paste not found";
-		}
-
-		if (!row.is_public) {
-			const allowed = await canAccessPrivatePaste(row, headers, query, jwt);
-			if (!allowed) {
-				set.status = 404;
-				return "Paste not found";
-			}
-		}
-
-		incrementViews.run(row.id);
-		if (row.burn_after_reading) deletePasteById.run(row.id);
-		set.headers = { "Content-Type": "text/plain; charset=utf-8" };
-		return row.content;
 	})
 	.delete("/:slug", async ({ params, headers, jwt }) => {
 		const row = getPasteBySlug.get(params.slug);
