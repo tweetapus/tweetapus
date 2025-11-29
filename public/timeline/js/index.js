@@ -101,6 +101,8 @@ let timelineScrollPosition = 0;
 		if (!append) {
 			getTweetsContainer().innerHTML = "";
 			skeletons = showSkeletons(getTweetsContainer(), createTweetSkeleton, 5);
+		} else {
+			skeletons = showSkeletons(getTweetsContainer(), createTweetSkeleton, 3);
 		}
 
 		try {
@@ -134,6 +136,7 @@ let timelineScrollPosition = 0;
 				}
 			}
 		} catch (error) {
+			removeSkeletons(skeletons);
 			console.error("Error loading timeline:", error);
 			toastQueue.add(`<h1>Error loading timeline</h1><p>Please try again</p>`);
 		} finally {

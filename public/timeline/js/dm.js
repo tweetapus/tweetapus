@@ -430,14 +430,20 @@ function renderConversationsList() {
 function updateConversationItem(item, conversation) {
 	const unreadCount = conversation.unread_count || 0;
 	const isGroup = conversation.type === "group";
-	
+
 	item.classList.toggle("unread", unreadCount > 0);
 	item.classList.toggle("group", isGroup);
 
 	const lastMessageEl = item.querySelector(".dm-last-message");
 	if (lastMessageEl) {
-		const lastMessage = sanitizeHTML(conversation.last_message_content || "No messages yet");
-		const lastSender = sanitizeHTML(conversation.lastMessageSenderName || conversation.last_message_sender || "");
+		const lastMessage = sanitizeHTML(
+			conversation.last_message_content || "No messages yet",
+		);
+		const lastSender = sanitizeHTML(
+			conversation.lastMessageSenderName ||
+				conversation.last_message_sender ||
+				"",
+		);
 		let messageText = "";
 		if (lastSender && isGroup) {
 			messageText = `${lastSender.replaceAll("<", "&lt;").replaceAll(">", "&gt;")}: `;
@@ -451,13 +457,19 @@ function updateConversationItem(item, conversation) {
 				senderSpan.textContent = `${lastSender}: `;
 				lastMessageEl.appendChild(senderSpan);
 			}
-			lastMessageEl.appendChild(document.createTextNode(sanitizeHTML(conversation.last_message_content || "No messages yet")));
+			lastMessageEl.appendChild(
+				document.createTextNode(
+					sanitizeHTML(conversation.last_message_content || "No messages yet"),
+				),
+			);
 		}
 	}
 
 	const timeEl = item.querySelector(".dm-time");
 	if (timeEl) {
-		const time = conversation.last_message_time ? formatTime(new Date(conversation.last_message_time)) : "";
+		const time = conversation.last_message_time
+			? formatTime(new Date(conversation.last_message_time))
+			: "";
 		if (timeEl.textContent !== time) {
 			timeEl.textContent = time;
 		}
@@ -484,16 +496,26 @@ function updateConversationItem(item, conversation) {
 }
 
 function createConversationItem(conversation) {
-	const displayAvatar = conversation.displayAvatar || "/public/shared/assets/default-avatar.svg";
+	const displayAvatar =
+		conversation.displayAvatar || "/public/shared/assets/default-avatar.svg";
 	const displayName = sanitizeHTML(conversation.displayName || "Unknown");
-	const lastMessage = sanitizeHTML(conversation.last_message_content || "No messages yet");
-	const lastSender = sanitizeHTML(conversation.lastMessageSenderName || conversation.last_message_sender || "");
-	const time = conversation.last_message_time ? formatTime(new Date(conversation.last_message_time)) : "";
+	const lastMessage = sanitizeHTML(
+		conversation.last_message_content || "No messages yet",
+	);
+	const lastSender = sanitizeHTML(
+		conversation.lastMessageSenderName ||
+			conversation.last_message_sender ||
+			"",
+	);
+	const time = conversation.last_message_time
+		? formatTime(new Date(conversation.last_message_time))
+		: "";
 	const unreadCount = conversation.unread_count || 0;
 	const isGroup = conversation.type === "group";
 
 	const item = document.createElement("div");
-	item.className = `dm-conversation-item ${unreadCount > 0 ? "unread" : ""} ${isGroup ? "group" : ""}`.trim();
+	item.className =
+		`dm-conversation-item ${unreadCount > 0 ? "unread" : ""} ${isGroup ? "group" : ""}`.trim();
 	item.onclick = () => openConversation(conversation.id);
 
 	if (isGroup && conversation.participants.length > 0) {
@@ -503,9 +525,12 @@ function createConversationItem(conversation) {
 		groupAvatars.className = "dm-group-avatars";
 
 		for (const p of visibleParticipants) {
-			const radius = p.avatar_radius !== null && p.avatar_radius !== undefined
-				? `${p.avatar_radius}px`
-				: p.gold ? `4px` : `50px`;
+			const radius =
+				p.avatar_radius !== null && p.avatar_radius !== undefined
+					? `${p.avatar_radius}px`
+					: p.gold
+						? `4px`
+						: `50px`;
 			const img = document.createElement("img");
 			img.src = p.avatar || "/public/shared/assets/default-avatar.svg";
 			img.alt = p.name || p.username;
@@ -524,9 +549,12 @@ function createConversationItem(conversation) {
 	} else {
 		const singleParticipant = conversation.participants?.[0] ?? null;
 		const radius = singleParticipant
-			? singleParticipant.avatar_radius !== null && singleParticipant.avatar_radius !== undefined
+			? singleParticipant.avatar_radius !== null &&
+				singleParticipant.avatar_radius !== undefined
 				? `${singleParticipant.avatar_radius}px`
-				: singleParticipant.gold ? `4px` : `50px`
+				: singleParticipant.gold
+					? `4px`
+					: `50px`
 			: `50px`;
 		const img = document.createElement("img");
 		img.src = displayAvatar;

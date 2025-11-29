@@ -77,7 +77,7 @@ export async function openAccountSwitcher() {
 		const currentAccountItem = createAccountItem(
 			currentUser,
 			true,
-			isDelegate ? "Delegate" : "Current Account",
+			isDelegate ? "Delegate" : "Current",
 		);
 		accountsList.appendChild(currentAccountItem);
 

@@ -2,6 +2,11 @@ import {
 	NOTIFICATION_ICON_CLASSES,
 	NOTIFICATION_ICON_MAP,
 } from "../../shared/notification-icons.js";
+import {
+	createNotificationSkeleton,
+	removeSkeletons,
+	showSkeletons,
+} from "../../shared/skeleton-utils.js";
 import { updateTabIndicator } from "../../shared/tab-indicator.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal } from "../../shared/ui-utils.js";
@@ -89,7 +94,14 @@ async function loadNotifications() {
 	hasMoreNotifications = true;
 	oldestNotificationId = null;
 
+	const listElement = document.getElementById("notificationsList");
+	if (!listElement) return;
+
+	const skeletons = showSkeletons(listElement, createNotificationSkeleton, 5);
+
 	const data = await query("/notifications/");
+
+	removeSkeletons(skeletons);
 
 	const notifications = (data.notifications || []).map((notification) => {
 		if (notification.tweet?.user) {
@@ -126,10 +138,15 @@ async function loadNotifications() {
 		if (scrollPosition >= threshold) {
 			isLoadingMoreNotifications = true;
 
+			const listElement = document.getElementById("notificationsList");
+			const skeletons = showSkeletons(listElement, createNotificationSkeleton, 3);
+
 			try {
 				const data = await query(
 					`/notifications/?before=${oldestNotificationId}&limit=20`,
 				);
+
+				removeSkeletons(skeletons);
 
 				const newNotifications = (data.notifications || []).map(
 					(notification) => {
@@ -143,7 +160,6 @@ async function loadNotifications() {
 
 				if (newNotifications.length > 0) {
 					currentNotifications.push(...newNotifications);
-					const listElement = document.getElementById("notificationsList");
 
 					newNotifications.forEach((notification) => {
 						const notificationEl = createNotificationElement(notification);
@@ -153,8 +169,15 @@ async function loadNotifications() {
 					oldestNotificationId =
 						newNotifications[newNotifications.length - 1].id;
 					hasMoreNotifications = data.hasMoreNotifications || false;
+					
+					requestAnimationFrame(() => {
+						checkIfNeedsMoreContent();
+					});
+				} else {
+					hasMoreNotifications = false;
 				}
 			} catch (error) {
+				removeSkeletons(skeletons);
 				console.error("Error loading more notifications:", error);
 			} finally {
 				isLoadingMoreNotifications = false;
@@ -196,6 +219,26 @@ function renderNotifications() {
 		const notificationEl = createNotificationElement(group);
 		listElement.appendChild(notificationEl);
 	});
+
+	requestAnimationFrame(() => {
+		checkIfNeedsMoreContent();
+	});
+}
+
+function checkIfNeedsMoreContent() {
+	if (isLoadingMoreNotifications || !hasMoreNotifications) return;
+
+	const notificationsPage = document.querySelector(".notifications");
+	if (!notificationsPage || notificationsPage.style.display === "none") return;
+
+	const documentHeight = document.documentElement.scrollHeight;
+	const viewportHeight = window.innerHeight;
+
+	if (documentHeight <= viewportHeight + 200 && hasMoreNotifications) {
+		if (notificationsScrollHandler) {
+			notificationsScrollHandler();
+		}
+	}
 }
 
 function groupSimilarNotifications(notifications) {

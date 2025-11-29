@@ -37,6 +37,39 @@ export function createDMConversationSkeleton() {
 	return skeleton;
 }
 
+export function createCommunitySkeleton() {
+	const skeleton = document.createElement("div");
+	skeleton.className = "skeleton-community skeleton-container";
+	skeleton.innerHTML = `
+		<div class="skeleton-loader skeleton-community-banner"></div>
+		<div class="skeleton-community-content">
+			<div class="skeleton-loader skeleton-community-icon"></div>
+			<div class="skeleton-community-info">
+				<div class="skeleton-loader skeleton-community-name"></div>
+				<div class="skeleton-loader skeleton-community-desc"></div>
+				<div class="skeleton-loader skeleton-community-meta"></div>
+			</div>
+		</div>
+	`;
+	return skeleton;
+}
+
+export function createNotificationSkeleton() {
+	const skeleton = document.createElement("div");
+	skeleton.className = "skeleton-notification skeleton-container";
+	skeleton.innerHTML = `
+		<div class="skeleton-notification-header">
+			<div class="skeleton-loader skeleton-notification-icon"></div>
+			<div class="skeleton-loader skeleton-notification-avatar"></div>
+		</div>
+		<div class="skeleton-notification-content">
+			<div class="skeleton-loader skeleton-notification-text"></div>
+			<div class="skeleton-loader skeleton-notification-text-short"></div>
+		</div>
+	`;
+	return skeleton;
+}
+
 export function createProfileSkeleton() {
 	const skeleton = document.createElement("div");
 	skeleton.className = "skeleton-profile-header skeleton-container";

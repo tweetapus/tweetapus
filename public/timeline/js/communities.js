@@ -5,6 +5,11 @@ import {
 	convertToWebPAvatar,
 	convertToWebPBanner,
 } from "../../shared/image-utils.js";
+import {
+	createCommunitySkeleton,
+	removeSkeletons,
+	showSkeletons,
+} from "../../shared/skeleton-utils.js";
 import { updateTabIndicator } from "../../shared/tab-indicator.js";
 import toastQueue from "../../shared/toasts.js";
 import { createPopup } from "../../shared/ui-utils.js";
@@ -206,10 +211,14 @@ function setupModalListeners() {
 }
 
 async function loadCommunities() {
-	const { communities } = await api("/communities?limit=50");
 	const list = document.getElementById("communitiesList");
 	if (!list) return;
 
+	const skeletons = showSkeletons(list, createCommunitySkeleton, 3);
+
+	const { communities } = await api("/communities?limit=50");
+	
+	removeSkeletons(skeletons);
 	list.innerHTML = "";
 
 	if (!communities || communities.length === 0) {
@@ -230,10 +239,14 @@ async function loadMyCommunities() {
 	const userId = JSON.parse(
 		atob(localStorage.getItem("authToken").split(".")[1]),
 	).userId;
-	const { communities } = await api(`/users/${userId}/communities?limit=50`);
 	const list = document.getElementById("myCommunitiesList");
 	if (!list) return;
 
+	const skeletons = showSkeletons(list, createCommunitySkeleton, 3);
+
+	const { communities } = await api(`/users/${userId}/communities?limit=50`);
+	
+	removeSkeletons(skeletons);
 	list.innerHTML = "";
 
 	if (!communities || communities.length === 0) {
