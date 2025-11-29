@@ -225,9 +225,6 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
 
-				if (isUserRestrictedById(user.id))
-					return { error: "Action not allowed: account is restricted" };
-
 				const { postId } = body;
 				if (!postId) return { error: "Post ID is required" };
 
@@ -273,9 +270,6 @@ export default new Elysia({ prefix: "/bookmarks", tags: ["Bookmarks"] })
 
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
-
-				if (isUserRestrictedById(user.id))
-					return { error: "Action not allowed: account is restricted" };
 
 				const { postId } = body;
 				if (!postId) return { error: "Post ID is required" };

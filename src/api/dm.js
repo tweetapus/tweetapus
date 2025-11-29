@@ -22,19 +22,6 @@ const getUserByUsername = db.query(
 	"SELECT id, username, name, avatar, verified FROM users WHERE LOWER(username) = LOWER(?)",
 );
 
-const isRestrictedQuery = db.query(`
-  SELECT 1 FROM suspensions WHERE user_id = ? AND status = 'active' AND action = 'restrict' AND (expires_at IS NULL OR expires_at > datetime('now'))
-`);
-const getUserRestrictedFlag = db.query(
-	"SELECT restricted FROM users WHERE id = ?",
-);
-
-const isUserRestrictedById = (userId) => {
-	const r = isRestrictedQuery.get(userId);
-	const f = getUserRestrictedFlag.get(userId);
-	return !!r || !!f?.restricted;
-};
-
 const createConversation = db.query(`
   INSERT INTO conversations (id, type, title)
   VALUES (?, ?, ?)
@@ -344,11 +331,6 @@ export default new Elysia({ prefix: "/dm", tags: ["DM"] })
 				const payload = JSON.parse(atob(token.split(".")[1]));
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
-
-				// Restricted users cannot send DMs
-				if (isUserRestrictedById(user.id)) {
-					return { error: "Action not allowed: account is restricted" };
-				}
 
 				const { participantUsernames, title, isGroup } = body;
 

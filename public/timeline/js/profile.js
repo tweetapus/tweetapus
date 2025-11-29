@@ -924,17 +924,6 @@ const renderProfile = (data) => {
 		} else if (existingBadge) {
 			existingBadge.remove();
 		}
-		const existingRestrBadge = profileNameEl.querySelector(".restricted-badge");
-		if (restricted) {
-			if (!existingRestrBadge) {
-				const rBadge = document.createElement("span");
-				rBadge.className = "restricted-badge text-warning ms-2 small";
-				rBadge.textContent = "Restricted";
-				profileNameEl.appendChild(rBadge);
-			}
-		} else if (existingRestrBadge) {
-			existingRestrBadge.remove();
-		}
 	}
 
 	const mainDisplayNameEl = document.getElementById("profileDisplayName");
@@ -971,25 +960,6 @@ const renderProfile = (data) => {
 			}
 		} else if (existingMainBadge) {
 			existingMainBadge.remove();
-		}
-
-		const existingMainRestrBadge =
-			mainDisplayNameEl.querySelector(".restricted-badge");
-		if (restricted) {
-			if (!existingMainRestrBadge) {
-				const rBadgeMain = document.createElement("span");
-				rBadgeMain.className = "restricted-badge text-warning ms-2 small";
-				rBadgeMain.textContent = "Restricted";
-				const followsBadge =
-					mainDisplayNameEl.querySelector(".follows-me-badge");
-				if (followsBadge) {
-					mainDisplayNameEl.insertBefore(rBadgeMain, followsBadge);
-				} else {
-					mainDisplayNameEl.appendChild(rBadgeMain);
-				}
-			}
-		} else if (existingMainRestrBadge) {
-			existingMainRestrBadge.remove();
 		}
 
 		const existingMainAffWith = mainDisplayNameEl.querySelector(
@@ -1201,8 +1171,8 @@ const renderProfile = (data) => {
 			.join("");
 
 	metaEl
-		.querySelector(".profile-meta-item:has(.tweeta-joindate)")
-		.addEventListener("click", async (e) => {
+		?.querySelector(".profile-meta-item:has(.tweeta-joindate)")
+		?.addEventListener("click", async (e) => {
 			e.preventDefault();
 			e.stopPropagation();
 

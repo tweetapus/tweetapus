@@ -305,6 +305,12 @@ const renderCreateCard = () => {
 		rows: 14,
 		required: true,
 	});
+	contentInput.addEventListener("keydown", (e) => {
+		if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+			e.preventDefault();
+			form.requestSubmit();
+		}
+	});
 	contentRow.append(contentLabel, contentInput);
 
 	const controlsRow = createEl("div", { className: "form-row" });
@@ -402,11 +408,16 @@ const renderCreateCard = () => {
 		disabled: state.createStatus.loading,
 	});
 	const status = createEl("div", {
-		className: state.createStatus.error ? "error-text" : "status-line",
-		text: state.createStatus.error
-			? state.createStatus.error
-			: "Supports up to 200k characters.",
+		className: state.createStatus.error ? "error-text" : "status-line hint",
 	});
+	if (state.createStatus.error) {
+		status.textContent = state.createStatus.error;
+	} else {
+		status.textContent = "Up to 200k characters. ";
+		const kbd = createEl("span", { className: "kbd", text: "Ctrl+Enter" });
+		status.append(kbd);
+		status.append(document.createTextNode(" to publish"));
+	}
 	submitRow.append(submitBtn, status);
 
 	form.append(
@@ -525,12 +536,12 @@ const renderExploreCard = () => {
 	}
 
 	if (!state.publicList.items.length) {
-		card.append(
-			createEl("div", {
-				className: "empty-state",
-				text: "No public pastes yet.",
-			}),
+		const emptyState = createEl("div", { className: "empty-state" });
+		emptyState.append(
+			createEl("div", { className: "empty-state-icon", text: "📋" }),
 		);
+		emptyState.append(createEl("div", { text: "No public pastes yet" }));
+		card.append(emptyState);
 	} else {
 		const list = createEl("div", { className: "public-list" });
 		state.publicList.items.forEach((item) => {
@@ -566,30 +577,27 @@ const renderExploreCard = () => {
 
 const renderPublicItem = (item) => {
 	const entry = createEl("div", { className: "list-item" });
-	entry.append(
+	entry.addEventListener("click", (e) => {
+		if (e.target.tagName === "BUTTON") return;
+		openPaste(item.slug);
+	});
+	const header = createEl("div", { className: "item-header" });
+	header.append(
 		createEl("div", {
 			className: "item-title",
 			text: item.title || item.slug,
 		}),
 	);
-	entry.append(
-		createEl("div", {
-			className: "item-meta",
-			text: `Views ${item.view_count || 0} • ${formatDate(item.created_at)}`,
-		}),
-	);
-	const lang = createEl("div", {
-		className: "status-line",
-		text: item.language ? `Language: ${item.language}` : "Language: Plain",
-	});
-	entry.append(lang);
-	const openBtn = createEl("button", {
-		className: "btn secondary",
-		text: "Open",
-		type: "button",
-	});
-	openBtn.addEventListener("click", () => openPaste(item.slug));
-	entry.append(openBtn);
+	if (item.language) {
+		header.append(
+			createEl("span", { className: "item-lang", text: item.language }),
+		);
+	}
+	entry.append(header);
+	const meta = createEl("div", { className: "item-meta" });
+	meta.append(createEl("span", { text: `${item.view_count || 0} views` }));
+	meta.append(createEl("span", { text: formatDate(item.created_at) }));
+	entry.append(meta);
 	return entry;
 };
 
@@ -598,12 +606,14 @@ const renderViewCard = () => {
 	card.append(createEl("strong", { text: "View paste" }));
 
 	if (!state.view.slug) {
-		card.append(
-			createEl("div", {
-				className: "empty-state",
-				text: "Pick a paste from Explore or enter a slug.",
-			}),
+		const emptyState = createEl("div", { className: "empty-state" });
+		emptyState.append(
+			createEl("div", { className: "empty-state-icon", text: "📄" }),
 		);
+		emptyState.append(
+			createEl("div", { text: "Pick a paste from Explore or enter a slug" }),
+		);
+		card.append(emptyState);
 		return card;
 	}
 
@@ -645,16 +655,16 @@ const renderViewCard = () => {
 	const chips = createEl("div", { className: "chip-row" });
 	chips.append(
 		createEl("div", {
-			className: "chip",
-			text: paste.language ? paste.language : "Plain text",
+			className: "chip lang",
+			text: paste.language || "Plain text",
 		}),
 		createEl("div", {
 			className: "chip",
-			text: `Views ${paste.view_count || 0}`,
+			text: `${paste.view_count || 0} views`,
 		}),
 		createEl("div", {
 			className: "chip",
-			text: `Created ${formatDate(paste.created_at)}`,
+			text: formatDate(paste.created_at),
 		}),
 	);
 	chips.append(
@@ -667,11 +677,45 @@ const renderViewCard = () => {
 		chips.append(
 			createEl("div", {
 				className: "chip",
-				text: "🔒 Password",
+				text: "🔒 Protected",
 			}),
 		);
 	}
 	card.append(chips);
+
+	const codeWrapper = createEl("div", { className: "code-wrapper" });
+	const codeHeader = createEl("div", { className: "code-header" });
+	const lineCount = (paste.content || "").split("\n").length;
+	codeHeader.append(
+		createEl("span", {
+			text: `${lineCount} line${lineCount === 1 ? "" : "s"}`,
+		}),
+	);
+	const copyCodeBtn = createEl("button", {
+		className: "btn secondary",
+		text: "Copy",
+		type: "button",
+	});
+	copyCodeBtn.addEventListener("click", async () => {
+		try {
+			await navigator.clipboard.writeText(paste.content || "");
+			copyCodeBtn.textContent = "Copied";
+			setTimeout(() => {
+				copyCodeBtn.textContent = "Copy";
+			}, 1500);
+		} catch {}
+	});
+	codeHeader.append(copyCodeBtn);
+	codeWrapper.append(codeHeader);
+
+	const codeInner = createEl("div", { className: "code-with-lines" });
+	const lineNumbers = createEl("div", { className: "line-numbers" });
+	const lines = (paste.content || "").split("\n");
+	lines.forEach((_, i) => {
+		const ln = createEl("div", { text: String(i + 1) });
+		lineNumbers.append(ln);
+	});
+	codeInner.append(lineNumbers);
 
 	const codeBlock = createEl("div", { className: "code-block" });
 	const pre = createEl("pre");
@@ -682,7 +726,9 @@ const renderViewCard = () => {
 	}
 	pre.append(code);
 	codeBlock.append(pre);
-	card.append(codeBlock);
+	codeInner.append(codeBlock);
+	codeWrapper.append(codeInner);
+	card.append(codeWrapper);
 
 	highlightCode(code, paste.language);
 
@@ -1036,12 +1082,14 @@ const renderMyPastesCard = () => {
 	}
 
 	if (!state.myPastes.items.length) {
-		card.append(
-			createEl("div", {
-				className: "empty-state",
-				text: "You haven't created any pastes yet.",
-			}),
+		const emptyState = createEl("div", { className: "empty-state" });
+		emptyState.append(
+			createEl("div", { className: "empty-state-icon", text: "✨" }),
 		);
+		emptyState.append(
+			createEl("div", { text: "You haven't created any pastes yet" }),
+		);
+		card.append(emptyState);
 	} else {
 		const list = createEl("div", { className: "public-list" });
 		state.myPastes.items.forEach((item) => {
@@ -1077,44 +1125,40 @@ const renderMyPastesCard = () => {
 
 const renderMyPasteItem = (item) => {
 	const entry = createEl("div", { className: "list-item" });
-	entry.append(
-		createEl("div", {
-			className: "item-title",
-			text: item.title || item.slug,
-		}),
-	);
-	const metaParts = [
-		`Views ${item.view_count || 0}`,
-		formatDate(item.created_at),
-	];
-	if (!item.is_public) metaParts.push("Private");
-	if (item.has_password) metaParts.push("🔒");
-	if (item.burn_after_reading) metaParts.push("Burn");
-	entry.append(
-		createEl("div", {
-			className: "item-meta",
-			text: metaParts.join(" • "),
-		}),
-	);
-	const lang = createEl("div", {
-		className: "status-line",
-		text: item.language ? `Language: ${item.language}` : "Language: Plain",
+	entry.addEventListener("click", (e) => {
+		if (e.target.tagName === "BUTTON") return;
+		openPaste(item.slug);
 	});
-	entry.append(lang);
+	const header = createEl("div", { className: "item-header" });
+	header.append(
+		createEl("div", { className: "item-title", text: item.title || item.slug }),
+	);
+	if (item.language) {
+		header.append(
+			createEl("div", { className: "item-lang", text: item.language }),
+		);
+	}
+	entry.append(header);
+	const meta = createEl("div", { className: "item-meta" });
+	meta.append(createEl("span", { text: `${item.view_count || 0} views` }));
+	meta.append(createEl("span", { text: formatDate(item.created_at) }));
+	if (!item.is_public) meta.append(createEl("span", { text: "Private" }));
+	if (item.has_password)
+		meta.append(createEl("span", { text: "🔒 Protected" }));
+	if (item.burn_after_reading)
+		meta.append(createEl("span", { text: "🔥 Burn" }));
+	entry.append(meta);
 	const btnRow = createEl("div", { className: "item-actions" });
-	const openBtn = createEl("button", {
-		className: "btn secondary",
-		text: "Open",
-		type: "button",
-	});
-	openBtn.addEventListener("click", () => openPaste(item.slug));
 	const deleteBtn = createEl("button", {
 		className: "btn danger",
 		text: "Delete",
 		type: "button",
 	});
-	deleteBtn.addEventListener("click", () => deletePaste(item.slug));
-	btnRow.append(openBtn, deleteBtn);
+	deleteBtn.addEventListener("click", (e) => {
+		e.stopPropagation();
+		deletePaste(item.slug);
+	});
+	btnRow.append(deleteBtn);
 	entry.append(btnRow);
 	return entry;
 };

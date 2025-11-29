@@ -99,12 +99,6 @@ const isUserSuspendedById = (userId) => {
 	return !!suspensionRow || !!userSuspFlag?.suspended;
 };
 
-const isUserRestrictedById = (userId) => {
-	const restrictionRow = isRestrictedQuery.get(userId);
-	const userResFlag = getUserRestrictedFlag.get(userId);
-	return !!restrictionRow || !!userResFlag?.restricted;
-};
-
 const isUserShadowbannedById = (userId) => {
 	const row = isShadowbannedQuery.get(userId);
 	const flag = getUserShadowbannedFlag.get(userId);
@@ -519,11 +513,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 			const user = getUserByUsername.get(payload.username);
 			if (!user) return { error: "User not found" };
-
-			// Restricted users cannot create new tweets
-			if (isUserRestrictedById(user.id)) {
-				return { error: "Action not allowed: account is restricted" };
-			}
 
 			const {
 				content,
@@ -1028,11 +1017,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const user = getUserByUsername.get(payload.username);
 			if (!user) return { error: "User not found" };
 
-			// Restricted users cannot react
-			if (isUserRestrictedById(user.id)) {
-				return { error: "Action not allowed: account is restricted" };
-			}
-
 			const { id: tweetId } = params;
 			const { emoji } = body || {};
 			if (!emoji || typeof emoji !== "string")
@@ -1442,21 +1426,14 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const user = getUserByUsername.get(payload.username);
 			if (!user) return { error: "User not found" };
 
-			// Restricted users cannot like
-			if (isUserRestrictedById(user.id)) {
-				return { error: "Action not allowed: account is restricted" };
-			}
-
 			const { id } = params;
 			const tweet = getTweetById.get(id);
 			if (!tweet) return { error: "Tweet not found" };
 
-			// Block interactions on tweets whose author is suspended.
 			if (isUserSuspendedById(tweet.user_id)) {
 				return { error: "Tweet not found" };
 			}
 
-			// Prevent liking if either party has blocked the other (blocker cannot be interacted with)
 			const blockCheck = db
 				.query(
 					"SELECT 1 FROM blocks WHERE (blocker_id = ? AND blocked_id = ?) OR (blocker_id = ? AND blocked_id = ?) ",
@@ -1508,15 +1485,10 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const user = getUserByUsername.get(payload.username);
 			if (!user) return { error: "User not found" };
 
-			// Restricted users cannot retweet
-			if (isUserRestrictedById(user.id)) {
-				return { error: "Action not allowed: account is restricted" };
-			}
-
 			const { id } = params;
 			const tweet = getTweetById.get(id);
 			if (!tweet) return { error: "Tweet not found" };
-			// Block interactions on tweets whose author is suspended.
+			
 			if (isUserSuspendedById(tweet.user_id)) {
 				return { error: "Tweet not found" };
 			}
@@ -1571,11 +1543,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const user = getUserByUsername.get(payload.username);
 			if (!user) return { error: "User not found" };
 
-			// Restricted users cannot vote on polls
-			if (isUserRestrictedById(user.id)) {
-				return { error: "Action not allowed: account is restricted" };
-			}
-
 			const { id: tweetId } = params;
 			const { optionId } = body;
 
@@ -1588,10 +1555,8 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				return { error: "Poll not found" };
 			}
 
-			// Prevent voting if blocked by the tweet author or vice versa
 			const tweet = getTweetById.get(tweetId);
 			if (!tweet) return { error: "Tweet not found" };
-			// Block interactions on tweets whose author is suspended.
 			if (isUserSuspendedById(tweet.user_id)) {
 				return { error: "Tweet not found" };
 			}

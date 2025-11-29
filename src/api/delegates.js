@@ -38,18 +38,6 @@ const getUserByUsername = db.prepare(
 	"SELECT * FROM users WHERE LOWER(username) = LOWER(?)",
 );
 
-const isRestrictedQuery = db.prepare(
-	"SELECT 1 FROM suspensions WHERE user_id = ? AND status = 'active' AND action = 'restrict' AND (expires_at IS NULL OR expires_at > datetime('now'))",
-);
-const getUserRestrictedFlag = db.prepare(
-	"SELECT restricted FROM users WHERE id = ?",
-);
-const isUserRestrictedById = (userId) => {
-	const res = isRestrictedQuery.get(userId);
-	const f = getUserRestrictedFlag.get(userId);
-	return !!res || !!f?.restricted;
-};
-
 export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
@@ -72,9 +60,6 @@ export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
-
-				if (isUserRestrictedById(user.id))
-					return { error: "Action not allowed: account is restricted" };
 
 				const { username } = body;
 				if (!username) return { error: "Username is required" };
@@ -142,9 +127,6 @@ export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
 
-				if (isUserRestrictedById(user.id))
-					return { error: "Action not allowed: account is restricted" };
-
 				const { id } = params;
 				const delegation = getDelegationById.get(id);
 
@@ -206,9 +188,6 @@ export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
 
-				if (isUserRestrictedById(user.id))
-					return { error: "Action not allowed: account is restricted" };
-
 				const { id } = params;
 				const delegation = getDelegationById.get(id);
 
@@ -256,9 +235,6 @@ export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
-
-				if (isUserRestrictedById(user.id))
-					return { error: "Action not allowed: account is restricted" };
 
 				const { id } = params;
 				const delegation = getDelegationById.get(id);

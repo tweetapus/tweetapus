@@ -20,7 +20,6 @@ export default async function openTweet(
 		const apiOutput = await query(`/tweets/${tweet.id}`);
 
 		if (!apiOutput || !apiOutput.tweet) {
-			switchPage("timeline");
 			toastQueue.add(
 				`<h1>Tweet not found</h1><p>It might have been deleted</p>`,
 			);

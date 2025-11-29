@@ -2293,43 +2293,6 @@ export const createTweetElement = (tweet, config = {}) => {
 						return;
 					}
 
-					const { createModal } = await import("../../shared/ui-utils.js");
-					const editModal = createModal({
-						title: "Edit tweet",
-						content: "",
-						showCloseButton: true,
-					});
-
-					const editForm = document.createElement("form");
-					editForm.style.cssText = `
-						display: flex;
-						flex-direction: column;
-						gap: 12px;
-					`;
-
-					const textarea = document.createElement("textarea");
-					textarea.value = tweet.content || "";
-					textarea.style.cssText = `
-						width: 100%;
-						min-height: 120px;
-						padding: 12px;
-						border: 1px solid var(--border-primary);
-						border-radius: 8px;
-						background: var(--bg-primary);
-						color: var(--text-primary);
-						font-family: inherit;
-						font-size: 14px;
-						resize: vertical;
-					`;
-					textarea.placeholder = "What's happening?";
-
-					const charCounter = document.createElement("div");
-					charCounter.style.cssText = `
-						text-align: right;
-						font-size: 12px;
-						color: var(--text-secondary);
-					`;
-
 					const currentUser = await getUser();
 					let maxTweetLength = currentUser.character_limit || 400;
 					if (!currentUser.character_limit) {
@@ -2340,50 +2303,39 @@ export const createTweetElement = (tweet, config = {}) => {
 								: 400;
 					}
 
+					const editForm = document.createElement("form");
+					editForm.className = "edit-tweet-form";
+
+					const textarea = document.createElement("textarea");
+					textarea.className = "edit-tweet-textarea";
+					textarea.value = tweet.content || "";
+					textarea.placeholder = "What's happening?";
+
+					const charCounter = document.createElement("div");
+					charCounter.className = "edit-tweet-char-counter";
+
 					const updateCharCounter = () => {
 						const remaining = maxTweetLength - textarea.value.length;
-						charCounter.textContent = `${remaining} characters remaining`;
-						charCounter.style.color =
-							remaining < 0 ? "var(--error)" : "var(--text-secondary)";
+						charCounter.textContent = `${remaining}`;
+						charCounter.classList.toggle("warning", remaining < 50 && remaining >= 0);
+						charCounter.classList.toggle("error", remaining < 0);
 					};
 
 					textarea.addEventListener("input", updateCharCounter);
 					updateCharCounter();
 
 					const buttonContainer = document.createElement("div");
-					buttonContainer.style.cssText = `
-						display: flex;
-						gap: 8px;
-						justify-content: flex-end;
-					`;
+					buttonContainer.className = "edit-tweet-buttons";
 
 					const cancelButton = document.createElement("button");
 					cancelButton.type = "button";
+					cancelButton.className = "edit-tweet-cancel";
 					cancelButton.textContent = "Cancel";
-					cancelButton.style.cssText = `
-						padding: 8px 16px;
-						border: 1px solid var(--border-primary);
-						border-radius: 8px;
-						background: transparent;
-						color: var(--text-primary);
-						cursor: pointer;
-					`;
-					cancelButton.addEventListener("click", () => {
-						editModal.close();
-					});
 
 					const saveButton = document.createElement("button");
 					saveButton.type = "submit";
+					saveButton.className = "edit-tweet-save";
 					saveButton.textContent = "Save";
-					saveButton.style.cssText = `
-						padding: 8px 16px;
-						border: none;
-						border-radius: 8px;
-						background: var(--primary);
-						color: var(--primary-fg);
-						cursor: pointer;
-						font-weight: 600;
-					`;
 
 					buttonContainer.appendChild(cancelButton);
 					buttonContainer.appendChild(saveButton);
@@ -2391,6 +2343,15 @@ export const createTweetElement = (tweet, config = {}) => {
 					editForm.appendChild(textarea);
 					editForm.appendChild(charCounter);
 					editForm.appendChild(buttonContainer);
+
+					const { createModal } = await import("../../shared/ui-utils.js");
+					const editModal = createModal({
+						title: "Edit tweet",
+						content: editForm,
+						className: "edit-tweet-modal",
+					});
+
+					cancelButton.addEventListener("click", () => editModal.close());
 
 					editForm.addEventListener("submit", async (e) => {
 						e.preventDefault();
@@ -2454,7 +2415,6 @@ export const createTweetElement = (tweet, config = {}) => {
 						}
 					});
 
-					editModal.modal.appendChild(editForm);
 					textarea.focus();
 				},
 			},
@@ -2482,7 +2442,7 @@ export const createTweetElement = (tweet, config = {}) => {
 						tweetEl.remove();
 						return;
 					}
-					
+
 					toastQueue.add(
 						`<h1>${result.error || "Failed to delete tweet"}</h1>`,
 					);

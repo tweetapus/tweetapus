@@ -1988,7 +1988,7 @@ class AdminPanel {
 												: ""
 										}${
 											this.isFlagSet(user.gold)
-												? '<i class="bi bi-award-fill text-warning ms-1" title="Gold"></i>'
+												? '<i class="bi bi-patch-check-fill text-warning ms-1" title="Gold"></i>'
 												: ""
 										}`
 									: ""
@@ -2154,7 +2154,7 @@ class AdminPanel {
 					  <h6 class="fw-bold">Last Login</h6>
 					  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
 						<button type="button" class="btn btn-outline-primary btn-sm location-picker-btn" data-location-picker="login" data-location-control="true">
-						  <i class="bi bi-geo-alt"></i>
+						  <i class="bi bi-map"></i>
 						  Pick via Google Maps
 						</button>
 						<button type="button" class="btn btn-outline-secondary btn-sm location-clear-btn" data-location-clear="login" data-location-control="true">
@@ -5648,9 +5648,7 @@ class AdminPanel {
 							resultEl.textContent =
 								"Only SuperAdmins can clone SuperAdmin accounts.";
 						} else {
-							this.showError(
-								"Only SuperAdmins can clone SuperAdmin accounts.",
-							);
+							this.showError("Only SuperAdmins can clone SuperAdmin accounts.");
 						}
 						return;
 					}

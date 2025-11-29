@@ -1336,10 +1336,6 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const currentUser = getUserByUsername.get(payload.username);
 			if (!currentUser) return { error: "User not found" };
 
-			if (_isUserRestrictedById(currentUser.id)) {
-				return { error: "Action not allowed: account is restricted" };
-			}
-
 			const { username } = params;
 			const targetUser = getUserByUsername.get(username);
 			if (!targetUser) return { error: "User not found" };
