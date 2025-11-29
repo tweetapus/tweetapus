@@ -2705,7 +2705,9 @@ export const handleProfileDropdown = (e) => {
 									updateFollowButton(false, false);
 									toastQueue.add(`<h1>User unblocked</h1>`);
 								} else {
-									toastQueue.add(`<h1>${result.error || "Failed to unblock"}</h1>`);
+									toastQueue.add(
+										`<h1>${result.error || "Failed to unblock"}</h1>`,
+									);
 								}
 							} catch (err) {
 								console.error("Unblock error:", err);

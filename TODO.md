@@ -2,9 +2,8 @@
 
 - personalized algorithm
 - fix ui
-- heavy "ratelimits" that show and automatically solve a Cap captcha to fix
-- update the follow <-> block/unblock button
-
+- heavy "ratelimits" that show and automatically solve a Cap captcha to fix <--- flower doing
+- update the follow <-> block/unblock button <--- flower doing Tr
 - make Tr Cursor not be stuck
 
 **OTHER:**

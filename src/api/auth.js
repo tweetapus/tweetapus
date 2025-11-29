@@ -155,6 +155,30 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 			}),
 		},
 	)
+	.post(
+		"/cap/rate-limit-bypass",
+		async ({ body, set }) => {
+			const { capToken } = body;
+			if (!capToken) {
+				set.status = 400;
+				return { success: false, error: "Cap token is required" };
+			}
+			const verified = await cap.verifyToken(capToken);
+			if (!verified) {
+				set.status = 401;
+				return { success: false, error: "Invalid Cap token" };
+			}
+			return { success: true, message: "Rate limit bypass granted" };
+		},
+		{
+			detail: {
+				description: "Verifies a Cap token for rate limit bypass",
+			},
+			body: t.Object({
+				capToken: t.String(),
+			}),
+		},
+	)
 	.get(
 		"/me",
 		async ({ jwt, headers, query, set }) => {
