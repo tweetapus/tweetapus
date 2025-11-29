@@ -126,6 +126,8 @@ let timelineScrollPosition = 0;
 				}
 				hasMoreTweets = false;
 			} else {
+				// Sort tweets by created_at descending (newest first)
+				timeline.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 				timeline.forEach((tweet) => {
 					addTweetToTimeline(tweet, false);
 					oldestTweetId = tweet.id;
