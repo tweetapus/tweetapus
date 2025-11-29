@@ -10,11 +10,35 @@
 
   & .paste-shell {
     width: 100%;
-    max-width: 900px;
+    max-width: 1200px;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
     gap: 28px;
+  }
+
+  /* Two-column responsive layout: main + aside */
+  & .paste-grid {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  & .paste-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  & .paste-aside {
+    width: 340px;
+    flex: 0 0 340px;
+    max-width: 100%;
+    align-self: flex-start;
+    position: sticky;
+    top: 96px;
+    height: calc(100vh - 96px);
+    overflow: auto;
+    padding-bottom: 12px;
   }
 
   & .paste-nav {
@@ -689,6 +713,23 @@
 
     & .line-numbers {
       display: none;
+    }
+  }
+}
+
+/* Collapse the two-column layout on mid/low width screens */
+@media (max-width: 1000px) {
+  .paste-app {
+    & .paste-grid {
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    & .paste-aside {
+      position: static;
+      height: auto;
+      width: 100%;
+      flex: 1 1 100%;
     }
   }
 }

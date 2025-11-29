@@ -366,6 +366,8 @@ const timeAgo = (date) => {
 
 	const seconds = Math.floor((now - dateObj) / 1000);
 
+	if (seconds === -1 || seconds === 0) return "just now";
+
 	if (seconds < 60) return `${seconds} second${seconds !== 1 ? "s" : ""} ago`;
 	if (seconds < 3600) {
 		const mins = Math.floor(seconds / 60);
@@ -2317,7 +2319,10 @@ export const createTweetElement = (tweet, config = {}) => {
 					const updateCharCounter = () => {
 						const remaining = maxTweetLength - textarea.value.length;
 						charCounter.textContent = `${remaining}`;
-						charCounter.classList.toggle("warning", remaining < 50 && remaining >= 0);
+						charCounter.classList.toggle(
+							"warning",
+							remaining < 50 && remaining >= 0,
+						);
 						charCounter.classList.toggle("error", remaining < 0);
 					};
 

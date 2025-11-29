@@ -152,18 +152,28 @@ const renderApp = () => {
 	clearNode(app);
 	const shell = createEl("div", { className: "paste-shell" });
 	shell.append(renderNav());
-	if (state.mode === "create") {
-		shell.append(renderCreateCard());
+
+	// Responsive two-column layout: main content + aside
+	const grid = createEl("div", { className: "paste-grid" });
+	const main = createEl("main", { className: "paste-main" });
+	const aside = createEl("aside", { className: "paste-aside" });
+
+	// Primary content
+	if (state.mode === "create") main.append(renderCreateCard());
+	if (state.mode === "explore") main.append(renderExploreCard());
+	if (state.mode === "view") main.append(renderViewCard());
+	if (state.mode === "mine") main.append(renderMyPastesCard());
+
+	// Secondary/auxiliary content in the aside: expose Explore or Create depending on context
+	if (state.mode !== "explore") {
+		aside.append(renderExploreCard());
+	} else {
+		// When in Explore mode, show quick create in aside
+		aside.append(renderCreateCard());
 	}
-	if (state.mode === "explore") {
-		shell.append(renderExploreCard());
-	}
-	if (state.mode === "view") {
-		shell.append(renderViewCard());
-	}
-	if (state.mode === "mine") {
-		shell.append(renderMyPastesCard());
-	}
+
+	grid.append(main, aside);
+	shell.append(grid);
 	app.append(shell);
 };
 
