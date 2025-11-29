@@ -2,7 +2,6 @@
 
 - personalized algorithm
 - fix ui
-- make Tr Cursor not be stuck
 - automated spam/nsfw detection using openapi or perspective api
 
 **OTHER:**

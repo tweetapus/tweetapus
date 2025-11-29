@@ -9,6 +9,21 @@ import {
 import toastQueue from "../../shared/toasts.js";
 import query from "./api.js";
 
+const ARTICLE_DOMPURIFY_CONFIG = {
+	ALLOWED_TAGS: [
+		"h1", "h2", "h3", "h4", "h5", "h6",
+		"p", "br", "hr",
+		"ul", "ol", "li",
+		"blockquote", "pre", "code",
+		"strong", "em", "b", "i", "u", "s", "del", "ins",
+		"a", "img",
+		"table", "thead", "tbody", "tr", "th", "td",
+		"span", "div",
+	],
+	ALLOWED_ATTR: ["href", "src", "alt", "title", "class", "target", "rel"],
+	ALLOW_DATA_ATTR: false,
+};
+
 let initialized = false;
 let container;
 let openComposerButton;
@@ -82,48 +97,6 @@ const convertToWebP = (file) =>
 		img.src = URL.createObjectURL(file);
 	});
 
-const sanitizeMarkdown = (markdown) =>
-	DOMPurify.sanitize(
-		marked.parse(markdown, {
-			breaks: true,
-			gfm: true,
-			headerIds: false,
-			mangle: false,
-		}),
-		{
-			ALLOWED_TAGS: [
-				"b",
-				"i",
-				"u",
-				"s",
-				"a",
-				"p",
-				"br",
-				"marquee",
-				"strong",
-				"em",
-				"code",
-				"pre",
-				"blockquote",
-				"h1",
-				"h2",
-				"h3",
-				"h4",
-				"h5",
-				"h6",
-				"ul",
-				"ol",
-				"li",
-				"span",
-				"big",
-				"sub",
-				"sup",
-				"del",
-			],
-			ALLOWED_ATTR: ["href", "target", "rel", "class"],
-		},
-	);
-
 const resetComposer = () => {
 	uploadedCover = null;
 	if (titleInput) titleInput.value = "";
@@ -133,6 +106,8 @@ const resetComposer = () => {
 		coverPreview.style.backgroundImage = "";
 		coverPreview.classList.add(hiddenClass);
 	}
+	const previewContent = document.querySelector(".article-preview-content");
+	if (previewContent) previewContent.innerHTML = "";
 };
 
 const openComposerModal = () => {
@@ -445,16 +420,40 @@ const setupComposer = () => {
 	editorPane.className = "article-editor-pane";
 
 	const editorLabel = document.createElement("label");
-	editorLabel.textContent = "Markdown Editor";
+	editorLabel.textContent = "Editor";
 	editorLabel.className = "article-pane-label";
 	editorPane.appendChild(editorLabel);
 
 	markdownInput = document.createElement("textarea");
 	markdownInput.className = "article-markdown-input";
-	markdownInput.placeholder = "Tell your story...";
+	markdownInput.placeholder = "Write your article in Markdown...\n\n# Heading 1\n## Heading 2\n\n**bold** and *italic*\n\n- List item\n- Another item\n\n> Blockquote\n\n`inline code`";
+
+	const previewPane = document.createElement("div");
+	previewPane.className = "article-preview-pane";
+
+	const previewLabel = document.createElement("label");
+	previewLabel.textContent = "Preview";
+	previewLabel.className = "article-pane-label";
+
+	const previewContent = document.createElement("div");
+	previewContent.className = "article-preview-content";
+
+	const updatePreview = () => {
+		const raw = markdownInput.value;
+		previewContent.innerHTML = DOMPurify.sanitize(
+			marked.parse(raw, { gfm: true, breaks: true }),
+			ARTICLE_DOMPURIFY_CONFIG
+		);
+	};
+
+	markdownInput.addEventListener("input", updatePreview);
+
 	editorPane.appendChild(markdownInput);
+	previewPane.appendChild(previewLabel);
+	previewPane.appendChild(previewContent);
 
 	editorContainer.appendChild(editorPane);
+	editorContainer.appendChild(previewPane);
 	modalContent.appendChild(editorContainer);
 
 	const actionsRow = document.createElement("div");
