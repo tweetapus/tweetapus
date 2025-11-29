@@ -102,7 +102,7 @@ const createFactCheck = (fact_check) => {
 				}</a>`,
 		);
 	note.innerHTML = DOMPurify.sanitize(htmlString, DOMPURIFY_CONFIG);
-	
+
 	content.appendChild(title);
 	content.appendChild(note);
 
@@ -2369,7 +2369,7 @@ export const createTweetElement = (tweet, config = {}) => {
 						cursor: pointer;
 					`;
 					cancelButton.addEventListener("click", () => {
-						editModal.remove();
+						editModal.close();
 					});
 
 					const saveButton = document.createElement("button");
@@ -2443,7 +2443,7 @@ export const createTweetElement = (tweet, config = {}) => {
 								}
 							}
 
-							editModal.remove();
+							editModal.close();
 							toastQueue.add(`<h1>Tweet updated successfully</h1>`);
 						} else {
 							toastQueue.add(
@@ -2454,12 +2454,7 @@ export const createTweetElement = (tweet, config = {}) => {
 						}
 					});
 
-					const modalContent = editModal.querySelector(".modal-content");
-					if (modalContent) {
-						modalContent.appendChild(editForm);
-					}
-
-					document.body.appendChild(editModal);
+					editModal.modal.appendChild(editForm);
 					textarea.focus();
 				},
 			},
@@ -2477,28 +2472,24 @@ export const createTweetElement = (tweet, config = {}) => {
 						return;
 					}
 
+					tweetEl.style.opacity = "0.7";
+
 					const result = await query(`/tweets/${tweet.id}`, {
 						method: "DELETE",
 					});
 
 					if (result.success) {
-						tweetEl.classList.add("tweet-removing");
-
-						setTimeout(() => {
-							tweetEl.remove();
-						}, 300);
-
-						toastQueue.add(`<h1>Tweet deleted successfully</h1>`);
-					} else {
-						toastQueue.add(
-							`<h1>${result.error || "Failed to delete tweet"}</h1>`,
-						);
+						tweetEl.remove();
+						return;
 					}
+					
+					toastQueue.add(
+						`<h1>${result.error || "Failed to delete tweet"}</h1>`,
+					);
 				},
 			},
 		];
 
-		// Tr, what happened to a the views indicator?ng it rn what
 		getUser().then(async (currentUser) => {
 			const items =
 				currentUser?.id === tweet.author.id
