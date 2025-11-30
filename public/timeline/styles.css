@@ -6268,7 +6268,6 @@ nav {
   background: transparent;
   color: var(--text-secondary);
   font-size: 15px;
-  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
   border-bottom: 2px solid transparent;
@@ -6276,6 +6275,7 @@ nav {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  font-family: inherit;
 }
 
 .tab-button:hover {
@@ -6286,10 +6286,6 @@ nav {
 .tab-button.active {
   color: var(--primary);
   border-bottom-color: var(--primary);
-}
-
-.tab-icon {
-  font-size: 18px;
 }
 
 .interactions-content {
@@ -6745,7 +6741,7 @@ nav {
 }
 
 .communities-content {
-  padding: 16px;
+  margin-top: 16px;
   flex: 1;
   overflow-y: auto;
 }
@@ -9743,33 +9739,6 @@ emoji-picker.emoji-picker-popup {
   align-items: center;
   justify-content: center;
   z-index: 10000;
-}
-
-.user-lists-page {
-  display: none;
-  flex-direction: column;
-  max-width: 600px;
-  width: 100%;
-  margin: 0 auto;
-
-  .user-lists-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-primary);
-
-    h1 {
-      font-size: 20px;
-      font-weight: 700;
-      margin: 0;
-    }
-  }
-
-  .user-lists-content {
-    flex: 1;
-    min-height: 200px;
-  }
 }
 
 .lists-page {

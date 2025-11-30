@@ -1,25 +1,50 @@
 export function createTweetSkeleton() {
 	const skeleton = document.createElement("div");
 	skeleton.className = "skeleton-tweet skeleton-container";
-	skeleton.innerHTML = `
-		<div class="skeleton-tweet-header">
-		  <div class="skeleton-loader skeleton-tweet-avatar"></div>
-		  <div class="skeleton-tweet-header-container">
-			  <div class="skeleton-loader skeleton-tweet-name"></div>
-			  <div class="skeleton-loader skeleton-tweet-username"></div>
-			</div>
-		</div>
-		<div class="skeleton-tweet-content">
-			<div class="skeleton-loader skeleton-tweet-text"></div>
-			<div class="skeleton-loader skeleton-tweet-text"></div>
-			<div class="skeleton-loader skeleton-tweet-text"></div>
-			<div class="skeleton-tweet-actions">
-				<div class="skeleton-loader skeleton-tweet-action"></div>
-				<div class="skeleton-loader skeleton-tweet-action"></div>
-				<div class="skeleton-loader skeleton-tweet-action"></div>
-			</div>
-		</div>
-	`;
+
+	const header = document.createElement("div");
+	header.className = "skeleton-tweet-header";
+
+	const avatar = document.createElement("div");
+	avatar.className = "skeleton-loader skeleton-tweet-avatar";
+	header.appendChild(avatar);
+
+	const headerInfo = document.createElement("div");
+	headerInfo.className = "skeleton-tweet-header-info";
+
+	const name = document.createElement("div");
+	name.className = "skeleton-loader skeleton-tweet-name";
+	headerInfo.appendChild(name);
+
+	const username = document.createElement("div");
+	username.className = "skeleton-loader skeleton-tweet-username";
+	headerInfo.appendChild(username);
+
+	header.appendChild(headerInfo);
+	skeleton.appendChild(header);
+
+	const content = document.createElement("div");
+	content.className = "skeleton-tweet-content";
+
+	for (let i = 0; i < 3; i++) {
+		const line = document.createElement("div");
+		line.className = "skeleton-loader skeleton-tweet-text";
+		content.appendChild(line);
+	}
+
+	skeleton.appendChild(content);
+
+	const interactions = document.createElement("div");
+	interactions.className = "skeleton-tweet-interactions";
+
+	for (let i = 0; i < 4; i++) {
+		const action = document.createElement("div");
+		action.className = "skeleton-loader skeleton-tweet-action";
+		interactions.appendChild(action);
+	}
+
+	skeleton.appendChild(interactions);
+
 	return skeleton;
 }
 
@@ -196,6 +221,25 @@ export function createProfileSkeleton() {
 
 	card.appendChild(info);
 	skeleton.appendChild(card);
+
+	const tabs = document.createElement("div");
+	tabs.className = "skeleton-profile-tabs";
+	for (let i = 0; i < 3; i++) {
+		const tab = document.createElement("div");
+		tab.className = "skeleton-profile-tab";
+		const tabText = document.createElement("div");
+		tabText.className = "skeleton-loader skeleton-profile-tab-text";
+		tab.appendChild(tabText);
+		tabs.appendChild(tab);
+	}
+	skeleton.appendChild(tabs);
+
+	const tweets = document.createElement("div");
+	tweets.className = "skeleton-profile-tweets";
+	for (let i = 0; i < 3; i++) {
+		tweets.appendChild(createTweetSkeleton());
+	}
+	skeleton.appendChild(tweets);
 
 	return skeleton;
 }

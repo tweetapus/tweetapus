@@ -9,7 +9,6 @@ const pages = {
 	"dm-conversation": document.querySelector(".dm-conversation"),
 	communities: document.querySelector(".communities-page"),
 	"community-detail": document.querySelector(".community-detail-page"),
-	"user-lists": document.querySelector(".user-lists-page"),
 	"list-detail": document.querySelector(".list-detail-page"),
 	settings: null,
 };
@@ -37,8 +36,6 @@ const getPageTitle = (page, opts = {}) => {
 		communities: () => "communities // tweetapus",
 		"community-detail": () =>
 			opts?.title ? `${opts.title} // tweetapus` : "community // tweetapus",
-		"user-lists": () =>
-			opts?.title ? `${opts.title}'s lists // tweetapus` : "lists // tweetapus",
 		"list-detail": () =>
 			opts?.title ? `${opts.title} // tweetapus` : "list // tweetapus",
 		settings: () => "settings // tweetapus",

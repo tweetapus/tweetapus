@@ -10,10 +10,14 @@ import { showReportModal } from "../../shared/report-modal.js";
 import {
 	createFollowerSkeleton,
 	createProfileSkeleton,
+	createTweetSkeleton,
 	removeSkeletons,
 	showSkeletons,
 } from "../../shared/skeleton-utils.js";
-import { updateTabIndicator } from "../../shared/tab-indicator.js";
+import {
+	observeTabContainer,
+	updateTabIndicator,
+} from "../../shared/tab-indicator.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal, createPopup } from "../../shared/ui-utils.js";
 import query from "./api.js";
@@ -124,6 +128,7 @@ export default async function openProfile(username) {
 
 					currentProfile = suspendedData;
 					renderProfile(suspendedData);
+					setupEditProfileListeners();
 					return;
 				}
 
@@ -133,6 +138,7 @@ export default async function openProfile(username) {
 
 			currentProfile = data;
 			renderProfile(data);
+			setupEditProfileListeners();
 
 			if (data.profile?.name) {
 				updatePageTitle("profile", {
@@ -811,11 +817,14 @@ const switchTab = async (tabName) => {
 		postsContainer.classList.remove("media-grid");
 		if (currentReplies.length === 0 && currentUsername) {
 			document.getElementById("profilePostsContainer").innerHTML = "";
+			const skeletons = showSkeletons(postsContainer, createTweetSkeleton, 3);
 			hasMoreReplies = true;
 
 			let { error, replies } = await query(
 				`/profile/${currentUsername}/replies?limit=20`,
 			);
+
+			removeSkeletons(skeletons);
 
 			if (error) {
 				toastQueue.add(`<h1>${escapeHTML(error)}</h1>`);
@@ -1484,6 +1493,7 @@ ${
 
 	const tabContainer = document.querySelector(".profile-tab-nav");
 	if (tabContainer && postTabBtn) {
+		observeTabContainer(tabContainer);
 		setTimeout(() => {
 			updateTabIndicator(tabContainer, postTabBtn);
 		}, 50);
@@ -2503,6 +2513,7 @@ const saveProfile = async (event) => {
 						isFollowing: false,
 						isOwnProfile: true,
 					});
+					setupEditProfileListeners();
 				} catch (_err) {
 					openProfile(currentProfile.profile.username);
 				}
@@ -2536,7 +2547,13 @@ document.querySelector(".back-button").addEventListener("click", (e) => {
 });
 
 window.addEventListener("DOMContentLoaded", () => {
+	setupProfileTabListeners();
+});
+
+const setupProfileTabListeners = () => {
 	document.querySelectorAll(".profile-tab-btn").forEach((btn) => {
+		if (btn._hasTabListener) return;
+		btn._hasTabListener = true;
 		btn.addEventListener("click", () => {
 			document.querySelectorAll(".profile-tab-btn").forEach((b) => {
 				b.classList.remove("active");
@@ -2551,19 +2568,33 @@ window.addEventListener("DOMContentLoaded", () => {
 			switchTab(btn.dataset.tab);
 		});
 	});
-});
-document
-	.getElementById("editProfileBtn")
-	.addEventListener("click", showEditModal);
-document
-	.getElementById("closeEditModalBtn")
-	.addEventListener("click", closeEditModal);
-document
-	.getElementById("cancelEditBtn")
-	.addEventListener("click", closeEditModal);
-document
-	.getElementById("editProfileForm")
-	.addEventListener("submit", saveProfile);
+};
+
+const setupEditProfileListeners = () => {
+	setupProfileTabListeners();
+
+	const editBtn = document.getElementById("editProfileBtn");
+	const closeBtn = document.getElementById("closeEditModalBtn");
+	const cancelBtn = document.getElementById("cancelEditBtn");
+	const form = document.getElementById("editProfileForm");
+
+	if (editBtn && !editBtn._hasEditListener) {
+		editBtn.addEventListener("click", showEditModal);
+		editBtn._hasEditListener = true;
+	}
+	if (closeBtn && !closeBtn._hasCloseListener) {
+		closeBtn.addEventListener("click", closeEditModal);
+		closeBtn._hasCloseListener = true;
+	}
+	if (cancelBtn && !cancelBtn._hasCancelListener) {
+		cancelBtn.addEventListener("click", closeEditModal);
+		cancelBtn._hasCancelListener = true;
+	}
+	if (form && !form._hasSubmitListener) {
+		form.addEventListener("submit", saveProfile);
+		form._hasSubmitListener = true;
+	}
+};
 
 [
 	"editDisplayName",
@@ -2662,6 +2693,7 @@ document
 				}
 
 				renderProfile(currentProfile);
+				setupEditProfileListeners();
 			}
 		} catch (_err) {
 			toastQueue.add("<h1>Failed to remove affiliate badge</h1>");
@@ -2881,6 +2913,7 @@ export const handleProfileDropdown = (triggerEl) => {
 											}
 											currentAffiliates = currentProfile.affiliates;
 											renderProfile(currentProfile);
+											setupEditProfileListeners();
 											item.remove();
 											toastQueue.add(
 												`<h1>Approved</h1><p>Affiliate badge granted</p>`,
@@ -2961,6 +2994,7 @@ export const handleProfileDropdown = (triggerEl) => {
 									currentProfile.profile.affiliate_with = null;
 									delete currentProfile.profile.affiliate_with_profile;
 									renderProfile(currentProfile);
+									setupEditProfileListeners();
 									toastQueue.add(`<h1>Affiliate badge removed</h1>`);
 								} else {
 									toastQueue.add(

@@ -438,3 +438,8 @@ img {
   font-weight: 900;
   font-style: normal;
 }
+
+html,
+body {
+  overscroll-behavior-y: none;
+}

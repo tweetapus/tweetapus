@@ -630,9 +630,9 @@ async function showInteractionsModal(tweetId, initialTab = "likes") {
 	tabsContainer.className = "interactions-tabs";
 
 	const tabs = [
-		{ id: "likes", label: "Likes", icon: "❤️" },
-		{ id: "retweets", label: "Retweets", icon: "🔄" },
-		{ id: "quotes", label: "Quotes", icon: "💬" },
+		{ id: "likes", label: "Likes" },
+		{ id: "retweets", label: "Retweets"},
+		{ id: "quotes", label: "Quotes" },
 	];
 
 	const contentContainer = document.createElement("div");
@@ -718,7 +718,7 @@ async function showInteractionsModal(tweetId, initialTab = "likes") {
 		const tabButton = document.createElement("button");
 		tabButton.className = "tab-button";
 		tabButton.dataset.tab = tab.id;
-		tabButton.innerHTML = `<span class="tab-icon">${tab.icon}</span><span>${tab.label}</span>`;
+		tabButton.innerHTML = `<span>${tab.label}</span>`;
 
 		if (tab.id === activeTab) {
 			tabButton.classList.add("active");
