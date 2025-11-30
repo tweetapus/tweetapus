@@ -338,7 +338,8 @@ addRoute(
 	},
 );
 
-addRoute(	(pathname) => pathname === "/lists",
+addRoute(
+	(pathname) => pathname === "/lists",
 	async () => {
 		const { openListsPage, initLists } = await import("./lists.js");
 		initLists();
@@ -357,7 +358,8 @@ addRoute(
 	},
 );
 
-addRoute(	(pathname) => pathname.startsWith("/@"),
+addRoute(
+	(pathname) => pathname.startsWith("/@"),
 	(pathname) => {
 		const username = pathname.slice(2);
 

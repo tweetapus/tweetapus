@@ -2807,8 +2807,6 @@ nav {
     align-items: center;
     gap: 8px;
     margin-top: 12px;
-    padding: 8px 12px;
-    background-color: var(--bg-secondary);
     border-radius: 12px;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -6753,8 +6751,8 @@ nav {
 }
 
 .communities-list {
-  display: grid;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
 
   &.hidden {
     display: none;
@@ -6762,84 +6760,95 @@ nav {
 }
 
 .community-card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
-  border-radius: 16px;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
   cursor: pointer;
-  transition: border-color 0.15s ease, background-color 0.15s ease;
+  transition: background-color 0.15s ease;
+  border-bottom: 1px solid var(--border-primary);
 
   &:hover {
-    border-color: var(--primary);
     background-color: var(--bg-secondary);
+  }
+
+  &:last-child {
+    border-bottom: none;
   }
 }
 
 .community-banner {
-  width: 100%;
-  height: 100px;
-  background-color: var(--bg-secondary);
-  background-size: cover;
-  background-position: center;
+  display: none;
 }
 
 .community-card-content {
-  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .community-icon {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
   border-radius: 8px;
-  border: 3px solid var(--bg-primary);
-  margin-top: -28px;
-  margin-bottom: 8px;
   object-fit: cover;
+  border: none;
+  margin: 0;
 
   &.default {
-    background: var(--primary);
+    background-color: var(--primary);
     color: var(--primary-fg);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
   }
 }
 
 .community-info {
+  flex: 1;
+  min-width: 0;
+
   h3 {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 700;
-    margin: 0 0 8px 0;
+    margin: 0;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 
 .lock-icon {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .community-description {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
-  margin-bottom: 10px;
+  margin: 2px 0 0 0;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .community-meta {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
   font-size: 13px;
   color: var(--text-tertiary);
+  margin-top: 2px;
 }
 
 .role-badge {
@@ -9736,6 +9745,33 @@ emoji-picker.emoji-picker-popup {
   z-index: 10000;
 }
 
+.user-lists-page {
+  display: none;
+  flex-direction: column;
+  max-width: 600px;
+  width: 100%;
+  margin: 0 auto;
+
+  .user-lists-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-primary);
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0;
+    }
+  }
+
+  .user-lists-content {
+    flex: 1;
+    min-height: 200px;
+  }
+}
+
 .lists-page {
   max-width: 600px;
   margin: 0 auto;
@@ -9747,10 +9783,40 @@ emoji-picker.emoji-picker-popup {
     padding: 16px;
     border-bottom: 1px solid var(--border-primary);
 
+    .lists-header-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+    }
+
     h1 {
       font-size: 20px;
       font-weight: 700;
       margin: 0;
+    }
+  }
+
+  .create-list-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background-color: var(--primary-hover);
     }
   }
 

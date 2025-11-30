@@ -1,4 +1,9 @@
-import { createListSkeleton, createTweetSkeleton, removeSkeletons, showSkeletons } from "../../shared/skeleton-utils.js";
+import {
+	createListSkeleton,
+	createTweetSkeleton,
+	removeSkeletons,
+	showSkeletons,
+} from "../../shared/skeleton-utils.js";
 import { updateTabIndicator } from "../../shared/tab-indicator.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal } from "../../shared/ui-utils.js";
@@ -8,42 +13,45 @@ import { createTweetElement } from "./tweets.js";
 
 let currentTweets = [];
 let currentMembers = [];
+let hasMoreTweets = true;
 let isLoadingTweets = false;
 
 const escapeHTML = (str) =>
 	str ? str.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
 
-export async function openListsPage() {
-	switchPage("lists", {
-		path: "/lists",
-		title: "Lists",
-		recoverState: loadLists,
+export async function openUserListsPage(username) {
+	switchPage("user-lists", {
+		path: `/${username}/lists`,
+		title: username,
+		recoverState: () => loadUserLists(username),
 	});
 }
 
-async function loadLists() {
-	const ownedContainer = document.getElementById("ownedListsList");
-	const followedContainer = document.getElementById("followedListsList");
+async function loadUserLists(username) {
+	const container = document.getElementById("userListsContainer");
+	const titleEl = document.getElementById("userListsTitle");
 
-	ownedContainer.innerHTML = "";
-	followedContainer.innerHTML = "";
+	if (!container) return;
 
-	const ownedSkeletons = showSkeletons(ownedContainer, createListSkeleton, 3);
+	titleEl.textContent = `@${username}'s Lists`;
+	container.innerHTML = "";
+
+	const skeletons = showSkeletons(container, createListSkeleton, 3);
 
 	try {
-		const data = await query("/lists/");
+		const data = await query(`/lists/user/${username}`);
 
-		removeSkeletons(ownedSkeletons);
+		removeSkeletons(skeletons);
 
 		if (data.error) {
 			const errorDiv = document.createElement("div");
 			errorDiv.className = "lists-empty";
 			errorDiv.textContent = data.error;
-			ownedContainer.appendChild(errorDiv);
+			container.appendChild(errorDiv);
 			return;
 		}
 
-		if (!data.ownedLists || data.ownedLists.length === 0) {
+		if (!data.lists || data.lists.length === 0) {
 			const emptyDiv = document.createElement("div");
 			emptyDiv.className = "lists-empty";
 			const emptyIcon = document.createElement("div");
@@ -51,36 +59,21 @@ async function loadLists() {
 			emptyIcon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h.01"/><path d="M3 18h.01"/><path d="M3 6h.01"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M8 6h13"/></svg>`;
 			emptyDiv.appendChild(emptyIcon);
 			const emptyTitle = document.createElement("h3");
-			emptyTitle.textContent = "No lists yet";
+			emptyTitle.textContent = "No public lists";
 			emptyDiv.appendChild(emptyTitle);
 			const emptyText = document.createElement("p");
-			emptyText.textContent = "Create a list to organize accounts you follow.";
+			emptyText.textContent = `@${username} hasn't created any public lists.`;
 			emptyDiv.appendChild(emptyText);
-			ownedContainer.appendChild(emptyDiv);
-		} else {
-			data.ownedLists.forEach((list) => {
-				ownedContainer.appendChild(createListItem(list));
-			});
+			container.appendChild(emptyDiv);
+			return;
 		}
 
-		if (!data.followedLists || data.followedLists.length === 0) {
-			const emptyDiv = document.createElement("div");
-			emptyDiv.className = "lists-empty";
-			const emptyTitle = document.createElement("h3");
-			emptyTitle.textContent = "No followed lists";
-			emptyDiv.appendChild(emptyTitle);
-			const emptyText = document.createElement("p");
-			emptyText.textContent = "Lists you follow will appear here.";
-			emptyDiv.appendChild(emptyText);
-			followedContainer.appendChild(emptyDiv);
-		} else {
-			data.followedLists.forEach((list) => {
-				followedContainer.appendChild(createListItem(list, true));
-			});
+		for (const list of data.lists) {
+			container.appendChild(createListItem(list, true));
 		}
 	} catch (err) {
-		removeSkeletons(ownedSkeletons);
-		console.error("Error loading lists:", err);
+		removeSkeletons(skeletons);
+		console.error("Error loading user lists:", err);
 		toastQueue.add(`<h1>Failed to load lists</h1>`);
 	}
 }
@@ -190,10 +183,21 @@ async function loadListDetail(listId) {
 
 		const statsRow = document.createElement("div");
 		statsRow.className = "list-detail-stats";
-		statsRow.innerHTML = `
-			<span><strong>${data.list.member_count || 0}</strong> Members</span>
-			<span><strong>${data.list.follower_count || 0}</strong> Followers</span>
-		`;
+
+		const membersSpan = document.createElement("span");
+		const membersStrong = document.createElement("strong");
+		membersStrong.textContent = data.list.member_count || 0;
+		membersSpan.appendChild(membersStrong);
+		membersSpan.appendChild(document.createTextNode(" Members"));
+		statsRow.appendChild(membersSpan);
+
+		const followersSpan = document.createElement("span");
+		const followersStrong = document.createElement("strong");
+		followersStrong.textContent = data.list.follower_count || 0;
+		followersSpan.appendChild(followersStrong);
+		followersSpan.appendChild(document.createTextNode(" Followers"));
+		statsRow.appendChild(followersSpan);
+
 		infoEl.appendChild(statsRow);
 
 		if (data.isOwner) {
@@ -214,14 +218,18 @@ async function loadListDetail(listId) {
 			followBtn.textContent = data.isFollowing ? "Following" : "Follow";
 			followBtn.addEventListener("click", async () => {
 				if (data.isFollowing) {
-					const result = await query(`/lists/${listId}/follow`, { method: "DELETE" });
+					const result = await query(`/lists/${listId}/follow`, {
+						method: "DELETE",
+					});
 					if (result.success) {
 						followBtn.textContent = "Follow";
 						followBtn.classList.add("list-action-btn-primary");
 						data.isFollowing = false;
 					}
 				} else {
-					const result = await query(`/lists/${listId}/follow`, { method: "POST" });
+					const result = await query(`/lists/${listId}/follow`, {
+						method: "POST",
+					});
 					if (result.success) {
 						followBtn.textContent = "Following";
 						followBtn.classList.remove("list-action-btn-primary");
@@ -239,13 +247,20 @@ async function loadListDetail(listId) {
 		await loadListTweets(listId);
 
 		currentMembers.forEach((member) => {
-			membersContainer.appendChild(createMemberItem(member, data.isOwner, listId));
+			membersContainer.appendChild(
+				createMemberItem(member, data.isOwner, listId),
+			);
 		});
 
 		if (currentMembers.length === 0) {
 			const emptyDiv = document.createElement("div");
 			emptyDiv.className = "lists-empty";
-			emptyDiv.innerHTML = "<h3>No members</h3><p>This list has no members yet.</p>";
+			const emptyTitle = document.createElement("h3");
+			emptyTitle.textContent = "No members";
+			emptyDiv.appendChild(emptyTitle);
+			const emptyText = document.createElement("p");
+			emptyText.textContent = "This list has no members yet.";
+			emptyDiv.appendChild(emptyText);
 			membersContainer.appendChild(emptyDiv);
 		}
 
@@ -294,7 +309,12 @@ async function loadListTweets(listId, append = false) {
 			if (!append && currentTweets.length === 0) {
 				const emptyDiv = document.createElement("div");
 				emptyDiv.className = "lists-empty";
-				emptyDiv.innerHTML = "<h3>No tweets</h3><p>Tweets from list members will appear here.</p>";
+				const emptyTitle = document.createElement("h3");
+				emptyTitle.textContent = "No tweets";
+				emptyDiv.appendChild(emptyTitle);
+				const emptyText = document.createElement("p");
+				emptyText.textContent = "Tweets from list members will appear here.";
+				emptyDiv.appendChild(emptyText);
 				container.appendChild(emptyDiv);
 			}
 			hasMoreTweets = false;
@@ -324,9 +344,12 @@ function createMemberItem(member, isOwner, listId) {
 	avatar.src = member.avatar || "/public/shared/assets/default-avatar.svg";
 	avatar.alt = member.name || member.username;
 	avatar.className = "list-member-avatar";
-	const radius = member.avatar_radius !== null && member.avatar_radius !== undefined
-		? `${member.avatar_radius}px`
-		: member.gold ? "4px" : "50px";
+	const radius =
+		member.avatar_radius !== null && member.avatar_radius !== undefined
+			? `${member.avatar_radius}px`
+			: member.gold
+				? "4px"
+				: "50px";
 	avatar.style.borderRadius = radius;
 	item.appendChild(avatar);
 
@@ -351,12 +374,16 @@ function createMemberItem(member, isOwner, listId) {
 		removeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`;
 		removeBtn.addEventListener("click", async (e) => {
 			e.stopPropagation();
-			const result = await query(`/lists/${listId}/members/${member.id}`, { method: "DELETE" });
+			const result = await query(`/lists/${listId}/members/${member.id}`, {
+				method: "DELETE",
+			});
 			if (result.success) {
 				item.remove();
 				toastQueue.add(`<h1>Member removed</h1>`);
 			} else {
-				toastQueue.add(`<h1>${escapeHTML(result.error || "Failed to remove member")}</h1>`);
+				toastQueue.add(
+					`<h1>${escapeHTML(result.error || "Failed to remove member")}</h1>`,
+				);
 			}
 		});
 		item.appendChild(removeBtn);
@@ -377,7 +404,9 @@ function setupListDetailTabs() {
 
 	tabNav.querySelectorAll(".list-detail-tab").forEach((tab) => {
 		tab.addEventListener("click", () => {
-			tabNav.querySelectorAll(".list-detail-tab").forEach((t) => { t.classList.remove("active") });
+			tabNav.querySelectorAll(".list-detail-tab").forEach((t) => {
+				t.classList.remove("active");
+			});
 			tab.classList.add("active");
 			updateTabIndicator(tabNav, tab);
 
@@ -489,9 +518,13 @@ export function openCreateListModal() {
 		if (result.success) {
 			modal.close();
 			toastQueue.add(`<h1>List created!</h1>`);
-			loadLists();
+			if (result.list?.id) {
+				openListDetail(result.list.id);
+			}
 		} else {
-			toastQueue.add(`<h1>${escapeHTML(result.error || "Failed to create list")}</h1>`);
+			toastQueue.add(
+				`<h1>${escapeHTML(result.error || "Failed to create list")}</h1>`,
+			);
 			createBtn.disabled = false;
 			createBtn.textContent = "Create";
 		}
@@ -575,9 +608,11 @@ function openEditListModal(list) {
 		if (result.success) {
 			modal.close();
 			toastQueue.add(`<h1>List deleted</h1>`);
-			openListsPage();
+			history.back();
 		} else {
-			toastQueue.add(`<h1>${escapeHTML(result.error || "Failed to delete list")}</h1>`);
+			toastQueue.add(
+				`<h1>${escapeHTML(result.error || "Failed to delete list")}</h1>`,
+			);
 		}
 	});
 
@@ -605,7 +640,9 @@ function openEditListModal(list) {
 			toastQueue.add(`<h1>List updated!</h1>`);
 			loadListDetail(list.id);
 		} else {
-			toastQueue.add(`<h1>${escapeHTML(result.error || "Failed to update list")}</h1>`);
+			toastQueue.add(
+				`<h1>${escapeHTML(result.error || "Failed to update list")}</h1>`,
+			);
 			saveBtn.disabled = false;
 			saveBtn.textContent = "Save";
 		}
@@ -648,7 +685,9 @@ async function openAddMemberModal(listId) {
 				return;
 			}
 
-			const data = await query(`/search?q=${encodeURIComponent(term)}&type=users&limit=10`);
+			const data = await query(
+				`/search?q=${encodeURIComponent(term)}&type=users&limit=10`,
+			);
 			resultsContainer.innerHTML = "";
 
 			if (data.users && data.users.length > 0) {
@@ -657,11 +696,15 @@ async function openAddMemberModal(listId) {
 					item.className = "add-member-user";
 
 					const avatar = document.createElement("img");
-					avatar.src = user.avatar || "/public/shared/assets/default-avatar.svg";
+					avatar.src =
+						user.avatar || "/public/shared/assets/default-avatar.svg";
 					avatar.className = "add-member-avatar";
-					const radius = user.avatar_radius !== null && user.avatar_radius !== undefined
-						? `${user.avatar_radius}px`
-						: user.gold ? "4px" : "50px";
+					const radius =
+						user.avatar_radius !== null && user.avatar_radius !== undefined
+							? `${user.avatar_radius}px`
+							: user.gold
+								? "4px"
+								: "50px";
 					avatar.style.borderRadius = radius;
 					item.appendChild(avatar);
 
@@ -697,7 +740,9 @@ async function openAddMemberModal(listId) {
 						} else {
 							addBtn.disabled = false;
 							addBtn.textContent = "Add";
-							toastQueue.add(`<h1>${escapeHTML(result.error || "Failed to add member")}</h1>`);
+							toastQueue.add(
+								`<h1>${escapeHTML(result.error || "Failed to add member")}</h1>`,
+							);
 						}
 					});
 					item.appendChild(addBtn);
@@ -705,7 +750,10 @@ async function openAddMemberModal(listId) {
 					resultsContainer.appendChild(item);
 				});
 			} else {
-				resultsContainer.innerHTML = "<p class='no-results'>No users found</p>";
+				const noResults = document.createElement("p");
+				noResults.className = "no-results";
+				noResults.textContent = "No users found";
+				resultsContainer.appendChild(noResults);
 			}
 		}, 300);
 	});
@@ -713,36 +761,122 @@ async function openAddMemberModal(listId) {
 	searchInput.focus();
 }
 
-export function initLists() {
-	const listsBtn = document.getElementById("listsBtn");
-	if (listsBtn) {
-		listsBtn.addEventListener("click", () => openListsPage());
-	}
+export function openAddToListModal(userId, username) {
+	const content = document.createElement("div");
+	content.className = "add-to-list-form";
 
+	const loadingDiv = document.createElement("div");
+	loadingDiv.className = "loading";
+	loadingDiv.textContent = "Loading your lists...";
+	content.appendChild(loadingDiv);
+
+	const modal = createModal({
+		title: `Add @${username} to list`,
+		content,
+		className: "add-to-list-modal",
+	});
+
+	(async () => {
+		const data = await query("/lists/");
+		content.innerHTML = "";
+
+		if (data.error || !data.ownedLists) {
+			const errorDiv = document.createElement("div");
+			errorDiv.className = "lists-empty";
+			errorDiv.textContent = data.error || "Failed to load lists";
+			content.appendChild(errorDiv);
+			return;
+		}
+
+		if (data.ownedLists.length === 0) {
+			const emptyDiv = document.createElement("div");
+			emptyDiv.className = "lists-empty";
+			const emptyTitle = document.createElement("h3");
+			emptyTitle.textContent = "No lists";
+			emptyDiv.appendChild(emptyTitle);
+			const emptyText = document.createElement("p");
+			emptyText.textContent = "Create a list first to add users.";
+			emptyDiv.appendChild(emptyText);
+			const createBtn = document.createElement("button");
+			createBtn.className = "profile-btn profile-btn-primary";
+			createBtn.textContent = "Create list";
+			createBtn.addEventListener("click", () => {
+				modal.close();
+				openCreateListModal();
+			});
+			emptyDiv.appendChild(createBtn);
+			content.appendChild(emptyDiv);
+			return;
+		}
+
+		const listContainer = document.createElement("div");
+		listContainer.className = "add-to-list-items";
+
+		for (const list of data.ownedLists) {
+			const item = document.createElement("div");
+			item.className = "add-to-list-item";
+
+			const checkbox = document.createElement("input");
+			checkbox.type = "checkbox";
+			checkbox.id = `list-${list.id}`;
+			checkbox.checked = list.hasMember;
+			item.appendChild(checkbox);
+
+			const label = document.createElement("label");
+			label.htmlFor = `list-${list.id}`;
+
+			const name = document.createElement("span");
+			name.className = "list-name";
+			name.textContent = list.name;
+			label.appendChild(name);
+
+			if (list.is_private) {
+				const badge = document.createElement("span");
+				badge.className = "list-private-badge";
+				badge.textContent = "Private";
+				label.appendChild(badge);
+			}
+
+			item.appendChild(label);
+
+			checkbox.addEventListener("change", async () => {
+				checkbox.disabled = true;
+				if (checkbox.checked) {
+					const result = await query(`/lists/${list.id}/members`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({ userId }),
+					});
+					if (!result.success) {
+						checkbox.checked = false;
+						toastQueue.add(
+							`<h1>${escapeHTML(result.error || "Failed to add to list")}</h1>`,
+						);
+					}
+				} else {
+					const result = await query(`/lists/${list.id}/members/${userId}`, {
+						method: "DELETE",
+					});
+					if (!result.success) {
+						checkbox.checked = true;
+						toastQueue.add(
+							`<h1>${escapeHTML(result.error || "Failed to remove from list")}</h1>`,
+						);
+					}
+				}
+				checkbox.disabled = false;
+			});
+
+			listContainer.appendChild(item);
+		}
+
+		content.appendChild(listContainer);
+	})();
+}
+
+export function initLists() {
 	const createBtn = document.getElementById("createListBtn");
 	if (createBtn) {
 		createBtn.addEventListener("click", () => openCreateListModal());
-	}
-
-	const tabNav = document.querySelector(".lists-tabs");
-	if (tabNav) {
-		const ownedContainer = document.getElementById("ownedListsList");
-		const followedContainer = document.getElementById("followedListsList");
-
-		tabNav.querySelectorAll(".lists-tab").forEach((tab) => {
-			tab.addEventListener("click", () => {
-				tabNav.querySelectorAll(".lists-tab").forEach((t) => { t.classList.remove("active") });
-				tab.classList.add("active");
-				updateTabIndicator(tabNav, tab);
-
-				if (tab.dataset.tab === "owned") {
-					ownedContainer.classList.remove("hidden");
-					followedContainer.classList.add("hidden");
-				} else {
-					ownedContainer.classList.add("hidden");
-					followedContainer.classList.remove("hidden");
-				}
-			});
-		});
 	}
 }

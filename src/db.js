@@ -664,30 +664,6 @@ CREATE TABLE IF NOT EXISTS interactive_card_options (
 
 CREATE INDEX IF NOT EXISTS idx_interactive_card_options_card_id ON interactive_card_options(card_id);
 
-CREATE TABLE IF NOT EXISTS pastes (
-  id TEXT PRIMARY KEY,
-  user_id TEXT DEFAULT NULL,
-  title TEXT DEFAULT NULL,
-  content TEXT NOT NULL,
-  language TEXT DEFAULT NULL,
-  is_public BOOLEAN DEFAULT TRUE,
-  burn_after_reading BOOLEAN DEFAULT FALSE,
-  secret_key TEXT DEFAULT NULL,
-  slug TEXT UNIQUE,
-  view_count INTEGER DEFAULT 0,
-  expires_at TIMESTAMP DEFAULT NULL,
-  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
-  updated_at TIMESTAMP DEFAULT NULL,
-  password_hash TEXT DEFAULT NULL,
-  show_author BOOLEAN DEFAULT TRUE,
-  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_pastes_user_id ON pastes(user_id);
-CREATE INDEX IF NOT EXISTS idx_pastes_created_at ON pastes(created_at);
-CREATE INDEX IF NOT EXISTS idx_pastes_slug ON pastes(slug);
-CREATE INDEX IF NOT EXISTS idx_pastes_is_public ON pastes(is_public) WHERE is_public = TRUE;
-
 CREATE TABLE IF NOT EXISTS delegates (
   id TEXT PRIMARY KEY,
   owner_id TEXT NOT NULL,

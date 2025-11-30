@@ -267,12 +267,6 @@ function createCommunityCard(community, showRole = false) {
 	const card = document.createElement("div");
 	card.className = "community-card";
 
-	const banner = document.createElement("div");
-	banner.className = "community-banner";
-	if (community.banner) {
-		banner.style.backgroundImage = `url('/api/uploads/${community.banner}.webp')`;
-	}
-
 	const content = document.createElement("div");
 	content.className = "community-card-content";
 
@@ -293,7 +287,7 @@ function createCommunityCard(community, showRole = false) {
 	info.className = "community-info";
 
 	const titleContainer = document.createElement("h3");
-	titleContainer.textContent = `${community.name} `;
+	titleContainer.textContent = community.name;
 
 	if (community.access_mode === "locked") {
 		const lockIcon = document.createElement("span");
@@ -302,9 +296,7 @@ function createCommunityCard(community, showRole = false) {
 		titleContainer.appendChild(lockIcon);
 	}
 
-	const desc = document.createElement("p");
-	desc.className = "community-description";
-	desc.textContent = community.description || "No description";
+	info.appendChild(titleContainer);
 
 	const meta = document.createElement("div");
 	meta.className = "community-meta";
@@ -320,16 +312,11 @@ function createCommunityCard(community, showRole = false) {
 		meta.appendChild(roleBadge);
 	}
 
-	info.appendChild(titleContainer);
-	info.appendChild(desc);
 	info.appendChild(meta);
-
 	content.appendChild(info);
-	card.appendChild(banner);
 	card.appendChild(content);
 
 	card.addEventListener("click", () => {
-		// Let loadCommunityDetail handle showing the page and history state
 		loadCommunityDetail(community.id);
 	});
 

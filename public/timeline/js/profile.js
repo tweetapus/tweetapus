@@ -7,7 +7,12 @@ import {
 	isConvertibleImage,
 } from "../../shared/image-utils.js";
 import { showReportModal } from "../../shared/report-modal.js";
-import { createFollowerSkeleton, createProfileSkeleton, removeSkeletons, showSkeletons } from "../../shared/skeleton-utils.js";
+import {
+	createFollowerSkeleton,
+	createProfileSkeleton,
+	removeSkeletons,
+	showSkeletons,
+} from "../../shared/skeleton-utils.js";
 import { updateTabIndicator } from "../../shared/tab-indicator.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal, createPopup } from "../../shared/ui-utils.js";
