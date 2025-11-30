@@ -20,7 +20,10 @@ self.addEventListener("push", (event) => {
 	};
 
 	event.waitUntil(
-		self.registration.showNotification(data.title || "New unread notifications", options),
+		self.registration.showNotification(
+			data.title || "New unread notifications",
+			options,
+		),
 	);
 });
 

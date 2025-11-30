@@ -397,7 +397,9 @@ const renderMediaGrid = async (posts) => {
 	for (const post of posts) {
 		const attachments = post.attachments || [];
 		const mediaAttachments = attachments.filter(
-			(att) => att.file_type?.startsWith("image/") || att.file_type?.startsWith("video/"),
+			(att) =>
+				att.file_type?.startsWith("image/") ||
+				att.file_type?.startsWith("video/"),
 		);
 
 		if (mediaAttachments.length === 0) continue;
@@ -569,7 +571,9 @@ const loadMoreMedia = async () => {
 	for (const post of media) {
 		const attachments = post.attachments || [];
 		const mediaAttachments = attachments.filter(
-			(att) => att.file_type?.startsWith("image/") || att.file_type?.startsWith("video/"),
+			(att) =>
+				att.file_type?.startsWith("image/") ||
+				att.file_type?.startsWith("video/"),
 		);
 
 		if (mediaAttachments.length === 0) continue;
