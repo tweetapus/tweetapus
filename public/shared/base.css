@@ -440,6 +440,6 @@ img {
 }
 
 html,
-body {
-  overscroll-behavior-y: none;
+body, * {
+  overscroll-behavior-y: contain;
 }
