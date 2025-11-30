@@ -3141,11 +3141,24 @@ async function showFollowersList(username, initialType = "followers") {
 	const loadTabContent = async (type) => {
 		followersList.innerHTML = "";
 
-		const skeletons = showSkeletons(followersList, createFollowerSkeleton, 5);
+		let count = 0;
+		if (type === "followers") {
+			count = currentProfile?.profile?.follower_count || 0;
+		} else if (type === "following") {
+			count = currentProfile?.profile?.following_count || 0;
+		}
+
+		const initialSkeletonCount = Math.min(Math.max(count, 1), 20);
+		const skeletons = showSkeletons(
+			followersList,
+			createFollowerSkeleton,
+			initialSkeletonCount,
+		);
 
 		try {
 			let users = [];
 			let endpoint = "";
+			let mutualCount = 0;
 
 			if (type === "followers") {
 				endpoint = `/profile/${username}/followers`;
@@ -3162,9 +3175,25 @@ async function showFollowersList(username, initialType = "followers") {
 				const data = await query(endpoint);
 				if (data.error) throw new Error(data.error);
 				users = data.followersYouKnow || [];
+				mutualCount = data.count || 0;
+
+				removeSkeletons(skeletons);
+				const correctSkeletonCount = Math.min(Math.max(mutualCount, 1), 20);
+				if (correctSkeletonCount !== initialSkeletonCount) {
+					const newSkeletons = showSkeletons(
+						followersList,
+						createFollowerSkeleton,
+						correctSkeletonCount,
+					);
+					removeSkeletons(newSkeletons);
+				}
+			} else {
+				removeSkeletons(skeletons);
 			}
 
-			removeSkeletons(skeletons);
+			if (type !== "mutuals") {
+				removeSkeletons(skeletons);
+			}
 
 			if (users.length === 0) {
 				const emptyDiv = document.createElement("div");

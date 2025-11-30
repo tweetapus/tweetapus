@@ -18,7 +18,7 @@ export default async function openTweet(
 
 	let finalThread = null;
 	let finalTweet = tweet;
-
+	
 	const sourceThread = threadPostsCache || tweet.parentsCache;
 
 	if (sourceThread && sourceThread.length > 0) {

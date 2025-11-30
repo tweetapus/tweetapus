@@ -1136,7 +1136,7 @@ export const createTweetElement = (tweet, config = {}) => {
 				}
 
 				createModal({
-					title: "Edit History",
+					title: "Edit history",
 					content: historyContainer,
 					className: "edit-history-modal",
 				});

@@ -445,6 +445,10 @@ nav {
   display: flex;
   gap: 8px;
   flex-direction: column;
+
+  .skeleton-container {
+    overflow: clip;
+  }
 }
 
 .follower-item {

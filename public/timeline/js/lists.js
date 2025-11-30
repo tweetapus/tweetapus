@@ -13,7 +13,6 @@ import { createTweetElement } from "./tweets.js";
 
 let currentTweets = [];
 let currentMembers = [];
-let hasMoreTweets = true;
 let isLoadingTweets = false;
 
 const escapeHTML = (str) =>
@@ -668,7 +667,7 @@ async function openAddMemberModal(listId) {
 	resultsContainer.className = "add-member-results";
 	content.appendChild(resultsContainer);
 
-	const modal = createModal({
+  createModal({
 		title: "Add members",
 		content,
 		className: "add-member-modal",

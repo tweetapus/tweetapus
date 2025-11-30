@@ -11,6 +11,20 @@ import { embeds } from "./helpers/embeds.js";
 export { broadcastToUser, sendUnreadCounts };
 
 const appServer = new Elysia()
+	.onError((err, ctx) => {
+		console.error('Elysia error:', err?.stack || err?.message || err, 'ctx.path=', ctx?.path);
+		// Return a simple error to not leak internals
+		ctx.set.status = 500;
+		return 'Internal Server Error';
+	})
+	.onBeforeHandle(({ path, headers }) => {
+		try {
+			const remote = headers['cf-connecting-ip'] || headers['x-forwarded-for'] || headers['host'];
+			console.log('Incoming request:', path, 'remote=', remote);
+		} catch {
+			// ignore
+		}
+	})
 	.use(embeds)
 	.use(compression)
 	.use(staticPlugin())
@@ -91,7 +105,16 @@ const appServer = new Elysia()
 				},
 			},
 			exclude: {
-				paths: ["/*", "/public/*", "/legal", "/admin", "/api/owoembed", "/public/account-v2", "/public/admin", "/public/shared/assets/img/flags/LICENSE"],
+				paths: [
+					"/*",
+					"/public/*",
+					"/legal",
+					"/admin",
+					"/api/owoembed",
+					"/public/account-v2",
+					"/public/admin",
+					"/public/shared/assets/img/flags/LICENSE",
+				],
 			},
 		}),
 	)
@@ -104,6 +127,24 @@ const appServer = new Elysia()
 	})
 	.get("/admin", () => file("./public/admin/index.html"))
 	.get("/legal", () => file("./public/legal.html"))
+	.get("/public/temporary/font-text.html", ({ set, request }) => {
+		console.log('Serving font-text.html for', request.url);
+		set.headers["content-type"] = "text/html; charset=utf-8";
+		set.headers["x-debug-route"] = "font-text";
+		return file("./public/temporary/font-text.html");
+	})
+	.get("/public/temporary/font-text.css", ({ set, request }) => {
+		console.log('Serving font-text.css for', request.url);
+		set.headers["content-type"] = "text/css; charset=utf-8";
+		set.headers["x-debug-route"] = "font-text-css";
+		return file("./public/temporary/font-text.css");
+	})
+	.get("/public/temporary/HappiesFont-Regular.otf", ({ set, request }) => {
+		console.log('Serving HappiesFont-Regular.otf for', request.url);
+		set.headers["content-type"] = "font/otf";
+		set.headers["x-debug-route"] = "font-otf";
+		return file("./public/temporary/HappiesFont-Regular.otf");
+	})
 	.get("/public/paste/script.js", () => file("./public/paste/script.js"))
 	.get("*", ({ cookie }) => {
 		return cookie.agree?.value === "yes"
