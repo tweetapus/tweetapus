@@ -983,7 +983,12 @@ export const createTweetElement = (tweet, config = {}) => {
 		communityTagEl.href = `/communities/${tweet.author.community_tag.community_id}`;
 		communityTagEl.className = "community-tag";
 		communityTagEl.title = `Member of ${tweet.author.community_tag.community_name}`;
-		communityTagEl.textContent = `${tweet.author.community_tag.emoji || ""}${tweet.author.community_tag.text || ""}`;
+		communityTagEl.textContent = [
+			tweet.author.community_tag.emoji || "",
+			tweet.author.community_tag.text,
+		]
+			.join(" ")
+			.trim();
 
 		communityTagEl.addEventListener("click", (e) => {
 			e.preventDefault();

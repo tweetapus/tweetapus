@@ -123,11 +123,19 @@ const getListTweetsBefore = db.prepare(`
 	LIMIT ?
 `);
 
-const getAttachmentsByPostId = db.prepare(`SELECT * FROM attachments WHERE post_id = ?`);
+const getAttachmentsByPostId = db.prepare(
+	`SELECT * FROM attachments WHERE post_id = ?`,
+);
 const getPollByPostId = db.prepare(`SELECT * FROM polls WHERE post_id = ?`);
-const getPollOptions = db.prepare(`SELECT * FROM poll_options WHERE poll_id = ? ORDER BY option_order ASC`);
-const getUserPollVote = db.prepare(`SELECT option_id FROM poll_votes WHERE user_id = ? AND poll_id = ?`);
-const getTotalPollVotes = db.prepare(`SELECT SUM(vote_count) as total FROM poll_options WHERE poll_id = ?`);
+const getPollOptions = db.prepare(
+	`SELECT * FROM poll_options WHERE poll_id = ? ORDER BY option_order ASC`,
+);
+const getUserPollVote = db.prepare(
+	`SELECT option_id FROM poll_votes WHERE user_id = ? AND poll_id = ?`,
+);
+const getTotalPollVotes = db.prepare(
+	`SELECT SUM(vote_count) as total FROM poll_options WHERE poll_id = ?`,
+);
 
 const getPollDataForTweet = (tweetId, userId) => {
 	const poll = getPollByPostId.get(tweetId);
@@ -140,7 +148,8 @@ const getPollDataForTweet = (tweetId, userId) => {
 		...poll,
 		options: options.map((opt) => ({
 			...opt,
-			percentage: totalVotes > 0 ? Math.round((opt.vote_count / totalVotes) * 100) : 0,
+			percentage:
+				totalVotes > 0 ? Math.round((opt.vote_count / totalVotes) * 100) : 0,
 		})),
 		totalVotes,
 		userVote: userVote?.option_id || null,
@@ -181,7 +190,9 @@ export default new Elysia({ prefix: "/lists", tags: ["Lists"] })
 		}
 
 		const lists = getListsByUser.all(targetUser.id);
-		const visibleLists = lists.filter((list) => !list.is_private || list.user_id === currentUserId);
+		const visibleLists = lists.filter(
+			(list) => !list.is_private || list.user_id === currentUserId,
+		);
 		return { lists: visibleLists };
 	})
 	.get("/containing/:username", async ({ params, jwt, headers }) => {
@@ -199,7 +210,10 @@ export default new Elysia({ prefix: "/lists", tags: ["Lists"] })
 			}
 		}
 
-		const lists = getListsContainingUser.all(targetUser.id, currentUserId || "");
+		const lists = getListsContainingUser.all(
+			targetUser.id,
+			currentUserId || "",
+		);
 		return { lists };
 	})
 	.post("/", async ({ jwt, headers, body }) => {
@@ -224,9 +238,24 @@ export default new Elysia({ prefix: "/lists", tags: ["Lists"] })
 		}
 
 		const id = Bun.randomUUIDv7();
-		createList.run(id, user.id, name.trim(), description?.trim() || null, isPrivate ? 1 : 0);
+		createList.run(
+			id,
+			user.id,
+			name.trim(),
+			description?.trim() || null,
+			isPrivate ? 1 : 0,
+		);
 
-		return { success: true, list: { id, name: name.trim(), description: description?.trim() || null, is_private: !!isPrivate, member_count: 0 } };
+		return {
+			success: true,
+			list: {
+				id,
+				name: name.trim(),
+				description: description?.trim() || null,
+				is_private: !!isPrivate,
+				member_count: 0,
+			},
+		};
 	})
 	.get("/:id", async ({ params, jwt, headers }) => {
 		const { id } = params;
@@ -249,8 +278,13 @@ export default new Elysia({ prefix: "/lists", tags: ["Lists"] })
 
 		const owner = getUserById.get(list.user_id);
 		const members = getListMembers.all(id);
-		const followerCount = db.query(`SELECT COUNT(*) as count FROM list_followers WHERE list_id = ?`).get(id)?.count || 0;
-		const isFollowing = currentUserId ? !!isListFollower.get(id, currentUserId) : false;
+		const followerCount =
+			db
+				.query(`SELECT COUNT(*) as count FROM list_followers WHERE list_id = ?`)
+				.get(id)?.count || 0;
+		const isFollowing = currentUserId
+			? !!isListFollower.get(id, currentUserId)
+			: false;
 		const isOwner = list.user_id === currentUserId;
 
 		return {
@@ -290,7 +324,12 @@ export default new Elysia({ prefix: "/lists", tags: ["Lists"] })
 			return { error: "Description must be 100 characters or less" };
 		}
 
-		updateList.run(name.trim(), description?.trim() || null, isPrivate ? 1 : 0, id);
+		updateList.run(
+			name.trim(),
+			description?.trim() || null,
+			isPrivate ? 1 : 0,
+			id,
+		);
 		return { success: true };
 	})
 	.delete("/:id", async ({ params, jwt, headers }) => {
@@ -352,7 +391,10 @@ export default new Elysia({ prefix: "/lists", tags: ["Lists"] })
 			poll: getPollDataForTweet(tweet.id, currentUserId),
 		}));
 
-		return { tweets: enrichedTweets, hasMore: tweets.length === parseInt(limit, 10) };
+		return {
+			tweets: enrichedTweets,
+			hasMore: tweets.length === parseInt(limit, 10),
+		};
 	})
 	.post("/:id/members", async ({ params, jwt, headers, body }) => {
 		const authorization = headers.authorization;

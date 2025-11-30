@@ -45,7 +45,10 @@ export function observeTabContainer(container) {
 
 	const mutationObserver = new MutationObserver((mutations) => {
 		for (const mutation of mutations) {
-			if (mutation.type === "attributes" && mutation.attributeName === "class") {
+			if (
+				mutation.type === "attributes" &&
+				mutation.attributeName === "class"
+			) {
 				if (mutation.target.classList.contains("active")) {
 					updateTabIndicator(container, mutation.target);
 					break;

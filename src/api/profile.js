@@ -1786,7 +1786,8 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 			const targetUser = getUserByUsername.get(username);
 			if (!targetUser) return { error: "User not found" };
 
-			const mutuals = db.prepare(`
+			const mutuals = db
+				.prepare(`
 				SELECT u.id, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius, u.bio
 				FROM follows f1
 				JOIN follows f2 ON f1.following_id = f2.follower_id AND f2.following_id = ?
@@ -1794,7 +1795,8 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				WHERE f1.follower_id = ? AND u.suspended = 0 AND u.shadowbanned = 0
 				ORDER BY u.follower_count DESC
 				LIMIT 50
-			`).all(targetUser.id, currentUser.id);
+			`)
+				.all(targetUser.id, currentUser.id);
 
 			return { mutuals };
 		} catch (error) {
@@ -1821,7 +1823,8 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				return { followersYouKnow: [], count: 0 };
 			}
 
-			const followersYouKnow = db.prepare(`
+			const followersYouKnow = db
+				.prepare(`
 				SELECT u.id, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius, u.bio
 				FROM follows target_followers
 				JOIN follows my_following ON target_followers.follower_id = my_following.following_id
@@ -1829,15 +1832,18 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				WHERE target_followers.following_id = ? AND my_following.follower_id = ? AND u.suspended = 0 AND u.shadowbanned = 0
 				ORDER BY u.follower_count DESC
 				LIMIT 50
-			`).all(targetUser.id, currentUser.id);
+			`)
+				.all(targetUser.id, currentUser.id);
 
-			const countResult = db.prepare(`
+			const countResult = db
+				.prepare(`
 				SELECT COUNT(*) as count
 				FROM follows target_followers
 				JOIN follows my_following ON target_followers.follower_id = my_following.following_id
 				JOIN users u ON target_followers.follower_id = u.id
 				WHERE target_followers.following_id = ? AND my_following.follower_id = ? AND u.suspended = 0 AND u.shadowbanned = 0
-			`).get(targetUser.id, currentUser.id);
+			`)
+				.get(targetUser.id, currentUser.id);
 
 			return { followersYouKnow, count: countResult?.count || 0 };
 		} catch (error) {

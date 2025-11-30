@@ -87,7 +87,7 @@ export default async function openProfile(username) {
 
 			const existingContent = profileContainer.innerHTML;
 			profileContainer.innerHTML = "";
-			
+
 			const skeleton = createProfileSkeleton();
 			profileContainer.appendChild(skeleton);
 
@@ -170,7 +170,11 @@ async function loadFollowersYouKnow(username) {
 
 	try {
 		const data = await query(`/profile/${username}/followers-you-know`);
-		if (data.error || !data.followersYouKnow || data.followersYouKnow.length === 0) {
+		if (
+			data.error ||
+			!data.followersYouKnow ||
+			data.followersYouKnow.length === 0
+		) {
 			return;
 		}
 
@@ -186,9 +190,12 @@ async function loadFollowersYouKnow(username) {
 			avatar.src = user.avatar || "/public/shared/assets/default-avatar.svg";
 			avatar.alt = user.name || user.username;
 			avatar.className = "followers-you-know-avatar";
-			const radius = user.avatar_radius !== null && user.avatar_radius !== undefined
-				? `${user.avatar_radius}px`
-				: user.gold ? "4px" : "50px";
+			const radius =
+				user.avatar_radius !== null && user.avatar_radius !== undefined
+					? `${user.avatar_radius}px`
+					: user.gold
+						? "4px"
+						: "50px";
 			avatar.style.borderRadius = radius;
 			avatarsContainer.appendChild(avatar);
 		}
@@ -3018,9 +3025,12 @@ function createUserListItem(user, onClickCallback) {
 	avatar.src = user.avatar || "/public/shared/assets/default-avatar.svg";
 	avatar.alt = user.name || user.username;
 	avatar.className = "follower-avatar";
-	const radius = user.avatar_radius !== null && user.avatar_radius !== undefined
-		? `${user.avatar_radius}px`
-		: user.gold ? "4px" : "50px";
+	const radius =
+		user.avatar_radius !== null && user.avatar_radius !== undefined
+			? `${user.avatar_radius}px`
+			: user.gold
+				? "4px"
+				: "50px";
 	avatar.style.borderRadius = radius;
 
 	const followerInfo = document.createElement("div");
@@ -3085,7 +3095,7 @@ async function showFollowersList(username, initialType = "followers") {
 
 	const loadTabContent = async (type) => {
 		followersList.innerHTML = "";
-		
+
 		const loadingDiv = document.createElement("div");
 		loadingDiv.className = "followers-loading";
 		loadingDiv.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><style>.spinner_z9k8{transform-origin:center;animation:spinner_StKS .75s infinite linear}@keyframes spinner_StKS{100%{transform:rotate(360deg)}}</style><path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="currentColor"/><path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" class="spinner_z9k8" fill="currentColor"/></svg>`;

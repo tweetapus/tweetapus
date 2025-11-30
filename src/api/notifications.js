@@ -3,16 +3,24 @@ import db from "../db.js";
 import { sendPushNotification } from "./push.js";
 
 let sendUnreadCounts;
+let broadcastToUser;
 try {
 	const indexModule = await import("../index.js");
 	sendUnreadCounts = indexModule.sendUnreadCounts;
+	broadcastToUser = indexModule.broadcastToUser;
 } catch {
 	sendUnreadCounts = () => {};
+	broadcastToUser = () => {};
 }
 
 const getUserByUsername = db.query(
 	"SELECT id FROM users WHERE LOWER(username) = LOWER(?)",
 );
+
+const getActorDetails = db.prepare(`
+  SELECT avatar, verified, gold, avatar_radius
+  FROM users WHERE id = ?
+`);
 
 const getNotifications = db.prepare(`
   SELECT 
@@ -103,6 +111,7 @@ export function addNotification(
 	actorName = null,
 ) {
 	const id = Bun.randomUUIDv7();
+	const createdAt = new Date().toISOString();
 
 	createNotification.run(
 		id,
@@ -115,6 +124,30 @@ export function addNotification(
 		actorName,
 	);
 	sendUnreadCounts(userId);
+
+	let actorDetails = null;
+	if (actorId) {
+		actorDetails = getActorDetails.get(actorId);
+	}
+
+	broadcastToUser(userId, {
+		type: "notification",
+		notification: {
+			id,
+			type,
+			content,
+			related_id: relatedId,
+			actor_id: actorId,
+			actor_username: actorUsername,
+			actor_name: actorName,
+			actor_avatar: actorDetails?.avatar || null,
+			actor_verified: actorDetails?.verified || 0,
+			actor_gold: actorDetails?.gold || 0,
+			actor_avatar_radius: actorDetails?.avatar_radius ?? null,
+			read: false,
+			created_at: createdAt,
+		},
+	});
 
 	sendPushNotification(userId, {
 		type,
