@@ -592,6 +592,7 @@ nav {
         padding-right: 23px;
         border: none;
         transition: color .1s;
+        user-select: none;
 
         &:not(:hover) {
           color: var(--text-placeholder);

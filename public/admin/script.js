@@ -915,7 +915,14 @@ class AdminPanel {
 		}
 
 		const response = await fetch(endpoint, { ...options, headers });
-		const data = await response.json();
+		const text = await response.text();
+		
+		let data;
+		try {
+			data = JSON.parse(text);
+		} catch {
+			throw new Error(text || "Failed to parse response");
+		}
 
 		if (!response.ok) {
 			throw new Error(data.error || "API call failed");
