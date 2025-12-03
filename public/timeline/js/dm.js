@@ -33,6 +33,16 @@ function sanitizeHTML(str) {
 	return div.innerHTML;
 }
 
+function linkifyDMText(text) {
+	if (!text) return "";
+	const sanitized = sanitizeHTML(text);
+	const urlRegex = /(https?:\/\/[^\s<>"']+)/g;
+	return sanitized.replace(urlRegex, (url) => {
+		const safeUrl = url.replace(/["'<>]/g, "");
+		return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="dm-link">${safeUrl}</a>`;
+	});
+}
+
 let currentConversations = [];
 let currentConversation = null;
 let currentMessages = [];
@@ -858,7 +868,7 @@ function createMessageElement(message, currentUser) {
 	if (sanitizedContent) {
 		const bubble = document.createElement("div");
 		bubble.className = "dm-message-bubble";
-		bubble.textContent = message.content || "";
+		bubble.innerHTML = linkifyDMText(message.content || "");
 		content.appendChild(bubble);
 	}
 
@@ -992,7 +1002,7 @@ function updateMessageElement(el, message, currentUser) {
 
 	const bubble = el.querySelector(".dm-message-bubble");
 	if (bubble && message.content) {
-		bubble.textContent = message.content;
+		bubble.innerHTML = linkifyDMText(message.content);
 	}
 
 	const timeSpan = el.querySelector(".dm-message-time");
@@ -2359,7 +2369,7 @@ function renderReplyPreview() {
 	content.className = "dm-reply-preview-content";
 
 	const label = document.createElement("span");
-	label.className = "dm-reply-preview-label";
+	label.className = "dm-reply-preview-label"; // check discord ASAP, Tr.
 	label.textContent = `Replying to ${replyingTo.authorName}`;
 	content.appendChild(label);
 

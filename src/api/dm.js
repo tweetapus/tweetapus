@@ -8,6 +8,7 @@ import {
 } from "../helpers/customRateLimit.js";
 import cap from "./cap.js";
 import { addNotification } from "./notifications.js";
+import { sendPushNotification } from "./push.js";
 
 let broadcastToUser, sendUnreadCounts;
 try {
@@ -514,6 +515,28 @@ export default new Elysia({ prefix: "/dm", tags: ["DM"] })
 						},
 					});
 					sendUnreadCounts(participant.user_id);
+
+					const isGroup = conversation.type === "group";
+					const senderName = user.name || user.username;
+					const messagePreview = content
+						? content.length > 100
+							? `${content.substring(0, 100)}...`
+							: content
+						: attachments.length > 0
+							? "📷 Image"
+							: "";
+					const pushTitle = isGroup
+						? `${senderName} in ${conversation.title || "Group Chat"}`
+						: `${senderName}`;
+
+					sendPushNotification(participant.user_id, {
+						type: "dm",
+						title: pushTitle,
+						body: messagePreview,
+						conversationId: id,
+						actorUsername: user.username,
+						actorAvatar: user.avatar,
+					}).catch(() => {});
 				}
 
 				const aiUser = getUserByUsername.get("h");

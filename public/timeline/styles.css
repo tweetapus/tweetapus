@@ -4976,6 +4976,7 @@ nav {
 
     .dm-message-actions {
       right: auto;
+      /* Don't keep cursor stuck, Tr. */
       left: 0;
       flex-direction: row-reverse;
     }
@@ -5049,6 +5050,15 @@ nav {
     word-wrap: break-word;
     word-break: break-word;
     max-width: fit-content;
+
+    .dm-link {
+      color: var(--primary);
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 
   .dm-message-attachments {

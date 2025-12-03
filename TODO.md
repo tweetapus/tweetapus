@@ -2,7 +2,6 @@
 
 - personalized algorithm
 - better settings, and fixing settings ui 
-check zsh [Shared] ASAP!!!!!!!!!!!!
 - automated spam/nsfw detection using openapi or perspective api
 
 

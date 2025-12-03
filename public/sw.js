@@ -61,6 +61,8 @@ function getNotificationUrl(data) {
 			return data.relatedId ? `/tweet/${data.relatedId}` : "/notifications";
 		case "follow":
 			return data.actorUsername ? `/@${data.actorUsername}` : "/notifications";
+		case "dm":
+			return data.conversationId ? `/dm/${data.conversationId}` : "/dm";
 		case "dm_message":
 			return data.relatedId ? `/dm/${data.relatedId}` : "/notifications";
 		default:
