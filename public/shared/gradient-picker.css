@@ -1,0 +1,131 @@
+.gradient-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gradient-picker-preview {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--border-primary);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.gradient-picker-preview-inner {
+  width: 100%;
+  height: 100%;
+}
+
+.gradient-picker-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.gradient-picker-mode {
+  display: flex;
+  gap: 4px;
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.gradient-picker-mode button {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.gradient-picker-mode button:hover {
+  background: var(--bg-tertiary);
+}
+
+.gradient-picker-mode button.active {
+  background: var(--primary);
+  color: white;
+}
+
+.gradient-picker-color-inputs {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.gradient-picker-color-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.gradient-picker-color-input input[type="color"] {
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  background: none;
+}
+
+.gradient-picker-color-input input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.gradient-picker-color-input input[type="color"]::-webkit-color-swatch {
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+}
+
+.gradient-picker-hex-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  min-width: 80px;
+}
+
+.gradient-picker-direction {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gradient-picker-direction select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.gradient-picker-clear {
+  padding: 6px 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.gradient-picker-clear:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}

@@ -126,6 +126,10 @@ const appServer = new Elysia()
 		return file("./public/temporary/HappiesFont-Regular.otf");
 	})
 	.get("/public/paste/script.js", () => file("./public/paste/script.js"))
+	.get("/public/shared/badge-utils.js", ({ set }) => {
+		set.headers["Content-Type"] = "application/javascript; charset=utf-8";
+		return file("./public/shared/badge-utils.js");
+	})
 	.get("*", ({ cookie }) => {
 		return cookie.agree?.value === "yes"
 			? file("./public/timeline/index.html")
@@ -156,15 +160,17 @@ const appServer = new Elysia()
 		},
 	);
 
-appServer.listen({ port: process.env.PORT || 3000, idleTimeout: 255 }, async () => {
-	try {
-		await mountServerExtensions(appServer);
-	} catch (err) {
-		console.error("Failed to mount server extensions:", err);
-	}
+appServer.listen(
+	{ port: process.env.PORT || 3000, idleTimeout: 255 },
+	async () => {
+		try {
+			await mountServerExtensions(appServer);
+		} catch (err) {
+			console.error("Failed to mount server extensions:", err);
+		}
 
-	console.log(
-		`\x1b[38;2;29;161;242m __    _                     _
+		console.log(
+			`\x1b[38;2;29;161;242m __    _                     _
  \\ \\  | |___      _____  ___| |_ __ _ _ __  _   _ ___
   \\ \\ | __\\ \\ /\\ / / _ \\/ _ \\ __/ _\` | '_ \\| | | / __|
   / / | |_ \\ V  V /  __/  __/ || (_| | |_) | |_| \\__ \\
@@ -172,7 +178,8 @@ appServer.listen({ port: process.env.PORT || 3000, idleTimeout: 255 }, async () 
                                      |_|\x1b[0m
 
 Happies tweetapus app is running on \x1b[38;2;29;161;242m\x1b[1m\x1b[4mhttp://localhost:${
-			process.env.PORT || 3000
-		}\x1b[0m`,
-	);
-});
+				process.env.PORT || 3000
+			}\x1b[0m`,
+		);
+	},
+);

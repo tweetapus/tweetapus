@@ -192,6 +192,20 @@ WHERE u.id = ?
 	updateUserGold: db.prepare("UPDATE users SET gold = ? WHERE id = ?"),
 	updateUserGray: db.prepare("UPDATE users SET gray = ? WHERE id = ?"),
 	updateUserOutlines: db.prepare("UPDATE users SET checkmark_outline = ?, avatar_outline = ? WHERE id = ?"),
+	
+	getUserPermissions: db.prepare("SELECT permission, enabled FROM user_permissions WHERE user_id = ?"),
+	upsertUserPermission: db.prepare("INSERT INTO user_permissions (id, user_id, permission, enabled) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, permission) DO UPDATE SET enabled = excluded.enabled"),
+	deleteUserPermissions: db.prepare("DELETE FROM user_permissions WHERE user_id = ?"),
+	
+	getBadges: db.prepare("SELECT * FROM custom_badges ORDER BY created_at DESC"),
+	getBadgeById: db.prepare("SELECT * FROM custom_badges WHERE id = ?"),
+	createBadge: db.prepare("INSERT INTO custom_badges (id, name, svg_content, color, description, created_by) VALUES (?, ?, ?, ?, ?, ?)"),
+	updateBadge: db.prepare("UPDATE custom_badges SET name = ?, svg_content = ?, color = ?, description = ? WHERE id = ?"),
+	deleteBadge: db.prepare("DELETE FROM custom_badges WHERE id = ?"),
+	getUserBadges: db.prepare("SELECT ub.*, b.name, b.svg_content, b.color, b.description FROM user_custom_badges ub JOIN custom_badges b ON ub.badge_id = b.id WHERE ub.user_id = ?"),
+	assignUserBadge: db.prepare("INSERT INTO user_custom_badges (id, user_id, badge_id, granted_by) VALUES (?, ?, ?, ?)"),
+	removeUserBadge: db.prepare("DELETE FROM user_custom_badges WHERE user_id = ? AND badge_id = ?"),
+
 	deleteUser: db.prepare("DELETE FROM users WHERE id = ?"),
 	deletePost: db.prepare("DELETE FROM posts WHERE id = ?"),
 
@@ -1385,6 +1399,163 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				checkmark_outline: t.Optional(t.Union([t.String(), t.Null()])),
 				avatar_outline: t.Optional(t.Union([t.String(), t.Null()])),
 			}),
+		},
+	)
+
+	.get(
+		"/users/:id/permissions",
+		async ({ params }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) return { error: "User not found" };
+			const permissions = adminQueries.getUserPermissions.all(params.id);
+			const permissionsMap = {};
+			for (const p of permissions) {
+				permissionsMap[p.permission] = !!p.enabled;
+			}
+			return { permissions: permissionsMap };
+		},
+	)
+
+	.patch(
+		"/users/:id/permissions",
+		async ({ params, body, user }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) return { error: "User not found" };
+			const { permissions } = body;
+			if (!permissions || typeof permissions !== "object") {
+				return { error: "permissions object required" };
+			}
+			for (const [permission, enabled] of Object.entries(permissions)) {
+				adminQueries.upsertUserPermission.run(
+					Bun.randomUUIDv7(),
+					params.id,
+					permission,
+					enabled ? 1 : 0,
+				);
+			}
+			logModerationAction(user.id, "update_permissions", "user", params.id, {
+				username: targetUser?.username,
+				permissions,
+			});
+			return { success: true };
+		},
+		{
+			body: t.Object({
+				permissions: t.Record(t.String(), t.Boolean()),
+			}),
+		},
+	)
+
+	.get("/badges", async () => {
+		const badges = adminQueries.getBadges.all();
+		return { badges };
+	})
+
+	.post(
+		"/badges",
+		async ({ body, user }) => {
+			const { name, svg_content, color, description } = body;
+			if (!name || !svg_content) {
+				return { error: "name and svg_content are required" };
+			}
+			const id = Bun.randomUUIDv7();
+			adminQueries.createBadge.run(id, name, svg_content, color || null, description || null, user.id);
+			logModerationAction(user.id, "create_badge", "badge", id, { name });
+			return { success: true, id };
+		},
+		{
+			body: t.Object({
+				name: t.String(),
+				svg_content: t.String(),
+				color: t.Optional(t.Union([t.String(), t.Null()])),
+				description: t.Optional(t.Union([t.String(), t.Null()])),
+			}),
+		},
+	)
+
+	.patch(
+		"/badges/:id",
+		async ({ params, body, user }) => {
+			const badge = adminQueries.getBadgeById.get(params.id);
+			if (!badge) return { error: "Badge not found" };
+			const { name, svg_content, color, description } = body;
+			adminQueries.updateBadge.run(
+				name !== undefined ? name : badge.name,
+				svg_content !== undefined ? svg_content : badge.svg_content,
+				color !== undefined ? color : badge.color,
+				description !== undefined ? description : badge.description,
+				params.id,
+			);
+			logModerationAction(user.id, "update_badge", "badge", params.id, { name });
+			return { success: true };
+		},
+		{
+			body: t.Object({
+				name: t.Optional(t.String()),
+				svg_content: t.Optional(t.String()),
+				color: t.Optional(t.Union([t.String(), t.Null()])),
+				description: t.Optional(t.Union([t.String(), t.Null()])),
+			}),
+		},
+	)
+
+	.delete("/badges/:id", async ({ params, user }) => {
+		const badge = adminQueries.getBadgeById.get(params.id);
+		if (!badge) return { error: "Badge not found" };
+		adminQueries.deleteBadge.run(params.id);
+		logModerationAction(user.id, "delete_badge", "badge", params.id, { name: badge.name });
+		return { success: true };
+	})
+
+	.get(
+		"/users/:id/badges",
+		async ({ params }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) return { error: "User not found" };
+			const badges = adminQueries.getUserBadges.all(params.id);
+			return { badges };
+		},
+	)
+
+	.post(
+		"/users/:id/badges",
+		async ({ params, body, user }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) return { error: "User not found" };
+			const { badge_id } = body;
+			const badge = adminQueries.getBadgeById.get(badge_id);
+			if (!badge) return { error: "Badge not found" };
+			const existing = db.query("SELECT 1 FROM user_custom_badges WHERE user_id = ? AND badge_id = ?").get(params.id, badge_id);
+			if (existing) return { error: "User already has this badge" };
+			adminQueries.assignUserBadge.run(Bun.randomUUIDv7(), params.id, badge_id, user.id);
+			logModerationAction(user.id, "assign_badge", "user", params.id, {
+				username: targetUser?.username,
+				badge_id,
+				badge_name: badge.name,
+			});
+			return { success: true };
+		},
+		{
+			body: t.Object({
+				badge_id: t.String(),
+			}),
+		},
+	)
+
+	.delete(
+		"/users/:id/badges/:badgeId",
+		async ({ params, user }) => {
+			const targetUser = adminQueries.findUserById.get(params.id);
+			if (!targetUser) return { error: "User not found" };
+			const badge = adminQueries.getBadgeById.get(params.badgeId);
+			if (!badge) return { error: "Badge not found" };
+			adminQueries.removeUserBadge.run(params.id, params.badgeId);
+			logModerationAction(user.id, "remove_badge", "user", params.id, {
+				username: targetUser?.username,
+				badge_id: params.badgeId,
+				badge_name: badge.name,
+			});
+			return { success: true };
 		},
 	)
 
@@ -3066,7 +3237,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				"UPDATE users SET affiliate = ?, affiliate_with = ? WHERE id = ?",
 			).run(newAffiliateFlag, affiliateWith, params.id);
 
-			if (newGray && (body.checkmark_outline !== undefined || body.avatar_outline !== undefined)) {
+			if (body.checkmark_outline !== undefined || body.avatar_outline !== undefined) {
 				const currentUser = adminQueries.findUserById.get(params.id);
 				const newCheckmarkOutline = body.checkmark_outline !== undefined ? body.checkmark_outline : currentUser?.checkmark_outline;
 				const newAvatarOutline = body.avatar_outline !== undefined ? body.avatar_outline : currentUser?.avatar_outline;

@@ -1,3 +1,5 @@
+import { createVerificationBadge } from "/public/shared/badge-utils.js";
+import { createGradientPicker } from "../../shared/gradient-picker.js";
 import openImageCropper, {
 	CROP_CANCELLED,
 } from "../../shared/image-cropper.js";
@@ -43,6 +45,8 @@ let mediaObserver = null;
 let avatarChangedForTweet = false;
 let pendingAvatarTweetUrl = null;
 let isAvatarTweetPromptOpen = false;
+let checkmarkOutlinePicker = null;
+let avatarOutlinePicker = null;
 
 const escapeHTML = (str) =>
 	str ? str.split("").join("").replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
@@ -204,7 +208,7 @@ async function loadFollowersYouKnow(username) {
 			const radius =
 				user.avatar_radius !== null && user.avatar_radius !== undefined
 					? `${user.avatar_radius}px`
-					: (user.gold || user.gray)
+					: user.gold || user.gray
 						? "4px"
 						: "50px";
 			avatar.style.borderRadius = radius;
@@ -268,8 +272,20 @@ const renderAffiliates = () => {
 
 		if (aff.avatar_radius !== null && aff.avatar_radius !== undefined) {
 			avatar.style.borderRadius = `${aff.avatar_radius}px`;
-		} else if (aff.gold) {
+		} else if (aff.gold || aff.gray) {
 			avatar.style.borderRadius = "4px";
+		}
+
+		if (aff.gray && aff.avatar_outline) {
+			if (aff.avatar_outline.includes("gradient")) {
+				avatar.style.border = "2px solid transparent";
+				avatar.style.backgroundClip = "padding-box";
+				avatar.style.backgroundOrigin = "border-box";
+				avatar.style.borderImage = `${aff.avatar_outline} 1`;
+			} else {
+				avatar.style.border = `2px solid ${aff.avatar_outline}`;
+			}
+			avatar.style.boxSizing = "border-box";
 		}
 
 		card.appendChild(avatar);
@@ -289,6 +305,13 @@ const renderAffiliates = () => {
 			goldBadge.innerHTML =
 				'<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.56667 5.74669C2.46937 5.30837 2.48431 4.85259 2.61011 4.42158C2.73591 3.99058 2.9685 3.59832 3.28632 3.28117C3.60413 2.96402 3.99688 2.73225 4.42814 2.60735C4.85941 2.48245 5.31523 2.46847 5.75334 2.56669C5.99448 2.18956 6.32668 1.8792 6.71931 1.66421C7.11194 1.44923 7.55237 1.33655 8.00001 1.33655C8.44764 1.33655 8.88807 1.44923 9.28071 1.66421C9.67334 1.8792 10.0055 2.18956 10.2467 2.56669C10.6855 2.46804 11.1421 2.48196 11.574 2.60717C12.006 2.73237 12.3992 2.96478 12.7172 3.28279C13.0352 3.6008 13.2677 3.99407 13.3929 4.42603C13.5181 4.85798 13.532 5.31458 13.4333 5.75336C13.8105 5.9945 14.1208 6.32669 14.3358 6.71933C14.5508 7.11196 14.6635 7.55239 14.6635 8.00002C14.6635 8.44766 14.5508 8.88809 14.3358 9.28072C14.1208 9.67336 13.8105 10.0056 13.4333 10.2467C13.5316 10.6848 13.5176 11.1406 13.3927 11.5719C13.2678 12.0032 13.036 12.3959 12.7189 12.7137C12.4017 13.0315 12.0094 13.2641 11.5784 13.3899C11.1474 13.5157 10.6917 13.5307 10.2533 13.4334C10.0125 13.8119 9.68006 14.1236 9.28676 14.3396C8.89346 14.5555 8.45202 14.6687 8.00334 14.6687C7.55466 14.6687 7.11322 14.5555 6.71992 14.3396C6.32662 14.1236 5.99417 13.8119 5.75334 13.4334C5.31523 13.5316 4.85941 13.5176 4.42814 13.3927C3.99688 13.2678 3.60413 13.036 3.28632 12.7189C2.9685 12.4017 2.73591 12.0095 2.61011 11.5785C2.48431 11.1475 2.46937 10.6917 2.56667 10.2534C2.18664 10.0129 1.87362 9.68014 1.65671 9.28617C1.4398 8.8922 1.32605 8.44976 1.32605 8.00002C1.32605 7.55029 1.4398 7.10785 1.65671 6.71388C1.87362 6.31991 2.18664 5.9872 2.56667 5.74669Z" fill="#D4AF37"/><path d="M6 8.00002L7.33333 9.33335L10 6.66669" stroke="var(--primary-fg)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 			nameRow.appendChild(goldBadge);
+		} else if (aff.gray) {
+			const grayBadge = createVerificationBadge({
+				type: "gray",
+				checkmarkOutline: aff.checkmark_outline || "",
+				size: 16,
+			});
+			nameRow.appendChild(grayBadge);
 		} else if (aff.verified) {
 			const verifiedBadge = document.createElement("span");
 			verifiedBadge.innerHTML =
@@ -987,10 +1010,20 @@ const renderProfile = (data) => {
 				avatarImg.style.borderRadius = "50%";
 			}
 			if (profile.gray && profile.avatar_outline) {
-				avatarImg.style.border = `3px solid ${profile.avatar_outline}`;
+				if (profile.avatar_outline.includes("gradient")) {
+					avatarImg.style.border = "3px solid transparent";
+					avatarImg.style.backgroundClip = "padding-box";
+					avatarImg.style.backgroundOrigin = "border-box";
+					avatarImg.style.borderImage = `${profile.avatar_outline} 1`;
+				} else {
+					avatarImg.style.border = `3px solid ${profile.avatar_outline}`;
+				}
 				avatarImg.style.boxSizing = "border-box";
 			} else {
 				avatarImg.style.border = "";
+				avatarImg.style.backgroundClip = "";
+				avatarImg.style.backgroundOrigin = "";
+				avatarImg.style.borderImage = "";
 			}
 		}
 	}
@@ -1001,22 +1034,25 @@ const renderProfile = (data) => {
 		const existingBadge = profileNameEl.querySelector(".verification-badge");
 
 		if (!suspended && (profile.verified || profile.gold || profile.gray)) {
-			const badgeColor = profile.gold ? "#D4AF37" : profile.gray ? "#829AAB" : "var(--primary)";
-			const checkmarkOutline = profile.gray && profile.checkmark_outline ? profile.checkmark_outline : "";
-			const outlineStyle = checkmarkOutline ? `stroke="${checkmarkOutline}" stroke-width="1"` : "";
+			const badgeType = profile.gold
+				? "gold"
+				: profile.gray
+					? "gray"
+					: "verified";
 			if (!existingBadge) {
-				const verificationBadge = document.createElement("span");
-				verificationBadge.className = "verification-badge";
-				verificationBadge.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M2.566 5.747C2.469 5.308 2.484 4.853 2.61 4.422C2.736 3.991 2.968 3.598 3.286 3.281C3.604 2.964 3.997 2.732 4.428 2.607C4.859 2.482 5.315 2.468 5.753 2.567C5.994 2.19 6.327 1.879 6.719 1.664C7.112 1.449 7.552 1.337 8.000 1.337C8.448 1.337 8.888 1.449 9.281 1.664C9.673 1.879 10.005 2.19 10.246 2.567C10.685 2.468 11.142 2.482 11.574 2.607C12.006 2.732 12.399 2.965 12.717 3.283C13.035 3.601 13.268 3.994 13.393 4.426C13.518 4.858 13.532 5.314 13.433 5.753C13.811 5.994 14.121 6.327 14.336 6.719C14.551 7.112 14.664 7.552 14.664 8.000C14.664 8.448 14.551 8.888 14.336 9.281C14.121 9.673 13.811 10.006 13.433 10.247C13.532 10.685 13.518 11.141 13.393 11.572C13.268 12.003 13.036 12.396 12.719 12.714C12.402 13.032 12.009 13.264 11.578 13.39C11.147 13.516 10.692 13.531 10.253 13.434C10.012 13.812 9.68 14.124 9.287 14.34C8.893 14.556 8.452 14.669 8.003 14.669C7.555 14.669 7.113 14.556 6.72 14.34C6.327 14.124 5.994 13.812 5.753 13.434C5.315 13.532 4.859 13.518 4.428 13.393C3.997 13.268 3.604 13.036 3.286 12.719C2.968 12.401 2.736 12.009 2.61 11.578C2.484 11.147 2.469 10.692 2.567 10.253C2.187 10.013 1.874 9.68 1.657 9.286C1.44 8.892 1.326 8.45 1.326 8.000C1.326 7.55 1.44 7.108 1.657 6.714C1.874 6.32 2.187 5.987 2.567 5.747Z" fill="${badgeColor}" ${outlineStyle}/>
-            <path d="M6 8L7.333 9.333L10 6.667" stroke="var(--primary-fg)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        `;
+				const verificationBadge = createVerificationBadge({
+					type: badgeType,
+					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
+					size: 16,
+				});
 				profileNameEl.appendChild(verificationBadge);
 			} else {
-				const pathEl = existingBadge.querySelector("path");
-				if (pathEl) pathEl.setAttribute("fill", badgeColor);
+				const newBadge = createVerificationBadge({
+					type: badgeType,
+					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
+					size: 16,
+				});
+				existingBadge.replaceWith(newBadge);
 			}
 		} else if (existingBadge) {
 			existingBadge.remove();
@@ -1030,18 +1066,17 @@ const renderProfile = (data) => {
 		);
 
 		if (!suspended && (profile.verified || profile.gold || profile.gray)) {
-			const badgeColor = profile.gold ? "#D4AF37" : profile.gray ? "#829AAB" : "var(--primary)";
-			const checkmarkOutline = profile.gray && profile.checkmark_outline ? profile.checkmark_outline : "";
-			const outlineStyle = checkmarkOutline ? `stroke="${checkmarkOutline}" stroke-width="1"` : "";
+			const badgeType = profile.gold
+				? "gold"
+				: profile.gray
+					? "gray"
+					: "verified";
 			if (!existingMainBadge) {
-				const verificationBadge = document.createElement("span");
-				verificationBadge.className = "verification-badge";
-				verificationBadge.innerHTML = `
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M2.566 5.747C2.469 5.308 2.484 4.853 2.61 4.422C2.736 3.991 2.968 3.598 3.286 3.281C3.604 2.964 3.997 2.732 4.428 2.607C4.859 2.482 5.315 2.468 5.753 2.567C5.994 2.19 6.327 1.879 6.719 1.664C7.112 1.449 7.552 1.337 8.000 1.337C8.448 1.337 8.888 1.449 9.281 1.664C9.673 1.879 10.005 2.19 10.246 2.567C10.685 2.468 11.142 2.482 11.574 2.607C12.006 2.732 12.399 2.965 12.717 3.283C13.035 3.601 13.268 3.994 13.393 4.426C13.518 4.858 13.532 5.314 13.433 5.753C13.811 5.994 14.121 6.327 14.336 6.719C14.551 7.112 14.664 7.552 14.664 8.000C14.664 8.448 14.551 8.888 14.336 9.281C14.121 9.673 13.811 10.006 13.433 10.247C13.532 10.685 13.518 11.141 13.393 11.572C13.268 12.003 13.036 12.396 12.719 12.714C12.402 13.032 12.009 13.264 11.578 13.39C11.147 13.516 10.692 13.531 10.253 13.434C10.012 13.812 9.68 14.124 9.287 14.34C8.893 14.556 8.452 14.669 8.003 14.669C7.555 14.669 7.113 14.556 6.72 14.34C6.327 14.124 5.994 13.812 5.753 13.434C5.315 13.532 4.859 13.518 4.428 13.393C3.997 13.268 3.604 13.036 3.286 12.719C2.968 12.401 2.736 12.009 2.61 11.578C2.484 11.147 2.469 10.692 2.567 10.253C2.187 10.013 1.874 9.68 1.657 9.286C1.44 8.892 1.326 8.45 1.326 8.000C1.326 7.55 1.44 7.108 1.657 6.714C1.874 6.32 2.187 5.987 2.567 5.747Z" fill="${badgeColor}" ${outlineStyle}/>
-            <path d="M6 8L7.333 9.333L10 6.667" stroke="var(--primary-fg)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        `;
+				const verificationBadge = createVerificationBadge({
+					type: badgeType,
+					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
+					size: 16,
+				});
 				const followsBadge =
 					mainDisplayNameEl.querySelector(".follows-me-badge");
 				if (followsBadge) {
@@ -1050,12 +1085,12 @@ const renderProfile = (data) => {
 					mainDisplayNameEl.appendChild(verificationBadge);
 				}
 			} else {
-				const pathEl = existingMainBadge.querySelector("path");
-				if (pathEl)
-					pathEl.setAttribute(
-						"fill",
-						profile.gold ? "#D4AF37" : profile.gray ? "#829AAB" : "var(--primary)",
-					);
+				const newBadge = createVerificationBadge({
+					type: badgeType,
+					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
+					size: 16,
+				});
+				existingMainBadge.replaceWith(newBadge);
 			}
 		} else if (existingMainBadge) {
 			existingMainBadge.remove();
@@ -1833,17 +1868,35 @@ const showEditModal = () => {
 	}
 
 	const grayOutlinesSection = document.getElementById("grayOutlinesSection");
-	const checkmarkOutlineInput = document.getElementById("editCheckmarkOutline");
-	const avatarOutlineInput = document.getElementById("editAvatarOutline");
+	const checkmarkOutlineContainer = document.getElementById(
+		"checkmarkOutlinePickerContainer",
+	);
+	const avatarOutlineContainer = document.getElementById(
+		"avatarOutlinePickerContainer",
+	);
 	if (grayOutlinesSection) {
 		if (profile.gray) {
 			grayOutlinesSection.style.display = "block";
-			if (checkmarkOutlineInput) checkmarkOutlineInput.value = profile.checkmark_outline || "";
-			if (avatarOutlineInput) avatarOutlineInput.value = profile.avatar_outline || "";
+			if (checkmarkOutlineContainer) {
+				checkmarkOutlineContainer.innerHTML = "";
+				checkmarkOutlinePicker = createGradientPicker({
+					initialValue: profile.checkmark_outline || "",
+					id: "editCheckmarkOutlinePicker",
+				});
+				checkmarkOutlineContainer.appendChild(checkmarkOutlinePicker.element);
+			}
+			if (avatarOutlineContainer) {
+				avatarOutlineContainer.innerHTML = "";
+				avatarOutlinePicker = createGradientPicker({
+					initialValue: profile.avatar_outline || "",
+					id: "editAvatarOutlinePicker",
+				});
+				avatarOutlineContainer.appendChild(avatarOutlinePicker.element);
+			}
 		} else {
 			grayOutlinesSection.style.display = "none";
-			if (checkmarkOutlineInput) checkmarkOutlineInput.value = "";
-			if (avatarOutlineInput) avatarOutlineInput.value = "";
+			checkmarkOutlinePicker = null;
+			avatarOutlinePicker = null;
 		}
 	}
 
@@ -1861,7 +1914,7 @@ const showEditModal = () => {
 	const currentRadius =
 		profile.avatar_radius !== null && profile.avatar_radius !== undefined
 			? profile.avatar_radius
-			: (profile.gold || profile.gray)
+			: profile.gold || profile.gray
 				? 4
 				: 50;
 	radiusInput.value = currentRadius;
@@ -2190,7 +2243,10 @@ const handleEditAvatarUpload = async (file) => {
 
 	try {
 		let uploadFile = null;
-		if (file.type === "image/gif" && (currentProfile?.profile?.gold || currentProfile?.profile?.gray)) {
+		if (
+			file.type === "image/gif" &&
+			(currentProfile?.profile?.gold || currentProfile?.profile?.gray)
+		) {
 			uploadFile = file;
 		} else {
 			let processedFile = file;
@@ -2526,17 +2582,27 @@ const saveProfile = async (event) => {
 	}
 
 	const grayOutlinesSection = document.getElementById("grayOutlinesSection");
-	if (grayOutlinesSection && grayOutlinesSection.style.display !== "none" && currentProfile.profile.gray) {
-		const checkmarkOutline = document.getElementById("editCheckmarkOutline")?.value?.trim() || null;
-		const avatarOutline = document.getElementById("editAvatarOutline")?.value?.trim() || null;
-		
+	if (
+		grayOutlinesSection &&
+		grayOutlinesSection.style.display !== "none" &&
+		currentProfile.profile.gray
+	) {
+		const checkmarkOutline = checkmarkOutlinePicker?.getValue() || null;
+		const avatarOutline = avatarOutlinePicker?.getValue() || null;
+
 		const origProfile = currentProfile.profile || {};
-		if (checkmarkOutline !== origProfile.checkmark_outline || avatarOutline !== origProfile.avatar_outline) {
+		if (
+			checkmarkOutline !== origProfile.checkmark_outline ||
+			avatarOutline !== origProfile.avatar_outline
+		) {
 			try {
 				await query(`/profile/${currentProfile.profile.username}/outlines`, {
 					method: "PATCH",
 					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({ checkmark_outline: checkmarkOutline, avatar_outline: avatarOutline }),
+					body: JSON.stringify({
+						checkmark_outline: checkmarkOutline,
+						avatar_outline: avatarOutline,
+					}),
 				});
 			} catch (outlineErr) {
 				console.error("Outline update error:", outlineErr);
@@ -3117,7 +3183,7 @@ function createUserListItem(user, onClickCallback) {
 	const radius =
 		user.avatar_radius !== null && user.avatar_radius !== undefined
 			? `${user.avatar_radius}px`
-			: (user.gold || user.gray)
+			: user.gold || user.gray
 				? "4px"
 				: "50px";
 	avatar.style.borderRadius = radius;

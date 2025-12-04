@@ -251,7 +251,7 @@ const denyAffiliateRequest = db.prepare(
 );
 
 const getAffiliatesList = db.prepare(`
-  SELECT u.id, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius, u.bio
+  SELECT u.id, u.username, u.name, u.avatar, u.verified, u.gold, u.gray, u.avatar_radius, u.checkmark_outline, u.avatar_outline, u.selected_community_tag, u.bio
   FROM users u
   WHERE u.affiliate = 1 AND u.affiliate_with = ?
   ORDER BY u.created_at DESC
@@ -718,7 +718,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 					avatar: item.avatar,
 					verified: item.verified || false,
 					gold: item.gold || false,
+					gray: item.gray || false,
 					avatar_radius: item.avatar_radius || null,
+					checkmark_outline: item.checkmark_outline || null,
+					avatar_outline: item.avatar_outline || null,
 					affiliate: item.affiliate || false,
 					affiliate_with: item.affiliate_with || null,
 				};
@@ -892,9 +895,12 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 						avatar: reply.avatar || null,
 						verified: reply.verified || false,
 						gold: reply.gold || false,
+						gray: reply.gray || false,
 						avatar_radius: reply.avatar_radius || null,
 						affiliate: reply.affiliate || false,
 						affiliate_with: reply.affiliate_with || null,
+						checkmark_outline: reply.checkmark_outline || null,
+						avatar_outline: reply.avatar_outline || null,
 					};
 
 					if (author.affiliate && author.affiliate_with) {
@@ -1007,9 +1013,12 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 					avatar: post.avatar || null,
 					verified: post.verified || false,
 					gold: post.gold || false,
+					gray: post.gray || false,
 					avatar_radius: post.avatar_radius || null,
 					affiliate: post.affiliate || false,
 					affiliate_with: post.affiliate_with || null,
+					checkmark_outline: post.checkmark_outline || null,
+					avatar_outline: post.avatar_outline || null,
 				};
 
 				if (author.affiliate && author.affiliate_with) {
@@ -1130,9 +1139,12 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 						avatar: item.avatar,
 						verified: item.verified || false,
 						gold: item.gold || false,
+						gray: item.gray || false,
 						avatar_radius: item.avatar_radius || null,
 						affiliate: item.affiliate || false,
 						affiliate_with: item.affiliate_with || null,
+						checkmark_outline: item.checkmark_outline || null,
+						avatar_outline: item.avatar_outline || null,
 					};
 					if (
 						author.affiliate &&
@@ -1264,9 +1276,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 
 			let radiusToStore = currentUser.avatar_radius;
 			if (body.avatar_radius !== undefined) {
-				if (!currentUser.gold) {
+				if (!currentUser.gold && !currentUser.gray) {
 					return {
-						error: "Only gold accounts can customize avatar corner radius",
+						error:
+							"Only gold or gray check accounts can customize avatar corner radius",
 					};
 				}
 				const parsed = parseInt(body.avatar_radius, 10);
@@ -1972,10 +1985,16 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				return { error: "Delegates cannot change outlines" };
 			}
 
-			const currentUser = db.query("SELECT id, username, gray FROM users WHERE LOWER(username) = LOWER(?)").get(payload.username);
+			const currentUser = db
+				.query(
+					"SELECT id, username, gray FROM users WHERE LOWER(username) = LOWER(?)",
+				)
+				.get(payload.username);
 			if (!currentUser) return { error: "User not found" };
 
-			if (currentUser.username.toLowerCase() !== params.username.toLowerCase()) {
+			if (
+				currentUser.username.toLowerCase() !== params.username.toLowerCase()
+			) {
 				return { error: "You can only change your own outlines" };
 			}
 
@@ -1983,19 +2002,33 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				return { error: "Only gray check users can customize outlines" };
 			}
 
-			const checkmarkOutline = body.checkmark_outline !== undefined ? (body.checkmark_outline || null) : undefined;
-			const avatarOutline = body.avatar_outline !== undefined ? (body.avatar_outline || null) : undefined;
+			const checkmarkOutline =
+				body.checkmark_outline !== undefined
+					? body.checkmark_outline || null
+					: undefined;
+			const avatarOutline =
+				body.avatar_outline !== undefined
+					? body.avatar_outline || null
+					: undefined;
 
 			if (checkmarkOutline === undefined && avatarOutline === undefined) {
 				return { error: "No outline values provided" };
 			}
 
-			const currentOutlines = db.query("SELECT checkmark_outline, avatar_outline FROM users WHERE id = ?").get(currentUser.id);
-			
+			const currentOutlines = db
+				.query(
+					"SELECT checkmark_outline, avatar_outline FROM users WHERE id = ?",
+				)
+				.get(currentUser.id);
+
 			updateOutlines.run(
-				checkmarkOutline !== undefined ? checkmarkOutline : currentOutlines.checkmark_outline,
-				avatarOutline !== undefined ? avatarOutline : currentOutlines.avatar_outline,
-				currentUser.id
+				checkmarkOutline !== undefined
+					? checkmarkOutline
+					: currentOutlines.checkmark_outline,
+				avatarOutline !== undefined
+					? avatarOutline
+					: currentOutlines.avatar_outline,
+				currentUser.id,
 			);
 
 			return { success: true };

@@ -127,6 +127,10 @@
               <i class="bi bi-puzzle"></i>
               Extensions
             </a>
+            <a class="nav-link" href="#" data-section="badges" id="badges-nav">
+              <i class="bi bi-award"></i>
+              Badges
+            </a>
           </nav>
         </div>
 
@@ -877,6 +881,93 @@
                         <p class="text-muted mb-0">
                           No extensions installed yet.
                         </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Badges Section -->
+            <div id="badges-section" class="section d-none">
+              <div class="row g-4">
+                <div class="col-lg-5">
+                  <div class="card h-100">
+                    <div class="card-header">
+                      <h5 class="mb-0">
+                        <i class="bi bi-plus-circle"></i>
+                        Create Badge
+                      </h5>
+                    </div>
+                    <div class="card-body">
+                      <form id="createBadgeForm">
+                        <div class="mb-3">
+                          <label class="form-label">Badge Name *</label>
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="badgeName"
+                            required
+                            placeholder="e.g., Early Adopter"
+                          />
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Description</label>
+                          <textarea
+                            class="form-control"
+                            id="badgeDescription"
+                            rows="2"
+                            placeholder="Badge description"
+                          ></textarea>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">SVG Icon *</label>
+                          <textarea
+                            class="form-control"
+                            id="badgeSvgContent"
+                            rows="4"
+                            required
+                            placeholder="<svg ...></svg>"
+                          ></textarea>
+                          <div class="form-text">
+                            Paste SVG markup (should be 16x16 or viewBox-based
+                            for best results)
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Preview</label>
+                          <div
+                            id="badgeSvgPreview"
+                            class="border rounded p-3 bg-body-secondary"
+                            style="min-height: 50px"
+                          ></div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                          Create Badge
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-lg-7">
+                  <div class="card h-100">
+                    <div
+                      class="card-header d-flex justify-content-between align-items-center"
+                    >
+                      <h5 class="mb-0">
+                        <i class="bi bi-award"></i>
+                        All Badges
+                      </h5>
+                      <button
+                        class="btn btn-secondary btn-sm"
+                        onclick="adminPanel.loadBadgesManager()"
+                      >
+                        <i class="bi bi-arrow-clockwise"></i>
+                        Refresh
+                      </button>
+                    </div>
+                    <div class="card-body">
+                      <div id="badgesList">
+                        <p class="text-muted mb-0">No badges created yet.</p>
                       </div>
                     </div>
                   </div>

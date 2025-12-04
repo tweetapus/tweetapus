@@ -20,7 +20,7 @@ const getIdentifier = (headers) => {
 };
 
 const getUserByUsername = db.query(
-	"SELECT id, username, name, avatar, verified, gold, gray, admin, avatar_radius, character_limit, restricted, suspended FROM users WHERE LOWER(username) = LOWER(?)",
+	"SELECT id, username, name, avatar, verified, gold, gray, admin, avatar_radius, character_limit, restricted, suspended, affiliate, affiliate_with, checkmark_outline, avatar_outline, selected_community_tag FROM users WHERE LOWER(username) = LOWER(?)",
 );
 
 const checkReplyPermission = async (replier, originalAuthor, restriction) => {
@@ -122,7 +122,7 @@ const getArticlePreviewById = db.query(`
 `);
 
 const getUserById = db.query(
-	"SELECT id, username, name, avatar, verified, gold, avatar_radius, affiliate, affiliate_with, selected_community_tag FROM users WHERE id = ?",
+	"SELECT id, username, name, avatar, verified, gold, gray, avatar_radius, affiliate, affiliate_with, selected_community_tag, checkmark_outline, avatar_outline FROM users WHERE id = ?",
 );
 
 const getTweetWithThread = db.query(`
@@ -356,7 +356,10 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 		avatar: quotedTweet.avatar,
 		verified: quotedTweet.verified || false,
 		gold: quotedTweet.gold || false,
+		gray: quotedTweet.gray || false,
 		avatar_radius: quotedTweet.avatar_radius || null,
+		checkmark_outline: quotedTweet.checkmark_outline || null,
+		avatar_outline: quotedTweet.avatar_outline || null,
 		affiliate: quotedTweet.affiliate || false,
 		affiliate_with: quotedTweet.affiliate_with || null,
 	};
@@ -645,7 +648,13 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			// Allow longer tweets for gold, gray, or verified users, or use custom limit
 			let maxTweetLength = user.character_limit || 400;
 			if (!user.character_limit) {
-				maxTweetLength = user.gray ? 37500 : user.gold ? 16500 : user.verified ? 5500 : 400;
+				maxTweetLength = user.gray
+					? 37500
+					: user.gold
+						? 16500
+						: user.verified
+							? 5500
+							: 400;
 			}
 			if (trimmedContent.length > maxTweetLength) {
 				return {
@@ -1015,6 +1024,28 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			const effectiveUser =
 				effectiveUserId !== user.id ? getUserById.get(effectiveUserId) : user;
 
+			let affiliateWithProfile = null;
+			if (effectiveUser.affiliate && effectiveUser.affiliate_with) {
+				affiliateWithProfile = getUserById.get(effectiveUser.affiliate_with);
+			}
+
+			let communityTag = null;
+			if (effectiveUser.selected_community_tag) {
+				const community = db
+					.query(
+						"SELECT id, name, tag_enabled, tag_emoji, tag_text FROM communities WHERE id = ?",
+					)
+					.get(effectiveUser.selected_community_tag);
+				if (community?.tag_enabled) {
+					communityTag = {
+						community_id: community.id,
+						community_name: community.name,
+						emoji: community.tag_emoji,
+						text: community.tag_text,
+					};
+				}
+			}
+
 			setTimeout(() => {
 				try {
 					updateUserSpamScore(effectiveUserId);
@@ -1027,7 +1058,11 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				success: true,
 				tweet: {
 					...tweet,
-					author: effectiveUser,
+					author: {
+						...effectiveUser,
+						affiliate_with_profile: affiliateWithProfile,
+						community_tag: communityTag,
+					},
 					liked_by_user: false,
 					retweeted_by_user: false,
 					poll: getPollDataForTweet(tweet.id, user.id),
@@ -1242,7 +1277,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 		const userPlaceholders = allUserIds.map(() => "?").join(",");
 		const getUsersQuery = db.query(
-			`SELECT id, username, name, avatar, verified, gold, avatar_radius, affiliate, affiliate_with, selected_community_tag FROM users WHERE id IN (${userPlaceholders})`,
+			`SELECT id, username, name, avatar, verified, gold, gray, avatar_radius, checkmark_outline, avatar_outline, affiliate, affiliate_with, selected_community_tag FROM users WHERE id IN (${userPlaceholders})`,
 		);
 		const users = getUsersQuery.all(...allUserIds);
 
@@ -2139,7 +2174,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				return { error: "You can only update your own tweets" };
 			}
 
-			const outline = body.outline !== undefined ? (body.outline || null) : null;
+			const outline = body.outline !== undefined ? body.outline || null : null;
 			db.query("UPDATE posts SET outline = ? WHERE id = ?").run(outline, id);
 
 			return { success: true };

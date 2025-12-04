@@ -80,7 +80,7 @@ const getCommunities = db.prepare(
 	"SELECT * FROM communities ORDER BY created_at DESC LIMIT ? OFFSET ?",
 );
 const getCommunityMembers = db.prepare(`
-  SELECT cm.*, u.username, u.name, u.avatar, u.verified, u.gold, u.avatar_radius
+  SELECT cm.*, u.username, u.name, u.avatar, u.verified, u.gold, u.gray, u.avatar_radius, u.checkmark_outline, u.avatar_outline, u.selected_community_tag
   FROM community_members cm
   JOIN users u ON cm.user_id = u.id
   WHERE cm.community_id = ? AND cm.banned = FALSE AND u.suspended = FALSE AND u.shadowbanned = FALSE
@@ -480,7 +480,7 @@ export default new Elysia({ tags: ["Communities"] })
 			},
 			params: t.Object({
 				id: t.String(),
-			})
+			}),
 		},
 	)
 	.post(
@@ -586,13 +586,13 @@ export default new Elysia({ tags: ["Communities"] })
 				return { error: "Invalid role" };
 			}
 
-			if (requesterMember.role === "owner") {
+			if (requesterMember.role === "owner" && role === "admin") {
 				updateMemberRole.run(role, params.id, params.userId);
 
 				await addNotification(
 					params.userId,
 					"community_role_change",
-					`You are now a ${role} in ${community.name}`,
+					`You are now an ${role} in ${community.name}`,
 					params.id,
 					user.userId,
 					user.username,
@@ -602,7 +602,7 @@ export default new Elysia({ tags: ["Communities"] })
 				return { success: true };
 			}
 
-			if (requesterMember.role === "admin" && role === "mod") {
+			if (requesterMember.role === "mod") {
 				updateMemberRole.run(role, params.id, params.userId);
 
 				await addNotification(

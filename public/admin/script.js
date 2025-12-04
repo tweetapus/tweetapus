@@ -346,6 +346,9 @@ class AdminPanel {
 			case "extensions":
 				this.loadExtensionsManager();
 				break;
+			case "badges":
+				this.loadBadgesManager();
+				break;
 		}
 	}
 
@@ -1942,9 +1945,7 @@ class AdminPanel {
 								}>
                 <label class="form-check-label">Gray</label>
               </div>
-              <div class="mb-3" id="grayOutlinesSection" style="${
-								this.isFlagSet(user.gray) ? "" : "display: none;"
-							}">
+              <div class="mb-3" id="grayOutlinesSection">
                 <label class="form-label">Checkmark Outline (CSS color/gradient)</label>
                 <input type="text" class="form-control mb-2" id="editProfileCheckmarkOutline" value="${
 									user.checkmark_outline || ""
@@ -1953,7 +1954,7 @@ class AdminPanel {
                 <input type="text" class="form-control" id="editProfileAvatarOutline" value="${
 									user.avatar_outline || ""
 								}" placeholder="e.g. blue, #0000ff, linear-gradient(...)">
-                <small class="text-muted">Outline colors or gradients for gray check users</small>
+                <small class="text-muted">Outline colors or gradients (mainly for gray check users, but can be set for any user)</small>
               </div>
                <div class="form-check form-switch mb-3">
                 <input class="form-check-input" type="checkbox" id="editProfileAdmin" ${
@@ -2012,6 +2013,50 @@ class AdminPanel {
 								}" placeholder="Leave empty to use tier default" min="1">
                 <small style="color: var(--text-secondary);">Tier defaults: 400 (Standard) | 5,500 (Verified) | 16,500 (Gold)</small>
               </div>
+              
+              <div class="card bg-body border-0 mt-4">
+                <div class="card-body">
+                  <h5 class="card-title mb-3">Permissions</h5>
+                  <p class="text-muted small mb-3">Fine-grained feature access controls</p>
+                  <div id="permissionsContainer">
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input permission-toggle" type="checkbox" id="perm_gif_avatar" data-permission="gif_avatar">
+                      <label class="form-check-label" for="perm_gif_avatar">Allow GIF Avatars</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input permission-toggle" type="checkbox" id="perm_custom_outlines" data-permission="custom_outlines">
+                      <label class="form-check-label" for="perm_custom_outlines">Allow Custom Outlines</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input permission-toggle" type="checkbox" id="perm_corner_radius" data-permission="corner_radius">
+                      <label class="form-check-label" for="perm_corner_radius">Allow Custom Corner Radius</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input permission-toggle" type="checkbox" id="perm_extended_char_limit" data-permission="extended_char_limit">
+                      <label class="form-check-label" for="perm_extended_char_limit">Extended Character Limit</label>
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input permission-toggle" type="checkbox" id="perm_article_posting" data-permission="article_posting">
+                      <label class="form-check-label" for="perm_article_posting">Allow Article Posting</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="card bg-body border-0 mt-4">
+                <div class="card-body">
+                  <h5 class="card-title mb-3">Custom Badges</h5>
+                  <p class="text-muted small mb-3">Assign or remove custom badges</p>
+                  <div id="userBadgesContainer" class="mb-3"></div>
+                  <div class="d-flex gap-2 align-items-center">
+                    <select class="form-select form-select-sm" id="badgeSelector" style="max-width: 200px;">
+                      <option value="">Select badge...</option>
+                    </select>
+                    <button type="button" class="btn btn-primary btn-sm" id="assignBadgeBtn">Assign</button>
+                  </div>
+                </div>
+              </div>
+
 			  <div class="card bg-body border-0 mt-4">
 				<div class="card-body">
 				  <h5 class="card-title mb-3">Transparency Overrides</h5>
@@ -2319,13 +2364,11 @@ class AdminPanel {
 				const vCheckbox = document.getElementById("editProfileVerified");
 				const gCheckbox = document.getElementById("editProfileGold");
 				const grCheckbox = document.getElementById("editProfileGray");
-				const graySection = document.getElementById("grayOutlinesSection");
 
 				vCheckbox.addEventListener("change", () => {
 					if (vCheckbox.checked) {
 						gCheckbox.checked = false;
 						grCheckbox.checked = false;
-						if (graySection) graySection.style.display = "none";
 					}
 				});
 
@@ -2333,7 +2376,6 @@ class AdminPanel {
 					if (gCheckbox.checked) {
 						vCheckbox.checked = false;
 						grCheckbox.checked = false;
-						if (graySection) graySection.style.display = "none";
 					}
 				});
 
@@ -2341,9 +2383,6 @@ class AdminPanel {
 					if (grCheckbox.checked) {
 						vCheckbox.checked = false;
 						gCheckbox.checked = false;
-						if (graySection) graySection.style.display = "block";
-					} else {
-						if (graySection) graySection.style.display = "none";
 					}
 				});
 			}
@@ -2377,9 +2416,15 @@ class AdminPanel {
 			}
 
 			const grayCheckbox = document.getElementById("editProfileGray");
-			const grayOutlinesSection = document.getElementById("grayOutlinesSection");
+			const grayOutlinesSection = document.getElementById(
+				"grayOutlinesSection",
+			);
 
-			if (grayCheckbox && grayOutlinesSection && !grayCheckbox._grayListenerAttached) {
+			if (
+				grayCheckbox &&
+				grayOutlinesSection &&
+				!grayCheckbox._grayListenerAttached
+			) {
 				grayCheckbox._grayListenerAttached = true;
 			}
 
@@ -2412,8 +2457,126 @@ class AdminPanel {
 			this.setupLocationPickerControls();
 			this.syncLocationPreview("login");
 			this.syncLocationPreview("creation");
+
+			await this.loadUserPermissions(userId);
+			await this.loadUserBadges(userId);
+			await this.loadBadgeSelector();
+			this.setupBadgeAssignButton(userId);
 		} catch {
 			this.showError("Failed to load user details");
+		}
+	}
+
+	async loadUserPermissions(userId) {
+		try {
+			const data = await this.apiCall(`/api/admin/users/${userId}/permissions`);
+			const permissions = data.permissions || {};
+			document.querySelectorAll(".permission-toggle").forEach((toggle) => {
+				const perm = toggle.dataset.permission;
+				toggle.checked = !!permissions[perm];
+			});
+		} catch (e) {
+			console.error("Failed to load permissions:", e);
+		}
+	}
+
+	async saveUserPermissions(userId) {
+		const permissions = {};
+		document.querySelectorAll(".permission-toggle").forEach((toggle) => {
+			permissions[toggle.dataset.permission] = toggle.checked;
+		});
+		try {
+			await this.apiCall(`/api/admin/users/${userId}/permissions`, {
+				method: "PATCH",
+				body: JSON.stringify({ permissions }),
+			});
+		} catch (e) {
+			console.error("Failed to save permissions:", e);
+		}
+	}
+
+	async loadBadgeSelector() {
+		try {
+			const data = await this.apiCall("/api/admin/badges");
+			const selector = document.getElementById("badgeSelector");
+			if (!selector) return;
+			selector.innerHTML = '<option value="">Select badge...</option>';
+			for (const badge of data.badges || []) {
+				const opt = document.createElement("option");
+				opt.value = badge.id;
+				opt.textContent = badge.name;
+				selector.appendChild(opt);
+			}
+		} catch (e) {
+			console.error("Failed to load badges:", e);
+		}
+	}
+
+	async loadUserBadges(userId) {
+		try {
+			const data = await this.apiCall(`/api/admin/users/${userId}/badges`);
+			const container = document.getElementById("userBadgesContainer");
+			if (!container) return;
+			container.innerHTML = "";
+			const badges = data.badges || [];
+			if (badges.length === 0) {
+				container.innerHTML =
+					'<p class="text-muted small">No badges assigned</p>';
+				return;
+			}
+			for (const badge of badges) {
+				const badgeEl = document.createElement("div");
+				badgeEl.className =
+					"d-inline-flex align-items-center gap-2 badge bg-secondary me-2 mb-2 p-2";
+				badgeEl.innerHTML = `
+					<span style="width:16px;height:16px;display:inline-flex;">${badge.svg_content || ""}</span>
+					<span>${this.escapeHtml(badge.name)}</span>
+					<button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;" data-badge-id="${badge.badge_id}"></button>
+				`;
+				badgeEl
+					.querySelector(".btn-close")
+					.addEventListener("click", async (e) => {
+						e.preventDefault();
+						const badgeId = e.target.dataset.badgeId;
+						await this.removeUserBadge(userId, badgeId);
+					});
+				container.appendChild(badgeEl);
+			}
+		} catch (e) {
+			console.error("Failed to load user badges:", e);
+		}
+	}
+
+	setupBadgeAssignButton(userId) {
+		const btn = document.getElementById("assignBadgeBtn");
+		if (!btn) return;
+		const newBtn = btn.cloneNode(true);
+		btn.parentNode.replaceChild(newBtn, btn);
+		newBtn.addEventListener("click", async () => {
+			const selector = document.getElementById("badgeSelector");
+			const badgeId = selector?.value;
+			if (!badgeId) return;
+			try {
+				await this.apiCall(`/api/admin/users/${userId}/badges`, {
+					method: "POST",
+					body: JSON.stringify({ badge_id: badgeId }),
+				});
+				await this.loadUserBadges(userId);
+				selector.value = "";
+			} catch (e) {
+				this.showError("Failed to assign badge");
+			}
+		});
+	}
+
+	async removeUserBadge(userId, badgeId) {
+		try {
+			await this.apiCall(`/api/admin/users/${userId}/badges/${badgeId}`, {
+				method: "DELETE",
+			});
+			await this.loadUserBadges(userId);
+		} catch (e) {
+			this.showError("Failed to remove badge");
 		}
 	}
 
@@ -3370,8 +3533,12 @@ class AdminPanel {
 			affiliate: !!affiliateInput?.checked,
 		};
 
-		const checkmarkOutlineInput = document.getElementById("editProfileCheckmarkOutline");
-		const avatarOutlineInput = document.getElementById("editProfileAvatarOutline");
+		const checkmarkOutlineInput = document.getElementById(
+			"editProfileCheckmarkOutline",
+		);
+		const avatarOutlineInput = document.getElementById(
+			"editProfileAvatarOutline",
+		);
 		if (payload.gray) {
 			payload.checkmark_outline = checkmarkOutlineInput?.value?.trim() || null;
 			payload.avatar_outline = avatarOutlineInput?.value?.trim() || null;
@@ -3566,6 +3733,8 @@ class AdminPanel {
 					}),
 				});
 			}
+
+			await this.saveUserPermissions(userId);
 
 			if (result?.token) {
 				localStorage.setItem("authToken", result.token);
@@ -7931,6 +8100,94 @@ class AdminPanel {
 		} catch (error) {
 			console.error("Export failed", error);
 			this.showError(error.message || "Failed to export extension");
+		}
+	}
+
+	async loadBadgesManager() {
+		try {
+			const data = await this.apiCall("/api/admin/badges");
+			this.renderBadgesList(data.badges || []);
+			this.setupBadgeForm();
+		} catch {
+			this.showError("Failed to load badges");
+		}
+	}
+
+	renderBadgesList(badges) {
+		const container = document.getElementById("badgesList");
+		if (!container) return;
+		if (!badges || badges.length === 0) {
+			container.innerHTML = '<p class="text-muted">No badges created yet.</p>';
+			return;
+		}
+		container.innerHTML = "";
+		for (const badge of badges) {
+			const card = document.createElement("div");
+			card.className = "card mb-2";
+			card.innerHTML = `
+				<div class="card-body d-flex align-items-center gap-3">
+					<div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">${badge.svg_content || ""}</div>
+					<div class="flex-grow-1">
+						<strong>${this.escapeHtml(badge.name)}</strong>
+						<div class="small text-muted">${this.escapeHtml(badge.description || "")}</div>
+					</div>
+					<button class="btn btn-sm btn-outline-danger" data-badge-id="${badge.id}">Delete</button>
+				</div>
+			`;
+			card.querySelector("button").addEventListener("click", async () => {
+				if (confirm(`Delete badge "${badge.name}"?`)) {
+					await this.deleteBadge(badge.id);
+				}
+			});
+			container.appendChild(card);
+		}
+	}
+
+	setupBadgeForm() {
+		const form = document.getElementById("createBadgeForm");
+		if (!form || form._badgeSetup) return;
+		form._badgeSetup = true;
+		const svgInput = document.getElementById("badgeSvgContent");
+		const preview = document.getElementById("badgeSvgPreview");
+		if (svgInput && preview) {
+			svgInput.addEventListener("input", () => {
+				preview.innerHTML = DOMPurify.sanitize(svgInput.value, {
+					USE_PROFILES: { svg: true, svgFilters: true },
+				});
+			});
+		}
+		form.addEventListener("submit", async (e) => {
+			e.preventDefault();
+			const name = document.getElementById("badgeName").value.trim();
+			const description = document
+				.getElementById("badgeDescription")
+				.value.trim();
+			const svgContent = document
+				.getElementById("badgeSvgContent")
+				.value.trim();
+			if (!name || !svgContent) return;
+			try {
+				await this.apiCall("/api/admin/badges", {
+					method: "POST",
+					body: JSON.stringify({ name, description, svg_content: svgContent }),
+				});
+				this.showSuccess("Badge created");
+				form.reset();
+				preview.innerHTML = "";
+				await this.loadBadgesManager();
+			} catch (err) {
+				this.showError(err.message || "Failed to create badge");
+			}
+		});
+	}
+
+	async deleteBadge(badgeId) {
+		try {
+			await this.apiCall(`/api/admin/badges/${badgeId}`, { method: "DELETE" });
+			this.showSuccess("Badge deleted");
+			await this.loadBadgesManager();
+		} catch (err) {
+			this.showError(err.message || "Failed to delete badge");
 		}
 	}
 }
