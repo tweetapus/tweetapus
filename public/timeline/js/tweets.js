@@ -1,6 +1,9 @@
 import DOMPurify from "/public/shared/assets/js/dompurify.js";
 import { marked } from "/public/shared/assets/js/marked.js";
-import { createVerificationBadge } from "/public/shared/badge-utils.js";
+import {
+	createVerificationBadge,
+	applyAvatarOutline,
+} from "/public/shared/badge-utils.js";
 import { showReportModal } from "../../shared/report-modal.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal, createPopup } from "../../shared/ui-utils.js";
@@ -879,52 +882,33 @@ export const createTweetElement = (tweet, config = {}) => {
 	tweetHeaderAvatarEl.setAttribute("loading", "lazy");
 	tweetHeaderAvatarEl.draggable = false;
 
+	let avatarRadiusValue;
 	if (
 		tweet.author.avatar_radius !== null &&
 		tweet.author.avatar_radius !== undefined
 	) {
-		const rr = avatarPxToPercent(tweet.author.avatar_radius);
-		tweetHeaderAvatarEl.style.setProperty("border-radius", rr, "important");
+		avatarRadiusValue = avatarPxToPercent(tweet.author.avatar_radius);
 	} else if (tweet.author.gold || tweet.author.gray) {
-		tweetHeaderAvatarEl.style.setProperty("border-radius", "4px", "important");
+		avatarRadiusValue = "4px";
 	} else {
-		tweetHeaderAvatarEl.style.setProperty("border-radius", "50px", "important");
+		avatarRadiusValue = "50px";
 	}
 
-	if (tweet.author.gray && tweet.author.avatar_outline) {
-		if (tweet.author.avatar_outline.includes("gradient")) {
-			tweetHeaderAvatarEl.style.setProperty(
-				"border",
-				"2px solid transparent",
-				"important",
-			);
-			tweetHeaderAvatarEl.style.setProperty(
-				"background-clip",
-				"padding-box",
-				"important",
-			);
-			tweetHeaderAvatarEl.style.setProperty(
-				"background-origin",
-				"border-box",
-				"important",
-			);
-			tweetHeaderAvatarEl.style.setProperty(
-				"border-image",
-				`${tweet.author.avatar_outline} 1`,
-				"important",
-			);
-		} else {
-			tweetHeaderAvatarEl.style.setProperty(
-				"border",
-				`2px solid ${tweet.author.avatar_outline}`,
-				"important",
-			);
-		}
-		tweetHeaderAvatarEl.style.setProperty(
-			"box-sizing",
-			"border-box",
-			"important",
+	tweetHeaderAvatarEl.style.setProperty(
+		"border-radius",
+		avatarRadiusValue,
+		"important",
+	);
+
+	if (tweet.author.gray) {
+		applyAvatarOutline(
+			tweetHeaderAvatarEl,
+			tweet.author.avatar_outline || "",
+			avatarRadiusValue,
+			2,
 		);
+	} else {
+		applyAvatarOutline(tweetHeaderAvatarEl, "", avatarRadiusValue, 2);
 	}
 	tweetHeaderAvatarEl.setAttribute("loading", "lazy");
 	tweetHeaderAvatarEl.addEventListener("click", (e) => {
@@ -1640,7 +1624,7 @@ export const createTweetElement = (tweet, config = {}) => {
 					}
 					e.preventDefault();
 					e.stopPropagation();
-					
+
 					const { openImageFullscreen } = await import(
 						"../../shared/image-viewer.js"
 					);
@@ -2101,21 +2085,43 @@ export const createTweetElement = (tweet, config = {}) => {
 					const tweetElClone = document.createElement("div");
 					tweetElClone.innerHTML = tweetEl.outerHTML;
 
-					tweetElClone.querySelectorAll(".tweet-actions").forEach((el) => { el.remove(); });
-					tweetElClone.querySelectorAll(".tweet-menu-btn").forEach((el) => { el.remove(); });
-					tweetElClone.querySelectorAll(".spoiler-overlay").forEach((el) => { el.remove(); });
-
-					const computedPrimary = getComputedStyle(document.documentElement).getPropertyValue("--primary").trim() || "#1d9bf0";
-					const computedPrimaryFg = getComputedStyle(document.documentElement).getPropertyValue("--primary-fg").trim() || "#ffffff";
-					const computedBgPrimary = getComputedStyle(document.documentElement).getPropertyValue("--bg-primary").trim() || "#ffffff";
-					const computedTextPrimary = getComputedStyle(document.documentElement).getPropertyValue("--text-primary").trim() || "#0f1419";
-
-					tweetElClone.querySelectorAll(".verification-badge svg path").forEach((path) => {
-						const fill = path.getAttribute("fill");
-						const stroke = path.getAttribute("stroke");
-						if (fill === "var(--primary)") path.setAttribute("fill", computedPrimary);
-						if (stroke === "var(--primary-fg)") path.setAttribute("stroke", computedPrimaryFg);
+					tweetElClone.querySelectorAll(".tweet-actions").forEach((el) => {
+						el.remove();
 					});
+					tweetElClone.querySelectorAll(".tweet-menu-btn").forEach((el) => {
+						el.remove();
+					});
+					tweetElClone.querySelectorAll(".spoiler-overlay").forEach((el) => {
+						el.remove();
+					});
+
+					const computedPrimary =
+						getComputedStyle(document.documentElement)
+							.getPropertyValue("--primary")
+							.trim();
+					const computedPrimaryFg =
+						getComputedStyle(document.documentElement)
+							.getPropertyValue("--primary-fg")
+							.trim() || "#ffffff";
+					const computedBgPrimary =
+						getComputedStyle(document.documentElement)
+							.getPropertyValue("--bg-primary")
+							.trim() || "#ffffff";
+					const computedTextPrimary =
+						getComputedStyle(document.documentElement)
+							.getPropertyValue("--text-primary")
+							.trim() || "#0f1419";
+
+					tweetElClone
+						.querySelectorAll(".verification-badge svg path")
+						.forEach((path) => {
+							const fill = path.getAttribute("fill");
+							const stroke = path.getAttribute("stroke");
+							if (fill === "var(--primary)")
+								path.setAttribute("fill", computedPrimary);
+							if (stroke === "var(--primary-fg)")
+								path.setAttribute("stroke", computedPrimaryFg);
+						});
 
 					const wrapper = document.createElement("div");
 					wrapper.className = "tweet-share-wrapper";
@@ -2154,7 +2160,7 @@ export const createTweetElement = (tweet, config = {}) => {
 					const runCapture = () => {
 						window
 							.html2canvas(wrapper, {
-								backgroundColor: null,
+								backgroundColor: computedPrimary,
 								scale: 3,
 								width: wrapper.offsetWidth,
 								useCORS: true,

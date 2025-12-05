@@ -1,4 +1,7 @@
-import { createVerificationBadge } from "/public/shared/badge-utils.js";
+import {
+	applyAvatarOutline,
+	createVerificationBadge,
+} from "/public/shared/badge-utils.js";
 import { createGradientPicker } from "../../shared/gradient-picker.js";
 import openImageCropper, {
 	CROP_CANCELLED,
@@ -270,22 +273,23 @@ const renderAffiliates = () => {
 		avatar.src = aff.avatar || "/public/shared/assets/default-avatar.svg";
 		avatar.alt = aff.name || aff.username;
 
-		if (aff.avatar_radius !== null && aff.avatar_radius !== undefined) {
-			avatar.style.borderRadius = `${aff.avatar_radius}px`;
-		} else if (aff.gold || aff.gray) {
-			avatar.style.borderRadius = "4px";
-		}
+		const affRadiusValue =
+			aff.avatar_radius !== null && aff.avatar_radius !== undefined
+				? `${aff.avatar_radius}px`
+				: aff.gold || aff.gray
+					? "4px"
+					: "50%";
+		avatar.style.borderRadius = affRadiusValue;
 
-		if (aff.gray && aff.avatar_outline) {
-			if (aff.avatar_outline.includes("gradient")) {
-				avatar.style.border = "2px solid transparent";
-				avatar.style.backgroundClip = "padding-box";
-				avatar.style.backgroundOrigin = "border-box";
-				avatar.style.borderImage = `${aff.avatar_outline} 1`;
-			} else {
-				avatar.style.border = `2px solid ${aff.avatar_outline}`;
-			}
-			avatar.style.boxSizing = "border-box";
+		if (aff.gray) {
+			applyAvatarOutline(
+				avatar,
+				aff.avatar_outline || "",
+				affRadiusValue || "4px",
+				2,
+			);
+		} else {
+			applyAvatarOutline(avatar, "", affRadiusValue, 2);
 		}
 
 		card.appendChild(avatar);
@@ -371,12 +375,8 @@ const renderPosts = async (posts, isReplies = false) => {
 			const retweetIndicator = document.createElement("div");
 			retweetIndicator.className = "retweet-indicator";
 			retweetIndicator.innerHTML = `
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M17 1l4 4-4 4"></path>
-					<path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-					<path d="M7 23l-4-4 4-4"></path>
-					<path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-				</svg>
+			<svg width="16" height="19" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2.53001 7.81595C3.49179 4.73911 6.43281 2.5 9.91173 2.5C13.1684 2.5 15.9537 4.46214 17.0852 7.23684L17.6179 8.67647M17.6179 8.67647L18.5002 4.26471M17.6179 8.67647L13.6473 6.91176M17.4995 12.1841C16.5378 15.2609 13.5967 17.5 10.1178 17.5C6.86118 17.5 4.07589 15.5379 2.94432 12.7632L2.41165 11.3235M2.41165 11.3235L1.5293 15.7353M2.41165 11.3235L6.38224 13.0882" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
 				<span>${
 					currentProfile?.profile?.name || currentProfile?.profile?.username
 				} retweeted</span>
@@ -711,12 +711,9 @@ const loadMorePosts = async () => {
 			const retweetIndicator = document.createElement("div");
 			retweetIndicator.className = "retweet-indicator";
 			retweetIndicator.innerHTML = `
-				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M17 1l4 4-4 4"></path>
-					<path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-					<path d="M7 23l-4-4 4-4"></path>
-					<path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-				</svg>
+			<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M2.53001 7.81595C3.49179 4.73911 6.43281 2.5 9.91173 2.5C13.1684 2.5 15.9537 4.46214 17.0852 7.23684L17.6179 8.67647M17.6179 8.67647L18.5002 4.26471M17.6179 8.67647L13.6473 6.91176M17.4995 12.1841C16.5378 15.2609 13.5967 17.5 10.1178 17.5C6.86118 17.5 4.07589 15.5379 2.94432 12.7632L2.41165 11.3235M2.41165 11.3235L1.5293 15.7353M2.41165 11.3235L6.38224 13.0882" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+            </svg>
 				<span>${
 					currentProfile?.profile?.name || currentProfile?.profile?.username
 				} retweeted</span>
@@ -973,6 +970,13 @@ const renderProfile = (data) => {
 
 	const avatarImg = document.getElementById("profileAvatar");
 	if (avatarImg) {
+		const avatarRadiusValue =
+			profile.avatar_radius !== null && profile.avatar_radius !== undefined
+				? `${profile.avatar_radius}px`
+				: profile.gold || profile.gray
+					? "4px"
+					: "50%";
+
 		if (suspended) {
 			avatarImg.src =
 				"data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
@@ -981,16 +985,7 @@ const renderProfile = (data) => {
 			avatarImg.style.pointerEvents = "none";
 			avatarImg.style.objectFit = "cover";
 			avatarImg.style.opacity = "1";
-			if (
-				profile.avatar_radius !== null &&
-				profile.avatar_radius !== undefined
-			) {
-				avatarImg.style.borderRadius = `${profile.avatar_radius}px`;
-			} else if (profile.gold || profile.gray) {
-				avatarImg.style.borderRadius = "4px";
-			} else {
-				avatarImg.style.borderRadius = "50%";
-			}
+			avatarImg.style.borderRadius = avatarRadiusValue;
 		} else {
 			delete avatarImg.dataset.suspended;
 			avatarImg.src =
@@ -999,31 +994,16 @@ const renderProfile = (data) => {
 			avatarImg.style.pointerEvents = "";
 			avatarImg.style.objectFit = "cover";
 			avatarImg.style.opacity = "";
-			if (
-				profile.avatar_radius !== null &&
-				profile.avatar_radius !== undefined
-			) {
-				avatarImg.style.borderRadius = `${profile.avatar_radius}px`;
-			} else if (profile.gold || profile.gray) {
-				avatarImg.style.borderRadius = "4px";
+			avatarImg.style.borderRadius = avatarRadiusValue;
+			if (profile.gray) {
+				applyAvatarOutline(
+					avatarImg,
+					profile.avatar_outline || "",
+					avatarRadiusValue,
+					3,
+				);
 			} else {
-				avatarImg.style.borderRadius = "50%";
-			}
-			if (profile.gray && profile.avatar_outline) {
-				if (profile.avatar_outline.includes("gradient")) {
-					avatarImg.style.border = "3px solid transparent";
-					avatarImg.style.backgroundClip = "padding-box";
-					avatarImg.style.backgroundOrigin = "border-box";
-					avatarImg.style.borderImage = `${profile.avatar_outline} 1`;
-				} else {
-					avatarImg.style.border = `3px solid ${profile.avatar_outline}`;
-				}
-				avatarImg.style.boxSizing = "border-box";
-			} else {
-				avatarImg.style.border = "";
-				avatarImg.style.backgroundClip = "";
-				avatarImg.style.backgroundOrigin = "";
-				avatarImg.style.borderImage = "";
+				applyAvatarOutline(avatarImg, "", avatarRadiusValue, 3);
 			}
 		}
 	}
@@ -1243,8 +1223,6 @@ const renderProfile = (data) => {
 			const el = document.createElement("span");
 			el.className = "follows-me-badge";
 			el.textContent = "Follows you";
-			el.style.cssText =
-				"margin: -5px 0; padding: 4px 10px; background: rgba(var(--primary-rgb), 0.1); color: rgb(var(--primary-rgb)); border-radius: 6px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0;";
 			return el;
 		};
 

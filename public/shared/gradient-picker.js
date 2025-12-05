@@ -81,6 +81,49 @@ export function createGradientPicker(options = {}) {
 	}
 	directionContainer.appendChild(directionSelect);
 
+	const actionsRow = document.createElement("div");
+	actionsRow.className = "gradient-picker-actions";
+
+	const swapBtn = document.createElement("button");
+	swapBtn.type = "button";
+	swapBtn.className = "gradient-picker-action";
+	swapBtn.textContent = "Swap";
+
+	const presetsRow = document.createElement("div");
+	presetsRow.className = "gradient-picker-presets";
+
+	const presets = [
+		{
+			label: "Sunrise",
+			value: "linear-gradient(to right, #ff8a00, #f83600)",
+		},
+		{
+			label: "Aurora",
+			value: "linear-gradient(to right, #7f7fd5, #86a8e7)",
+		},
+		{
+			label: "Lagoon",
+			value: "linear-gradient(to right, #2af598, #009efd)",
+		},
+		{
+			label: "Candy",
+			value: "linear-gradient(to right, #ff6fd8, #3813c2)",
+		},
+	];
+
+	presets.forEach((preset) => {
+		const btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "gradient-picker-preset";
+		btn.title = preset.label;
+		btn.dataset.value = preset.value;
+		btn.style.backgroundImage = preset.value;
+		btn.addEventListener("click", () => {
+			parseValue(preset.value);
+		});
+		presetsRow.appendChild(btn);
+	});
+
 	const clearBtn = document.createElement("button");
 	clearBtn.type = "button";
 	clearBtn.className = "gradient-picker-clear";
@@ -92,6 +135,9 @@ export function createGradientPicker(options = {}) {
 	controls.appendChild(modeSelector);
 	controls.appendChild(colorInputs);
 	controls.appendChild(directionContainer);
+	actionsRow.appendChild(swapBtn);
+	actionsRow.appendChild(presetsRow);
+	controls.appendChild(actionsRow);
 	controls.appendChild(clearBtn);
 
 	container.appendChild(preview);
@@ -107,6 +153,10 @@ export function createGradientPicker(options = {}) {
 			previewInner.style.background = currentValue;
 		}
 	};
+
+	preview.addEventListener("click", () => {
+		setMode(mode === "solid" ? "gradient" : "solid");
+	});
 
 	const getValue = () => {
 		if (mode === "solid") {
@@ -209,6 +259,15 @@ export function createGradientPicker(options = {}) {
 
 	solidBtn.addEventListener("click", () => setMode("solid"));
 	gradientBtn.addEventListener("click", () => setMode("gradient"));
+	swapBtn.addEventListener("click", () => {
+		const c1 = color1Hex.value || "#ff0000";
+		const c2 = color2Hex.value || "#0000ff";
+		color1Hex.value = c2;
+		color1Picker.value = toHexColor(c2);
+		color2Hex.value = c1;
+		color2Picker.value = toHexColor(c1);
+		setMode("gradient");
+	});
 
 	color1Picker.addEventListener("input", () => {
 		color1Hex.value = color1Picker.value;

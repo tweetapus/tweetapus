@@ -13,6 +13,10 @@
   }
 }
 
+* {
+  scrollbar-width: thin;
+}
+
 body {
   display: flex;
   gap: 18px;
@@ -23,7 +27,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   scrollbar-gutter: stable;
-  scrollbar-width: thin;
 }
 
 #profileContainer.suspended .profile-banner {
@@ -124,15 +127,16 @@ body {
 
 .tweet-share-wrapper {
   position: fixed;
-  top: -9999px;
-  left: -9999px;
+  top: 0px;
+  left: 0px;
+  pointer-events: none;
+
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 120px 80px;
   background-color: var(--primary);
   z-index: -1;
-  pointer-events: none;
 
   .tweet-share-container {
     background-color: var(--bg-primary);
@@ -1822,6 +1826,7 @@ nav {
 
       &.tweet-ellipsis {
         text-decoration: none;
+        user-select: none;
       }
 
       &:hover {
@@ -2515,6 +2520,7 @@ nav {
     align-items: center;
     gap: 16px;
     margin-bottom: 14px;
+    user-select: none;
 
     h1 {
       margin: 0;
@@ -2915,6 +2921,7 @@ nav {
     display: flex;
     gap: 24px;
     font-size: 14px;
+    user-select: none;
 
     a {
       text-decoration: none;
@@ -2944,6 +2951,7 @@ nav {
     margin-top: 12px;
     border-radius: 12px;
     cursor: pointer;
+    user-select: none;
     transition: background-color 0.2s;
 
     &:hover {
@@ -3977,6 +3985,7 @@ nav {
   font-size: 13px;
   color: var(--text-secondary);
   font-weight: 500;
+  user-select: none;
 
   svg {
     width: 16px;
@@ -5133,6 +5142,11 @@ nav {
       text-decoration: none;
 
       &:hover {
+        text-decoration: underline;
+      }
+
+      &:is(.dm-message.own .dm-link) {
+        color: var(--primary-fg);
         text-decoration: underline;
       }
     }
@@ -6472,6 +6486,7 @@ nav {
   display: flex;
   align-items: center;
   gap: 6px;
+  user-select: none;
   margin-bottom: 4px;
   color: var(--text-secondary);
   font-size: 13px;
@@ -6948,7 +6963,6 @@ nav {
 }
 
 .community-detail-content.tab-tweets-active .community-detail-tab-content {
-  scrollbar-width: thin;
   scrollbar-color: rgba(100, 100, 100, 0.18) transparent;
 }
 
@@ -9183,6 +9197,7 @@ emoji-picker.emoji-picker-popup {
   position: relative;
   display: inline-flex;
   align-items: center;
+  user-select: none;
   gap: 2px;
   padding: 0px 4px;
   height: 18px;
@@ -10181,4 +10196,17 @@ emoji-picker.emoji-picker-popup {
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.follows-me-badge {
+  margin: -5px 0;
+  padding: 4px 10px;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: rgb(var(--primary-rgb));
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+  user-select: none;
 }

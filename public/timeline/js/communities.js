@@ -1,4 +1,7 @@
-import { createVerificationBadge } from "/public/shared/badge-utils.js";
+import {
+	applyAvatarOutline,
+	createVerificationBadge,
+} from "/public/shared/badge-utils.js";
 import openImageCropper, {
 	CROP_CANCELLED,
 } from "../../shared/image-cropper.js";
@@ -733,21 +736,24 @@ function createMemberElement(member) {
 		img.src = member.avatar;
 		img.alt = member.username;
 		img.className = "member-avatar";
-		if (member.avatar_radius !== null && member.avatar_radius !== undefined) {
-			img.style.borderRadius = `${member.avatar_radius}px`;
-		} else if (member.gold || member.gray) {
-			img.style.borderRadius = "4px";
-		}
-		if (member.gray && member.avatar_outline) {
-			if (member.avatar_outline.includes("gradient")) {
-				img.style.border = "2px solid transparent";
-				img.style.backgroundClip = "padding-box";
-				img.style.backgroundOrigin = "border-box";
-				img.style.borderImage = `${member.avatar_outline} 1`;
-			} else {
-				img.style.border = `2px solid ${member.avatar_outline}`;
-			}
-			img.style.boxSizing = "border-box";
+		const memberRadiusValue =
+			member.avatar_radius !== null && member.avatar_radius !== undefined
+				? `${member.avatar_radius}px`
+				: member.gold || member.gray
+					? "4px"
+					: "50%";
+
+		img.style.borderRadius = memberRadiusValue;
+
+		if (member.gray) {
+			applyAvatarOutline(
+				img,
+				member.avatar_outline || "",
+				memberRadiusValue || "4px",
+				2,
+			);
+		} else {
+			applyAvatarOutline(img, "", memberRadiusValue, 2);
 		}
 		div.appendChild(img);
 	} else {

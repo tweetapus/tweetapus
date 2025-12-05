@@ -2031,14 +2031,6 @@ class AdminPanel {
                       <input class="form-check-input permission-toggle" type="checkbox" id="perm_corner_radius" data-permission="corner_radius">
                       <label class="form-check-label" for="perm_corner_radius">Allow Custom Corner Radius</label>
                     </div>
-                    <div class="form-check form-switch mb-2">
-                      <input class="form-check-input permission-toggle" type="checkbox" id="perm_extended_char_limit" data-permission="extended_char_limit">
-                      <label class="form-check-label" for="perm_extended_char_limit">Extended Character Limit</label>
-                    </div>
-                    <div class="form-check form-switch mb-2">
-                      <input class="form-check-input permission-toggle" type="checkbox" id="perm_article_posting" data-permission="article_posting">
-                      <label class="form-check-label" for="perm_article_posting">Allow Article Posting</label>
-                    </div>
                   </div>
                 </div>
               </div>

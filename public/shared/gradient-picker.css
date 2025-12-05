@@ -114,6 +114,53 @@
   cursor: pointer;
 }
 
+.gradient-picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.gradient-picker-action {
+  padding: 6px 12px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.gradient-picker-action:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--border-hover);
+}
+
+.gradient-picker-presets {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+  min-width: 180px;
+}
+
+.gradient-picker-preset {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  background-size: 200% 200%;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.gradient-picker-preset:hover {
+  transform: translateY(-1px);
+  border-color: var(--border-hover);
+}
+
 .gradient-picker-clear {
   padding: 6px 12px;
   border: 1px solid var(--border-primary);

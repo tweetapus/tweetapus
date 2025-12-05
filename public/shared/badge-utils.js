@@ -71,6 +71,9 @@ export function applyAvatarOutline(
 		imgEl.style.backgroundClip = "";
 		imgEl.style.backgroundOrigin = "";
 		imgEl.style.backgroundImage = "";
+		imgEl.style.backgroundRepeat = "";
+		imgEl.style.backgroundSize = "";
+		imgEl.style.backgroundPosition = "";
 		return;
 	}
 
@@ -78,20 +81,24 @@ export function applyAvatarOutline(
 	const radiusValue = borderRadius || "50%";
 
 	if (isGradient) {
+		const inset = borderWidth * 2;
 		imgEl.style.border = `${borderWidth}px solid transparent`;
 		imgEl.style.borderRadius = radiusValue;
-		imgEl.style.backgroundClip = "padding-box";
 		imgEl.style.backgroundOrigin = "border-box";
+		imgEl.style.backgroundClip = "border-box, padding-box";
 		imgEl.style.backgroundImage = `${outline}, linear-gradient(var(--bg-primary), var(--bg-primary))`;
-		imgEl.style.backgroundSize =
-			"100% 100%, calc(100% - ${borderWidth * 2}px) calc(100% - ${borderWidth * 2}px)";
-		imgEl.style.backgroundPosition = "0 0, ${borderWidth}px ${borderWidth}px";
+		imgEl.style.backgroundRepeat = "no-repeat, no-repeat";
+		imgEl.style.backgroundSize = `100% 100%, calc(100% - ${inset}px) calc(100% - ${inset}px)`;
+		imgEl.style.backgroundPosition = `0 0, ${borderWidth}px ${borderWidth}px`;
 	} else {
 		imgEl.style.border = `${borderWidth}px solid ${outline}`;
 		imgEl.style.borderRadius = radiusValue;
 		imgEl.style.backgroundClip = "";
 		imgEl.style.backgroundOrigin = "";
 		imgEl.style.backgroundImage = "";
+		imgEl.style.backgroundRepeat = "";
+		imgEl.style.backgroundSize = "";
+		imgEl.style.backgroundPosition = "";
 	}
 	imgEl.style.boxSizing = "border-box";
 }
@@ -115,7 +122,7 @@ export function createVerificationBadge(options = {}) {
 		badgeTitle = title || "Gray Check Account";
 	}
 
-	const isGradient = checkmarkOutline && checkmarkOutline.includes("gradient");
+	const isGradient = checkmarkOutline?.includes("gradient");
 	let defsSection = "";
 	let strokeAttr = "";
 
