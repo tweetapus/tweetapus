@@ -777,6 +777,8 @@ CREATE TABLE IF NOT EXISTS custom_badges (
   svg_content TEXT,
   image_url TEXT,
   color TEXT,
+  action_type TEXT DEFAULT 'none' CHECK(action_type IN ('none','url','modal','client_js')),
+  action_value TEXT,
   description TEXT,
   created_by TEXT,
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),

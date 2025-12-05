@@ -2795,7 +2795,6 @@ nav {
         color: var(--text-secondary);
         font-size: 14px;
         margin: -8px 0 8px 0;
-        font-style: italic;
       }
 
       .profile-bio {
@@ -10304,7 +10303,7 @@ emoji-picker.emoji-picker-popup {
   padding: 0;
   margin-top: -9px;
 
-  &:is(.quoted-tweet-container  .tweet-translate-container, .tweet-preview .tweet-translate-container) {
+  &:is(.quoted-tweet-container .tweet-translate-container, .tweet-preview .tweet-translate-container) {
     margin-top: 0;
   }
 }

@@ -208,14 +208,14 @@ WHERE u.id = ?
 	getBadges: db.prepare("SELECT * FROM custom_badges ORDER BY created_at DESC"),
 	getBadgeById: db.prepare("SELECT * FROM custom_badges WHERE id = ?"),
 	createBadge: db.prepare(
-		"INSERT INTO custom_badges (id, name, svg_content, color, description, created_by) VALUES (?, ?, ?, ?, ?, ?)",
+		"INSERT INTO custom_badges (id, name, svg_content, image_url, color, action_type, action_value, description, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 	),
 	updateBadge: db.prepare(
-		"UPDATE custom_badges SET name = ?, svg_content = ?, color = ?, description = ? WHERE id = ?",
+		"UPDATE custom_badges SET name = ?, svg_content = ?, image_url = ?, color = ?, action_type = ?, action_value = ?, description = ? WHERE id = ?",
 	),
 	deleteBadge: db.prepare("DELETE FROM custom_badges WHERE id = ?"),
 	getUserBadges: db.prepare(
-		"SELECT ub.*, b.name, b.svg_content, b.color, b.description FROM user_custom_badges ub JOIN custom_badges b ON ub.badge_id = b.id WHERE ub.user_id = ?",
+		"SELECT ub.*, b.name, b.svg_content, b.image_url, b.color, b.action_type, b.action_value, b.description FROM user_custom_badges ub JOIN custom_badges b ON ub.badge_id = b.id WHERE ub.user_id = ?",
 	),
 	assignUserBadge: db.prepare(
 		"INSERT INTO user_custom_badges (id, user_id, badge_id, granted_by) VALUES (?, ?, ?, ?)",
@@ -1488,16 +1488,28 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 	.post(
 		"/badges",
 		async ({ body, user }) => {
-			const { name, svg_content, color, description } = body;
-			if (!name || !svg_content) {
-				return { error: "name and svg_content are required" };
+			const {
+				name,
+				svg_content,
+				image_url,
+				color,
+				action_type,
+				action_value,
+				description,
+			} = body;
+			if (!name || (!svg_content && !image_url)) {
+				return { error: "name and icon are required" };
 			}
+			const normalizedAction = action_type || "none";
 			const id = Bun.randomUUIDv7();
 			adminQueries.createBadge.run(
 				id,
 				name,
-				svg_content,
+				svg_content || null,
+				image_url || null,
 				color || null,
+				normalizedAction,
+				action_value || null,
 				description || null,
 				user.id,
 			);
@@ -1507,8 +1519,18 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		{
 			body: t.Object({
 				name: t.String(),
-				svg_content: t.String(),
+				svg_content: t.Optional(t.String()),
+				image_url: t.Optional(t.String()),
 				color: t.Optional(t.Union([t.String(), t.Null()])),
+				action_type: t.Optional(
+					t.Union([
+						t.Literal("none"),
+						t.Literal("url"),
+						t.Literal("modal"),
+						t.Literal("client_js"),
+					]),
+				),
+				action_value: t.Optional(t.Union([t.String(), t.Null()])),
 				description: t.Optional(t.Union([t.String(), t.Null()])),
 			}),
 		},
@@ -1519,11 +1541,22 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		async ({ params, body, user }) => {
 			const badge = adminQueries.getBadgeById.get(params.id);
 			if (!badge) return { error: "Badge not found" };
-			const { name, svg_content, color, description } = body;
+			const {
+				name,
+				svg_content,
+				image_url,
+				color,
+				action_type,
+				action_value,
+				description,
+			} = body;
 			adminQueries.updateBadge.run(
 				name !== undefined ? name : badge.name,
 				svg_content !== undefined ? svg_content : badge.svg_content,
+				image_url !== undefined ? image_url : badge.image_url,
 				color !== undefined ? color : badge.color,
+				action_type !== undefined ? action_type : badge.action_type,
+				action_value !== undefined ? action_value : badge.action_value,
 				description !== undefined ? description : badge.description,
 				params.id,
 			);
@@ -1536,7 +1569,17 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			body: t.Object({
 				name: t.Optional(t.String()),
 				svg_content: t.Optional(t.String()),
+				image_url: t.Optional(t.String()),
 				color: t.Optional(t.Union([t.String(), t.Null()])),
+				action_type: t.Optional(
+					t.Union([
+						t.Literal("none"),
+						t.Literal("url"),
+						t.Literal("modal"),
+						t.Literal("client_js"),
+					]),
+				),
+				action_value: t.Optional(t.Union([t.String(), t.Null()])),
 				description: t.Optional(t.Union([t.String(), t.Null()])),
 			}),
 		},
