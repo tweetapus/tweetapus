@@ -564,6 +564,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				interactive_card,
 				ai_vibe,
 				unsplash,
+				unsplash_images,
 				outline,
 			} = body;
 			const tweetContent = typeof content === "string" ? content : "";
@@ -624,7 +625,8 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				}
 			}
 
-			// Require at least one of: non-empty content, attachments, gif, poll, card or article
+			const hasUnsplashImages = Array.isArray(unsplash_images) && unsplash_images.length > 0;
+
 			if (
 				!hasBody &&
 				!hasAttachments &&
@@ -632,7 +634,8 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				!poll &&
 				!interactive_card &&
 				!targetArticleId &&
-				!unsplash
+				!unsplash &&
+				!hasUnsplashImages
 			) {
 				return { error: "Tweet content is required" };
 			}
@@ -939,7 +942,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 			if (unsplash) {
 				const attachmentId = Bun.randomUUIDv7();
-				// Store attribution data in file_hash as a JSON string
 				const attributionData = JSON.stringify({
 					user_name: unsplash.photographer_name,
 					user_username: unsplash.photographer_username,
@@ -950,7 +952,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				const attachment = saveAttachment.get(
 					attachmentId,
 					tweetId,
-					attributionData, // Storing attribution here
+					attributionData,
 					"unsplash.jpg",
 					"image/jpeg",
 					0,
@@ -959,7 +961,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				);
 				attachments.push(attachment);
 
-				// Trigger download tracking asynchronously
 				if (unsplash.download_location) {
 					fetch(unsplash.download_location, {
 						headers: {
@@ -968,6 +969,40 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 					}).catch((err) =>
 						console.error("Failed to track unsplash download on post:", err),
 					);
+				}
+			}
+
+			if (hasUnsplashImages) {
+				for (const unsplashImg of unsplash_images) {
+					const attachmentId = Bun.randomUUIDv7();
+					const attributionData = JSON.stringify({
+						user_name: unsplashImg.photographer_name,
+						user_username: unsplashImg.photographer_username,
+						user_link: unsplashImg.photographer_url,
+						download_location: unsplashImg.download_location,
+					});
+
+					const attachment = saveAttachment.get(
+						attachmentId,
+						tweetId,
+						attributionData,
+						"unsplash.jpg",
+						"image/jpeg",
+						0,
+						unsplashImg.url,
+						false,
+					);
+					attachments.push(attachment);
+
+					if (unsplashImg.download_location) {
+						fetch(unsplashImg.download_location, {
+							headers: {
+								Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+							},
+						}).catch((err) =>
+							console.error("Failed to track unsplash download on post:", err),
+						);
+					}
 				}
 			}
 

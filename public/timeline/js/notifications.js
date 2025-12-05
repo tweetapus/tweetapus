@@ -598,6 +598,28 @@ function createNotificationElement(group) {
 			tweetSubtitleEl.className = "notification-tweet-subtitle";
 			tweetSubtitleEl.textContent = tweetContent;
 			contentEl.appendChild(tweetSubtitleEl);
+
+			if (
+				primaryNotification.tweet.attachments &&
+				primaryNotification.tweet.attachments.length > 0
+			) {
+				const imageAttachments = primaryNotification.tweet.attachments.filter(
+					(a) => a.file_type?.startsWith("image/"),
+				);
+				if (imageAttachments.length > 0) {
+					const imagesContainer = document.createElement("div");
+					imagesContainer.className = "notification-tweet-images";
+					const maxImages = Math.min(imageAttachments.length, 4);
+					for (let i = 0; i < maxImages; i++) {
+						const img = document.createElement("img");
+						img.src = imageAttachments[i].file_url;
+						img.alt = "";
+						img.loading = "lazy";
+						imagesContainer.appendChild(img);
+					}
+					contentEl.appendChild(imagesContainer);
+				}
+			}
 		} else if (primaryNotification.tweet.content) {
 			const tweetContent =
 				primaryNotification.tweet.content.length > 100

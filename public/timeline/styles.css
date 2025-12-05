@@ -5307,7 +5307,7 @@ nav {
     display: none;
     align-items: center;
     gap: 12px;
-    border-bottom: 1px solid var(--border-primary);
+    padding-bottom: 0px;
 
     &.active {
       display: flex;
@@ -5324,6 +5324,8 @@ nav {
     .dm-reply-preview-content {
       flex: 1;
       min-width: 0;
+      gap: 5px;
+      display: flex;
 
       .dm-reply-preview-label {
         font-size: 13px;
