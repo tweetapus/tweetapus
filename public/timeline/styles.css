@@ -1749,6 +1749,34 @@ nav {
           margin-bottom: -4px;
           cursor: pointer;
 
+          .verification-badge {
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            margin-left: 2px;
+
+            svg {
+              width: 16px;
+              height: 16px;
+              flex-shrink: 0;
+            }
+          }
+
+          .custom-badge {
+            display: inline-flex;
+            align-items: center;
+            vertical-align: middle;
+            margin-left: 2px;
+
+            svg,
+            img {
+              width: 16px;
+              height: 16px;
+              flex-shrink: 0;
+              border-radius: 3px;
+            }
+          }
+
           .tweet-header-username-span {
             color: var(--text-secondary);
             font-weight: 400;
@@ -2684,11 +2712,30 @@ nav {
       .verification-badge {
         display: inline-flex;
         align-items: center;
+        vertical-align: middle;
+        margin-left: 2px;
 
         svg {
           width: 20px;
           height: 20px;
           flex-shrink: 0;
+          vertical-align: middle;
+        }
+      }
+
+      .custom-badge {
+        display: inline-flex;
+        align-items: center;
+        vertical-align: middle;
+        margin-left: 4px;
+
+        svg,
+        img {
+          width: 20px;
+          height: 20px;
+          flex-shrink: 0;
+          vertical-align: middle;
+          border-radius: 4px;
         }
       }
 

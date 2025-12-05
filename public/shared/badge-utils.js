@@ -60,6 +60,42 @@ function parseGradient(gradientStr) {
 	return { x1, y1, x2, y2, color1, color2 };
 }
 
+export function applyAvatarOutline(
+	imgEl,
+	outline,
+	borderRadius,
+	borderWidth = 2,
+) {
+	if (!outline) {
+		imgEl.style.border = "";
+		imgEl.style.backgroundClip = "";
+		imgEl.style.backgroundOrigin = "";
+		imgEl.style.backgroundImage = "";
+		return;
+	}
+
+	const isGradient = outline.includes("gradient");
+	const radiusValue = borderRadius || "50%";
+
+	if (isGradient) {
+		imgEl.style.border = `${borderWidth}px solid transparent`;
+		imgEl.style.borderRadius = radiusValue;
+		imgEl.style.backgroundClip = "padding-box";
+		imgEl.style.backgroundOrigin = "border-box";
+		imgEl.style.backgroundImage = `${outline}, linear-gradient(var(--bg-primary), var(--bg-primary))`;
+		imgEl.style.backgroundSize =
+			"100% 100%, calc(100% - ${borderWidth * 2}px) calc(100% - ${borderWidth * 2}px)";
+		imgEl.style.backgroundPosition = "0 0, ${borderWidth}px ${borderWidth}px";
+	} else {
+		imgEl.style.border = `${borderWidth}px solid ${outline}`;
+		imgEl.style.borderRadius = radiusValue;
+		imgEl.style.backgroundClip = "";
+		imgEl.style.backgroundOrigin = "";
+		imgEl.style.backgroundImage = "";
+	}
+	imgEl.style.boxSizing = "border-box";
+}
+
 export function createVerificationBadge(options = {}) {
 	const {
 		type = "verified",

@@ -770,6 +770,35 @@ CREATE TABLE IF NOT EXISTS list_followers (
 
 CREATE INDEX IF NOT EXISTS idx_list_followers_list_id ON list_followers(list_id);
 CREATE INDEX IF NOT EXISTS idx_list_followers_user_id ON list_followers(user_id);
+
+CREATE TABLE IF NOT EXISTS custom_badges (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  svg_content TEXT,
+  image_url TEXT,
+  color TEXT,
+  description TEXT,
+  created_by TEXT,
+  created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_custom_badges_name ON custom_badges(name);
+
+CREATE TABLE IF NOT EXISTS user_custom_badges (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  badge_id TEXT NOT NULL,
+  granted_by TEXT,
+  granted_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (badge_id) REFERENCES custom_badges(id) ON DELETE CASCADE,
+  FOREIGN KEY (granted_by) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE(user_id, badge_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_custom_badges_user_id ON user_custom_badges(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_custom_badges_badge_id ON user_custom_badges(badge_id);
 `,
 ).run();
 

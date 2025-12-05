@@ -1096,6 +1096,46 @@ const renderProfile = (data) => {
 			existingMainBadge.remove();
 		}
 
+		const existingCustomBadges =
+			mainDisplayNameEl.querySelectorAll(".custom-badge");
+		for (const b of existingCustomBadges) {
+			b.remove();
+		}
+
+		if (!suspended && data.customBadges && data.customBadges.length > 0) {
+			const followsBadge = mainDisplayNameEl.querySelector(".follows-me-badge");
+			for (const badge of data.customBadges) {
+				const badgeEl = document.createElement("span");
+				badgeEl.className = "custom-badge";
+				badgeEl.title = badge.name || "Custom Badge";
+
+				if (badge.svg_content) {
+					badgeEl.innerHTML = badge.svg_content;
+					const svg = badgeEl.querySelector("svg");
+					if (svg) {
+						svg.setAttribute("width", "16");
+						svg.setAttribute("height", "16");
+						svg.style.verticalAlign = "middle";
+					}
+				} else if (badge.image_url) {
+					const img = document.createElement("img");
+					img.src = badge.image_url;
+					img.alt = badge.name || "Badge";
+					img.width = 16;
+					img.height = 16;
+					img.style.verticalAlign = "middle";
+					img.draggable = false;
+					badgeEl.appendChild(img);
+				}
+
+				if (followsBadge) {
+					mainDisplayNameEl.insertBefore(badgeEl, followsBadge);
+				} else {
+					mainDisplayNameEl.appendChild(badgeEl);
+				}
+			}
+		}
+
 		const existingMainAffWith = mainDisplayNameEl.querySelector(
 			".role-badge.affiliate-with",
 		);

@@ -44,6 +44,14 @@ const getUserByUsername = db.prepare(
 	 FROM users WHERE LOWER(username) = LOWER(?)`,
 );
 
+const getUserCustomBadges = db.prepare(`
+  SELECT cb.id, cb.name, cb.svg_content, cb.image_url, cb.color, cb.description
+  FROM user_custom_badges ucb
+  JOIN custom_badges cb ON ucb.badge_id = cb.id
+  WHERE ucb.user_id = ?
+  ORDER BY ucb.granted_at ASC
+`);
+
 const updateProfile = db.prepare(`
   UPDATE users
   SET name = ?, bio = ?, location = ?, website = ?, pronouns = ?, avatar_radius = ?
@@ -837,6 +845,8 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				}
 			}
 
+			const customBadges = getUserCustomBadges.all(user.id);
+
 			return {
 				profile,
 				posts,
@@ -845,6 +855,7 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				followsMe,
 				isOwnProfile,
 				followRequestStatus,
+				customBadges,
 			};
 		} catch (error) {
 			console.error("Profile fetch error:", error);

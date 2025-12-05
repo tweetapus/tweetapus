@@ -17,6 +17,9 @@
 - look into all XSS vulnerabitilies
 - optimize client and server
 
+- make gradient profile picture outline adapt it's corner radius to your choosen corner radius
+- make custom badges appear on your tweets
+
 **Joke:**
 
 - @Bangers account automatically quoting tweets with more than 5 likes with "Certified xeetapus banger👑"

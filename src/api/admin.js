@@ -191,20 +191,38 @@ WHERE u.id = ?
 	updateUserVerified: db.prepare("UPDATE users SET verified = ? WHERE id = ?"),
 	updateUserGold: db.prepare("UPDATE users SET gold = ? WHERE id = ?"),
 	updateUserGray: db.prepare("UPDATE users SET gray = ? WHERE id = ?"),
-	updateUserOutlines: db.prepare("UPDATE users SET checkmark_outline = ?, avatar_outline = ? WHERE id = ?"),
-	
-	getUserPermissions: db.prepare("SELECT permission, enabled FROM user_permissions WHERE user_id = ?"),
-	upsertUserPermission: db.prepare("INSERT INTO user_permissions (id, user_id, permission, enabled) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, permission) DO UPDATE SET enabled = excluded.enabled"),
-	deleteUserPermissions: db.prepare("DELETE FROM user_permissions WHERE user_id = ?"),
-	
+	updateUserOutlines: db.prepare(
+		"UPDATE users SET checkmark_outline = ?, avatar_outline = ? WHERE id = ?",
+	),
+
+	getUserPermissions: db.prepare(
+		"SELECT permission, enabled FROM user_permissions WHERE user_id = ?",
+	),
+	upsertUserPermission: db.prepare(
+		"INSERT INTO user_permissions (id, user_id, permission, enabled) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, permission) DO UPDATE SET enabled = excluded.enabled",
+	),
+	deleteUserPermissions: db.prepare(
+		"DELETE FROM user_permissions WHERE user_id = ?",
+	),
+
 	getBadges: db.prepare("SELECT * FROM custom_badges ORDER BY created_at DESC"),
 	getBadgeById: db.prepare("SELECT * FROM custom_badges WHERE id = ?"),
-	createBadge: db.prepare("INSERT INTO custom_badges (id, name, svg_content, color, description, created_by) VALUES (?, ?, ?, ?, ?, ?)"),
-	updateBadge: db.prepare("UPDATE custom_badges SET name = ?, svg_content = ?, color = ?, description = ? WHERE id = ?"),
+	createBadge: db.prepare(
+		"INSERT INTO custom_badges (id, name, svg_content, color, description, created_by) VALUES (?, ?, ?, ?, ?, ?)",
+	),
+	updateBadge: db.prepare(
+		"UPDATE custom_badges SET name = ?, svg_content = ?, color = ?, description = ? WHERE id = ?",
+	),
 	deleteBadge: db.prepare("DELETE FROM custom_badges WHERE id = ?"),
-	getUserBadges: db.prepare("SELECT ub.*, b.name, b.svg_content, b.color, b.description FROM user_custom_badges ub JOIN custom_badges b ON ub.badge_id = b.id WHERE ub.user_id = ?"),
-	assignUserBadge: db.prepare("INSERT INTO user_custom_badges (id, user_id, badge_id, granted_by) VALUES (?, ?, ?, ?)"),
-	removeUserBadge: db.prepare("DELETE FROM user_custom_badges WHERE user_id = ? AND badge_id = ?"),
+	getUserBadges: db.prepare(
+		"SELECT ub.*, b.name, b.svg_content, b.color, b.description FROM user_custom_badges ub JOIN custom_badges b ON ub.badge_id = b.id WHERE ub.user_id = ?",
+	),
+	assignUserBadge: db.prepare(
+		"INSERT INTO user_custom_badges (id, user_id, badge_id, granted_by) VALUES (?, ?, ?, ?)",
+	),
+	removeUserBadge: db.prepare(
+		"DELETE FROM user_custom_badges WHERE user_id = ? AND badge_id = ?",
+	),
 
 	deleteUser: db.prepare("DELETE FROM users WHERE id = ?"),
 	deletePost: db.prepare("DELETE FROM posts WHERE id = ?"),
@@ -1264,12 +1282,14 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			);
 
 			const ipHistory = adminQueries.getUserIpHistory.all(targetId);
+			const userBadges = adminQueries.getUserBadges.all(targetId);
 
 			return {
 				user,
 				recentPosts,
 				suspensions,
 				ipHistory,
+				userBadges,
 				affiliate: {
 					incoming: incomingAffiliateRequests,
 					outgoing: outgoingAffiliateRequests,
@@ -1351,16 +1371,31 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			}
 			adminQueries.updateUserGray.run(gray ? 1 : 0, params.id);
 			if (checkmark_outline !== undefined || avatar_outline !== undefined) {
-				const newCheckmarkOutline = checkmark_outline !== undefined ? checkmark_outline : targetUser?.checkmark_outline;
-				const newAvatarOutline = avatar_outline !== undefined ? avatar_outline : targetUser?.avatar_outline;
-				adminQueries.updateUserOutlines.run(newCheckmarkOutline, newAvatarOutline, params.id);
+				const newCheckmarkOutline =
+					checkmark_outline !== undefined
+						? checkmark_outline
+						: targetUser?.checkmark_outline;
+				const newAvatarOutline =
+					avatar_outline !== undefined
+						? avatar_outline
+						: targetUser?.avatar_outline;
+				adminQueries.updateUserOutlines.run(
+					newCheckmarkOutline,
+					newAvatarOutline,
+					params.id,
+				);
 			}
 			logModerationAction(
 				user.id,
 				gray ? "grant_gray" : "revoke_gray",
 				"user",
 				params.id,
-				{ username: targetUser?.username, gray, checkmark_outline, avatar_outline },
+				{
+					username: targetUser?.username,
+					gray,
+					checkmark_outline,
+					avatar_outline,
+				},
 			);
 			return { success: true };
 		},
@@ -1381,17 +1416,19 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			if (!targetUser) return { error: "User not found" };
 			if (!targetUser.gray) return { error: "User is not a gray check" };
 			adminQueries.updateUserOutlines.run(
-				checkmark_outline !== undefined ? checkmark_outline : targetUser.checkmark_outline,
-				avatar_outline !== undefined ? avatar_outline : targetUser.avatar_outline,
-				params.id
-			);
-			logModerationAction(
-				user.id,
-				"update_outlines",
-				"user",
+				checkmark_outline !== undefined
+					? checkmark_outline
+					: targetUser.checkmark_outline,
+				avatar_outline !== undefined
+					? avatar_outline
+					: targetUser.avatar_outline,
 				params.id,
-				{ username: targetUser?.username, checkmark_outline, avatar_outline },
 			);
+			logModerationAction(user.id, "update_outlines", "user", params.id, {
+				username: targetUser?.username,
+				checkmark_outline,
+				avatar_outline,
+			});
 			return { success: true };
 		},
 		{
@@ -1402,19 +1439,16 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		},
 	)
 
-	.get(
-		"/users/:id/permissions",
-		async ({ params }) => {
-			const targetUser = adminQueries.findUserById.get(params.id);
-			if (!targetUser) return { error: "User not found" };
-			const permissions = adminQueries.getUserPermissions.all(params.id);
-			const permissionsMap = {};
-			for (const p of permissions) {
-				permissionsMap[p.permission] = !!p.enabled;
-			}
-			return { permissions: permissionsMap };
-		},
-	)
+	.get("/users/:id/permissions", async ({ params }) => {
+		const targetUser = adminQueries.findUserById.get(params.id);
+		if (!targetUser) return { error: "User not found" };
+		const permissions = adminQueries.getUserPermissions.all(params.id);
+		const permissionsMap = {};
+		for (const p of permissions) {
+			permissionsMap[p.permission] = !!p.enabled;
+		}
+		return { permissions: permissionsMap };
+	})
 
 	.patch(
 		"/users/:id/permissions",
@@ -1459,7 +1493,14 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				return { error: "name and svg_content are required" };
 			}
 			const id = Bun.randomUUIDv7();
-			adminQueries.createBadge.run(id, name, svg_content, color || null, description || null, user.id);
+			adminQueries.createBadge.run(
+				id,
+				name,
+				svg_content,
+				color || null,
+				description || null,
+				user.id,
+			);
 			logModerationAction(user.id, "create_badge", "badge", id, { name });
 			return { success: true, id };
 		},
@@ -1486,7 +1527,9 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				description !== undefined ? description : badge.description,
 				params.id,
 			);
-			logModerationAction(user.id, "update_badge", "badge", params.id, { name });
+			logModerationAction(user.id, "update_badge", "badge", params.id, {
+				name,
+			});
 			return { success: true };
 		},
 		{
@@ -1503,19 +1546,18 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		const badge = adminQueries.getBadgeById.get(params.id);
 		if (!badge) return { error: "Badge not found" };
 		adminQueries.deleteBadge.run(params.id);
-		logModerationAction(user.id, "delete_badge", "badge", params.id, { name: badge.name });
+		logModerationAction(user.id, "delete_badge", "badge", params.id, {
+			name: badge.name,
+		});
 		return { success: true };
 	})
 
-	.get(
-		"/users/:id/badges",
-		async ({ params }) => {
-			const targetUser = adminQueries.findUserById.get(params.id);
-			if (!targetUser) return { error: "User not found" };
-			const badges = adminQueries.getUserBadges.all(params.id);
-			return { badges };
-		},
-	)
+	.get("/users/:id/badges", async ({ params }) => {
+		const targetUser = adminQueries.findUserById.get(params.id);
+		if (!targetUser) return { error: "User not found" };
+		const badges = adminQueries.getUserBadges.all(params.id);
+		return { badges };
+	})
 
 	.post(
 		"/users/:id/badges",
@@ -1525,9 +1567,18 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			const { badge_id } = body;
 			const badge = adminQueries.getBadgeById.get(badge_id);
 			if (!badge) return { error: "Badge not found" };
-			const existing = db.query("SELECT 1 FROM user_custom_badges WHERE user_id = ? AND badge_id = ?").get(params.id, badge_id);
+			const existing = db
+				.query(
+					"SELECT 1 FROM user_custom_badges WHERE user_id = ? AND badge_id = ?",
+				)
+				.get(params.id, badge_id);
 			if (existing) return { error: "User already has this badge" };
-			adminQueries.assignUserBadge.run(Bun.randomUUIDv7(), params.id, badge_id, user.id);
+			adminQueries.assignUserBadge.run(
+				Bun.randomUUIDv7(),
+				params.id,
+				badge_id,
+				user.id,
+			);
 			logModerationAction(user.id, "assign_badge", "user", params.id, {
 				username: targetUser?.username,
 				badge_id,
@@ -1542,22 +1593,19 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 		},
 	)
 
-	.delete(
-		"/users/:id/badges/:badgeId",
-		async ({ params, user }) => {
-			const targetUser = adminQueries.findUserById.get(params.id);
-			if (!targetUser) return { error: "User not found" };
-			const badge = adminQueries.getBadgeById.get(params.badgeId);
-			if (!badge) return { error: "Badge not found" };
-			adminQueries.removeUserBadge.run(params.id, params.badgeId);
-			logModerationAction(user.id, "remove_badge", "user", params.id, {
-				username: targetUser?.username,
-				badge_id: params.badgeId,
-				badge_name: badge.name,
-			});
-			return { success: true };
-		},
-	)
+	.delete("/users/:id/badges/:badgeId", async ({ params, user }) => {
+		const targetUser = adminQueries.findUserById.get(params.id);
+		if (!targetUser) return { error: "User not found" };
+		const badge = adminQueries.getBadgeById.get(params.badgeId);
+		if (!badge) return { error: "Badge not found" };
+		adminQueries.removeUserBadge.run(params.id, params.badgeId);
+		logModerationAction(user.id, "remove_badge", "user", params.id, {
+			username: targetUser?.username,
+			badge_id: params.badgeId,
+			badge_name: badge.name,
+		});
+		return { success: true };
+	})
 
 	.post(
 		"/users/:id/suspend",
@@ -2665,9 +2713,16 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				newGold = 0;
 				newGray = 0;
 			} else {
-				if (newGold) { newVerified = 0; newGray = 0; }
-				else if (newVerified) { newGold = 0; newGray = 0; }
-				else if (newGray) { newGold = 0; newVerified = 0; }
+				if (newGold) {
+					newVerified = 0;
+					newGray = 0;
+				} else if (newVerified) {
+					newGold = 0;
+					newGray = 0;
+				} else if (newGray) {
+					newGold = 0;
+					newVerified = 0;
+				}
 			}
 
 			if (body.verified !== undefined && body.verified !== user.verified) {
@@ -3237,11 +3292,24 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				"UPDATE users SET affiliate = ?, affiliate_with = ? WHERE id = ?",
 			).run(newAffiliateFlag, affiliateWith, params.id);
 
-			if (body.checkmark_outline !== undefined || body.avatar_outline !== undefined) {
+			if (
+				body.checkmark_outline !== undefined ||
+				body.avatar_outline !== undefined
+			) {
 				const currentUser = adminQueries.findUserById.get(params.id);
-				const newCheckmarkOutline = body.checkmark_outline !== undefined ? body.checkmark_outline : currentUser?.checkmark_outline;
-				const newAvatarOutline = body.avatar_outline !== undefined ? body.avatar_outline : currentUser?.avatar_outline;
-				adminQueries.updateUserOutlines.run(newCheckmarkOutline || null, newAvatarOutline || null, params.id);
+				const newCheckmarkOutline =
+					body.checkmark_outline !== undefined
+						? body.checkmark_outline
+						: currentUser?.checkmark_outline;
+				const newAvatarOutline =
+					body.avatar_outline !== undefined
+						? body.avatar_outline
+						: currentUser?.avatar_outline;
+				adminQueries.updateUserOutlines.run(
+					newCheckmarkOutline || null,
+					newAvatarOutline || null,
+					params.id,
+				);
 			}
 
 			logModerationAction(

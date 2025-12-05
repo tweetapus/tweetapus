@@ -2208,6 +2208,13 @@ class AdminPanel {
                 ${this.buildAffiliateRequestHtml(affiliate, user.id)}
               </div>
             </div>
+
+            <div class="mt-4">
+              <h5>Custom Badges</h5>
+              <div id="userBadgesContainer" data-user-id="${user.id}">
+                ${this.buildUserBadgesHtml(userData.userBadges || [], user.id)}
+              </div>
+            </div>
             
             <h5>Recent Posts</h5>
             <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
@@ -2563,19 +2570,22 @@ class AdminPanel {
 				});
 				await this.loadUserBadges(userId);
 				selector.value = "";
-			} catch (e) {
+			} catch {
 				this.showError("Failed to assign badge");
 			}
 		});
 	}
 
 	async removeUserBadge(userId, badgeId) {
+		if (!confirm("Remove this badge from the user?")) return;
 		try {
 			await this.apiCall(`/api/admin/users/${userId}/badges/${badgeId}`, {
 				method: "DELETE",
 			});
-			await this.loadUserBadges(userId);
-		} catch (e) {
+			this.showSuccess("Badge removed");
+			this.userCache.delete(userId);
+			await this.showUserModal(userId);
+		} catch {
 			this.showError("Failed to remove badge");
 		}
 	}
@@ -4432,6 +4442,89 @@ class AdminPanel {
 			return '<p class="text-muted mb-0">No affiliate requests or affiliates.</p>';
 		}
 		return combined;
+	}
+
+	buildUserBadgesHtml(userBadges, userId) {
+		const safeUserId = this.escapeHtml(userId);
+		let html = "";
+
+		if (userBadges && userBadges.length > 0) {
+			html +=
+				'<div class="mb-3"><h6 class="text-uppercase text-muted">Current Badges</h6><div class="d-flex flex-wrap gap-2">';
+			for (const badge of userBadges) {
+				const safeBadgeId = this.escapeHtml(badge.badge_id);
+				const safeName = this.escapeHtml(badge.name || "");
+				const svgContent = badge.svg_content
+					? DOMPurify.sanitize(badge.svg_content, {
+							USE_PROFILES: { svg: true, svgFilters: true },
+						})
+					: "";
+				html += `
+					<div class="badge bg-secondary d-flex align-items-center gap-1 p-2">
+						<span style="width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;">${svgContent}</span>
+						<span>${safeName}</span>
+						<button class="btn btn-sm btn-close btn-close-white ms-1" style="font-size:8px;" title="Remove badge" onclick="adminPanel.removeUserBadge('${safeUserId}', '${safeBadgeId}')"></button>
+					</div>
+				`;
+			}
+			html += "</div></div>";
+		} else {
+			html += '<p class="text-muted small mb-2">No custom badges assigned.</p>';
+		}
+
+		html += `
+			<div class="mt-2">
+				<label class="form-label small">Assign Badge</label>
+				<div class="input-group">
+					<select class="form-select" id="assignBadgeSelect_${safeUserId}">
+						<option value="">Select a badge...</option>
+					</select>
+					<button class="btn btn-outline-primary" type="button" onclick="adminPanel.assignUserBadge('${safeUserId}')">Assign</button>
+				</div>
+			</div>
+		`;
+
+		setTimeout(() => this.loadBadgeOptionsForUser(safeUserId), 0);
+
+		return html;
+	}
+
+	async loadBadgeOptionsForUser(userId) {
+		const select = document.getElementById(`assignBadgeSelect_${userId}`);
+		if (!select) return;
+		try {
+			const data = await this.apiCall("/api/admin/badges");
+			const badges = data.badges || [];
+			select.innerHTML = '<option value="">Select a badge...</option>';
+			for (const badge of badges) {
+				const option = document.createElement("option");
+				option.value = badge.id;
+				option.textContent = badge.name;
+				select.appendChild(option);
+			}
+		} catch {
+			select.innerHTML = '<option value="">Failed to load badges</option>';
+		}
+	}
+
+	async assignUserBadge(userId) {
+		const select = document.getElementById(`assignBadgeSelect_${userId}`);
+		const badgeId = select?.value;
+		if (!badgeId) {
+			this.showError("Please select a badge to assign");
+			return;
+		}
+		try {
+			await this.apiCall(`/api/admin/users/${userId}/badges`, {
+				method: "POST",
+				body: JSON.stringify({ badge_id: badgeId }),
+			});
+			this.showSuccess("Badge assigned");
+			this.userCache.delete(userId);
+			await this.showUserModal(userId);
+		} catch (err) {
+			this.showError(err.message || "Failed to assign badge");
+		}
 	}
 
 	async sendAffiliateRequest(userId) {
