@@ -30,6 +30,103 @@ import getUser, { authToken } from "./auth.js";
 import switchPage, { updatePageTitle } from "./pages.js";
 import { addTweetToTimeline, createTweetElement } from "./tweets.js";
 
+const attachCheckmarkPopup = (badgeEl, type) => {
+	if (!badgeEl) return;
+	const message =
+		type === "gold"
+			? "This user has a gold checkmark and is verified."
+			: type === "gray"
+				? "This user has a gray checkmark and is verified"
+				: "This user is verified.";
+	const showPopup = (evt) => {
+		evt.preventDefault();
+		evt.stopPropagation();
+		createPopup({
+			items: [
+				{
+					title: message,
+					onClick: () => {},
+				},
+			],
+			triggerElement: badgeEl,
+		});
+	};
+	badgeEl.addEventListener("click", showPopup);
+	badgeEl.addEventListener("keydown", (e) => {
+		if (e.key === "Enter" || e.key === " ") showPopup(e);
+	});
+};
+
+const handleCustomBadgeAction = (badge, badgeEl) => {
+	const type = badge?.action_type || "none";
+	if (type === "url") {
+		const url = badge?.action_value || "";
+		if (url && /^https?:\/\//i.test(url)) {
+			window.open(url, "_blank", "noopener,noreferrer");
+		}
+		return;
+	}
+	if (type === "modal") {
+		const wrapper = document.createElement("div");
+		wrapper.style.padding = "12px";
+		const p = document.createElement("p");
+		p.textContent = badge?.action_value || "";
+		wrapper.appendChild(p);
+		createModal({ title: badge?.name || "Badge", content: wrapper });
+		return;
+	}
+	if (type === "client_js") {
+		try {
+			const fn = new Function("badge", "element", badge?.action_value || "");
+			fn(badge, badgeEl);
+		} catch (err) {
+			console.error("Badge JS failed", err);
+		}
+	}
+};
+
+const renderCustomBadge = (badge) => {
+	const badgeEl = document.createElement("span");
+	badgeEl.className = "custom-badge";
+	badgeEl.title = badge?.name || "Custom Badge";
+	badgeEl.tabIndex = 0;
+
+	if (badge?.svg_content) {
+		badgeEl.innerHTML = badge.svg_content;
+		const svg = badgeEl.querySelector("svg");
+		if (svg) {
+			svg.setAttribute("width", "16");
+			svg.setAttribute("height", "16");
+			svg.style.verticalAlign = "middle";
+		}
+	} else if (badge?.image_url) {
+		const img = document.createElement("img");
+		img.src = badge.image_url;
+		img.alt = badge?.name || "Badge";
+		img.width = 16;
+		img.height = 16;
+		img.style.verticalAlign = "middle";
+		img.draggable = false;
+		badgeEl.appendChild(img);
+	}
+
+	if ((badge?.action_type || "none") !== "none") {
+		badgeEl.addEventListener("click", (e) => {
+			e.stopPropagation();
+			e.preventDefault();
+			handleCustomBadgeAction(badge, badgeEl);
+		});
+		badgeEl.addEventListener("keydown", (e) => {
+			if (e.key === "Enter" || e.key === " ") {
+				e.preventDefault();
+				handleCustomBadgeAction(badge, badgeEl);
+			}
+		});
+	}
+
+	return badgeEl;
+};
+
 let currentProfile = null;
 let currentPosts = [];
 let currentReplies = [];
@@ -1057,6 +1154,7 @@ const renderProfile = (data) => {
 					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
 					size: 16,
 				});
+				attachCheckmarkPopup(verificationBadge, badgeType);
 				const followsBadge =
 					mainDisplayNameEl.querySelector(".follows-me-badge");
 				if (followsBadge) {
@@ -1070,6 +1168,7 @@ const renderProfile = (data) => {
 					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
 					size: 16,
 				});
+				attachCheckmarkPopup(newBadge, badgeType);
 				existingMainBadge.replaceWith(newBadge);
 			}
 		} else if (existingMainBadge) {
@@ -1085,29 +1184,7 @@ const renderProfile = (data) => {
 		if (!suspended && data.customBadges && data.customBadges.length > 0) {
 			const followsBadge = mainDisplayNameEl.querySelector(".follows-me-badge");
 			for (const badge of data.customBadges) {
-				const badgeEl = document.createElement("span");
-				badgeEl.className = "custom-badge";
-				badgeEl.title = badge.name || "Custom Badge";
-
-				if (badge.svg_content) {
-					badgeEl.innerHTML = badge.svg_content;
-					const svg = badgeEl.querySelector("svg");
-					if (svg) {
-						svg.setAttribute("width", "16");
-						svg.setAttribute("height", "16");
-						svg.style.verticalAlign = "middle";
-					}
-				} else if (badge.image_url) {
-					const img = document.createElement("img");
-					img.src = badge.image_url;
-					img.alt = badge.name || "Badge";
-					img.width = 16;
-					img.height = 16;
-					img.style.verticalAlign = "middle";
-					img.draggable = false;
-					badgeEl.appendChild(img);
-				}
-
+				const badgeEl = renderCustomBadge(badge);
 				if (followsBadge) {
 					mainDisplayNameEl.insertBefore(badgeEl, followsBadge);
 				} else {

@@ -17,6 +17,52 @@
   scrollbar-width: thin;
 }
 
+#pull-to-refresh {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-background);
+  transition: height 0.2s ease-out;
+  z-index: 100;
+
+  .ptr-spinner {
+    width: 24px;
+    height: 24px;
+    color: var(--color-accent);
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .ptr-text {
+    margin-left: 8px;
+    font-size: 13px;
+    color: var(--color-secondary);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  &.refreshing {
+    .ptr-spinner {
+      animation: ptr-spin 1s linear infinite;
+    }
+  }
+}
+
+@keyframes ptr-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 body {
   display: flex;
   gap: 18px;
@@ -8431,9 +8477,13 @@ emoji-picker.emoji-picker-popup {
   border: 1px solid var(--border-input);
   border-radius: 8px;
   font-size: 16px;
-  background: var(--bg-primary);
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   transition: border-color 0.2s;
+
+  &::placeholder {
+    color: var(--text-placeholder);
+  }
 }
 
 .form-group input:focus {
@@ -8454,18 +8504,31 @@ emoji-picker.emoji-picker-popup {
   border: 1px solid var(--border-input);
   border-radius: 8px;
   overflow: hidden;
-}
+  transition: border-color 0.2s;
 
-.username-wrapper span {
-  padding: 12px 8px 12px 12px;
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
-  font-size: 16px;
-}
+  &:focus-within {
+    border-color: var(--primary);
+  }
 
-.username-wrapper input {
-  border: none;
-  flex: 1;
+  span {
+    padding: 12px 8px 12px 12px;
+    background-color: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 16px;
+  }
+
+  input {
+    border: none;
+    flex: 1;
+    background-color: var(--bg-primary);
+    padding: 12px;
+    font-size: 16px;
+    color: var(--text-primary);
+
+    &:focus {
+      outline: none;
+    }
+  }
 }
 
 .form-actions {
@@ -8493,17 +8556,19 @@ emoji-picker.emoji-picker-popup {
   transition: all 0.2s;
   min-width: 0;
   height: 44px;
-  width: 100%;
-  max-width: 100%;
+}
+
+.form-actions .btn {
+  width: auto;
 }
 
 .btn.primary {
-  background: var(--primary);
-  color: #fff;
+  background-color: var(--primary);
+  color: var(--primary-fg);
 }
 
 .btn.primary:hover {
-  background: var(--primary-hover);
+  background-color: var(--primary-hover);
 }
 
 .btn.secondary {

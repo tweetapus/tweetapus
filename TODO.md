@@ -2,6 +2,10 @@
 - automated spam/nsfw detection using openapi or perspective api
 
 - maybe remove gray checkmarks outline
+- tell users more clearly about thinks like same name as username = hide username
+- move "delete tweet" and similar dialogs to a modal
+- modals to bottom sheets on mobile
+- unified modals
 
 **other things:**
 

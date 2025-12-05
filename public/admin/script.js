@@ -2553,18 +2553,28 @@ class AdminPanel {
 		btn.parentNode.replaceChild(newBtn, btn);
 		newBtn.addEventListener("click", async () => {
 			const selector = document.getElementById("badgeSelector");
-			const badgeId = selector?.value;
-			if (!badgeId) return;
-			try {
-				await this.apiCall(`/api/admin/users/${userId}/badges`, {
-					method: "POST",
-					body: JSON.stringify({ badge_id: badgeId }),
-				});
-				await this.loadUserBadges(userId);
-				selector.value = "";
-			} catch {
-				this.showError("Failed to assign badge");
+			if (!selector) return;
+			const selected = Array.from(selector.selectedOptions)
+				.map((opt) => opt.value)
+				.filter(Boolean);
+			if (selected.length === 0) return;
+			let count = 0;
+			for (const badgeId of selected) {
+				try {
+					await this.apiCall(`/api/admin/users/${userId}/badges`, {
+						method: "POST",
+						body: JSON.stringify({ badge_id: badgeId }),
+					});
+					count++;
+				} catch {}
 			}
+			if (count > 0) {
+				this.showSuccess(`Assigned ${count} badge(s)`);
+				await this.loadUserBadges(userId);
+			} else {
+				this.showError("No badges assigned");
+			}
+			for (const opt of selector.options) opt.selected = false;
 		});
 	}
 
@@ -8209,21 +8219,36 @@ class AdminPanel {
 		for (const badge of badges) {
 			const card = document.createElement("div");
 			card.className = "card mb-2";
+			const iconHTML = badge.svg_content
+				? badge.svg_content
+				: badge.image_url
+					? `<img src="${this.escapeHtml(badge.image_url)}" width="24" height="24" alt="badge">`
+					: "";
+			const actionLabel =
+				badge.action_type && badge.action_type !== "none"
+					? ` [${badge.action_type}]`
+					: "";
 			card.innerHTML = `
 				<div class="card-body d-flex align-items-center gap-3">
-					<div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">${badge.svg_content || ""}</div>
+					<div style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;">${iconHTML}</div>
 					<div class="flex-grow-1">
-						<strong>${this.escapeHtml(badge.name)}</strong>
+						<strong>${this.escapeHtml(badge.name)}</strong>${actionLabel}
 						<div class="small text-muted">${this.escapeHtml(badge.description || "")}</div>
 					</div>
-					<button class="btn btn-sm btn-outline-danger" data-badge-id="${badge.id}">Delete</button>
+					<button class="btn btn-sm btn-outline-primary me-2 edit-badge-btn">Edit</button>
+					<button class="btn btn-sm btn-outline-danger delete-badge-btn">Delete</button>
 				</div>
 			`;
-			card.querySelector("button").addEventListener("click", async () => {
-				if (confirm(`Delete badge "${badge.name}"?`)) {
-					await this.deleteBadge(badge.id);
-				}
+			card.querySelector(".edit-badge-btn").addEventListener("click", () => {
+				this.openEditBadgeModal(badge);
 			});
+			card
+				.querySelector(".delete-badge-btn")
+				.addEventListener("click", async () => {
+					if (confirm(`Delete badge "${badge.name}"?`)) {
+						await this.deleteBadge(badge.id);
+					}
+				});
 			container.appendChild(card);
 		}
 	}
@@ -8250,11 +8275,24 @@ class AdminPanel {
 			const svgContent = document
 				.getElementById("badgeSvgContent")
 				.value.trim();
-			if (!name || !svgContent) return;
+			const imageUrl =
+				document.getElementById("badgeImageUrl")?.value.trim() || "";
+			const actionType =
+				document.getElementById("badgeActionType")?.value || "none";
+			const actionValue =
+				document.getElementById("badgeActionValue")?.value.trim() || "";
+			if (!name || (!svgContent && !imageUrl)) return;
 			try {
 				await this.apiCall("/api/admin/badges", {
 					method: "POST",
-					body: JSON.stringify({ name, description, svg_content: svgContent }),
+					body: JSON.stringify({
+						name,
+						description,
+						svg_content: svgContent || null,
+						image_url: imageUrl || null,
+						action_type: actionType,
+						action_value: actionValue || null,
+					}),
 				});
 				this.showSuccess("Badge created");
 				form.reset();

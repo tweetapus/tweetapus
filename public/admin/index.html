@@ -920,17 +920,45 @@
                           ></textarea>
                         </div>
                         <div class="mb-3">
-                          <label class="form-label">SVG Icon *</label>
+                          <label class="form-label">SVG Icon</label>
                           <textarea
                             class="form-control"
                             id="badgeSvgContent"
                             rows="4"
-                            required
                             placeholder="<svg ...></svg>"
                           ></textarea>
                           <div class="form-text">
-                            Paste SVG markup (should be 16x16 or viewBox-based
-                            for best results)
+                            Paste SVG markup (should be 16x16 or viewBox-based for best results). Provide either SVG or image URL.
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <label class="form-label">Image URL</label>
+                          <input
+                            type="url"
+                            class="form-control"
+                            id="badgeImageUrl"
+                            placeholder="https://example.com/badge.webp"
+                          />
+                          <div class="form-text">PNG/WebP preferred. Leave empty if using SVG.</div>
+                        </div>
+                        <div class="row g-2">
+                          <div class="col-md-6">
+                            <label class="form-label">Click Action</label>
+                            <select class="form-select" id="badgeActionType">
+                              <option value="none" selected>None</option>
+                              <option value="url">Open URL</option>
+                              <option value="modal">Open modal</option>
+                              <option value="client_js">Run client JS</option>
+                            </select>
+                          </div>
+                          <div class="col-md-6">
+                            <label class="form-label">Action Value</label>
+                            <input
+                              type="text"
+                              class="form-control"
+                              id="badgeActionValue"
+                              placeholder="URL, modal text, or JS"
+                            />
                           </div>
                         </div>
                         <div class="mb-3">
