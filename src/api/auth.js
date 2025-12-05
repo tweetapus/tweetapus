@@ -968,7 +968,11 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 						headers,
 						existingLoginTransparency,
 					);
-					updateUserLoginTransparency.run(loginTransparency, user.id);
+					updateUserLoginTransparency.run(
+						loginTransparency,
+						headers["cf-connecting-ip"] || headers["X-Forwarded-For"],
+						user.id,
+					);
 				}
 
 				const token = await jwt.sign({
