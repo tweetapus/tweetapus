@@ -2549,6 +2549,44 @@ nav {
   }
 }
 
+.profile-preload-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+
+  .profile-preload-avatar-wrapper {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+  }
+
+  .profile-preload-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
+  .profile-preload-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .profile-preload-name {
+    font-weight: 700;
+    font-size: 18px;
+    color: var(--text-primary);
+  }
+
+  .profile-preload-username {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
 .profile {
   display: none;
   flex-direction: column;
@@ -3784,6 +3822,15 @@ nav {
 
   span {
     font-weight: 500;
+  }
+
+  &.author-replied {
+    color: var(--primary);
+  }
+
+  &.author-response-indicator {
+    color: var(--primary);
+    font-weight: 600;
   }
 }
 
@@ -10293,6 +10340,7 @@ emoji-picker.emoji-picker-popup {
 
 .tweet-translate-container {
   padding: 0;
+  margin-top: -9px;
 }
 
 .tweet-translate-btn {
@@ -10305,6 +10353,14 @@ emoji-picker.emoji-picker-popup {
   font-weight: 500;
   font-family: inherit;
   transition: opacity 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 
   &:hover {
     text-decoration: underline;

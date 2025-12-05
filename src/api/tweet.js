@@ -143,27 +143,37 @@ FROM thread_posts
 ORDER BY level DESC, created_at ASC;
 `);
 
-const getTweetReplies = db.query(`
-  SELECT posts.*
-  FROM posts
-  JOIN users ON posts.user_id = users.id
-  WHERE reply_to = ?
-  AND (users.suspended = 0)
-  AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
-  ORDER BY posts.created_at ASC
-  LIMIT ?
-`);
+const getTweetReplies = (replyToId, currentUserId, isAdmin, tweetAuthorId, limit) => {
+	return db.query(`
+		SELECT posts.*,
+			CASE WHEN posts.user_id = ? THEN 0 ELSE 1 END as is_not_author,
+			CASE WHEN EXISTS(SELECT 1 FROM follows WHERE follows.follower_id = ? AND follows.following_id = posts.user_id) THEN 0 ELSE 1 END as is_not_following,
+			(posts.like_count + posts.reply_count + posts.retweet_count) as engagement
+		FROM posts
+		JOIN users ON posts.user_id = users.id
+		WHERE reply_to = ?
+		AND (users.suspended = 0)
+		AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
+		ORDER BY is_not_author ASC, is_not_following ASC, engagement DESC, posts.created_at ASC
+		LIMIT ?
+	`).all(tweetAuthorId, currentUserId, replyToId, currentUserId, isAdmin, limit);
+};
 
-const getTweetRepliesBefore = db.query(`
-  SELECT posts.*
-  FROM posts
-  JOIN users ON posts.user_id = users.id
-  WHERE reply_to = ? AND posts.created_at < (SELECT created_at FROM posts WHERE id = ?)
-  AND (users.suspended = 0)
-  AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
-  ORDER BY posts.created_at ASC
-  LIMIT ?
-`);
+const getTweetRepliesBefore = (replyToId, beforeId, currentUserId, isAdmin, tweetAuthorId, limit) => {
+	return db.query(`
+		SELECT posts.*,
+			CASE WHEN posts.user_id = ? THEN 0 ELSE 1 END as is_not_author,
+			CASE WHEN EXISTS(SELECT 1 FROM follows WHERE follows.follower_id = ? AND follows.following_id = posts.user_id) THEN 0 ELSE 1 END as is_not_following,
+			(posts.like_count + posts.reply_count + posts.retweet_count) as engagement
+		FROM posts
+		JOIN users ON posts.user_id = users.id
+		WHERE reply_to = ? AND posts.created_at < (SELECT created_at FROM posts WHERE id = ?)
+		AND (users.suspended = 0)
+		AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
+		ORDER BY is_not_author ASC, is_not_following ASC, engagement DESC, posts.created_at ASC
+		LIMIT ?
+	`).all(tweetAuthorId, currentUserId, replyToId, beforeId, currentUserId, isAdmin, limit);
+};
 
 const createTweet = db.query(`
 	INSERT INTO posts (id, user_id, content, reply_to, source, poll_id, quote_tweet_id, reply_restriction, article_id, community_id, community_only, outline) 
@@ -1262,17 +1272,19 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 		let threadPosts = getTweetWithThread.all(id);
 		let replies = before
-			? getTweetRepliesBefore.all(
+			? getTweetRepliesBefore(
 					id,
 					before,
 					currentUser.id,
 					currentUser.admin ? 1 : 0,
+					tweet.user_id,
 					parseInt(limit, 10),
 				)
-			: getTweetReplies.all(
+			: getTweetReplies(
 					id,
 					currentUser.id,
 					currentUser.admin ? 1 : 0,
+					tweet.user_id,
 					parseInt(limit, 10),
 				);
 

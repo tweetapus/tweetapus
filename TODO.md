@@ -20,7 +20,6 @@
 - look into all XSS and similar vulnerabitilies
 - optimize client and server
 
-- make gradient profile picture outline adapt it's corner radius to your choosen corner radius
 - make custom badges appear on your tweets
 
 **Joke:**

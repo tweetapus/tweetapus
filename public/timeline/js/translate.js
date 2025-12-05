@@ -81,42 +81,7 @@ const ISO639_3_TO_1 = {
 	fas: "fa",
 };
 
-let francModule = null;
-let francLoadPromise = null;
-
-async function loadFranc() {
-	if (francModule) return francModule;
-	if (francLoadPromise) return francLoadPromise;
-
-	francLoadPromise = new Promise((resolve) => {
-		const script = document.createElement("script");
-		script.src = "https://cdn.jsdelivr.net/npm/franc-min@6.2.0/+esm";
-		script.type = "module";
-
-		const moduleScript = document.createElement("script");
-		moduleScript.type = "module";
-		moduleScript.textContent = `
-			import { franc } from "https://cdn.jsdelivr.net/npm/franc-min@6.2.0/+esm";
-			window.__francMin = { franc };
-			window.dispatchEvent(new Event("franc-loaded"));
-		`;
-
-		window.addEventListener(
-			"franc-loaded",
-			() => {
-				francModule = window.__francMin;
-				resolve(francModule);
-			},
-			{ once: true },
-		);
-
-		document.head.appendChild(moduleScript);
-	});
-
-	return francLoadPromise;
-}
-
-export async function detectLanguage(text) {
+async function detectLanguage(text) {
 	if (!text || text.trim().length < 50) {
 		return { lang: "und", confidence: 0 };
 	}
@@ -161,22 +126,19 @@ export async function detectLanguage(text) {
 			"ukr",
 		],
 	});
-	return { lang: detected, confidence: detected !== "und" ? 0.8 : 0 };
+
+	return { lang: detected, confidence: detected !== "und" ? 0.85 : 0 };
 }
 
-export function getLanguageName(langCode) {
+function getLanguageName(langCode) {
 	return LANGUAGE_NAMES[langCode] || langCode;
 }
 
-export function getIso1Code(iso3Code) {
+function getIso1Code(iso3Code) {
 	return ISO639_3_TO_1[iso3Code] || iso3Code;
 }
 
-export function isNonEnglish(langCode) {
-	return langCode !== "eng" && langCode !== "und";
-}
-
-export async function translateText(text, sourceLang, targetLang = "en") {
+async function translateText(text, sourceLang, targetLang = "en") {
 	const sourceIso1 = getIso1Code(sourceLang);
 
 	const result = await query("/translate", {
@@ -196,18 +158,17 @@ export async function translateText(text, sourceLang, targetLang = "en") {
 	return result.translatedText;
 }
 
-export function createTranslateButton(tweet, contentElement) {
+function createTranslateButton(tweet, contentElement, detectedLang) {
 	const translateContainer = document.createElement("div");
 	translateContainer.className = "tweet-translate-container";
 
 	const translateBtn = document.createElement("button");
 	translateBtn.type = "button";
 	translateBtn.className = "tweet-translate-btn";
-	translateBtn.textContent = "Translate tweet";
+	translateBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-languages-icon lucide-languages"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg> Translate tweet`;
 
 	let isTranslated = false;
 	let originalContent = null;
-	let detectedLang = null;
 
 	translateBtn.addEventListener("click", async (e) => {
 		e.preventDefault();
@@ -215,27 +176,45 @@ export function createTranslateButton(tweet, contentElement) {
 
 		if (isTranslated) {
 			contentElement.innerHTML = originalContent;
-			translateBtn.textContent = `Translate tweet`;
+			translateBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-languages-icon lucide-languages"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg> Translate tweet`;
 			isTranslated = false;
 			return;
 		}
 
 		translateBtn.disabled = true;
-		translateBtn.textContent = "Translating…";
+		translateBtn.innerHTML = `
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <style>
+            .spinner_z9k8 {
+              transform-origin: center;
+              animation: spinner_StKS 0.75s infinite linear;
+            }
+
+            @keyframes spinner_StKS {
+              100% {
+                transform: rotate(360deg);
+              }
+            }
+          </style>
+          <path
+            d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+            opacity=".25"
+            fill="currentColor"
+          />
+          <path
+            d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
+            class="spinner_z9k8"
+            fill="currentColor"
+          />
+        </svg> Translating tweet…`;
 
 		try {
-			const textToTranslate = tweet.content || "";
-
-			if (!detectedLang) {
-				const detection = await detectLanguage(textToTranslate);
-				detectedLang = detection.lang;
-			}
-
-			const translated = await translateText(
-				textToTranslate,
-				detectedLang,
-				"en",
-			);
+			const translated = await translateText(tweet.content, detectedLang, "en");
 
 			originalContent = contentElement.innerHTML;
 
@@ -246,7 +225,7 @@ export function createTranslateButton(tweet, contentElement) {
 			contentElement.innerHTML = "";
 			contentElement.appendChild(translatedDiv);
 
-			translateBtn.textContent = `Show original (${getLanguageName(detectedLang)})`;
+			translateBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-languages-icon lucide-languages"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg> Show original (${getLanguageName(detectedLang)})`;
 			isTranslated = true;
 		} catch (err) {
 			console.error("Translation error:", err);
@@ -261,17 +240,36 @@ export function createTranslateButton(tweet, contentElement) {
 }
 
 export async function maybeAddTranslation(tweet, tweetElement, contentElement) {
-	if (!tweet.content || tweet.content.trim().length < 15) {
+	const cleanText = tweet.content
+		.replace(/@\w+/g, "")
+		.replace(/#\w+/g, "")
+		.replace(/https?:\/\/[^\s]+/g, "")
+		.replace(/:\w+:/g, "")
+		.replace(/[^\p{L}\p{N}\s]/gu, " ")
+		.trim();
+
+	if (!cleanText || cleanText.trim().length < 20) {
 		return;
 	}
 
-	const detection = await detectLanguage(tweet.content);
+	const { detectAll } = await import(
+		"https://unpkg.com/tinyld@1.3.4/dist/tinyld.normal.browser.js"
+	);
 
-	if (!isNonEnglish(detection.lang)) {
+	const detection = detectAll(cleanText)?.[0];
+
+	if (
+		!detection?.lang ||
+		["en", "und"].includes(detection?.lang) ||
+		detection.accuracy < 0.5
+	)
 		return;
-	}
 
-	const translateContainer = createTranslateButton(tweet, contentElement);
+	const translateContainer = createTranslateButton(
+		tweet,
+		contentElement,
+		detection?.lang,
+	);
 
 	const factCheck = tweetElement.querySelector(".fact-check-banner");
 	if (factCheck) {

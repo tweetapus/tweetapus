@@ -1,3 +1,4 @@
+import { initPullToRefresh } from "../../shared/pull-to-refresh.js";
 import {
 	createTweetSkeleton,
 	removeSkeletons,

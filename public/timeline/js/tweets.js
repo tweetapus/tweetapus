@@ -723,7 +723,10 @@ async function showInteractionsModal(tweetId, initialTab = "likes") {
 					userItem.addEventListener("click", async () => {
 						modal?.close();
 						const { default: openProfile } = await import("./profile.js");
-						openProfile(user.username);
+						openProfile(user.username, {
+							name: user.name,
+							avatar: user.avatar,
+						});
 					});
 
 					usersList.appendChild(userItem);
@@ -919,7 +922,10 @@ export const createTweetElement = (tweet, config = {}) => {
 			return;
 		}
 		import("./profile.js").then(({ default: openProfile }) => {
-			openProfile(tweet.author.username);
+			openProfile(tweet.author.username, {
+				name: tweet.author.name,
+				avatar: tweet.author.avatar,
+			});
 		});
 	});
 
@@ -939,7 +945,10 @@ export const createTweetElement = (tweet, config = {}) => {
 			return;
 		}
 		import("./profile.js").then(({ default: openProfile }) => {
-			openProfile(tweet.author.username);
+			openProfile(tweet.author.username, {
+				name: tweet.author.name,
+				avatar: tweet.author.avatar,
+			});
 		});
 	});
 
@@ -991,7 +1000,10 @@ export const createTweetElement = (tweet, config = {}) => {
 			e.preventDefault();
 			e.stopPropagation();
 			import("./profile.js").then(({ default: openProfile }) => {
-				openProfile(tweet.author.affiliate_with_profile.username);
+				openProfile(tweet.author.affiliate_with_profile.username, {
+					name: tweet.author.affiliate_with_profile.name,
+					avatar: tweet.author.affiliate_with_profile.avatar,
+				});
 			});
 		});
 
@@ -1084,7 +1096,10 @@ export const createTweetElement = (tweet, config = {}) => {
 			return;
 		}
 		import("./profile.js").then(({ default: openProfile }) => {
-			openProfile(tweet.author.username);
+			openProfile(tweet.author.username, {
+				name: tweet.author.name,
+				avatar: tweet.author.avatar,
+			});
 		});
 	});
 
@@ -3085,10 +3100,28 @@ export const createTweetElement = (tweet, config = {}) => {
 
 		const replyIndicator = document.createElement("div");
 		replyIndicator.className = "reply-indicator";
+		if (tweet.top_reply.author_replied) {
+			replyIndicator.classList.add("author-replied");
+		}
 		replyIndicator.innerText = `Replying to @${tweet.author.username}`;
 		topReplyEl.insertBefore(replyIndicator, topReplyEl.firstChild);
 
 		tweetEl.appendChild(topReplyEl);
+
+		if (tweet.top_reply.author_response) {
+			const authorResponseEl = createTweetElement(tweet.top_reply.author_response, {
+				clickToOpen: true,
+				showTopReply: false,
+				isTopReply: true,
+			});
+
+			const authorReplyIndicator = document.createElement("div");
+			authorReplyIndicator.className = "reply-indicator author-response-indicator";
+			authorReplyIndicator.innerText = `@${tweet.author.username} replied`;
+			authorResponseEl.insertBefore(authorReplyIndicator, authorResponseEl.firstChild);
+
+			tweetEl.appendChild(authorResponseEl);
+		}
 	}
 
 	if (clickToOpen) {

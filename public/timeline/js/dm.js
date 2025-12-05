@@ -2109,7 +2109,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		`;
 
 		try {
-			const { results, error } = await query(`/tenor/search?q=${encodeURIComponent(q)}&limit=12`);
+			const { results, error } = await query(
+				`/tenor/search?q=${encodeURIComponent(q)}&limit=12`,
+			);
 
 			if (error || !results || results.length === 0) {
 				dmGifResults.innerHTML = `
@@ -2122,8 +2124,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 			dmGifResults.innerHTML = "";
 			for (const gif of results) {
-				const gifUrl = gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url;
-				const previewUrl = gif.media_formats?.tinygif?.url || gif.media_formats?.nanogif?.url;
+				const gifUrl =
+					gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url;
+				const previewUrl =
+					gif.media_formats?.tinygif?.url || gif.media_formats?.nanogif?.url;
 
 				const gifEl = document.createElement("div");
 				gifEl.className = "dm-gif-item";

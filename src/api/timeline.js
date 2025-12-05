@@ -154,6 +154,31 @@ const getTopReply = db.query(`
   LIMIT 1
 `);
 
+const getReplyWithAuthorResponse = db.query(`
+  SELECT r.*, u.username, u.name, u.avatar, u.verified, u.gold, u.gray, u.checkmark_outline, u.avatar_outline, u.avatar_radius, u.affiliate, u.affiliate_with
+  FROM posts r
+  JOIN users u ON r.user_id = u.id
+  WHERE r.reply_to = ?
+  AND u.suspended = 0 AND u.shadowbanned = 0
+  AND EXISTS (
+    SELECT 1 FROM posts ar 
+    WHERE ar.reply_to = r.id 
+    AND ar.user_id = ?
+  )
+  ORDER BY r.like_count DESC, r.created_at ASC
+  LIMIT 1
+`);
+
+const getAuthorReplyToReply = db.query(`
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with
+  FROM posts
+  JOIN users ON posts.user_id = users.id
+  WHERE posts.reply_to = ? AND posts.user_id = ?
+  AND users.suspended = 0 AND users.shadowbanned = 0
+  ORDER BY posts.like_count DESC, posts.created_at ASC
+  LIMIT 1
+`);
+
 const getPollDataForTweet = (tweetId, userId) => {
 	const poll = getPollByPostId.get(tweetId);
 	if (!poll) return null;
@@ -255,8 +280,24 @@ const getQuotedTweetData = (quoteTweetId, userId) => {
 	};
 };
 
-const getTopReplyData = (tweetId, userId) => {
-	const topReply = getTopReply.get(tweetId);
+const getTopReplyData = (tweetId, userId, tweetAuthorId = null) => {
+	let topReply = null;
+	let authorReplied = false;
+	let authorReply = null;
+
+	if (tweetAuthorId) {
+		const replyWithAuthorResponse = getReplyWithAuthorResponse.get(tweetId, tweetAuthorId);
+		if (replyWithAuthorResponse) {
+			topReply = replyWithAuthorResponse;
+			authorReplied = true;
+			authorReply = getAuthorReplyToReply.get(replyWithAuthorResponse.id, tweetAuthorId);
+		}
+	}
+
+	if (!topReply) {
+		topReply = getTopReply.get(tweetId);
+	}
+
 	if (!topReply) return null;
 
 	const author = {
@@ -284,14 +325,48 @@ const getTopReplyData = (tweetId, userId) => {
 		}
 	}
 
-	return {
+	const result = {
 		...topReply,
 		author,
 		poll: getPollDataForTweet(topReply.id, userId),
 		quoted_tweet: getQuotedTweetData(topReply.quote_tweet_id, userId),
 		attachments: getTweetAttachments(topReply.id),
 		interactive_card: getCardDataForTweet(topReply.id),
+		author_replied: authorReplied,
 	};
+
+	if (authorReply) {
+		const arAuthor = {
+			username: authorReply.username,
+			name: authorReply.name,
+			avatar: authorReply.avatar,
+			verified: authorReply.verified || false,
+			gold: authorReply.gold || false,
+			gray: authorReply.gray || false,
+			avatar_radius: authorReply.avatar_radius || null,
+			checkmark_outline: authorReply.checkmark_outline || null,
+			avatar_outline: authorReply.avatar_outline || null,
+			affiliate: authorReply.affiliate || false,
+			affiliate_with: authorReply.affiliate_with || null,
+		};
+		if (arAuthor.affiliate && arAuthor.affiliate_with) {
+			const affiliateProfile = db
+				.query(
+					"SELECT id, username, name, avatar, verified, gold, avatar_radius FROM users WHERE id = ?",
+				)
+				.get(arAuthor.affiliate_with);
+			if (affiliateProfile) {
+				arAuthor.affiliate_with_profile = affiliateProfile;
+			}
+		}
+		result.author_response = {
+			...authorReply,
+			author: arAuthor,
+			attachments: getTweetAttachments(authorReply.id),
+		};
+	}
+
+	return result;
 };
 
 const summarizeArticle = (article) => {
@@ -627,11 +702,12 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 
 		const timeline = posts
 			.map((post) => {
-				const topReply = getTopReplyData(post.id, user.id);
+				const topReply = getTopReplyData(post.id, user.id, post.user_id);
 				const shouldShowTopReply =
 					topReply &&
-					post.like_count > 0 &&
-					topReply.like_count / post.like_count >= 0.8;
+					(topReply.author_replied ||
+						(post.like_count > 0 &&
+							topReply.like_count / post.like_count >= 0.8));
 
 				if (topReply) {
 					topReply.liked_by_user = userLikedPosts.has(topReply.id);
@@ -940,11 +1016,12 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 
 		const timeline = posts
 			.map((post) => {
-				const topReply = getTopReplyData(post.id, user.id);
+				const topReply = getTopReplyData(post.id, user.id, post.user_id);
 				const shouldShowTopReply =
 					topReply &&
-					post.like_count > 0 &&
-					topReply.like_count / post.like_count >= 0.8;
+					(topReply.author_replied ||
+						(post.like_count > 0 &&
+							topReply.like_count / post.like_count >= 0.8));
 
 				if (topReply) {
 					topReply.liked_by_user = userLikedPosts.has(topReply.id);
