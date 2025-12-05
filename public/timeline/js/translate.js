@@ -1,44 +1,45 @@
 import query from "./api.js";
 
 const LANGUAGE_NAMES = {
-	eng: "English",
-	spa: "Spanish",
-	fra: "French",
-	deu: "German",
-	ita: "Italian",
-	por: "Portuguese",
-	nld: "Dutch",
-	pol: "Polish",
-	rus: "Russian",
-	jpn: "Japanese",
-	zho: "Chinese",
-	kor: "Korean",
-	ara: "Arabic",
-	hin: "Hindi",
-	tur: "Turkish",
-	vie: "Vietnamese",
-	tha: "Thai",
-	ind: "Indonesian",
-	ces: "Czech",
-	ukr: "Ukrainian",
-	ron: "Romanian",
-	hun: "Hungarian",
-	ell: "Greek",
-	heb: "Hebrew",
-	swe: "Swedish",
-	dan: "Danish",
-	fin: "Finnish",
-	nor: "Norwegian",
-	cat: "Catalan",
-	bul: "Bulgarian",
-	hrv: "Croatian",
-	slk: "Slovak",
-	lit: "Lithuanian",
-	lav: "Latvian",
-	est: "Estonian",
-	slv: "Slovenian",
-	fas: "Persian",
+	en: "English",
+	es: "Spanish",
+	fr: "French",
+	de: "German",
+	it: "Italian",
+	pt: "Portuguese",
+	nl: "Dutch",
+	pl: "Polish",
+	ru: "Russian",
+	ja: "Japanese",
+	zh: "Chinese",
+	ko: "Korean",
+	ar: "Arabic",
+	hi: "Hindi",
+	tr: "Turkish",
+	vi: "Vietnamese",
+	th: "Thai",
+	id: "Indonesian",
+	cs: "Czech",
+	uk: "Ukrainian",
+	ro: "Romanian",
+	hu: "Hungarian",
+	el: "Greek",
+	he: "Hebrew",
+	sv: "Swedish",
+	da: "Danish",
+	fi: "Finnish",
+	no: "Norwegian",
+	ca: "Catalan",
+	bs: "Bosnian",
+	bg: "Bulgarian",
+	sl: "Slovenian",
+	sk: "Slovak",
+	lt: "Lithuanian",
+	lv: "Latvian",
+	et: "Estonian",
+	fa: "Persian",
 	und: "Unknown",
+	hr: "Croatian",
 };
 
 const ISO639_3_TO_1 = {
@@ -80,55 +81,6 @@ const ISO639_3_TO_1 = {
 	slv: "sl",
 	fas: "fa",
 };
-
-async function detectLanguage(text) {
-	if (!text || text.trim().length < 50) {
-		return { lang: "und", confidence: 0 };
-	}
-
-	const cleanText = text
-		.replace(/@\w+/g, "")
-		.replace(/#\w+/g, "")
-		.replace(/https?:\/\/[^\s]+/g, "")
-		.replace(/:\w+:/g, "")
-		.replace(/[^\p{L}\p{N}\s]/gu, " ")
-		.trim();
-
-	if (cleanText.length < 50) {
-		return { lang: "und", confidence: 0 };
-	}
-
-	const franc = await loadFranc();
-	if (!franc) {
-		return { lang: "und", confidence: 0 };
-	}
-
-	const detected = franc.franc(cleanText, {
-		minLength: 30,
-		only: [
-			"eng",
-			"spa",
-			"fra",
-			"deu",
-			"ita",
-			"por",
-			"nld",
-			"pol",
-			"rus",
-			"jpn",
-			"zho",
-			"kor",
-			"ara",
-			"hin",
-			"tur",
-			"vie",
-			"ind",
-			"ukr",
-		],
-	});
-
-	return { lang: detected, confidence: detected !== "und" ? 0.85 : 0 };
-}
 
 function getLanguageName(langCode) {
 	return LANGUAGE_NAMES[langCode] || langCode;

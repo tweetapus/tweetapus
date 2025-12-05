@@ -723,10 +723,7 @@ async function showInteractionsModal(tweetId, initialTab = "likes") {
 					userItem.addEventListener("click", async () => {
 						modal?.close();
 						const { default: openProfile } = await import("./profile.js");
-						openProfile(user.username, {
-							name: user.name,
-							avatar: user.avatar,
-						});
+						openProfile(user.username);
 					});
 
 					usersList.appendChild(userItem);
@@ -922,10 +919,7 @@ export const createTweetElement = (tweet, config = {}) => {
 			return;
 		}
 		import("./profile.js").then(({ default: openProfile }) => {
-			openProfile(tweet.author.username, {
-				name: tweet.author.name,
-				avatar: tweet.author.avatar,
-			});
+			openProfile(tweet.author.username);
 		});
 	});
 
@@ -945,10 +939,7 @@ export const createTweetElement = (tweet, config = {}) => {
 			return;
 		}
 		import("./profile.js").then(({ default: openProfile }) => {
-			openProfile(tweet.author.username, {
-				name: tweet.author.name,
-				avatar: tweet.author.avatar,
-			});
+			openProfile(tweet.author.username);
 		});
 	});
 
@@ -1000,10 +991,7 @@ export const createTweetElement = (tweet, config = {}) => {
 			e.preventDefault();
 			e.stopPropagation();
 			import("./profile.js").then(({ default: openProfile }) => {
-				openProfile(tweet.author.affiliate_with_profile.username, {
-					name: tweet.author.affiliate_with_profile.name,
-					avatar: tweet.author.affiliate_with_profile.avatar,
-				});
+				openProfile(tweet.author.affiliate_with_profile.username);
 			});
 		});
 
@@ -1096,10 +1084,7 @@ export const createTweetElement = (tweet, config = {}) => {
 			return;
 		}
 		import("./profile.js").then(({ default: openProfile }) => {
-			openProfile(tweet.author.username, {
-				name: tweet.author.name,
-				avatar: tweet.author.avatar,
-			});
+			openProfile(tweet.author.username);
 		});
 	});
 

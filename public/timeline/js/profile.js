@@ -91,7 +91,7 @@ const getLocationDisplay = (data) => {
 	return "Unknown";
 };
 
-export default async function openProfile(username, preloadedData = null) {
+export default async function openProfile(username) {
 	currentUsername = username;
 
 	switchPage("profile", {
@@ -104,31 +104,12 @@ export default async function openProfile(username, preloadedData = null) {
 			const existingContent = profileContainer.innerHTML;
 			profileContainer.innerHTML = "";
 
-			if (preloadedData) {
-				const preloadHeader = document.createElement("div");
-				preloadHeader.className = "profile-preload-header";
-				preloadHeader.innerHTML = `
-					<div class="profile-preload-avatar-wrapper">
-						<img src="${preloadedData.avatar || "/public/shared/assets/img/default-avatar.png"}" alt="" class="profile-preload-avatar">
-					</div>
-					<div class="profile-preload-info">
-						<span class="profile-preload-name">${escapeHTML(preloadedData.name || username)}</span>
-						<span class="profile-preload-username">@${escapeHTML(username)}</span>
-					</div>
-				`;
-				profileContainer.appendChild(preloadHeader);
-			}
-
 			const skeleton = createProfileSkeleton();
 			profileContainer.appendChild(skeleton);
 
 			const data = await query(`/profile/${username}`);
 
 			skeleton.remove();
-			const preloadHeader = profileContainer.querySelector(
-				".profile-preload-header",
-			);
-			if (preloadHeader) preloadHeader.remove();
 			profileContainer.innerHTML = existingContent;
 
 			if (data.error) {

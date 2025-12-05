@@ -634,7 +634,7 @@ export default new Elysia({ prefix: "/dm", tags: ["DM"] })
 				files: t.Optional(
 					t.Array(
 						t.Object({
-							hash: t.String(),
+							hash: t.Union([t.String(), t.Null()]),
 							name: t.String(),
 							type: t.String(),
 							size: t.Number(),

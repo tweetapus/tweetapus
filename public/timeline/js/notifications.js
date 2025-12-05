@@ -2,7 +2,6 @@ import {
 	NOTIFICATION_ICON_CLASSES,
 	NOTIFICATION_ICON_MAP,
 } from "../../shared/notification-icons.js";
-import { initPullToRefresh } from "../../shared/pull-to-refresh.js";
 import {
 	createNotificationSkeleton,
 	removeSkeletons,
@@ -24,7 +23,6 @@ let hasMoreNotifications = true;
 let oldestNotificationId = null;
 let notificationsScrollHandler = null;
 let tabsInitialized = false;
-let pullToRefreshInstance = null;
 
 function displayUnreadCount(count) {
 	const countElement = document.getElementById("notificationCount");
@@ -76,20 +74,10 @@ async function openNotifications(isDirectClick = true) {
 				window.removeEventListener("scroll", notificationsScrollHandler);
 				notificationsScrollHandler = null;
 			}
-			if (pullToRefreshInstance) {
-				pullToRefreshInstance.destroy();
-				pullToRefreshInstance = null;
-			}
 		},
 	});
 
 	initializeNotificationTabs();
-
-	if (!pullToRefreshInstance) {
-		pullToRefreshInstance = initPullToRefresh(".notifications", async () => {
-			await loadNotifications();
-		});
-	}
 
 	if (isDirectClick) {
 		setTimeout(() => window.scrollTo(0, 0), 0);
