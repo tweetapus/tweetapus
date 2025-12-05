@@ -1,4 +1,4 @@
-CC = gcc
+CC = cc
 CFLAGS = -Wall -Wextra -O2 -fPIC
 SOURCES = algorithm.c
 OBJECTS = $(SOURCES:.c=.o)
