@@ -570,13 +570,16 @@ function createConversationItem(conversation) {
 			const radius =
 				p.avatar_radius !== null && p.avatar_radius !== undefined
 					? `${p.avatar_radius}px`
-					: (p.gold || p.gray)
+					: p.gold || p.gray
 						? `4px`
 						: `50px`;
 			const img = document.createElement("img");
 			img.src = p.avatar || "/public/shared/assets/default-avatar.svg";
 			img.alt = p.name || p.username;
 			img.style.borderRadius = radius;
+			img.setAttribute("loading", "lazy");
+			img.setAttribute("decoding", "async");
+			img.setAttribute("draggable", "false");
 			groupAvatars.appendChild(img);
 		}
 
@@ -594,7 +597,7 @@ function createConversationItem(conversation) {
 			? singleParticipant.avatar_radius !== null &&
 				singleParticipant.avatar_radius !== undefined
 				? `${singleParticipant.avatar_radius}px`
-				: (singleParticipant.gold || singleParticipant.gray)
+				: singleParticipant.gold || singleParticipant.gray
 					? `4px`
 					: `50px`
 			: `50px`;
@@ -736,7 +739,7 @@ function renderConversationHeader() {
 		const radius =
 			p.avatar_radius !== null && p.avatar_radius !== undefined
 				? `${p.avatar_radius}px`
-				: (p.gold || p.gray)
+				: p.gold || p.gray
 					? `4px`
 					: `50px`;
 		const img = document.createElement("img");
@@ -817,12 +820,14 @@ function renderMessages() {
 }
 
 function createMessageElement(message, currentUser) {
+	message.content = message.content.trim() || "";
+
 	const isOwn = message.username === currentUser;
 	const avatar = message.avatar || "/public/shared/assets/default-avatar.svg";
 	const radius =
 		message.avatar_radius !== null && message.avatar_radius !== undefined
 			? `${message.avatar_radius}px`
-			: (message.gold || message.gray)
+			: message.gold || message.gray
 				? `4px`
 				: `50px`;
 	const time = formatTime(new Date(message.created_at));
@@ -870,6 +875,17 @@ function createMessageElement(message, currentUser) {
 		bubble.className = "dm-message-bubble";
 		bubble.innerHTML = linkifyDMText(message.content || "");
 		content.appendChild(bubble);
+
+		const matches =
+			message.content.match(
+				/^(?:\p{Extended_Pictographic}(?:\uFE0F|\u200D(?:\p{Extended_Pictographic}(?:\uFE0F)?))*){1,3}$/gu,
+			) || [];
+
+		if (matches.length > 0) {
+			bubble.style.backgroundColor = "transparent";
+			bubble.style.padding = "0";
+			bubble.style.fontSize = "40px";
+		}
 	}
 
 	if (message.attachments?.length > 0) {
@@ -1664,7 +1680,7 @@ function renderAddParticipantSuggestions(users) {
 			const radius =
 				user.avatar_radius !== null && user.avatar_radius !== undefined
 					? `${user.avatar_radius}px`
-					: (user.gold || user.gray)
+					: user.gold || user.gray
 						? `4px`
 						: `50px`;
 			const escapedUsername = (user.username || "")
@@ -1812,7 +1828,7 @@ function renderUserSuggestions(users) {
 			const radius =
 				user.avatar_radius !== null && user.avatar_radius !== undefined
 					? `${user.avatar_radius}px`
-					: (user.gold || user.gray)
+					: user.gold || user.gray
 						? `4px`
 						: `50px`;
 			const escapedUsername = (user.username || "")
@@ -2369,7 +2385,7 @@ function renderReplyPreview() {
 	content.className = "dm-reply-preview-content";
 
 	const label = document.createElement("span");
-	label.className = "dm-reply-preview-label"; // check discord ASAP, Tr.
+	label.className = "dm-reply-preview-label";
 	label.textContent = `Replying to ${replyingTo.authorName}`;
 	content.appendChild(label);
 
