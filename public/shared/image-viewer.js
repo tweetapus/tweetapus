@@ -5,9 +5,19 @@ export function openImageFullscreen(imageUrl, imageName = "image") {
   const container = document.createElement("div");
   container.className = "image-fullscreen-container";
 
+  container.addEventListener("click", (e) => {
+    e.stopPropagation();
+
+    if (e.target === container) {
+      overlay.classList.add("closing");
+      setTimeout(() => overlay.remove(), 300);
+    }
+  });
+
   const img = document.createElement("img");
   img.src = imageUrl;
   img.alt = imageName;
+  img.draggable = false;
 
   const closeButton = document.createElement("button");
   closeButton.className = "image-fullscreen-close";

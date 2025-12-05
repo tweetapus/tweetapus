@@ -1132,6 +1132,7 @@ nav {
   pointer-events: auto;
   z-index: 10;
   user-select: none;
+  backdrop-filter: blur(2px);
 
   a {
     color: #ffffffcc;

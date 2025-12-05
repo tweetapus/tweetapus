@@ -18,7 +18,7 @@ export default async function openTweet(
 
 	let finalThread = null;
 	let finalTweet = tweet;
-	
+
 	const sourceThread = threadPostsCache || tweet.parentsCache;
 
 	if (sourceThread && sourceThread.length > 0) {
@@ -129,14 +129,6 @@ export default async function openTweet(
 			repliesContainer.className = "tweet-replies-container";
 			page.appendChild(repliesContainer);
 
-			setTimeout(() => {
-				const mainTweet = page.querySelector('[data-main-tweet="true"]');
-				if (mainTweet) {
-					mainTweet.scrollIntoView({ block: "start" });
-					window.scrollBy(0, -200);
-				}
-			}, 100);
-
 			if (repliesCache && repliesCache.length > 0) {
 				const threadForReplies = finalThread || [finalTweet];
 
@@ -215,13 +207,11 @@ export default async function openTweet(
 							composer.insertAdjacentElement("beforebegin", postEl);
 						});
 
-						setTimeout(() => {
-							const mainTweet = page.querySelector('[data-main-tweet="true"]');
-							if (mainTweet) {
-								mainTweet.scrollIntoView({ block: "start" });
-								window.scrollBy(0, -200);
-							}
-						}, 50);
+						const mainTweet = page.querySelector('[data-main-tweet="true"]');
+						if (mainTweet) {
+							mainTweet.scrollIntoView({ block: "start" });
+							window.scrollBy(0, -200);
+						}
 					}
 				}
 
@@ -246,6 +236,12 @@ export default async function openTweet(
 				} else if (needsRepliesData) {
 					removeSkeletons(skeletons);
 				}
+			}
+
+			const mainTweet = page.querySelector('[data-main-tweet="true"]');
+			if (mainTweet) {
+				mainTweet.scrollIntoView({ block: "start" });
+				window.scrollBy(0, -200);
 			}
 
 			if (scrollHandler) {

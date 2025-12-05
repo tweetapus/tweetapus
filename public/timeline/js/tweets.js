@@ -1596,7 +1596,6 @@ export const createTweetElement = (tweet, config = {}) => {
 				img.alt = attachment.file_name;
 				img.setAttribute("loading", "lazy");
 
-				// Check for Unsplash attribution
 				if (attachment.file_name === "unsplash.jpg" && attachment.file_hash) {
 					try {
 						const attribution = JSON.parse(attachment.file_hash);
@@ -1604,7 +1603,7 @@ export const createTweetElement = (tweet, config = {}) => {
 							const attributionEl = document.createElement("div");
 							attributionEl.className = "unsplash-attribution-badge";
 							attributionEl.innerHTML = `
-								Photo by <a href="${attribution.user_link}?utm_source=tweetapus&utm_medium=referral" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">${attribution.user_name}</a> on <a href="https://unsplash.com/?utm_source=tweetapus&utm_medium=referral" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Unsplash</a>
+								via <a href="${attribution.user_link}?utm_source=tweetapus&utm_medium=referral" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">${attribution.user_name}</a> / <a href="https://unsplash.com/?utm_source=tweetapus&utm_medium=referral" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation();">Unsplash</a>
 							`;
 							attachmentEl.appendChild(attributionEl);
 						}
@@ -1641,6 +1640,7 @@ export const createTweetElement = (tweet, config = {}) => {
 					}
 					e.preventDefault();
 					e.stopPropagation();
+					
 					const { openImageFullscreen } = await import(
 						"../../shared/image-viewer.js"
 					);

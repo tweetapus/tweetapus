@@ -1,13 +1,14 @@
-- better settings, and fixing settings ui 
+- better settings, and fixing settings ui
 - automated spam/nsfw detection using openapi or perspective api
 - onboarding
 
 - fix not being able to upload 2 unsplash images in a single tweet
-- autodisplay thread replies 
+- autodisplay thread replies
 - replies algo (author replied first, following and most liked/replied/retweeted after)
 - pull to refresh on timeline and notifications
 - preload autor name, PFP and username on profile page from tweet click
 - dms: big emojis and clean reply indicator
+- fix unsplash images and sometimes checkmarks not showing up on "share as image"
 
 **other things:**
 
