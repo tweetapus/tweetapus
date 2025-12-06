@@ -54,7 +54,7 @@ export default async function openTweet(
 
 	let isLoadingMoreReplies = false;
 	let hasMoreReplies = false;
-	let oldestReplyId = null;
+	let currentOffset = 0;
 	let scrollHandler = null;
 
 	const renderedTweets = new Map();
@@ -142,8 +142,9 @@ export default async function openTweet(
 					});
 					replyEl.setAttribute("data-reply-id", reply.id);
 					repliesContainer.appendChild(replyEl);
-					oldestReplyId = reply.id;
 				});
+				currentOffset = repliesCache.length;
+				hasMoreReplies = repliesCache.length >= 20;
 			}
 
 			const needsThreadData = !finalThread && finalTweet.author;
@@ -233,8 +234,8 @@ export default async function openTweet(
 						});
 						replyEl.setAttribute("data-reply-id", reply.id);
 						repliesContainer.appendChild(replyEl);
-						oldestReplyId = reply.id;
 					});
+					currentOffset = repliesCache.length;
 				} else if (needsRepliesData) {
 					removeSkeletons(skeletons);
 				}
@@ -259,7 +260,7 @@ export default async function openTweet(
 				scrollTimeout = setTimeout(async () => {
 					scrollTimeout = null;
 
-					if (isLoadingMoreReplies || !hasMoreReplies || !oldestReplyId) {
+					if (isLoadingMoreReplies || !hasMoreReplies) {
 						return;
 					}
 
@@ -277,7 +278,7 @@ export default async function openTweet(
 
 						try {
 							const apiOutput = await query(
-								`/tweets/${finalTweet.id}?before=${oldestReplyId}&limit=20`,
+								`/tweets/${finalTweet.id}?offset=${currentOffset}&limit=20`,
 							);
 
 							removeSkeletons(loadMoreSkeletons);
@@ -293,10 +294,10 @@ export default async function openTweet(
 										});
 										replyEl.setAttribute("data-reply-id", reply.id);
 										repliesContainer.appendChild(replyEl);
-										oldestReplyId = reply.id;
 									}
 								});
 
+								currentOffset += apiOutput.replies.length;
 								hasMoreReplies = apiOutput.hasMoreReplies || false;
 							} else {
 								hasMoreReplies = false;

@@ -149,6 +149,7 @@ const getTweetReplies = (
 	isAdmin,
 	tweetAuthorId,
 	limit,
+	offset = 0,
 ) => {
 	return db
 		.query(`
@@ -162,7 +163,7 @@ const getTweetReplies = (
 		AND (users.suspended = 0)
 		AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
 		ORDER BY is_not_author ASC, is_not_following ASC, engagement DESC, posts.created_at ASC
-		LIMIT ?
+		LIMIT ? OFFSET ?
 	`)
 		.all(
 			tweetAuthorId,
@@ -171,39 +172,7 @@ const getTweetReplies = (
 			currentUserId,
 			isAdmin,
 			limit,
-		);
-};
-
-const getTweetRepliesBefore = (
-	replyToId,
-	beforeId,
-	currentUserId,
-	isAdmin,
-	tweetAuthorId,
-	limit,
-) => {
-	return db
-		.query(`
-		SELECT posts.*,
-			CASE WHEN posts.user_id = ? THEN 0 ELSE 1 END as is_not_author,
-			CASE WHEN EXISTS(SELECT 1 FROM follows WHERE follows.follower_id = ? AND follows.following_id = posts.user_id) THEN 0 ELSE 1 END as is_not_following,
-			(posts.like_count + posts.reply_count + posts.retweet_count) as engagement
-		FROM posts
-		JOIN users ON posts.user_id = users.id
-		WHERE reply_to = ? AND posts.created_at < (SELECT created_at FROM posts WHERE id = ?)
-		AND (users.suspended = 0)
-		AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
-		ORDER BY is_not_author ASC, is_not_following ASC, engagement DESC, posts.created_at ASC
-		LIMIT ?
-	`)
-		.all(
-			tweetAuthorId,
-			currentUserId,
-			replyToId,
-			beforeId,
-			currentUserId,
-			isAdmin,
-			limit,
+			offset,
 		);
 };
 
@@ -1261,7 +1230,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 	})
 	.get("/:id", async ({ params, jwt, headers, query }) => {
 		const { id } = params;
-		const { before, limit = 20 } = query;
+		const { offset = 0, limit = 20 } = query;
 
 		const tweet = getTweetById.get(id);
 		if (!tweet) {
@@ -1302,22 +1271,14 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 		);
 
 		let threadPosts = getTweetWithThread.all(id);
-		let replies = before
-			? getTweetRepliesBefore(
-					id,
-					before,
-					currentUser.id,
-					currentUser.admin ? 1 : 0,
-					tweet.user_id,
-					parseInt(limit, 10),
-				)
-			: getTweetReplies(
-					id,
-					currentUser.id,
-					currentUser.admin ? 1 : 0,
-					tweet.user_id,
-					parseInt(limit, 10),
-				);
+		let replies = getTweetReplies(
+			id,
+			currentUser.id,
+			currentUser.admin ? 1 : 0,
+			tweet.user_id,
+			parseInt(limit, 10),
+			parseInt(offset, 10),
+		);
 
 		const allPostIds = [
 			...threadPosts.map((p) => p.id),

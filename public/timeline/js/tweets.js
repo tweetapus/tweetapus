@@ -564,7 +564,7 @@ const createPollElement = (poll, tweet) => {
 				<div class="poll-option-content">
 					<span class="poll-option-text">${option.option_text
 						.replaceAll("<", "&lt;")
-						.replaceAll(">", "&gt;")}</span>
+						.replaceAll(">", "&gt;")}${poll.userVote === option.id ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>` : ""}</span>
 					<span class="poll-option-percentage">${option.percentage}%</span>
 				</div>
 			`;
@@ -574,7 +574,7 @@ const createPollElement = (poll, tweet) => {
 				<div class="poll-option-content">
 					<span class="poll-option-text">${option.option_text
 						.replaceAll("<", "&lt;")
-						.replaceAll(">", "&gt;")}</span>
+						.replaceAll(">", "&gt;")}${poll.userVote === option.id ? `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>` : ""}</span>
 				</div>
 			`;
 			optionEl.addEventListener("click", (e) => {
@@ -673,7 +673,10 @@ const updatePollDisplay = (pollElement, poll) => {
 			<div class="poll-option-content">
 				<span class="poll-option-text">${option.option_text
 					.replaceAll("<", "&lt;")
-					.replaceAll(">", "&gt;")}</span>
+					.replaceAll(
+						">",
+						"&gt;",
+					)} <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-icon lucide-circle-check"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg></span>
 				<span class="poll-option-percentage">${option.percentage}%</span>
 			</div>
 		`;

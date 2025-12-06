@@ -2482,14 +2482,31 @@ nav {
     }
 
     &:has(.voted) {
+      .poll-option {
+        pointer-events: none;
+        user-select: none;
+      }
+
       .poll-option:not(.voted) {
-        border-color: var(--border-tertiary);
+        border-color: var(--border-primary);
       }
 
       .poll-option-text {
         text-align: left !important;
         font-weight: 400 !important;
         color: var(--text-primary) !important;
+
+        &:is(.voted .poll-option-text) {
+          display: flex;
+          align-items: center;
+          gap: 5px;
+
+          svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+          }
+        }
       }
     }
 

@@ -60,7 +60,8 @@ const getFollowingTimelinePosts = db.query(`
 `);
 
 const getFollowingTimelinePostsBefore = db.query(`
-  SELECT posts.* FROM posts 
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost, users.label_type
+  FROM posts 
   JOIN follows ON posts.user_id = follows.following_id
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
@@ -934,6 +935,11 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 		}
 
 		const badgesMap = getBadgesForUsers(posts.map((p) => p.user_id));
+
+		const userBlocks = db
+			.query("SELECT blocked_id FROM blocks WHERE blocker_id = ?")
+			.all(user.id);
+		const blockedUserIds = new Set(userBlocks.map((b) => b.blocked_id));
 
 		const userMap = {};
 		posts.forEach((post) => {
