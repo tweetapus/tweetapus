@@ -933,32 +933,32 @@ export default new Elysia({ prefix: "/timeline", tags: ["Timeline"] })
 			posts = posts.slice(0, limit);
 		}
 
-	const badgesMap = getBadgesForUsers(posts.map((p) => p.user_id));
+		const badgesMap = getBadgesForUsers(posts.map((p) => p.user_id));
 
-	const userMap = {};
-	posts.forEach((post) => {
-		const author = {
-			id: post.user_id,
-			username: post.username,
-			name: post.name,
-			avatar: post.avatar,
-			verified: post.verified || false,
-			gold: post.gold || false,
-			gray: post.gray || false,
-			avatar_radius: post.avatar_radius || null,
-			checkmark_outline: post.checkmark_outline || null,
-			avatar_outline: post.avatar_outline || null,
-			affiliate: post.affiliate || false,
-			affiliate_with: post.affiliate_with || null,
-			selected_community_tag: post.selected_community_tag || null,
-			blocked_by_user: blockedUserIds.has(post.user_id),
-		};
+		const userMap = {};
+		posts.forEach((post) => {
+			const author = {
+				id: post.user_id,
+				username: post.username,
+				name: post.name,
+				avatar: post.avatar,
+				verified: post.verified || false,
+				gold: post.gold || false,
+				gray: post.gray || false,
+				avatar_radius: post.avatar_radius || null,
+				checkmark_outline: post.checkmark_outline || null,
+				avatar_outline: post.avatar_outline || null,
+				affiliate: post.affiliate || false,
+				affiliate_with: post.affiliate_with || null,
+				selected_community_tag: post.selected_community_tag || null,
+				blocked_by_user: blockedUserIds.has(post.user_id),
+			};
 
-		if (badgesMap.has(post.user_id)) {
-			author.custom_badges = badgesMap.get(post.user_id);
-		}
+			if (badgesMap.has(post.user_id)) {
+				author.custom_badges = badgesMap.get(post.user_id);
+			}
 
-		if (author.affiliate && author.affiliate_with) {
+			if (author.affiliate && author.affiliate_with) {
 				const affiliateProfile = db
 					.query(
 						"SELECT id, username, name, avatar, verified, gold, avatar_radius FROM users WHERE id = ?",

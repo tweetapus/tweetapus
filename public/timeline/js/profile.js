@@ -1572,6 +1572,7 @@ ${
 		updateFollowButton(isFollowing, profile.blockedProfile);
 		setupNotificationButton(profile.username, profile.notifyTweets || false);
 		setupDmButton(profile.username);
+		setupProfileDropdownButton();
 		try {
 			const dmBtnCheck = document.getElementById("profileDmBtn");
 			const pc = document.getElementById("profileContainer");
@@ -1934,6 +1935,15 @@ function setupDmButton(username) {
 
 		const { openOrCreateConversation } = await import("./dm.js");
 		openOrCreateConversation(username);
+	};
+}
+
+function setupProfileDropdownButton() {
+	const btn = document.getElementById("profileDropdownBtn");
+	if (!btn) return;
+
+	btn.onclick = () => {
+		handleProfileDropdown(btn);
 	};
 }
 

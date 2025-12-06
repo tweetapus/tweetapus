@@ -3468,19 +3468,17 @@ async function showSpamScoreDetails(username) {
 						</div>
 					</div>
 
-					<div style="background: linear-gradient(135deg, ${scoreColor}15 0%, ${scoreColor}05 100%); border-radius: 12px; padding: 20px; border: 1px solid ${scoreColor}30;">
 						<h3 style="margin: 0 0 12px 0; font-size: 16px; color: var(--text-primary); display: flex; align-items: center; gap: 8px;">
 							<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
-							Action Items to Improve Your Score
+							What you can do to improve your score
 						</h3>
 						<ul style="margin: 0; padding-left: 20px; color: var(--text-secondary); font-size: 14px; line-height: 1.8;">
 							${getOverallAdvice()}
 						</ul>
-					</div>
 
 					<details style="margin-top: 20px;">
 						<summary style="cursor: pointer; padding: 12px; border-radius: 8px; color: var(--text-primary); font-size: 14px; user-select: none; text-decoration: underline;">
-							Technical Details
+							Technical details
 						</summary>
 						<div style="padding: 16px; font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-radius: 0 0 8px 8px; margin-top: -8px;">
 							<p style="margin: 0 0 8px 0;"><strong>Score Calculation:</strong> Each indicator has a weight representing its importance. Your final score is a logistic-transformed weighted sum.</p>
