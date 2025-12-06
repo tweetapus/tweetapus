@@ -1794,8 +1794,12 @@ class AdminPanel {
 			}
 
 			const [blocksData, blockedByData] = await Promise.all([
-				this.apiCall(`/api/admin/users/${userId}/blocks`).catch(() => ({ blocks: [] })),
-				this.apiCall(`/api/admin/users/${userId}/blocked-by`).catch(() => ({ blockedBy: [] })),
+				this.apiCall(`/api/admin/users/${userId}/blocks`).catch(() => ({
+					blocks: [],
+				})),
+				this.apiCall(`/api/admin/users/${userId}/blocked-by`).catch(() => ({
+					blockedBy: [],
+				})),
 			]);
 
 			const { user, suspensions, recentPosts, affiliate } = userData;
@@ -9145,7 +9149,8 @@ class AdminPanel {
 	renderBlocksTable(blocks) {
 		const container = document.getElementById("blocksTable");
 		if (!blocks || blocks.length === 0) {
-			container.innerHTML = '<p class="text-muted text-center">No blocking relationships found</p>';
+			container.innerHTML =
+				'<p class="text-muted text-center">No blocking relationships found</p>';
 			return;
 		}
 
@@ -9160,33 +9165,37 @@ class AdminPanel {
 						</tr>
 					</thead>
 					<tbody>
-						${blocks.map(block => `
+						${blocks
+							.map(
+								(block) => `
 							<tr>
 								<td>
 									<div class="d-flex align-items-center">
-										${block.blocker_avatar 
-											? `<img src="${block.blocker_avatar}" class="user-avatar me-2" alt="Avatar" style="border-radius: 50%;">`
-											: `<div class="user-avatar me-2 bg-secondary rounded-circle d-flex align-items-center justify-content-center">
+										${
+											block.blocker_avatar
+												? `<img src="${block.blocker_avatar}" class="user-avatar me-2" alt="Avatar" style="border-radius: 50%;">`
+												: `<div class="user-avatar me-2 bg-secondary rounded-circle d-flex align-items-center justify-content-center">
 												<i class="bi bi-person text-white"></i>
 											</div>`
 										}
 										<div>
 											<strong style="cursor: pointer; color: #0d6efd;" onclick="adminPanel.findAndViewUser('${this.escapeHtml(block.blocker_username)}')">@${this.escapeHtml(block.blocker_username)}</strong>
-											${block.blocker_name ? `<br><small class="text-muted">${this.escapeHtml(block.blocker_name)}</small>` : ''}
+											${block.blocker_name ? `<br><small class="text-muted">${this.escapeHtml(block.blocker_name)}</small>` : ""}
 										</div>
 									</div>
 								</td>
 								<td>
 									<div class="d-flex align-items-center">
-										${block.blocked_avatar 
-											? `<img src="${block.blocked_avatar}" class="user-avatar me-2" alt="Avatar" style="border-radius: 50%;">`
-											: `<div class="user-avatar me-2 bg-secondary rounded-circle d-flex align-items-center justify-content-center">
+										${
+											block.blocked_avatar
+												? `<img src="${block.blocked_avatar}" class="user-avatar me-2" alt="Avatar" style="border-radius: 50%;">`
+												: `<div class="user-avatar me-2 bg-secondary rounded-circle d-flex align-items-center justify-content-center">
 												<i class="bi bi-person text-white"></i>
 											</div>`
 										}
 										<div>
 											<strong style="cursor: pointer; color: #0d6efd;" onclick="adminPanel.findAndViewUser('${this.escapeHtml(block.blocked_username)}')">@${this.escapeHtml(block.blocked_username)}</strong>
-											${block.blocked_name ? `<br><small class="text-muted">${this.escapeHtml(block.blocked_name)}</small>` : ''}
+											${block.blocked_name ? `<br><small class="text-muted">${this.escapeHtml(block.blocked_name)}</small>` : ""}
 										</div>
 									</div>
 								</td>
@@ -9194,7 +9203,9 @@ class AdminPanel {
 									<small>${this.formatDate(block.created_at)}</small>
 								</td>
 							</tr>
-						`).join('')}
+						`,
+							)
+							.join("")}
 					</tbody>
 				</table>
 			</div>
@@ -9202,24 +9213,28 @@ class AdminPanel {
 	}
 
 	updateBlockerDeleteCount() {
-		const checkboxes = document.querySelectorAll('.blocker-checkbox:checked');
+		const checkboxes = document.querySelectorAll(".blocker-checkbox:checked");
 		const count = checkboxes.length;
-		const countEl = document.getElementById('blockerDeleteCount');
-		const btn = document.getElementById('massDeleteBlockersBtn');
+		const countEl = document.getElementById("blockerDeleteCount");
+		const btn = document.getElementById("massDeleteBlockersBtn");
 		if (countEl) countEl.textContent = count;
 		if (btn) btn.disabled = count === 0;
 	}
 
 	async massDeleteBlockers(targetUserId) {
-		const checkboxes = document.querySelectorAll('.blocker-checkbox:checked');
-		const userIds = Array.from(checkboxes).map(cb => cb.value);
-		
+		const checkboxes = document.querySelectorAll(".blocker-checkbox:checked");
+		const userIds = Array.from(checkboxes).map((cb) => cb.value);
+
 		if (userIds.length === 0) {
-			this.showError('No users selected');
+			this.showError("No users selected");
 			return;
 		}
 
-		if (!confirm(`Delete ${userIds.length} selected user(s) who blocked this user? This action cannot be undone.`)) {
+		if (
+			!confirm(
+				`Delete ${userIds.length} selected user(s) who blocked this user? This action cannot be undone.`,
+			)
+		) {
 			return;
 		}
 
@@ -9229,7 +9244,7 @@ class AdminPanel {
 		for (const userId of userIds) {
 			try {
 				await this.apiCall(`/api/admin/users/${userId}`, {
-					method: 'DELETE',
+					method: "DELETE",
 				});
 				successCount++;
 			} catch {
@@ -9238,12 +9253,14 @@ class AdminPanel {
 		}
 
 		if (successCount > 0) {
-			this.showSuccess(`Deleted ${successCount} user(s)${failCount > 0 ? ` (${failCount} failed)` : ''}`);
-			bootstrap.Modal.getInstance(document.getElementById('userModal'))?.hide();
+			this.showSuccess(
+				`Deleted ${successCount} user(s)${failCount > 0 ? ` (${failCount} failed)` : ""}`,
+			);
+			bootstrap.Modal.getInstance(document.getElementById("userModal"))?.hide();
 			this.userCache.delete(targetUserId);
 			this.loadUsers(this.currentPage.users);
 		} else {
-			this.showError('Failed to delete any users');
+			this.showError("Failed to delete any users");
 		}
 	}
 }

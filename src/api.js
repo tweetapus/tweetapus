@@ -332,6 +332,30 @@ export default new Elysia({
 			},
 		},
 	)
+	.get("/transparency/:user/asn", async ({ params, jwt, headers }) => {
+		const { user } = params;
+		if (!user) {
+			set.status = 400;
+			return { error: "User parameter is required" };
+		}
+
+		const userRecord = db
+			.query(
+				"SELECT * FROM user_ips WHERE user_id = ? ORDER BY last_used_at DESC LIMIT 1",
+			)
+			.get(user);
+
+		if (!userRecord) {
+			set.status = 404;
+			return { error: "User not found" };
+		}
+
+		const { announcedBy } = await (
+			await fetch(`https://ip2asn.ipinfo.app/lookup/${userRecord.ip_address}`)
+		).json();
+
+		return { asn: announcedBy?.[0]?.name || null };
+	})
 	.get("/owoembed", ({ query }) => {
 		const { author, handle, stats } = query;
 
