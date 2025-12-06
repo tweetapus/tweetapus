@@ -1870,6 +1870,7 @@ nav {
         &.username {
           color: var(--text-secondary);
           cursor: pointer;
+          user-select: none;
 
           .tweet-source-icon-wrapper:not(.tweet[data-main-tweet="true"] .tweet-source-icon-wrapper:not(.tweet-preview .tweet-source-icon-wrapper)) {
             display: none;
@@ -4216,11 +4217,8 @@ nav {
   position: relative;
   width: 32px;
   height: 32px;
-  border: 2px solid var(--bg-primary);
-  border-radius: 50%;
   margin-left: -10px;
   flex-shrink: 0;
-  background-color: var(--bg-primary);
 
   &:first-child {
     margin-left: 0;

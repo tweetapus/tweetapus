@@ -1337,9 +1337,12 @@ const renderProfile = (data) => {
 					const displayUrl = url.length > 40 ? url.slice(0, 37) + "..." : url;
 					return `<a href="${url}" target="_blank" rel="noopener noreferrer">${displayUrl}</a>`;
 				});
-				processedBio = processedBio.replace(mentionRegex, (_match, username) => {
-					return `<a href="/@${username}" class="bio-mention">@${username}</a>`;
-				});
+				processedBio = processedBio.replace(
+					mentionRegex,
+					(_match, username) => {
+						return `<a href="/@${username}" class="bio-mention">@${username}</a>`;
+					},
+				);
 				bioEl.innerHTML = processedBio;
 				bioEl.querySelectorAll(".bio-mention").forEach((link) => {
 					link.addEventListener("click", (e) => {

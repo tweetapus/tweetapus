@@ -722,19 +722,11 @@ function createNotificationElement(group) {
 				window.location.href = `/dm/${relatedId}`;
 			}
 		} else if (notificationType === "delegate_invite") {
-			const notif = notifications.find((n) => n.id === notificationId) || {};
-			const actorName = notif.actor_username || notif.actor_name || "this user";
 			const inviteId = relatedId;
 
 			const content = document.createElement("div");
 			content.style.margin = "16px 18px";
 			content.style.textAlign = "center";
-
-			const text = document.createElement("p");
-			text.textContent = `${
-				actorName.startsWith("@") ? actorName : `@${actorName}`
-			} wants you to be their delegate. Do you accept?`;
-			content.appendChild(text);
 
 			const actions = document.createElement("div");
 			actions.className = "modal-actions";
