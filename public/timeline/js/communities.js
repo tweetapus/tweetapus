@@ -639,7 +639,7 @@ async function showTweetsTab() {
 		if (!tweets || tweets.length === 0) {
 			const emptyMsg = document.createElement("p");
 			emptyMsg.className = "empty-state";
-			emptyMsg.textContent = "No tweets in this community yet.";
+			emptyMsg.innerHTML = `<img src="/public/shared/assets/img/cats/pit_cat_400.png" draggable="false">No tweets in this community yet.`;
 			tweetsWrapper.appendChild(emptyMsg);
 			return;
 		}

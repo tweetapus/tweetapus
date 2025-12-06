@@ -23,6 +23,43 @@ export default new Elysia({ prefix: "/tenor", tags: ["Tenor"] })
 			generator: ratelimit,
 		}),
 	)
+	.get("/kitchen/:a/:b", async ({ jwt, headers, params }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const user = getUserByUsername.get(payload.username);
+			if (!user) return { error: "User not found" };
+
+			const { a, b } = params;
+			const url = new URL(
+				`${process.env.TENOR_API_HOST || "https://tenor.googleapis.com/v2/"}featured`,
+			);
+			url.searchParams.set("key", TENOR_API_KEY);
+			url.searchParams.set("client_key", "tweetapus");
+			url.searchParams.set("q", `${a}_${b}`);
+			url.searchParams.set("collection", "emoji_kitchen_v6");
+			url.searchParams.set("contentfilter", "high");
+
+			const response = await fetch(url.toString(), {
+				signal: AbortSignal.timeout(5000),
+			});
+
+			if (!response.ok) {
+				console.error("Tenor API error:", response.status);
+				return { error: "Failed to fetch GIF" };
+			}
+
+			const data = await response.json();
+			return { success: true, url: data.results };
+		} catch (error) {
+			console.error("Tenor search error:", error.message);
+			return { error: "Failed to search GIF" };
+		}
+	})
 	.get(
 		"/search",
 		async ({ jwt, headers, query }) => {

@@ -419,12 +419,8 @@ function renderConversationsList() {
 			listElement.innerHTML = "";
 			const emptyDiv = document.createElement("div");
 			emptyDiv.className = "no-conversations";
-			const p1 = document.createElement("p");
-			p1.textContent = "No conversations yet.";
-			const p2 = document.createElement("p");
-			p2.textContent = "Start a new conversation to get chatting!";
-			emptyDiv.appendChild(p1);
-			emptyDiv.appendChild(p2);
+
+			emptyDiv.innerHTML = `<img src="/public/shared/assets/img/cats/cat_talk.png" alt="Chatty cat" draggable="false"><p>No conversations yet.</p><p>Start a new conversation to get chatting!</p>`;
 			listElement.appendChild(emptyDiv);
 		}
 		return;
@@ -816,6 +812,14 @@ function renderMessages() {
 			messagesElement.prepend(messageEl);
 		}
 		lastElement = messageEl;
+	}
+
+	if (currentMessages.length === 0) {
+		const emptyDiv = document.createElement("div");
+		emptyDiv.className = "no-messages";
+
+		emptyDiv.innerHTML = `<img src="/public/shared/assets/img/cats/cat_talk.png" alt="Messaging cat" draggable="false"><p>Send a message to get started</p>`;
+		messagesElement.appendChild(emptyDiv);
 	}
 }
 
