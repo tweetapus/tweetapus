@@ -79,7 +79,7 @@ const attachCheckmarkPopup = (badgeEl, type) => {
 	});
 };
 
-const handleCustomBadgeAction = (badge, badgeEl) => {
+const handleCustomBadgeAction = (badge, badgeEl, userId, username) => {
 	const type = badge?.action_type || "none";
 	if (type === "url") {
 		const url = badge?.action_value || "";
@@ -89,27 +89,111 @@ const handleCustomBadgeAction = (badge, badgeEl) => {
 		return;
 	}
 	if (type === "modal") {
-		const content = DOMPurify.sanitize(badge?.action_value || "", {
-			ALLOWED_TAGS: ["p", "strong", "em", "a", "br", "ul", "ol", "li"],
-			ALLOWED_ATTR: ["href", "target", "rel"],
+		let config = {};
+		try {
+			config = JSON.parse(badge?.action_value || "{}");
+		} catch {
+			config = { content: badge?.action_value || "" };
+		}
+		const wrapper = document.createElement("div");
+		wrapper.className = "badge-modal-content";
+		if (config.css) {
+			const styleEl = document.createElement("style");
+			styleEl.textContent = config.css;
+			wrapper.appendChild(styleEl);
+		}
+		const contentDiv = document.createElement("div");
+		if (config.content) {
+			if (typeof window.marked !== "undefined") {
+				contentDiv.innerHTML = DOMPurify.sanitize(window.marked.parse(config.content));
+			} else {
+				contentDiv.innerHTML = DOMPurify.sanitize(config.content.replace(/\n/g, "<br>"));
+			}
+		}
+		wrapper.appendChild(contentDiv);
+		const modalEl = createModal({ title: config.title || badge?.name || "Badge", content: wrapper });
+		if (config.js) {
+			try {
+				const fn = new Function("modalEl", "badge", "userId", "username", config.js);
+				fn(modalEl, badge, userId, username);
+			} catch (err) {
+				console.error("Badge modal JS error:", err);
+			}
+		}
+		return;
+	}
+	if (type === "popup") {
+		let config = {};
+		try {
+			config = JSON.parse(badge?.action_value || "{}");
+		} catch {
+			config = { entries: [] };
+		}
+		const entries = config.entries || [];
+		if (entries.length === 0) return;
+		const popupEl = document.createElement("div");
+		popupEl.className = "badge-popup-menu";
+		if (config.title) {
+			const titleEl = document.createElement("div");
+			titleEl.className = "badge-popup-title";
+			titleEl.textContent = config.title;
+			popupEl.appendChild(titleEl);
+		}
+		entries.forEach((entry) => {
+			const item = document.createElement("button");
+			item.className = "badge-popup-item";
+			item.type = "button";
+			if (entry.icon) {
+				const icon = document.createElement("i");
+				icon.className = entry.icon.startsWith("bi-") ? `bi ${entry.icon}` : entry.icon;
+				item.appendChild(icon);
+			}
+			const labelSpan = document.createElement("span");
+			labelSpan.textContent = entry.label || "";
+			item.appendChild(labelSpan);
+			item.addEventListener("click", () => {
+				popupEl.remove();
+				if (entry.type === "js" && entry.value) {
+					try {
+						const fn = new Function("badge", "userId", "username", entry.value);
+						fn(badge, userId, username);
+					} catch (err) {
+						console.error("Badge popup JS error:", err);
+					}
+				} else if (entry.type === "url" && entry.value) {
+					if (/^https?:\/\//i.test(entry.value)) {
+						window.open(entry.value, "_blank", "noopener,noreferrer");
+					}
+				}
+			});
+			popupEl.appendChild(item);
 		});
-		createModal({
-			title: badge?.name || "Badge",
-			content: content || "",
-		});
+		document.body.appendChild(popupEl);
+		const rect = badgeEl.getBoundingClientRect();
+		popupEl.style.position = "fixed";
+		popupEl.style.top = `${rect.bottom + 4}px`;
+		popupEl.style.left = `${rect.left}px`;
+		popupEl.style.zIndex = "10000";
+		const closePopup = (e) => {
+			if (!popupEl.contains(e.target) && e.target !== badgeEl) {
+				popupEl.remove();
+				document.removeEventListener("click", closePopup);
+			}
+		};
+		setTimeout(() => document.addEventListener("click", closePopup), 0);
 		return;
 	}
 	if (type === "client_js") {
 		try {
-			const fn = new Function("badge", "element", badge?.action_value || "");
-			fn(badge, badgeEl);
+			const fn = new Function("badge", "badgeEl", "userId", "username", badge?.action_value || "");
+			fn(badge, badgeEl, userId, username);
 		} catch (err) {
 			console.error("Badge JS failed", err);
 		}
 	}
 };
 
-const renderCustomBadge = (badge) => {
+const renderCustomBadge = (badge, userId, username) => {
 	const badgeEl = document.createElement("span");
 	badgeEl.className = "custom-badge";
 	badgeEl.title = badge?.name || "Custom Badge";
@@ -138,12 +222,12 @@ const renderCustomBadge = (badge) => {
 		badgeEl.addEventListener("click", (e) => {
 			e.stopPropagation();
 			e.preventDefault();
-			handleCustomBadgeAction(badge, badgeEl);
+			handleCustomBadgeAction(badge, badgeEl, userId, username);
 		});
 		badgeEl.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" || e.key === " ") {
 				e.preventDefault();
-				handleCustomBadgeAction(badge, badgeEl);
+				handleCustomBadgeAction(badge, badgeEl, userId, username);
 			}
 		});
 	}
@@ -1079,7 +1163,7 @@ export const createTweetElement = (tweet, config = {}) => {
 
 	if (Array.isArray(tweet.author.custom_badges)) {
 		for (const badge of tweet.author.custom_badges) {
-			const badgeEl = renderCustomBadge(badge);
+			const badgeEl = renderCustomBadge(badge, tweet.author.id, tweet.author.username);
 			tweetHeaderNameEl.appendChild(badgeEl);
 		}
 	}
@@ -1756,7 +1840,8 @@ export const createTweetElement = (tweet, config = {}) => {
 			attachmentsEl.appendChild(attachmentEl);
 		});
 
-		if (attachmentsEl.querySelectorAll("img, video").length) tweetEl.appendChild(attachmentsEl);
+		if (attachmentsEl.querySelectorAll("img, video").length)
+			tweetEl.appendChild(attachmentsEl);
 	}
 
 	if (tweet.quoted_tweet) {
@@ -2038,28 +2123,24 @@ export const createTweetElement = (tweet, config = {}) => {
         </svg>`,
 				title: "Quote",
 				onClick: async () => {
-					try {
-						const { createComposer } = await import("./composer.js");
+					const { createComposer } = await import("./composer.js");
 
-						const composer = await createComposer({
-							placeholder: "Add your thoughts about this tweet...",
-							quoteTweet: tweet,
-							autofocus: true,
-							callback: async (newTweet) => {
-								addTweetToTimeline(newTweet, true).classList.add("created");
-								setTimeout(() => {
-									modal.close();
-								}, 10);
-							},
-						});
+					const composer = await createComposer({
+						placeholder: "Add your thoughts about this tweet...",
+						quoteTweet: tweet,
+						autofocus: true,
+						callback: async (newTweet) => {
+							addTweetToTimeline(newTweet, true).classList.add("created");
+							setTimeout(() => {
+								modal.close();
+							}, 10);
+						},
+					});
 
-						const modal = createModal({
-							content: composer,
-						});
-					} catch (error) {
-						console.error("Error creating quote composer:", error);
-						toastQueue.add(`<h1>Error opening quote composer</h1>`);
-					}
+					const { modal } = createModal({
+						content: composer,
+					});
+					modal.querySelector("textarea")?.focus();
 				},
 			},
 		];

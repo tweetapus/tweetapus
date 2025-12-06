@@ -57,7 +57,7 @@ const attachCheckmarkPopup = (badgeEl, type) => {
 	});
 };
 
-const handleCustomBadgeAction = (badge, badgeEl) => {
+const handleCustomBadgeAction = (badge, badgeEl, userId, username) => {
 	const type = badge?.action_type || "none";
 	if (type === "url") {
 		const url = badge?.action_value || "";
@@ -67,25 +67,133 @@ const handleCustomBadgeAction = (badge, badgeEl) => {
 		return;
 	}
 	if (type === "modal") {
+		let config = {};
+		try {
+			config = JSON.parse(badge?.action_value || "{}");
+		} catch {
+			config = { content: badge?.action_value || "" };
+		}
 		const wrapper = document.createElement("div");
-		wrapper.style.padding = "12px";
-		const p = document.createElement("p");
-		p.textContent = badge?.action_value || "";
-		wrapper.appendChild(p);
-		createModal({ title: badge?.name || "Badge", content: wrapper });
+		wrapper.className = "badge-modal-content";
+		if (config.css) {
+			const styleEl = document.createElement("style");
+			styleEl.textContent = config.css;
+			wrapper.appendChild(styleEl);
+		}
+		const contentDiv = document.createElement("div");
+		if (config.content) {
+			if (typeof window.marked !== "undefined") {
+				contentDiv.innerHTML = DOMPurify.sanitize(
+					window.marked.parse(config.content),
+				);
+			} else {
+				contentDiv.innerHTML = DOMPurify.sanitize(
+					config.content.replace(/\n/g, "<br>"),
+				);
+			}
+		}
+		wrapper.appendChild(contentDiv);
+		const { modal: modalEl, close } = createModal({
+			title: config.title || badge?.name || "Badge",
+			content: wrapper,
+		});
+		if (config.js) {
+			try {
+				const fn = new Function(
+					"modalEl",
+					"badge",
+					"userId",
+					"username",
+					"closeModal",
+					config.js,
+				);
+				fn(modalEl, badge, userId, username, close);
+			} catch (err) {
+				console.error("Badge modal JS error:", err);
+			}
+		}
+		return;
+	}
+	if (type === "popup") {
+		let config = {};
+		try {
+			config = JSON.parse(badge?.action_value || "{}");
+		} catch {
+			config = { entries: [] };
+		}
+		const entries = config.entries || [];
+		if (entries.length === 0) return;
+		const popupEl = document.createElement("div");
+		popupEl.className = "badge-popup-menu";
+		if (config.title) {
+			const titleEl = document.createElement("div");
+			titleEl.className = "badge-popup-title";
+			titleEl.textContent = config.title;
+			popupEl.appendChild(titleEl);
+		}
+		entries.forEach((entry) => {
+			const item = document.createElement("button");
+			item.className = "badge-popup-item";
+			item.type = "button";
+			if (entry.icon) {
+				const icon = document.createElement("i");
+				icon.className = entry.icon.startsWith("bi-")
+					? `bi ${entry.icon}`
+					: entry.icon;
+				item.appendChild(icon);
+			}
+			const labelSpan = document.createElement("span");
+			labelSpan.textContent = entry.label || "";
+			item.appendChild(labelSpan);
+			item.addEventListener("click", () => {
+				popupEl.remove();
+				if (entry.type === "js" && entry.value) {
+					try {
+						const fn = new Function("badge", "userId", "username", entry.value);
+						fn(badge, userId, username);
+					} catch (err) {
+						console.error("Badge popup JS error:", err);
+					}
+				} else if (entry.type === "url" && entry.value) {
+					if (/^https?:\/\//i.test(entry.value)) {
+						window.open(entry.value, "_blank", "noopener,noreferrer");
+					}
+				}
+			});
+			popupEl.appendChild(item);
+		});
+		document.body.appendChild(popupEl);
+		const rect = badgeEl.getBoundingClientRect();
+		popupEl.style.position = "fixed";
+		popupEl.style.top = `${rect.bottom + 4}px`;
+		popupEl.style.left = `${rect.left}px`;
+		popupEl.style.zIndex = "10000";
+		const closePopup = (e) => {
+			if (!popupEl.contains(e.target) && e.target !== badgeEl) {
+				popupEl.remove();
+				document.removeEventListener("click", closePopup);
+			}
+		};
+		setTimeout(() => document.addEventListener("click", closePopup), 0);
 		return;
 	}
 	if (type === "client_js") {
 		try {
-			const fn = new Function("badge", "element", badge?.action_value || "");
-			fn(badge, badgeEl);
+			const fn = new Function(
+				"badge",
+				"badgeEl",
+				"userId",
+				"username",
+				badge?.action_value || "",
+			);
+			fn(badge, badgeEl, userId, username);
 		} catch (err) {
 			console.error("Badge JS failed", err);
 		}
 	}
 };
 
-const renderCustomBadge = (badge) => {
+const renderCustomBadge = (badge, userId, username) => {
 	const badgeEl = document.createElement("span");
 	badgeEl.className = "custom-badge";
 	badgeEl.title = badge?.name || "Custom Badge";
@@ -114,12 +222,12 @@ const renderCustomBadge = (badge) => {
 		badgeEl.addEventListener("click", (e) => {
 			e.stopPropagation();
 			e.preventDefault();
-			handleCustomBadgeAction(badge, badgeEl);
+			handleCustomBadgeAction(badge, badgeEl, userId, username);
 		});
 		badgeEl.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" || e.key === " ") {
 				e.preventDefault();
-				handleCustomBadgeAction(badge, badgeEl);
+				handleCustomBadgeAction(badge, badgeEl, userId, username);
 			}
 		});
 	}
@@ -1190,7 +1298,7 @@ const renderProfile = (data) => {
 		if (!suspended && data.customBadges && data.customBadges.length > 0) {
 			const followsBadge = mainDisplayNameEl.querySelector(".follows-me-badge");
 			for (const badge of data.customBadges) {
-				const badgeEl = renderCustomBadge(badge);
+				const badgeEl = renderCustomBadge(badge, profile.id, profile.username);
 				if (followsBadge) {
 					mainDisplayNameEl.insertBefore(badgeEl, followsBadge);
 				} else {
@@ -3025,7 +3133,7 @@ export const handleProfileDropdown = (triggerEl) => {
 									toastQueue.add(`<h1>User blocked</h1>`);
 								} else {
 									toastQueue.add(
-										`<h1>${result.error || "Failed to block"}</h1>`,
+										`<h1>You can't block this user</h1><p>${result.error || "Failed to block"}</p>`,
 									);
 								}
 							} catch (err) {

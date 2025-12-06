@@ -331,3 +331,72 @@ body[data-admin="1"] .image-cropper-overlay .image-cropper-panel .image-cropper-
     border-radius: 14px;
   }
 }
+
+#createBadgeForm .card.bg-body-secondary,
+#editBadgeModal .card.bg-body-secondary {
+  border-radius: 12px;
+}
+
+#createBadgeForm .card.bg-body-secondary .card-body,
+#editBadgeModal .card.bg-body-secondary .card-body {
+  padding: 1rem;
+}
+
+#createBadgeForm .card-title,
+#editBadgeModal .card-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary, #cdd6f4);
+}
+
+#createBadgeForm textarea.font-monospace,
+#editBadgeModal textarea.font-monospace {
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  font-size: 0.85rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+#createBadgeForm textarea.font-monospace:focus,
+#editBadgeModal textarea.font-monospace:focus {
+  background-color: rgba(0, 0, 0, 0.3);
+  border-color: var(--primary, #ac97ff);
+}
+
+.badge-popup-entry {
+  background-color: rgba(0, 0, 0, 0.15);
+  padding: 8px;
+  border-radius: 8px;
+}
+
+.badge-popup-entry input,
+.badge-popup-entry select {
+  font-size: 0.85rem;
+}
+
+.badge-popup-entry .popup-entry-remove {
+  flex-shrink: 0;
+}
+
+#badgeSvgPreview,
+#editBadgeSvgPreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+
+#badgeSvgPreview svg,
+#editBadgeSvgPreview svg {
+  max-width: 48px;
+  max-height: 48px;
+}
+
+#editBadgeModal .modal-dialog {
+  max-width: 700px;
+}
+
+#editBadgeModal .modal-body {
+  max-height: 75vh;
+  overflow-y: auto;
+}

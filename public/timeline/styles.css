@@ -601,6 +601,12 @@ nav {
   padding-bottom: 12px;
   transition: all 0.2s ease;
 
+  &:is(.modal .compose-tweet) {
+    border-bottom: none;
+    padding: 20px;
+    margin: 0px;
+  }
+
   .compose-header {
     display: flex;
     gap: 12px;
@@ -10827,4 +10833,133 @@ emoji-picker.emoji-picker-popup {
   white-space: nowrap;
   flex-shrink: 0;
   user-select: none;
+}
+
+.badge-popup-menu {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 12px;
+  padding: 8px 0;
+  min-width: 180px;
+  max-width: 280px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  animation: badgePopupFadeIn 0.15s ease-out;
+
+  .badge-popup-title {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    margin-bottom: 4px;
+  }
+
+  .badge-popup-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.12s;
+
+    i {
+      font-size: 16px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      background: var(--bg-overlay-light);
+    }
+  }
+}
+
+@keyframes badgePopupFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.badge-modal-content {
+  padding: 16px;
+  line-height: 1.6;
+
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-weight: 600;
+  }
+
+  p {
+    margin: 0 0 12px;
+  }
+
+  ul, ol {
+    margin: 0 0 12px;
+    padding-left: 20px;
+  }
+
+  a {
+    color: var(--primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  code {
+    background: var(--bg-overlay-light);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', Monaco, monospace;
+    font-size: 0.9em;
+  }
+
+  pre {
+    background: var(--bg-overlay-light);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+
+    code {
+      background: none;
+      padding: 0;
+    }
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+  }
+
+  blockquote {
+    margin: 0 0 12px;
+    padding-left: 12px;
+    border-left: 3px solid var(--primary);
+    color: var(--text-secondary);
+  }
+}
+
+.custom-badge {
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }

@@ -3314,7 +3314,7 @@ async function showSpamScoreDetails(username) {
 			};
 
 			const tweetsModal = document.createElement("div");
-			tweetsModal.className = "modal";
+			// tweetsModal.className = "modal"; // Removed to avoid conflict with shared modal.css
 			tweetsModal.style.cssText =
 				"display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10001; align-items: center; justify-content: center; animation: fadeIn 0.2s;";
 
@@ -3439,12 +3439,13 @@ async function showSpamScoreDetails(username) {
 		};
 
 		const modal = document.createElement("div");
-		modal.className = "modal";
+		// Use a unique class or no class to avoid conflict with shared modal.css
+		// which sets .modal { opacity: 0 }
 		modal.style.cssText =
 			"display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; animation: fadeIn 0.2s;";
 
 		modal.innerHTML = `
-			<div style="background: var(--bg-primary); border-radius: 16px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); animation: slideUp 0.3s;">
+			<div style="background: var(--bg-primary); border-radius: 16px; max-width: 700px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3); animation: modalSlideUp 0.3s;">
 				<div style="padding: 24px; border-bottom: 1px solid var(--border-color); position: sticky; top: 0; background: var(--bg-primary); z-index: 1;">
 					<div style="display: flex; justify-content: space-between; align-items: center;">
 						<h2 style="margin: 0; font-size: 20px; color: var(--text-primary); display: flex; align-items: center; gap: 10px;">
@@ -3522,7 +3523,7 @@ async function showSpamScoreDetails(username) {
 		modal.querySelectorAll("[data-indicator-idx]").forEach((btn) => {
 			btn.addEventListener("click", (e) => {
 				e.stopPropagation();
-				const idx = parseInt(btn.dataset.indicatorIdx);
+				const idx = parseInt(btn.dataset.indicatorIdx, 10);
 				const ind = _spamIndicators[idx];
 				if (ind) showImpactingTweets(ind);
 			});

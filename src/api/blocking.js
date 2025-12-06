@@ -18,18 +18,12 @@ const getIdentifier = (headers) => {
 };
 
 const getUserByUsername = db.prepare(
-	"SELECT id, ip_address FROM users WHERE LOWER(username) = LOWER(?)",
+	"SELECT id, ip_address, created_at, avatar FROM users WHERE LOWER(username) = LOWER(?)",
 );
 const getUserById = db.prepare("SELECT id FROM users WHERE id = ?");
 const checkBlockExists = db.prepare(
 	"SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?",
 );
-const checkIpBlockExists = db.prepare(`
-	SELECT 1 
-	FROM blocks b 
-	JOIN users u ON b.blocker_id = u.id 
-	WHERE u.ip_address = ? AND b.blocked_id = ? AND b.blocker_id != ?
-`);
 
 const getBlockerIps = db.prepare(`
     SELECT DISTINCT u.ip_address 
@@ -110,6 +104,22 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				const user = getUserByUsername.get(payload.username);
 				if (!user) return { error: "User not found" };
 
+				const accountAge = Date.now() - new Date(user.created_at).getTime();
+				const TEN_MINUTES = 10 * 60 * 1000;
+				if (accountAge < TEN_MINUTES) {
+					set.status = 403;
+					return {
+						error: "Account must be at least 10 minutes old to block users",
+					};
+				}
+
+				if (!user.avatar) {
+					set.status = 403;
+					return {
+						error: "You must set a profile picture before blocking users",
+					};
+				}
+
 				const identifier = getIdentifier(headers);
 				const rateLimitResult = checkMultipleRateLimits(identifier, [
 					"block",
@@ -150,7 +160,6 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 
 				let shouldIncrement = true;
 
-				// Collect all subnets associated with the current user
 				const currentSubnets = new Set();
 				const requestIp = headers["cf-connecting-ip"];
 
@@ -163,7 +172,6 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 					if (ip_address) currentSubnets.add(getSubnetPrefix(ip_address));
 				}
 
-				// Check against IPs of other blockers
 				const otherBlockerIps = getBlockerIps.all(userId, user.id);
 				const otherBlockerUserIps = getBlockerUserIps.all(userId, user.id);
 				const allOtherIps = [...otherBlockerIps, ...otherBlockerUserIps];
@@ -192,11 +200,13 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 			body: t.Object({
 				userId: t.String(),
 				sourceTweetId: t.Optional(t.String()),
+				capToken: t.Optional(t.String()),
 			}),
 			response: t.Object({
 				success: t.Optional(t.Boolean()),
 				error: t.Optional(t.String()),
 				blocked: t.Optional(t.Boolean()),
+				requiresCaptcha: t.Optional(t.Boolean()),
 			}),
 		},
 	)
@@ -237,10 +247,6 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				removeBlock.run(user.id, userId);
 
 				let shouldDecrement = true;
-
-				// Same logic as block: if we are part of a mass block, we shouldn't decrement
-				// because we likely didn't increment (or shouldn't have).
-				// AND if there are other blockers from our subnet, the "slot" is still full.
 
 				const currentSubnets = new Set();
 				const requestIp = headers["cf-connecting-ip"];

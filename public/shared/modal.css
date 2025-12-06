@@ -1,4 +1,4 @@
-e.modal-overlay {
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
@@ -10,7 +10,7 @@ e.modal-overlay {
   justify-content: center;
   z-index: 10000;
   flex-direction: column;
-  transition: background-color 0.2s ease;
+  transition: background-color 2s ease;
 }
 
 .modal-overlay.visible {
@@ -31,18 +31,21 @@ e.modal-overlay {
   overflow-y: auto;
   position: relative;
   opacity: 0;
-  transform: scale(0.9) translateY(-20px);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(0.9) translateY(-10px);
+  filter: blur(2px);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .modal.visible {
   opacity: 1;
   transform: scale(1) translateY(0);
+  filter: blur(0);
 }
 
 .modal.closing {
   opacity: 0;
   transform: scale(0.95) translateY(10px);
+  filter: blur(2px);
 }
 
 .modal-header {

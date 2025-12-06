@@ -4463,14 +4463,71 @@ class AdminPanel {
 	async banIpAddress(ipAddress, action) {
 		const actionText =
 			action === "delete" ? "delete all accounts" : "suspend all accounts";
-		if (
-			!confirm(
-				`This will ban IP ${ipAddress} and ${actionText} associated with it. This action cannot be undone. Continue?`,
-			)
-		) {
-			return;
-		}
 
+		try {
+			// Fetch users associated with this IP
+			const usersData = await this.apiCall(`/api/admin/ip/${ipAddress}/users`);
+			const users = usersData.users || [];
+
+			const modalEl = document.getElementById("ipBanConfirmModal");
+			const messageEl = document.getElementById("ipBanConfirmMessage");
+			const listEl = document.getElementById("ipBanUsersList");
+			const confirmBtn = document.getElementById("ipBanConfirmBtn");
+
+			if (!modalEl || !messageEl || !listEl || !confirmBtn) {
+				// Fallback to simple confirm if modal elements are missing
+				if (
+					!confirm(
+						`This will ban IP ${ipAddress} and ${actionText} associated with it. This action cannot be undone. Continue?`,
+					)
+				) {
+					return;
+				}
+				this.executeIpBan(ipAddress, action);
+				return;
+			}
+
+			messageEl.textContent = `This will ban IP ${ipAddress} and ${actionText} associated with it. Are you sure?`;
+			
+			if (users.length > 0) {
+				listEl.innerHTML = users
+					.map(
+						(u) => `
+					<div class="list-group-item d-flex align-items-center gap-2">
+						${
+							u.avatar
+								? `<img src="${u.avatar}" class="rounded-circle" width="24" height="24">`
+								: `<div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" style="width:24px;height:24px"><i class="bi bi-person text-white" style="font-size:12px"></i></div>`
+						}
+						<span>@${this.escapeHtml(u.username)}</span>
+						${u.suspended ? '<span class="badge bg-danger ms-auto">Suspended</span>' : ""}
+					</div>
+				`,
+					)
+					.join("");
+			} else {
+				listEl.innerHTML = '<div class="list-group-item text-muted">No users currently associated with this IP.</div>';
+			}
+
+			const modal = new bootstrap.Modal(modalEl);
+			
+			// Remove previous event listeners to avoid multiple calls
+			const newConfirmBtn = confirmBtn.cloneNode(true);
+			confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+			
+			newConfirmBtn.addEventListener("click", () => {
+				modal.hide();
+				this.executeIpBan(ipAddress, action);
+			});
+
+			modal.show();
+
+		} catch (error) {
+			this.showError("Failed to fetch users for this IP: " + error.message);
+		}
+	}
+
+	async executeIpBan(ipAddress, action) {
 		try {
 			const response = await this.apiCall("/api/admin/ip-bans", {
 				method: "POST",
@@ -9002,13 +9059,35 @@ class AdminPanel {
 			});
 		}
 
+		const actionTypeSelect = document.getElementById("badgeActionType");
+		const urlSection = document.getElementById("badgeActionUrlSection");
+		const modalSection = document.getElementById("badgeActionModalSection");
+		const popupSection = document.getElementById("badgeActionPopupSection");
+		const jsSection = document.getElementById("badgeActionJsSection");
+		const addPopupEntryBtn = document.getElementById("badgeAddPopupEntry");
+		const popupEntriesContainer = document.getElementById("badgePopupEntries");
+
+		if (actionTypeSelect) {
+			actionTypeSelect.addEventListener("change", () => {
+				const val = actionTypeSelect.value;
+				urlSection?.classList.toggle("d-none", val !== "url");
+				modalSection?.classList.toggle("d-none", val !== "modal");
+				popupSection?.classList.toggle("d-none", val !== "popup");
+				jsSection?.classList.toggle("d-none", val !== "client_js");
+			});
+		}
+
+		if (addPopupEntryBtn && popupEntriesContainer) {
+			addPopupEntryBtn.addEventListener("click", () => {
+				this.addBadgePopupEntry(popupEntriesContainer);
+			});
+		}
+
 		const imageFileInput = document.getElementById("badgeImageFile");
 		const imageUrlInput = document.getElementById("badgeImageUrl");
 		const chooseBtn = document.getElementById("badgeImageChooseBtn");
 		const clearBtn = document.getElementById("badgeImageClearBtn");
-		const previewContainer = document.getElementById(
-			"badgeImagePreviewContainer",
-		);
+		const previewContainer = document.getElementById("badgeImagePreviewContainer");
 		const previewImg = document.getElementById("badgeImagePreview");
 
 		if (chooseBtn && imageFileInput) {
@@ -9063,18 +9142,11 @@ class AdminPanel {
 		form.addEventListener("submit", async (e) => {
 			e.preventDefault();
 			const name = document.getElementById("badgeName").value.trim();
-			const description = document
-				.getElementById("badgeDescription")
-				.value.trim();
-			const svgContent = document
-				.getElementById("badgeSvgContent")
-				.value.trim();
-			const imageUrl =
-				document.getElementById("badgeImageUrl")?.value.trim() || "";
-			const actionType =
-				document.getElementById("badgeActionType")?.value || "none";
-			const actionValue =
-				document.getElementById("badgeActionValue")?.value.trim() || "";
+			const description = document.getElementById("badgeDescription").value.trim();
+			const svgContent = document.getElementById("badgeSvgContent").value.trim();
+			const imageUrl = document.getElementById("badgeImageUrl")?.value.trim() || "";
+			const actionType = document.getElementById("badgeActionType")?.value || "none";
+			const actionValue = this.collectBadgeActionValue(actionType, "");
 			if (!name || (!svgContent && !imageUrl)) return;
 			try {
 				await this.apiCall("/api/admin/badges", {
@@ -9095,11 +9167,119 @@ class AdminPanel {
 				if (previewImg) previewImg.src = "";
 				if (previewContainer) previewContainer.classList.add("d-none");
 				if (clearBtn) clearBtn.classList.add("d-none");
+				urlSection?.classList.add("d-none");
+				modalSection?.classList.add("d-none");
+				popupSection?.classList.add("d-none");
+				jsSection?.classList.add("d-none");
+				if (popupEntriesContainer) popupEntriesContainer.innerHTML = "";
 				await this.loadBadgesManager();
 			} catch (err) {
 				this.showError(err.message || "Failed to create badge");
 			}
 		});
+	}
+
+	addBadgePopupEntry(container, entry = {}) {
+		const row = document.createElement("div");
+		row.className = "badge-popup-entry d-flex gap-2 mb-2 align-items-start";
+		row.innerHTML = `
+			<input type="text" class="form-control form-control-sm popup-entry-label" placeholder="Label" value="${this.escapeHtml(entry.label || "")}">
+			<input type="text" class="form-control form-control-sm popup-entry-icon" placeholder="bi-star" value="${this.escapeHtml(entry.icon || "")}" style="width: 100px;">
+			<select class="form-select form-select-sm popup-entry-type" style="width: 100px;">
+				<option value="url" ${entry.type === "url" || !entry.type ? "selected" : ""}>URL</option>
+				<option value="js" ${entry.type === "js" ? "selected" : ""}>JS</option>
+			</select>
+			<input type="text" class="form-control form-control-sm popup-entry-value" placeholder="https:// or JS code" value="${this.escapeHtml(entry.value || "")}">
+			<button type="button" class="btn btn-outline-danger btn-sm popup-entry-remove"><i class="bi bi-x"></i></button>
+		`;
+		row.querySelector(".popup-entry-remove").addEventListener("click", () => row.remove());
+		container.appendChild(row);
+	}
+
+	collectBadgePopupEntries(prefix = "") {
+		const B = prefix ? "B" : "b";
+		const container = document.getElementById(`${prefix}${B}adgePopupEntries`);
+		if (!container) return [];
+		const entries = [];
+		container.querySelectorAll(".badge-popup-entry").forEach((row) => {
+			const label = row.querySelector(".popup-entry-label")?.value.trim() || "";
+			const icon = row.querySelector(".popup-entry-icon")?.value.trim() || "";
+			const type = row.querySelector(".popup-entry-type")?.value || "url";
+			const value = row.querySelector(".popup-entry-value")?.value.trim() || "";
+			if (label || value) {
+				entries.push({ label, icon, type, value });
+			}
+		});
+		return entries;
+	}
+
+	collectBadgeActionValue(actionType, prefix = "") {
+		const B = prefix ? "B" : "b";
+		if (actionType === "url") {
+			return document.getElementById(`${prefix}${B}adgeActionUrl`)?.value.trim() || "";
+		}
+		if (actionType === "modal") {
+			return JSON.stringify({
+				title: document.getElementById(`${prefix}${B}adgeModalTitle`)?.value.trim() || "",
+				content: document.getElementById(`${prefix}${B}adgeModalContent`)?.value || "",
+				css: document.getElementById(`${prefix}${B}adgeModalCss`)?.value || "",
+				js: document.getElementById(`${prefix}${B}adgeModalJs`)?.value || "",
+			});
+		}
+		if (actionType === "popup") {
+			return JSON.stringify({
+				title: document.getElementById(`${prefix}${B}adgePopupTitle`)?.value.trim() || "",
+				entries: this.collectBadgePopupEntries(prefix),
+			});
+		}
+		if (actionType === "client_js") {
+			return document.getElementById(`${prefix}${B}adgeActionJs`)?.value || "";
+		}
+		return "";
+	}
+
+	populateBadgeActionFields(actionType, actionValue, prefix = "") {
+		const B = prefix ? "B" : "b";
+		const urlSection = document.getElementById(`${prefix}${B}adgeActionUrlSection`);
+		const modalSection = document.getElementById(`${prefix}${B}adgeActionModalSection`);
+		const popupSection = document.getElementById(`${prefix}${B}adgeActionPopupSection`);
+		const jsSection = document.getElementById(`${prefix}${B}adgeActionJsSection`);
+		
+		urlSection?.classList.toggle("d-none", actionType !== "url");
+		modalSection?.classList.toggle("d-none", actionType !== "modal");
+		popupSection?.classList.toggle("d-none", actionType !== "popup");
+		jsSection?.classList.toggle("d-none", actionType !== "client_js");
+
+		if (actionType === "url") {
+			const urlInput = document.getElementById(`${prefix}${B}adgeActionUrl`);
+			if (urlInput) urlInput.value = actionValue || "";
+		} else if (actionType === "modal") {
+			let parsed = {};
+			try { parsed = JSON.parse(actionValue || "{}"); } catch {}
+			const titleInput = document.getElementById(`${prefix}${B}adgeModalTitle`);
+			const contentInput = document.getElementById(`${prefix}${B}adgeModalContent`);
+			const cssInput = document.getElementById(`${prefix}${B}adgeModalCss`);
+			const jsInput = document.getElementById(`${prefix}${B}adgeModalJs`);
+			if (titleInput) titleInput.value = parsed.title || "";
+			if (contentInput) contentInput.value = parsed.content || "";
+			if (cssInput) cssInput.value = parsed.css || "";
+			if (jsInput) jsInput.value = parsed.js || "";
+		} else if (actionType === "popup") {
+			let parsed = {};
+			try { parsed = JSON.parse(actionValue || "{}"); } catch {}
+			const titleInput = document.getElementById(`${prefix}${B}adgePopupTitle`);
+			if (titleInput) titleInput.value = parsed.title || "";
+			const container = document.getElementById(`${prefix}${B}adgePopupEntries`);
+			if (container) {
+				container.innerHTML = "";
+				for (const entry of (parsed.entries || [])) {
+					this.addBadgePopupEntry(container, entry);
+				}
+			}
+		} else if (actionType === "client_js") {
+			const jsInput = document.getElementById(`${prefix}${B}adgeActionJs`);
+			if (jsInput) jsInput.value = actionValue || "";
+		}
 	}
 
 	async deleteBadge(badgeId) {
@@ -9120,13 +9300,13 @@ class AdminPanel {
 			modal.className = "modal fade";
 			modal.tabIndex = -1;
 			modal.innerHTML = `
-				<div class="modal-dialog">
+				<div class="modal-dialog modal-lg">
 					<div class="modal-content">
 						<div class="modal-header"><h5 class="modal-title">Edit Badge</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
 						<div class="modal-body">
 							<div class="mb-3"><label class="form-label">Name</label><input type="text" class="form-control" id="editBadgeName"></div>
 							<div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="editBadgeDescription" rows="2"></textarea></div>
-							<div class="mb-3"><label class="form-label">SVG Content</label><textarea class="form-control" id="editBadgeSvgContent" rows="3"></textarea></div>
+							<div class="mb-3"><label class="form-label">SVG Content</label><textarea class="form-control font-monospace" id="editBadgeSvgContent" rows="3"></textarea></div>
 							<div class="mb-3">
 								<label class="form-label">Badge Image</label>
 								<input type="file" class="form-control" id="editBadgeImageFile" accept="image/*" style="display: none;">
@@ -9138,11 +9318,48 @@ class AdminPanel {
 								<div id="editBadgeImagePreviewContainer" class="mt-2 d-none">
 									<img id="editBadgeImagePreview" src="" alt="Badge preview" style="max-width: 64px; max-height: 64px; border-radius: 4px;">
 								</div>
-								<div class="form-text">Leave empty if using SVG. Image will be cropped to square.</div>
 							</div>
-							<div class="row g-2">
-								<div class="col-md-6"><label class="form-label">Click Action</label><select class="form-select" id="editBadgeActionType"><option value="none">None</option><option value="url">Open URL</option><option value="modal">Open modal</option><option value="client_js">Run client JS</option></select></div>
-								<div class="col-md-6"><label class="form-label">Action Value</label><input type="text" class="form-control" id="editBadgeActionValue"></div>
+							<div class="mb-3">
+								<label class="form-label">Click Action</label>
+								<select class="form-select" id="editBadgeActionType">
+									<option value="none">None</option>
+									<option value="url">Open URL</option>
+									<option value="modal">Open custom modal</option>
+									<option value="popup">Show popup menu</option>
+									<option value="client_js">Run client JS</option>
+								</select>
+							</div>
+							<div id="editBadgeActionUrlSection" class="mb-3 d-none">
+								<label class="form-label">URL</label>
+								<input type="text" class="form-control" id="editBadgeActionUrl" placeholder="https://example.com">
+							</div>
+							<div id="editBadgeActionModalSection" class="mb-3 d-none">
+								<div class="card bg-body-secondary border-0">
+									<div class="card-body">
+										<h6 class="card-title mb-3"><i class="bi bi-window-stack"></i> Modal Configuration</h6>
+										<div class="mb-3"><label class="form-label">Modal Title</label><input type="text" class="form-control" id="editBadgeModalTitle" placeholder="Badge Info"></div>
+										<div class="mb-3"><label class="form-label">Modal Content (Markdown supported)</label><textarea class="form-control" id="editBadgeModalContent" rows="5" placeholder="**Bold**, *italic*, [links](url)"></textarea></div>
+										<div class="mb-3"><label class="form-label">Custom CSS (optional)</label><textarea class="form-control font-monospace" id="editBadgeModalCss" rows="3" placeholder=".badge-modal-content { color: gold; }"></textarea></div>
+										<div class="mb-3"><label class="form-label">Custom JS (optional)</label><textarea class="form-control font-monospace" id="editBadgeModalJs" rows="4" placeholder="// Runs when modal opens"></textarea></div>
+									</div>
+								</div>
+							</div>
+							<div id="editBadgeActionPopupSection" class="mb-3 d-none">
+								<div class="card bg-body-secondary border-0">
+									<div class="card-body">
+										<h6 class="card-title mb-3"><i class="bi bi-list-ul"></i> Popup Menu Configuration</h6>
+										<div class="mb-3"><label class="form-label">Popup Title (optional)</label><input type="text" class="form-control" id="editBadgePopupTitle" placeholder="Options"></div>
+										<div class="mb-3"><label class="form-label">Menu Entries</label><div id="editBadgePopupEntries"></div><button type="button" class="btn btn-outline-primary btn-sm mt-2" id="editBadgeAddPopupEntry"><i class="bi bi-plus"></i> Add Entry</button></div>
+									</div>
+								</div>
+							</div>
+							<div id="editBadgeActionJsSection" class="mb-3 d-none">
+								<div class="card bg-body-secondary border-0">
+									<div class="card-body">
+										<h6 class="card-title mb-3"><i class="bi bi-code-slash"></i> Client JavaScript</h6>
+										<textarea class="form-control font-monospace" id="editBadgeActionJs" rows="8" placeholder="// This code runs when the badge is clicked"></textarea>
+									</div>
+								</div>
 							</div>
 						</div>
 						<div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" id="saveEditBadgeBtn">Save</button></div>
@@ -9151,24 +9368,42 @@ class AdminPanel {
 			`;
 			document.body.appendChild(modal);
 		}
+
 		document.getElementById("editBadgeName").value = badge.name || "";
-		document.getElementById("editBadgeDescription").value =
-			badge.description || "";
-		document.getElementById("editBadgeSvgContent").value =
-			badge.svg_content || "";
+		document.getElementById("editBadgeDescription").value = badge.description || "";
+		document.getElementById("editBadgeSvgContent").value = badge.svg_content || "";
 		document.getElementById("editBadgeImageUrl").value = badge.image_url || "";
-		document.getElementById("editBadgeActionType").value =
-			badge.action_type || "none";
-		document.getElementById("editBadgeActionValue").value =
-			badge.action_value || "";
+		document.getElementById("editBadgeActionType").value = badge.action_type || "none";
+
+		this.populateBadgeActionFields(badge.action_type || "none", badge.action_value || "", "edit");
+
+		const editActionTypeSelect = document.getElementById("editBadgeActionType");
+		const newActionTypeSelect = editActionTypeSelect.cloneNode(true);
+		editActionTypeSelect.parentNode.replaceChild(newActionTypeSelect, editActionTypeSelect);
+		newActionTypeSelect.value = badge.action_type || "none";
+		newActionTypeSelect.addEventListener("change", () => {
+			const val = newActionTypeSelect.value;
+			document.getElementById("editBadgeActionUrlSection")?.classList.toggle("d-none", val !== "url");
+			document.getElementById("editBadgeActionModalSection")?.classList.toggle("d-none", val !== "modal");
+			document.getElementById("editBadgeActionPopupSection")?.classList.toggle("d-none", val !== "popup");
+			document.getElementById("editBadgeActionJsSection")?.classList.toggle("d-none", val !== "client_js");
+		});
+
+		const editAddPopupEntryBtn = document.getElementById("editBadgeAddPopupEntry");
+		if (editAddPopupEntryBtn) {
+			const newAddBtn = editAddPopupEntryBtn.cloneNode(true);
+			editAddPopupEntryBtn.parentNode.replaceChild(newAddBtn, editAddPopupEntryBtn);
+			newAddBtn.addEventListener("click", () => {
+				const container = document.getElementById("editBadgePopupEntries");
+				if (container) this.addBadgePopupEntry(container);
+			});
+		}
 
 		const editImageFileInput = document.getElementById("editBadgeImageFile");
 		const editImageUrlInput = document.getElementById("editBadgeImageUrl");
 		const editChooseBtn = document.getElementById("editBadgeImageChooseBtn");
 		const editClearBtn = document.getElementById("editBadgeImageClearBtn");
-		const editPreviewContainer = document.getElementById(
-			"editBadgeImagePreviewContainer",
-		);
+		const editPreviewContainer = document.getElementById("editBadgeImagePreviewContainer");
 		const editPreviewImg = document.getElementById("editBadgeImagePreview");
 
 		if (badge.image_url) {
@@ -9189,31 +9424,20 @@ class AdminPanel {
 		else newClearBtn.classList.add("d-none");
 
 		const newFileInput = editImageFileInput.cloneNode(true);
-		editImageFileInput.parentNode.replaceChild(
-			newFileInput,
-			editImageFileInput,
-		);
+		editImageFileInput.parentNode.replaceChild(newFileInput, editImageFileInput);
 		newChooseBtn.addEventListener("click", () => newFileInput.click());
 		newFileInput.addEventListener("change", async () => {
 			const file = newFileInput.files?.[0];
 			if (!file) return;
 			try {
-				const cropped = await window.openImageCropper(file, {
-					aspect: 1,
-					size: 128,
-					transparent: true,
-				});
+				const cropped = await window.openImageCropper(file, { aspect: 1, size: 128, transparent: true });
 				if (cropped === window.CROP_CANCELLED) {
 					newFileInput.value = "";
 					return;
 				}
 				const fd = new FormData();
 				fd.append("file", cropped, cropped.name);
-				const uploadResp = await fetch("/api/upload", {
-					method: "POST",
-					headers: { Authorization: `Bearer ${this.token}` },
-					body: fd,
-				});
+				const uploadResp = await fetch("/api/upload", { method: "POST", headers: { Authorization: `Bearer ${this.token}` }, body: fd });
 				const uploadData = await uploadResp.json();
 				if (!uploadResp.ok || uploadData?.error) {
 					this.showError(uploadData?.error || "Failed to upload image");
@@ -9222,8 +9446,7 @@ class AdminPanel {
 				}
 				editImageUrlInput.value = uploadData.file.url;
 				if (editPreviewImg) editPreviewImg.src = uploadData.file.url;
-				if (editPreviewContainer)
-					editPreviewContainer.classList.remove("d-none");
+				if (editPreviewContainer) editPreviewContainer.classList.remove("d-none");
 				newClearBtn.classList.remove("d-none");
 			} catch (err) {
 				this.showError(err.message || "Failed to process image");
@@ -9245,22 +9468,17 @@ class AdminPanel {
 		saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
 		newSaveBtn.addEventListener("click", async () => {
 			try {
+				const actionType = document.getElementById("editBadgeActionType").value;
+				const actionValue = this.collectBadgeActionValue(actionType, "edit");
 				await this.apiCall(`/api/admin/badges/${badge.id}`, {
 					method: "PATCH",
 					body: JSON.stringify({
 						name: document.getElementById("editBadgeName").value.trim(),
-						description: document
-							.getElementById("editBadgeDescription")
-							.value.trim(),
-						svg_content:
-							document.getElementById("editBadgeSvgContent").value.trim() ||
-							null,
-						image_url:
-							document.getElementById("editBadgeImageUrl").value.trim() || null,
-						action_type: document.getElementById("editBadgeActionType").value,
-						action_value:
-							document.getElementById("editBadgeActionValue").value.trim() ||
-							null,
+						description: document.getElementById("editBadgeDescription").value.trim(),
+						svg_content: document.getElementById("editBadgeSvgContent").value.trim() || null,
+						image_url: document.getElementById("editBadgeImageUrl").value.trim() || null,
+						action_type: actionType,
+						action_value: actionValue || null,
 					}),
 				});
 				this.showSuccess("Badge updated");
@@ -9271,136 +9489,6 @@ class AdminPanel {
 			}
 		});
 		bsModal.show();
-	}
-
-	async loadBlocks(page = 1) {
-		try {
-			const params = new URLSearchParams({ page, limit: 50 });
-			const data = await this.apiCall(`/api/admin/blocks?${params}`);
-			this.renderBlocksTable(data.blocks);
-			this.renderPagination("blocks", data.pagination);
-			this.currentPage.blocks = page;
-		} catch {
-			this.showError("Failed to load blocks");
-		}
-	}
-
-	renderBlocksTable(blocks) {
-		const container = document.getElementById("blocksTable");
-		if (!blocks || blocks.length === 0) {
-			container.innerHTML =
-				'<p class="text-muted text-center">No blocking relationships found</p>';
-			return;
-		}
-
-		container.innerHTML = `
-			<div class="table-responsive">
-				<table class="table table-hover">
-					<thead>
-						<tr>
-							<th>Blocker</th>
-							<th>Blocked</th>
-							<th>Date</th>
-						</tr>
-					</thead>
-					<tbody>
-						${blocks
-							.map(
-								(block) => `
-							<tr>
-								<td>
-									<div class="d-flex align-items-center">
-										${
-											block.blocker_avatar
-												? `<img src="${block.blocker_avatar}" class="user-avatar me-2" alt="Avatar" style="border-radius: 50%;">`
-												: `<div class="user-avatar me-2 bg-secondary rounded-circle d-flex align-items-center justify-content-center">
-												<i class="bi bi-person text-white"></i>
-											</div>`
-										}
-										<div>
-											<strong style="cursor: pointer; color: #0d6efd;" onclick="adminPanel.findAndViewUser('${block.blocker_username}')">@${this.escapeHtml(block.blocker_username)}</strong>
-											${block.blocker_name ? `<br><small class="text-muted">${this.escapeHtml(block.blocker_name)}</small>` : ""}
-										</div>
-									</div>
-								</td>
-								<td>
-									<div class="d-flex align-items-center">
-										${
-											block.blocked_avatar
-												? `<img src="${block.blocked_avatar}" class="user-avatar me-2" alt="Avatar" style="border-radius: 50%;">`
-												: `<div class="user-avatar me-2 bg-secondary rounded-circle d-flex align-items-center justify-content-center">
-												<i class="bi bi-person text-white"></i>
-											</div>`
-										}
-										<div>
-											<strong style="cursor: pointer; color: #0d6efd;" onclick="adminPanel.findAndViewUser('${block.blocked_username}')">@${this.escapeHtml(block.blocked_username)}</strong>
-											${block.blocked_name ? `<br><small class="text-muted">${this.escapeHtml(block.blocked_name)}</small>` : ""}
-										</div>
-									</div>
-								</td>
-								<td>
-									<small>${this.formatDate(block.created_at)}</small>
-								</td>
-							</tr>
-						`,
-							)
-							.join("")}
-					</tbody>
-				</table>
-			</div>
-		`;
-	}
-
-	updateBlockerDeleteCount() {
-		const checkboxes = document.querySelectorAll(".blocker-checkbox:checked");
-		const count = checkboxes.length;
-		const countEl = document.getElementById("blockerDeleteCount");
-		const btn = document.getElementById("massDeleteBlockersBtn");
-		if (countEl) countEl.textContent = count;
-		if (btn) btn.disabled = count === 0;
-	}
-
-	async massDeleteBlockers(targetUserId) {
-		const checkboxes = document.querySelectorAll(".blocker-checkbox:checked");
-		const userIds = Array.from(checkboxes).map((cb) => cb.value);
-
-		if (userIds.length === 0) {
-			this.showError("No users selected");
-			return;
-		}
-
-		if (
-			!confirm(
-				`Delete ${userIds.length} selected user(s) who blocked this user? This action cannot be undone.`,
-			)
-		) {
-			return;
-		}
-
-		let successCount = 0;
-		let failCount = 0;
-
-		for (const userId of userIds) {
-			try {
-				await this.apiCall(`/api/admin/users/${userId}`, {
-					method: "DELETE",
-				});
-				successCount++;
-			} catch {
-				failCount++;
-			}
-		}
-
-		if (successCount > 0) {
-			this.showSuccess(
-				`Deleted ${successCount} user(s)${failCount > 0 ? ` (${failCount} failed)` : ""}`,
-			);
-			bootstrap.Modal.getInstance(document.getElementById("userModal"))?.hide();
-			this.userCache.delete(targetUserId);
-			this.loadUsers(this.currentPage.users);
-		} else {
-			this.showError("Failed to delete any users");
-		}
 	}
 }
 
