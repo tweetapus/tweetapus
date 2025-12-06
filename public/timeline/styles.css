@@ -687,7 +687,7 @@ nav {
 
         .compose-actions {
           display: flex;
-          gap: 12px;
+          gap: 8px;
           max-width: 100%;
           overflow: auto;
           position: relative;

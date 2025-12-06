@@ -170,12 +170,6 @@ function saveAccountToStorage(user, token) {
 							"agree=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
 					} catch {}
 
-					document.querySelector(".loader").style.opacity = "0";
-					document.querySelector(".loader").style.display = "flex";
-					setTimeout(() => {
-						document.querySelector(".loader").style.opacity = "1";
-					}, 1);
-
 					setTimeout(() => {
 						window.location.href = "/";
 					}, 100);
@@ -224,11 +218,6 @@ function saveAccountToStorage(user, token) {
 			setTimeout(() => window.scrollTo(0, savedScroll), 0);
 		}
 	});
-
-	document.querySelector(".loader").style.opacity = "0";
-	setTimeout(() => {
-		document.querySelector(".loader").style.display = "none";
-	}, 150);
 })();
 
 const openBookmarks = async () => {

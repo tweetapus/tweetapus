@@ -197,7 +197,7 @@ export async function maybeAddTranslation(tweet, tweetElement, contentElement) {
 		.replace(/#\w+/g, "")
 		.replace(/https?:\/\/[^\s]+/g, "")
 		.replace(/:\w+:/g, "")
-		.replace(/[^\p{L}\p{N}\s]/gu, " ")
+		.replace(/[^\p{L}\p{N}\s.,'!?]/gu, " ")
 		.trim();
 
 	if (!cleanText || cleanText.trim().length < 20) {

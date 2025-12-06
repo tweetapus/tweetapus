@@ -361,9 +361,9 @@ export const useComposer = (
 	if (mediaMenuBtn && fileInput) {
 		mediaMenuBtn.addEventListener("click", async (e) => {
 			e.stopPropagation();
-			
+
 			const { createPopup } = await import("../../shared/ui-utils.js");
-			
+
 			const menuItems = [
 				{
 					title: "Upload from device",
@@ -437,7 +437,7 @@ export const useComposer = (
 					},
 				},
 			];
-			
+
 			createPopup({
 				items: menuItems,
 				triggerElement: mediaMenuBtn,
@@ -1686,11 +1686,7 @@ export const createComposer = async ({
             <div class="compose-footer">
               <div class="compose-actions">
                 <button type="button" id="media-menu-btn" title="Add media">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"/>
-                    <line x1="12" y1="8" x2="12" y2="16"/>
-                    <line x1="8" y1="12" x2="16" y2="12"/>
-                  </svg>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plus-icon lucide-plus"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
                 </button>
                 <input type="file" id="file-input" multiple accept="image/png,image/webp,image/avif,image/jpeg,image/jpg,image/gif,video/mp4" style="display: none;" title="Images: max 10MB, Videos: max 100MB (auto-compressed if needed)">
                 <button type="button" id="emoji-btn" title="Add emoji">

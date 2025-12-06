@@ -45,16 +45,7 @@ window.onunhandledrejection = (event) => {
 let timelineScrollPosition = 0;
 
 (async () => {
-	if (!authToken) {
-		const loaderEl = document.querySelector(".loader");
-		if (loaderEl) {
-			loaderEl.style.opacity = "0";
-			setTimeout(() => {
-				loaderEl.style.display = "none";
-			}, 150);
-		}
-		return;
-	}
+	if (!authToken) return;
 
 	let currentTimeline = "home";
 
