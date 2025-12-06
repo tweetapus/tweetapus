@@ -1888,7 +1888,7 @@ nav {
     max-width: 100%;
     overflow-wrap: break-word;
 
-    &:is([data-main-tweet] .tweet-content) {
+    &:not(.tweet-preview .tweet-content):is([data-main-tweet] .tweet-content) {
       font-size: 18px;
     }
 
@@ -5293,11 +5293,16 @@ nav {
       background-color: transparent;
       border: 1px dashed var(--border-primary);
       cursor: pointer;
-      padding: 3px 8px;
+      padding: 0px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: var(--text-secondary);
       font-size: 13px;
       border-radius: 12px;
       opacity: 0;
+      width: 24px;
+      height: 24px;
 
       &:hover {
         background-color: var(--bg-secondary);
