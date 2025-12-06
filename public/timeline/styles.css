@@ -2247,6 +2247,15 @@ nav {
   .reply-restriction-info {
     font-size: 13px;
     color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    svg {
+      opacity: .5;
+      width: 16px;
+      height: 16px;
+    }
   }
 
   .tweet.blocked-by-profile .tweet-interactions {

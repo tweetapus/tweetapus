@@ -3929,7 +3929,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 					}
 					customIconMeta = { kind: "image", hash, url: iconUrl };
 				} else if (customIcon.kind === "svg") {
-					const markup = customIcon.markup;
+					const markup = customIcon.markup; // Tr Cursor should not be stuck
 					if (!markup) return { error: "Invalid SVG markup" };
 					const dataUri = `data:image/svg+xml;base64,${Buffer.from(
 						markup,
