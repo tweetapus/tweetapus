@@ -2447,8 +2447,8 @@ class AdminPanel {
                         <td>${this.formatDate(ip.last_used_at)}</td>
                         <td>
                           <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-danger" onclick="adminPanel.banIpAddress('${ip.ip_address}', 'delete')">Ban IP & Delete Users</button>
-                            <button class="btn btn-outline-warning" onclick="adminPanel.banIpAddress('${ip.ip_address}', 'suspend')">Ban IP & Suspend Users</button>
+                            <button class="btn btn-outline-danger" onclick="adminPanel.banIpAddress('${ip.ip_address}', 'delete')">Preview & Ban IP (Delete Users)</button>
+                            <button class="btn btn-outline-warning" onclick="adminPanel.banIpAddress('${ip.ip_address}', 'suspend')">Preview & Ban IP (Suspend Users)</button>
                           </div>
                         </td>
                       </tr>

@@ -31,6 +31,9 @@ const getMyDelegations = db.prepare(
 const getPendingInvitations = db.prepare(
 	"SELECT d.*, u.username, u.name, u.avatar, u.verified FROM delegates d JOIN users u ON d.owner_id = u.id WHERE d.delegate_id = ? AND d.status = 'pending' ORDER BY d.created_at DESC",
 );
+const getSentInvitations = db.prepare(
+	"SELECT d.*, u.username, u.name, u.avatar, u.verified FROM delegates d JOIN users u ON d.delegate_id = u.id WHERE d.owner_id = ? AND d.status = 'pending' ORDER BY d.created_at DESC",
+);
 const checkIfAlreadyInvited = db.prepare(
 	"SELECT * FROM delegates WHERE owner_id = ? AND delegate_id = ? AND status IN ('pending', 'accepted')",
 );
@@ -335,6 +338,24 @@ export default new Elysia({ prefix: "/delegates", tags: ["Delegates"] })
 		} catch (error) {
 			console.error("Get pending invitations error:", error);
 			return { error: "Failed to get pending invitations" };
+		}
+	})
+	.get("/sent-invitations", async ({ jwt, headers }) => {
+		const authorization = headers.authorization;
+		if (!authorization) return { error: "Authentication required" };
+
+		try {
+			const payload = await jwt.verify(authorization.replace("Bearer ", ""));
+			if (!payload) return { error: "Invalid token" };
+
+			const user = getUserByUsername.get(payload.username);
+			if (!user) return { error: "User not found" };
+
+			const invitations = getSentInvitations.all(user.id);
+			return { success: true, invitations };
+		} catch (error) {
+			console.error("Get sent invitations error:", error);
+			return { error: "Failed to get sent invitations" };
 		}
 	})
 	.get("/check/:userId", async ({ jwt, headers, params }) => {

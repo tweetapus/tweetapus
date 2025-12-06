@@ -3450,6 +3450,44 @@ nav {
     }
   }
 
+  .edit-profile-tabs {
+    padding: 0 20px;
+    border-bottom: 1px solid var(--border-primary);
+    display: flex;
+    gap: 4px;
+    margin: 0;
+  }
+
+  .edit-profile-tab-btn {
+    flex: 1;
+    padding: 14px 16px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+
+    &:hover {
+      background-color: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+
+    &.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--primary);
+    }
+  }
+
+  .edit-profile-tab-content {
+    &.hidden {
+      display: none;
+    }
+  }
+
   .modal-close {
     background-color: transparent;
     border: none;

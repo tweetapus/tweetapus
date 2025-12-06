@@ -1196,303 +1196,177 @@
       <div class="edit-profile-modal" id="editProfileModal">
         <div class="modal-content">
           <div class="modal-header">
-            <h3>Edit Profile</h3>
+            <h3>Edit profile</h3>
             <button class="modal-close" id="closeEditModalBtn">
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 6 6 18" />
                 <path d="m6 6 12 12" />
               </svg>
             </button>
           </div>
-
+      
+          <div class="edit-profile-tabs tab-nav">
+            <button class="edit-profile-tab-btn active" data-tab="basic">Basic Info</button>
+            <button class="edit-profile-tab-btn" data-tab="appearance">Appearance</button>
+            <button class="edit-profile-tab-btn" data-tab="settings">Settings</button>
+          </div>
+      
           <div class="modal-body">
             <form id="editProfileForm">
-              <div class="avatar-section">
-                <label>Profile Picture</label>
-                <div class="avatar-preview">
-                  <img id="edit-current-avatar" src="" alt="Your avatar" />
-                  <div class="avatar-overlay">
-                    <svg
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                    >
-                      <path
-                        d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                      />
-                      <circle cx="12" cy="13" r="4" />
-                    </svg>
+              <div class="edit-profile-tab-content" id="basicTab">
+                <div class="form-group">
+                  <label for="editDisplayName">Display name</label>
+                  <input type="text" id="editDisplayName" maxlength="50" />
+                  <div class="char-count">
+                    <span id="displayNameCount">0</span>/50
+                  </div>
+                  <p class="tip">
+                    <b>Tip!</b> If your display name is the same as your username, your username won't appear on your tweets.
+                  </p>
+                </div>
+      
+                <div class="form-group">
+                  <label for="editBio">Bio</label>
+                  <textarea id="editBio" maxlength="160" placeholder="Tell us about yourself"></textarea>
+                  <div class="char-count">
+                    <span id="bioCount">0</span>/160
                   </div>
                 </div>
-                <div class="avatar-controls">
-                  <input
-                    type="file"
-                    id="edit-avatar-upload"
-                    accept="image/*"
-                    style="display: none"
-                  />
-                  <button
-                    type="button"
-                    class="profile-btn profile-btn-secondary"
-                    id="edit-change-avatar"
-                  >
-                    Change Avatar
-                  </button>
-                  <button
-                    type="button"
-                    class="profile-btn profile-btn-secondary"
-                    id="edit-remove-avatar"
-                    style="display: none"
-                  >
-                    Remove Avatar
-                  </button>
-                  <div
-                    id="avatarRadiusControls"
-                    style="display: none; margin-top: 12px"
-                  >
-                    <label>Profile corner radius</label>
-                    <div
-                      style="
-                        display: flex;
-                        gap: 8px;
-                        align-items: center;
-                        margin-top: 6px;
-                      "
-                    >
-                      <button
-                        type="button"
-                        class="profile-btn"
-                        id="radius-preset-square"
-                      >
-                        Square
-                      </button>
-                      <button
-                        type="button"
-                        class="profile-btn"
-                        id="radius-preset-default"
-                      >
-                        Default
-                      </button>
-                      <input
-                        id="radius-input"
-                        type="number"
-                        min="0"
-                        max="1000"
-                        value="4"
-                        style="width: 80px; padding: 6px"
-                      />
-                      <span style="font-size: 12px; color: var(--muted)">
-                        px
-                      </span>
-                    </div>
+      
+                <div class="form-group">
+                  <label for="editPronouns">Pronouns</label>
+                  <input type="text" id="editPronouns" maxlength="30" placeholder="e.g., she/her, he/him, they/them" />
+                  <div class="char-count">
+                    <span id="pronounsCount">0</span>/30
+                  </div>
+                </div>
+      
+                <div class="form-group">
+                  <label for="editLocation">Location</label>
+                  <input type="text" id="editLocation" maxlength="30" placeholder="Where are you?" />
+                  <div class="char-count">
+                    <span id="locationCount">0</span>/30
+                  </div>
+                </div>
+      
+                <div class="form-group">
+                  <label for="editWebsite">Website</label>
+                  <input type="url" id="editWebsite" maxlength="100" placeholder="https://example.com" />
+                  <div class="char-count">
+                    <span id="websiteCount">0</span>/100
                   </div>
                 </div>
               </div>
-
-              <div
-                id="grayOutlinesSection"
-                class="form-group"
-                style="display: none"
-              >
-                <label>Checkmark Outline</label>
-                <div id="checkmarkOutlinePickerContainer"></div>
-                <label style="margin-top: 12px">Avatar Outline</label>
-                <div id="avatarOutlinePickerContainer"></div>
-                <p
-                  style="font-size: 12px; color: var(--muted); margin-top: 6px"
-                >
-                  Custom outline colors or gradients for your gray checkmark
-                </p>
-              </div>
-
-              <div class="banner-section">
-                <label>Profile Banner</label>
-                <div class="banner-preview">
-                  <div id="edit-current-banner" class="banner-image">
-                    <div class="banner-overlay">
-                      <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                      >
-                        <path
-                          d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
-                        />
+      
+              <div class="edit-profile-tab-content hidden" id="appearanceTab">
+                <div class="avatar-section">
+                  <label>Profile Picture</label>
+                  <div class="avatar-preview">
+                    <img id="edit-current-avatar" src="" alt="Your avatar" />
+                    <div class="avatar-overlay">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
                         <circle cx="12" cy="13" r="4" />
                       </svg>
                     </div>
                   </div>
+                  <div class="avatar-controls">
+                    <input type="file" id="edit-avatar-upload" accept="image/*" style="display: none" />
+                    <button type="button" class="profile-btn profile-btn-secondary" id="edit-change-avatar">
+                      Change Avatar
+                    </button>
+                    <button type="button" class="profile-btn profile-btn-secondary" id="edit-remove-avatar" style="display: none">
+                      Remove Avatar
+                    </button>
+                    <div id="avatarRadiusControls" style="display: none; margin-top: 12px">
+                      <label>Profile corner radius</label>
+                      <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px">
+                        <button type="button" class="profile-btn" id="radius-preset-square">Square</button>
+                        <button type="button" class="profile-btn" id="radius-preset-default">Default</button>
+                        <input id="radius-input" type="number" min="0" max="1000" value="4" style="width: 80px; padding: 6px" />
+                        <span style="font-size: 12px; color: var(--muted)">px</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div class="banner-controls">
-                  <input
-                    type="file"
-                    id="edit-banner-upload"
-                    accept="image/*"
-                    style="display: none"
-                  />
-                  <button
-                    type="button"
-                    class="profile-btn profile-btn-secondary"
-                    id="edit-change-banner"
-                  >
-                    Change Banner
+      
+                <div class="banner-section">
+                  <label>Profile Banner</label>
+                  <div class="banner-preview">
+                    <div id="edit-current-banner" class="banner-image">
+                      <div class="banner-overlay">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                          <circle cx="12" cy="13" r="4" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="banner-controls">
+                    <input type="file" id="edit-banner-upload" accept="image/*" style="display: none" />
+                    <button type="button" class="profile-btn profile-btn-secondary" id="edit-change-banner">
+                      Change Banner
+                    </button>
+                    <button type="button" class="profile-btn profile-btn-secondary" id="edit-remove-banner" style="display: none">
+                      Remove Banner
+                    </button>
+                  </div>
+                </div>
+      
+                <div id="grayOutlinesSection" class="form-group" style="display: none">
+                  <label>Checkmark Outline</label>
+                  <div id="checkmarkOutlinePickerContainer"></div>
+                  <label style="margin-top: 12px">Avatar Outline</label>
+                  <div id="avatarOutlinePickerContainer"></div>
+                  <p style="font-size: 12px; color: var(--muted); margin-top: 6px">
+                    Custom outline colors or gradients for your gray checkmark
+                  </p>
+                </div>
+              </div>
+      
+              <div class="edit-profile-tab-content hidden" id="settingsTab">
+                <div class="form-group">
+                  <label for="editLabelType">Account Label</label>
+                  <select id="editLabelType">
+                    <option value="">None</option>
+                    <option value="parody">Parody Account</option>
+                    <option value="fan">Fan Account</option>
+                    <option value="commentary">Commentary Account</option>
+                  </select>
+                  <p style="font-size: 12px; color: var(--muted); margin-top: 6px">
+                    Add a label to clarify your account's purpose
+                  </p>
+                </div>
+      
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="editLabelAutomated" />
+                    <span>Automated Account</span>
+                  </label>
+                  <p style="font-size: 12px; color: var(--muted); margin-top: 6px">
+                    Enable this if your account is primarily automated
+                  </p>
+                </div>
+      
+                <div class="form-group" id="affiliateRemoveSection" style="display: none">
+                  <label>Affiliate Badge</label>
+                  <p style="font-size: 14px; color: var(--muted); margin-bottom: 8px">
+                    You are currently affiliated with another account.
+                  </p>
+                  <button type="button" class="profile-btn profile-btn-secondary" id="removeAffiliateBtn">
+                    Remove affiliate badge
                   </button>
-                  <button
-                    type="button"
-                    class="profile-btn profile-btn-secondary"
-                    id="edit-remove-banner"
-                    style="display: none"
-                  >
-                    Remove Banner
-                  </button>
                 </div>
-              </div>
-
-              <div class="form-group">
-                <label for="editDisplayName">Display name</label>
-                <!-- Tr why did tweeta account get deleted What it got deleted idk why oh 
-                 it was probably wine using a the vpn but i meant like the @tweetapus accound nthen me matss dleeting all accounts using that ip HOW aDID YOU TYPddresEs  SO FAST WHAT
-                 youre also typing pretty fast what is happening with hub of git or micro$hit servers rn super fast servers🚀 true-->
-                <input type="text" id="editDisplayName" maxlength="50" />
-                <div class="char-count">
-                  <span id="displayNameCount">0</span>
-                  /50
-                </div>
-                <p class="tip">
-                  <b>Tip!</b>
-                  If your display name is the same as your username, your
-                  username won’t appear on your tweets.
-                </p>
-              </div>
-
-              <div class="form-group">
-                <label for="editBio">Bio</label>
-                <textarea
-                  id="editBio"
-                  maxlength="160"
-                  placeholder="Tell us about yourself"
-                ></textarea>
-                <div class="char-count">
-                  <span id="bioCount">0</span>
-                  /160
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="editPronouns">Pronouns</label>
-                <input
-                  type="text"
-                  id="editPronouns"
-                  maxlength="30"
-                  placeholder="e.g., she/her, he/him, they/them"
-                />
-                <div class="char-count">
-                  <span id="pronounsCount">0</span>
-                  /30
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="editLocation">Location</label>
-                <input
-                  type="text"
-                  id="editLocation"
-                  maxlength="30"
-                  placeholder="Where are you?"
-                />
-                <div class="char-count">
-                  <span id="locationCount">0</span>
-                  /30
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="editWebsite">Website</label>
-                <input
-                  type="url"
-                  id="editWebsite"
-                  maxlength="100"
-                  placeholder="https://example.com"
-                />
-                <div class="char-count">
-                  <span id="websiteCount">0</span>
-                  /100
-                </div>
-              </div>
-
-              <div class="form-group">
-                <label for="editLabelType">Account Label</label>
-                <select id="editLabelType">
-                  <option value="">None</option>
-                  <option value="parody">Parody Account</option>
-                  <option value="fan">Fan Account</option>
-                  <option value="commentary">Commentary Account</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label class="checkbox-label">
-                  <input type="checkbox" id="editLabelAutomated" />
-                  <span>Automated Account</span>
-                </label>
-              </div>
-
-              <div
-                class="form-group"
-                id="affiliateRemoveSection"
-                style="display: none"
-              >
-                <label>Affiliate Badge</label>
-                <p
-                  style="
-                    font-size: 14px;
-                    color: var(--muted);
-                    margin-bottom: 8px;
-                  "
-                >
-                  You are currently affiliated with another account.
-                </p>
-                <button
-                  type="button"
-                  class="profile-btn profile-btn-secondary"
-                  id="removeAffiliateBtn"
-                >
-                  Remove affiliate badge
-                </button>
               </div>
             </form>
           </div>
-
+      
           <div class="modal-actions">
-            <button type="button" class="profile-btn" id="cancelEditBtn">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="profile-btn profile-btn-primary"
-              form="editProfileForm"
-            >
-              Save
-            </button>
+            <button type="button" class="profile-btn" id="cancelEditBtn">Cancel</button>
+            <button type="submit" class="profile-btn profile-btn-primary" form="editProfileForm">Save</button>
           </div>
         </div>
       </div>
-
       <div class="modal hidden" id="createCommunityModal">
         <div class="modal-content">
           <div class="modal-header">

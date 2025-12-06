@@ -1615,6 +1615,20 @@ const createDelegatesContent = () => {
 
 	section.appendChild(invitationsGroup);
 
+	const sentInvitationsGroup = document.createElement("div");
+	sentInvitationsGroup.className = "setting-group";
+
+	const sentInvitationsH2 = document.createElement("h2");
+	sentInvitationsH2.textContent = "Sent Invitations";
+	sentInvitationsGroup.appendChild(sentInvitationsH2);
+
+	const sentInvitationsList = document.createElement("div");
+	sentInvitationsList.id = "sent-invitations-list";
+	sentInvitationsList.className = "delegates-list";
+	sentInvitationsGroup.appendChild(sentInvitationsList);
+
+	section.appendChild(sentInvitationsGroup);
+
 	setTimeout(() => {
 		loadDelegates();
 	}, 100);
@@ -1626,15 +1640,17 @@ const loadDelegates = async () => {
 	const delegatesList = document.getElementById("delegates-list");
 	const delegationsList = document.getElementById("delegations-list");
 	const invitationsList = document.getElementById("pending-invitations-list");
+	const sentInvitationsList = document.getElementById("sent-invitations-list");
 
-	if (!delegatesList || !delegationsList || !invitationsList) return;
+	if (!delegatesList || !delegationsList || !invitationsList || !sentInvitationsList) return;
 
 	try {
-		const [delegatesData, delegationsData, invitationsData] = await Promise.all(
+		const [delegatesData, delegationsData, invitationsData, sentInvitationsData] = await Promise.all(
 			[
 				query("/delegates/my-delegates"),
 				query("/delegates/my-delegations"),
 				query("/delegates/pending-invitations"),
+				query("/delegates/sent-invitations"),
 			],
 		);
 
@@ -1678,6 +1694,20 @@ const loadDelegates = async () => {
 			emptyP.className = "delegates-empty";
 			emptyP.textContent = "No pending invitations";
 			invitationsList.appendChild(emptyP);
+		}
+
+		if (sentInvitationsData.invitations && sentInvitationsData.invitations.length > 0) {
+			sentInvitationsList.innerHTML = "";
+			sentInvitationsData.invitations.forEach((invitation) => {
+				const item = createSentInvitationItem(invitation);
+				sentInvitationsList.appendChild(item);
+			});
+		} else {
+			sentInvitationsList.innerHTML = "";
+			const emptyP = document.createElement("p");
+			emptyP.className = "delegates-empty";
+			emptyP.textContent = "No sent invitations";
+			sentInvitationsList.appendChild(emptyP);
 		}
 	} catch (error) {
 		console.error("Failed to load delegates:", error);
@@ -1830,6 +1860,64 @@ const createInvitationItem = (invitation) => {
 
 	container.appendChild(userInfo);
 	container.appendChild(actions);
+
+	return container;
+};
+
+const createSentInvitationItem = (invitation) => {
+	const container = document.createElement("div");
+	container.className = "delegate-item";
+
+	const userInfo = document.createElement("div");
+	userInfo.className = "delegate-user-info";
+
+	const avatar = document.createElement("img");
+	avatar.src = invitation.avatar || "/shared/assets/default-avatar.png";
+	avatar.className = "delegate-avatar";
+
+	const textInfo = document.createElement("div");
+
+	const name = document.createElement("div");
+	name.className = "delegate-name";
+	name.textContent = invitation.name || invitation.username;
+
+	const username = document.createElement("div");
+	username.className = "delegate-username";
+	username.textContent = `@${invitation.username}`;
+
+	textInfo.appendChild(name);
+	textInfo.appendChild(username);
+
+	userInfo.appendChild(avatar);
+	userInfo.appendChild(textInfo);
+
+	const cancelBtn = document.createElement("button");
+	cancelBtn.className = "btn danger delegate-remove-btn";
+	cancelBtn.textContent = "Cancel";
+	cancelBtn.onclick = async () => {
+		if (!confirm(`Cancel invitation to @${invitation.username}?`)) return;
+
+		try {
+			const result = await query(`/delegates/${invitation.id}`, {
+				method: "DELETE",
+			});
+
+			if (result.success) {
+				toastQueue.add(`<h1>Cancelled</h1><p>Invitation cancelled</p>`);
+				loadDelegates();
+			} else {
+				toastQueue.add(
+					`<h1>Error</h1><p>${result.error || "Failed to cancel invitation"}</p>`,
+				);
+			}
+		} catch (error) {
+			console.error("Failed to cancel invitation:", error);
+			toastQueue.add(`<h1>Error</h1><p>Failed to cancel invitation</p>`);
+		}
+	};
+
+	container.appendChild(userInfo);
+	container.appendChild(cancelBtn);
 
 	return container;
 };

@@ -104,10 +104,10 @@ const handleCustomBadgeAction = (badge, badgeEl, userId, username) => {
 		}
 		const contentDiv = document.createElement("div");
 		if (config.content) {
-			if (typeof window.marked !== "undefined") {
-				contentDiv.innerHTML = DOMPurify.sanitize(window.marked.parse(config.content));
+			if (typeof marked !== "undefined") {
+				contentDiv.innerHTML = DOMPurify.sanitize(marked.parse(config.content), DOMPURIFY_CONFIG);
 			} else {
-				contentDiv.innerHTML = DOMPurify.sanitize(config.content.replace(/\n/g, "<br>"));
+				contentDiv.innerHTML = DOMPurify.sanitize(config.content.replace(/\n/g, "<br>"), DOMPURIFY_CONFIG);
 			}
 		}
 		wrapper.appendChild(contentDiv);
@@ -1521,7 +1521,7 @@ export const createTweetElement = (tweet, config = {}) => {
 			match = tweetLinkRegex.exec(rawContent);
 		}
 
-		const isExpandedView = clickToOpen === false;
+		const isExpandedView = clickToOpen === false && size !== "preview";
 		const shouldTrim =
 			contentWithoutLinks.length > 300 &&
 			!isExpandedView &&

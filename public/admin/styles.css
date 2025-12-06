@@ -400,3 +400,7 @@ body[data-admin="1"] .image-cropper-overlay .image-cropper-panel .image-cropper-
   max-height: 75vh;
   overflow-y: auto;
 }
+
+#ipBanConfirmModal {
+  z-index: 1060;
+}

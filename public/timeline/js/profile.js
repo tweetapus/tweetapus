@@ -26,10 +26,21 @@ import {
 } from "../../shared/tab-indicator.js";
 import toastQueue from "../../shared/toasts.js";
 import { createModal, createPopup } from "../../shared/ui-utils.js";
+import { marked } from "/public/shared/assets/js/marked.js";
 import query from "./api.js";
 import getUser, { authToken } from "./auth.js";
 import switchPage, { updatePageTitle } from "./pages.js";
 import { addTweetToTimeline, createTweetElement } from "./tweets.js";
+
+const BADGE_DOMPURIFY_CONFIG = {
+	ALLOWED_TAGS: [
+		"b", "i", "u", "s", "a", "p", "br", "marquee", "strong", "em",
+		"code", "pre", "blockquote", "h1", "h2", "h3", "h4", "h5", "h6",
+		"ul", "ol", "li", "span", "big", "sub", "sup", "del", "hr", "img",
+		"table", "thead", "tbody", "tr", "th", "td", "div",
+	],
+	ALLOWED_ATTR: ["href", "target", "rel", "class", "src", "alt", "width", "height", "style"],
+};
 
 const attachCheckmarkPopup = (badgeEl, type) => {
 	if (!badgeEl) return;
@@ -83,13 +94,15 @@ const handleCustomBadgeAction = (badge, badgeEl, userId, username) => {
 		}
 		const contentDiv = document.createElement("div");
 		if (config.content) {
-			if (typeof window.marked !== "undefined") {
+			if (typeof marked !== "undefined") {
 				contentDiv.innerHTML = DOMPurify.sanitize(
-					window.marked.parse(config.content),
+					marked.parse(config.content),
+					BADGE_DOMPURIFY_CONFIG,
 				);
 			} else {
 				contentDiv.innerHTML = DOMPurify.sanitize(
 					config.content.replace(/\n/g, "<br>"),
+					BADGE_DOMPURIFY_CONFIG,
 				);
 			}
 		}
@@ -2224,10 +2237,25 @@ const showEditModal = () => {
 		el.setAttribute("aria-hidden", "true");
 	});
 
-	setTimeout(() => {
-		const firstInput = document.getElementById("editDisplayName");
-		if (firstInput) firstInput.focus();
-	}, 0);
+	const tabBtns = modalEl.querySelectorAll(".edit-profile-tab-btn");
+	const tabContents = modalEl.querySelectorAll(".edit-profile-tab-content");
+
+	tabBtns.forEach((btn) => {
+		btn.addEventListener("click", () => {
+			const targetTab = btn.dataset.tab;
+
+			tabBtns.forEach((b) => b.classList.remove("active"));
+			btn.classList.add("active");
+
+			tabContents.forEach((content) => {
+				if (content.id === `${targetTab}Tab`) {
+					content.classList.remove("hidden");
+				} else {
+					content.classList.add("hidden");
+				}
+			});
+		});
+	});
 
 	const escHandler = (e) => {
 		if (e.key === "Escape") closeEditModal();
@@ -3494,7 +3522,12 @@ async function showFollowersList(username, initialType = "followers") {
 	modalContent.appendChild(tabNav);
 	modalContent.appendChild(listContainer);
 
-	let modal;
+	const modal = createModal({
+		title: `@${username}`,
+		content: modalContent,
+		className: "followers-modal-overlay",
+	});
+
 	let currentTab = initialType;
 
 	const loadTabContent = async (type) => {
@@ -3597,12 +3630,6 @@ async function showFollowersList(username, initialType = "followers") {
 
 		updateTabIndicator(tabNav, tabBtn);
 		loadTabContent(newTab);
-	});
-
-	modal = createModal({
-		title: `@${username}`,
-		content: modalContent,
-		className: "modal-overlay followers-modal-overlay",
 	});
 
 	setTimeout(() => {
