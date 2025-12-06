@@ -4,6 +4,7 @@ import {
 	applyAvatarOutline,
 	createVerificationBadge,
 } from "/public/shared/badge-utils.js";
+import { attachHoverCard } from "/public/shared/hover-card.js";
 import { showReportModal } from "../../shared/report-modal.js";
 import toastQueue from "../../shared/toasts.js";
 import {
@@ -1029,6 +1030,8 @@ export const createTweetElement = (tweet, config = {}) => {
 		});
 	});
 
+	attachHoverCard(tweetHeaderAvatarEl, tweet.author.username);
+
 	tweetHeaderEl.appendChild(tweetHeaderAvatarEl);
 
 	const tweetHeaderInfoEl = document.createElement("div");
@@ -1048,6 +1051,8 @@ export const createTweetElement = (tweet, config = {}) => {
 			openProfile(tweet.author.username);
 		});
 	});
+
+	attachHoverCard(tweetHeaderNameEl, tweet.author.username);
 
 	if (tweet.author.gold) {
 		const badge = createVerificationBadge({ type: "gold" });

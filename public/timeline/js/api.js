@@ -38,57 +38,6 @@ async function showRateLimitCaptcha() {
 			</div>
 		`;
 
-		const style = document.createElement("style");
-		style.textContent = `
-			.rate-limit-modal {
-				position: fixed;
-				top: 0;
-				left: 0;
-				width: 100%;
-				height: 100%;
-				background-color: rgba(0, 0, 0, 0.7);
-				display: flex;
-				align-items: center;
-				justify-content: center;
-				z-index: 10000;
-				animation: fadeIn 0.2s ease-out;
-			}
-			.rate-limit-modal-content {
-				background-color: var(--bg-primary, #fff);
-				border-radius: 16px;
-				padding: 24px;
-				max-width: 360px;
-				width: 90%;
-				text-align: center;
-				box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-			}
-			.rate-limit-modal-content p {
-				margin: 0px;
-				padding-top: 1em;
-				font-size: 15px;
-			}
-			.progress-bar {
-				width: 100%;
-				height: 8px;
-				background-color: var(--border-primary);
-				border-radius: 4px;
-				overflow: hidden;
-				max-width: 250px;
-				margin: auto;
-				margin-top: 40px;
-				margin-bottom: 1em;
-			}
-			.progress-bar-inner {
-				width: 0%;
-				height: 100%;
-				background-color: var(--primary);
-			}
-			@keyframes fadeIn {
-				from { opacity: 0; }
-				to { opacity: 1; }
-			}
-		`;
-		document.head.appendChild(style);
 		document.body.appendChild(rateLimitModal);
 
 		const capContainer = rateLimitModal.querySelector(".cap-container");
@@ -107,7 +56,6 @@ async function showRateLimitCaptcha() {
 
 				setTimeout(() => {
 					rateLimitModal.remove();
-					style.remove();
 					rateLimitModal = null;
 				}, 3_000);
 			}

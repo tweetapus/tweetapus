@@ -934,15 +934,28 @@
                           </div>
                         </div>
                         <div class="mb-3">
-                          <label class="form-label">Image URL</label>
+                          <label class="form-label">Badge Image</label>
                           <input
-                            type="url"
+                            type="file"
                             class="form-control"
-                            id="badgeImageUrl"
-                            placeholder="https://example.com/badge.webp"
+                            id="badgeImageFile"
+                            accept="image/*"
+                            style="display: none;"
                           />
+                          <input type="hidden" id="badgeImageUrl" />
+                          <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="badgeImageChooseBtn">
+                              <i class="bi bi-image"></i> Choose Image
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-sm d-none" id="badgeImageClearBtn">
+                              <i class="bi bi-x"></i> Clear
+                            </button>
+                          </div>
+                          <div id="badgeImagePreviewContainer" class="mt-2 d-none">
+                            <img id="badgeImagePreview" src="" alt="Badge preview" style="max-width: 64px; max-height: 64px; border-radius: 4px;" />
+                          </div>
                           <div class="form-text">
-                            PNG/WebP preferred. Leave empty if using SVG.
+                            Leave empty if using SVG. Image will be cropped to square.
                           </div>
                         </div>
                         <div class="row g-2">

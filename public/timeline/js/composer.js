@@ -848,43 +848,41 @@ export const useComposer = (
 	};
 
 	const showVibeModal = () => {
-		const modal = document.createElement("div");
-		modal.className = "modal-overlay";
-		modal.innerHTML = `
-			<div class="modal vibe-modal">
-				<div class="modal-header">
-					<h3>Choose @h's vibe</h3>
-					<button type="button" class="modal-close">×</button>
-				</div>
-				<div class="vibe-options-list">
-					${VIBES.map(
-						(vibe) => `
-						<button type="button" class="vibe-option-item${vibe.id === selectedVibe ? " selected" : ""}" data-vibe="${vibe.id}">
-							<span class="vibe-emoji">${vibe.emoji}</span>
-							<span class="vibe-label">${vibe.label}</span>
-						</button>
-					`,
-					).join("")}
-				</div>
-			</div>
-		`;
-
-		const closeModal = () => modal.remove();
-
-		modal.querySelector(".modal-close").addEventListener("click", closeModal);
-		modal.addEventListener("click", (e) => {
-			if (e.target === modal) closeModal();
+		const content = document.createElement("div");
+		content.className = "vibe-options-list";
+		
+		VIBES.forEach((vibe) => {
+			const btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = `vibe-option-item${vibe.id === selectedVibe ? " selected" : ""}`;
+			btn.dataset.vibe = vibe.id;
+			
+			const emoji = document.createElement("span");
+			emoji.className = "vibe-emoji";
+			emoji.textContent = vibe.emoji;
+			
+			const label = document.createElement("span");
+			label.className = "vibe-label";
+			label.textContent = vibe.label;
+			
+			btn.appendChild(emoji);
+			btn.appendChild(label);
+			content.appendChild(btn);
 		});
 
-		modal.querySelectorAll(".vibe-option-item").forEach((btn) => {
+		const { close } = createModal({
+			title: "Choose @h's vibe",
+			content,
+			className: "vibe-modal",
+		});
+
+		content.querySelectorAll(".vibe-option-item").forEach((btn) => {
 			btn.addEventListener("click", () => {
 				selectedVibe = btn.dataset.vibe;
 				updateVibeButton();
-				closeModal();
+				close();
 			});
 		});
-
-		document.body.appendChild(modal);
 	};
 
 	const handleDragOver = (e) => {

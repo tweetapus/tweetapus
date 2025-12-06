@@ -8683,6 +8683,59 @@ class AdminPanel {
 				});
 			});
 		}
+
+		const imageFileInput = document.getElementById("badgeImageFile");
+		const imageUrlInput = document.getElementById("badgeImageUrl");
+		const chooseBtn = document.getElementById("badgeImageChooseBtn");
+		const clearBtn = document.getElementById("badgeImageClearBtn");
+		const previewContainer = document.getElementById("badgeImagePreviewContainer");
+		const previewImg = document.getElementById("badgeImagePreview");
+
+		if (chooseBtn && imageFileInput) {
+			chooseBtn.addEventListener("click", () => imageFileInput.click());
+			imageFileInput.addEventListener("change", async () => {
+				const file = imageFileInput.files?.[0];
+				if (!file) return;
+				try {
+					const cropped = await window.openImageCropper(file, { aspect: 1, size: 128 });
+					if (cropped === window.CROP_CANCELLED) {
+						imageFileInput.value = "";
+						return;
+					}
+					const fd = new FormData();
+					fd.append("file", cropped, cropped.name);
+					const uploadResp = await fetch("/api/upload", {
+						method: "POST",
+						headers: { Authorization: `Bearer ${this.token}` },
+						body: fd,
+					});
+					const uploadData = await uploadResp.json();
+					if (!uploadResp.ok || uploadData?.error) {
+						this.showError(uploadData?.error || "Failed to upload image");
+						imageFileInput.value = "";
+						return;
+					}
+					imageUrlInput.value = uploadData.file.url;
+					if (previewImg) previewImg.src = uploadData.file.url;
+					if (previewContainer) previewContainer.classList.remove("d-none");
+					if (clearBtn) clearBtn.classList.remove("d-none");
+				} catch (err) {
+					this.showError(err.message || "Failed to process image");
+				} finally {
+					imageFileInput.value = "";
+				}
+			});
+		}
+
+		if (clearBtn) {
+			clearBtn.addEventListener("click", () => {
+				if (imageUrlInput) imageUrlInput.value = "";
+				if (previewImg) previewImg.src = "";
+				if (previewContainer) previewContainer.classList.add("d-none");
+				clearBtn.classList.add("d-none");
+			});
+		}
+
 		form.addEventListener("submit", async (e) => {
 			e.preventDefault();
 			const name = document.getElementById("badgeName").value.trim();
@@ -8714,6 +8767,10 @@ class AdminPanel {
 				this.showSuccess("Badge created");
 				form.reset();
 				preview.innerHTML = "";
+				if (imageUrlInput) imageUrlInput.value = "";
+				if (previewImg) previewImg.src = "";
+				if (previewContainer) previewContainer.classList.add("d-none");
+				if (clearBtn) clearBtn.classList.add("d-none");
 				await this.loadBadgesManager();
 			} catch (err) {
 				this.showError(err.message || "Failed to create badge");
@@ -8746,7 +8803,19 @@ class AdminPanel {
 							<div class="mb-3"><label class="form-label">Name</label><input type="text" class="form-control" id="editBadgeName"></div>
 							<div class="mb-3"><label class="form-label">Description</label><textarea class="form-control" id="editBadgeDescription" rows="2"></textarea></div>
 							<div class="mb-3"><label class="form-label">SVG Content</label><textarea class="form-control" id="editBadgeSvgContent" rows="3"></textarea></div>
-							<div class="mb-3"><label class="form-label">Image URL</label><input type="text" class="form-control" id="editBadgeImageUrl"></div>
+							<div class="mb-3">
+								<label class="form-label">Badge Image</label>
+								<input type="file" class="form-control" id="editBadgeImageFile" accept="image/*" style="display: none;">
+								<input type="hidden" id="editBadgeImageUrl">
+								<div class="d-flex align-items-center gap-2">
+									<button type="button" class="btn btn-outline-secondary btn-sm" id="editBadgeImageChooseBtn"><i class="bi bi-image"></i> Choose Image</button>
+									<button type="button" class="btn btn-outline-danger btn-sm d-none" id="editBadgeImageClearBtn"><i class="bi bi-x"></i> Clear</button>
+								</div>
+								<div id="editBadgeImagePreviewContainer" class="mt-2 d-none">
+									<img id="editBadgeImagePreview" src="" alt="Badge preview" style="max-width: 64px; max-height: 64px; border-radius: 4px;">
+								</div>
+								<div class="form-text">Leave empty if using SVG. Image will be cropped to square.</div>
+							</div>
 							<div class="row g-2">
 								<div class="col-md-6"><label class="form-label">Click Action</label><select class="form-select" id="editBadgeActionType"><option value="none">None</option><option value="url">Open URL</option><option value="modal">Open modal</option><option value="client_js">Run client JS</option></select></div>
 								<div class="col-md-6"><label class="form-label">Action Value</label><input type="text" class="form-control" id="editBadgeActionValue"></div>
@@ -8768,6 +8837,74 @@ class AdminPanel {
 			badge.action_type || "none";
 		document.getElementById("editBadgeActionValue").value =
 			badge.action_value || "";
+
+		const editImageFileInput = document.getElementById("editBadgeImageFile");
+		const editImageUrlInput = document.getElementById("editBadgeImageUrl");
+		const editChooseBtn = document.getElementById("editBadgeImageChooseBtn");
+		const editClearBtn = document.getElementById("editBadgeImageClearBtn");
+		const editPreviewContainer = document.getElementById("editBadgeImagePreviewContainer");
+		const editPreviewImg = document.getElementById("editBadgeImagePreview");
+
+		if (badge.image_url) {
+			if (editPreviewImg) editPreviewImg.src = badge.image_url;
+			if (editPreviewContainer) editPreviewContainer.classList.remove("d-none");
+			if (editClearBtn) editClearBtn.classList.remove("d-none");
+		} else {
+			if (editPreviewImg) editPreviewImg.src = "";
+			if (editPreviewContainer) editPreviewContainer.classList.add("d-none");
+			if (editClearBtn) editClearBtn.classList.add("d-none");
+		}
+
+		const newChooseBtn = editChooseBtn.cloneNode(true);
+		editChooseBtn.parentNode.replaceChild(newChooseBtn, editChooseBtn);
+		const newClearBtn = editClearBtn.cloneNode(true);
+		editClearBtn.parentNode.replaceChild(newClearBtn, editClearBtn);
+		if (badge.image_url) newClearBtn.classList.remove("d-none");
+		else newClearBtn.classList.add("d-none");
+
+		newChooseBtn.addEventListener("click", () => editImageFileInput.click());
+
+		const newFileInput = editImageFileInput.cloneNode(true);
+		editImageFileInput.parentNode.replaceChild(newFileInput, editImageFileInput);
+		newFileInput.addEventListener("change", async () => {
+			const file = newFileInput.files?.[0];
+			if (!file) return;
+			try {
+				const cropped = await window.openImageCropper(file, { aspect: 1, size: 128 });
+				if (cropped === window.CROP_CANCELLED) {
+					newFileInput.value = "";
+					return;
+				}
+				const fd = new FormData();
+				fd.append("file", cropped, cropped.name);
+				const uploadResp = await fetch("/api/upload", {
+					method: "POST",
+					headers: { Authorization: `Bearer ${this.token}` },
+					body: fd,
+				});
+				const uploadData = await uploadResp.json();
+				if (!uploadResp.ok || uploadData?.error) {
+					this.showError(uploadData?.error || "Failed to upload image");
+					newFileInput.value = "";
+					return;
+				}
+				editImageUrlInput.value = uploadData.file.url;
+				if (editPreviewImg) editPreviewImg.src = uploadData.file.url;
+				if (editPreviewContainer) editPreviewContainer.classList.remove("d-none");
+				newClearBtn.classList.remove("d-none");
+			} catch (err) {
+				this.showError(err.message || "Failed to process image");
+			} finally {
+				newFileInput.value = "";
+			}
+		});
+
+		newClearBtn.addEventListener("click", () => {
+			editImageUrlInput.value = "";
+			if (editPreviewImg) editPreviewImg.src = "";
+			if (editPreviewContainer) editPreviewContainer.classList.add("d-none");
+			newClearBtn.classList.add("d-none");
+		});
 
 		const bsModal = new bootstrap.Modal(modal);
 		const saveBtn = document.getElementById("saveEditBadgeBtn");

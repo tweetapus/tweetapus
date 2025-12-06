@@ -5,42 +5,21 @@ export async function openAccountSwitcher() {
 	modal.className = "account-switcher-modal";
 
 	const container = document.createElement("div");
-	container.style.cssText = `
-		background: var(--bg-primary);
-		border-radius: 12px;
-		padding: 24px;
-		max-width: 500px;
-		width: 90%;
-		max-height: 80vh;
-		overflow-y: auto;
-	`;
+	container.className = "account-switcher-container";
 
 	const header = document.createElement("div");
-	header.style.cssText = `
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 20px;
-	`;
+	header.className = "account-switcher-header";
 
 	const title = document.createElement("h3");
 	title.textContent = "Switch accounts";
-	title.style.cssText = "margin: 0; font-size: 20px;";
 
 	const closeBtn = document.createElement("button");
-	closeBtn.textContent = "×";
-	closeBtn.style.cssText = `
-		background: none;
-		border: none;
-		font-size: 28px;
-		cursor: pointer;
-		color: var(--text-secondary);
-		padding: 0;
-		width: 32px;
-		height: 32px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
+	closeBtn.className = "account-switcher-close";
+	closeBtn.innerHTML = `
+		<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<line x1="18" y1="6" x2="6" y2="18"></line>
+			<line x1="6" y1="6" x2="18" y2="18"></line>
+		</svg>
 	`;
 	closeBtn.onclick = () => modal.remove();
 
@@ -49,12 +28,7 @@ export async function openAccountSwitcher() {
 	container.appendChild(header);
 
 	const accountsList = document.createElement("div");
-	accountsList.style.cssText = `
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		margin-bottom: 20px;
-	`;
+	accountsList.className = "accounts-list";
 
 	try {
 		const storedAccounts = JSON.parse(localStorage.getItem("accounts") || "[]");

@@ -1,12 +1,6 @@
 // https://github.com/rayriffy/elysia-rate-limit#generator
 
 export default function (req, server) {
-	if (process.env.NODE_ENV === "development") {
-		return Math.random().toFixed(2);
-	}
-	if (req.method === "GET") {
-		return Math.random().toString();
-	}
 	const url = new URL(req.url);
 	if (url.pathname.includes("/cap/")) {
 		return Math.random().toString();

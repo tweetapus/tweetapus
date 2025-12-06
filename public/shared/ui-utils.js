@@ -420,7 +420,7 @@ export function createModal(options) {
 	} = options;
 
 	const overlay = document.createElement("div");
-	overlay.className = "composer-overlay";
+	overlay.className = "modal-overlay";
 
 	const modal = document.createElement("div");
 	modal.className = `modal${className ? ` ${className}` : ""}`;
@@ -436,9 +436,13 @@ export function createModal(options) {
 	`;
 
 	const closeModal = () => {
-		overlay.remove();
-		document.removeEventListener("keydown", handleKeyDown);
-		onClose();
+		overlay.classList.add("closing");
+		modal.classList.add("closing");
+		setTimeout(() => {
+			overlay.remove();
+			document.removeEventListener("keydown", handleKeyDown);
+			onClose();
+		}, 200);
 	};
 
 	closeButton.addEventListener("click", closeModal);
@@ -475,6 +479,11 @@ export function createModal(options) {
 
 	overlay.appendChild(modal);
 	document.body.appendChild(overlay);
+
+	requestAnimationFrame(() => {
+		overlay.classList.add("visible");
+		modal.classList.add("visible");
+	});
 
 	if (className?.includes("settings-modal")) {
 		try {
