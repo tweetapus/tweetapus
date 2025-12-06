@@ -397,6 +397,7 @@ function createNotificationElement(group) {
 				avatar.src = notif.actor_avatar;
 				avatar.alt = notif.actor_name || notif.actor_username || "";
 				avatar.setAttribute("loading", "lazy");
+				avatar.setAttribute("draggable", "false");
 
 				if (
 					notif.actor_avatar_radius !== undefined &&

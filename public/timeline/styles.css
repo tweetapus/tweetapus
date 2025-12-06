@@ -4799,8 +4799,12 @@ nav {
 .direct-messages {
   display: none;
   flex-direction: column;
-  height: calc(100vh - 24px);
+  height: 100vh;
   overflow-y: auto;
+  margin-left: -12px;
+  margin-right: -12px;
+  margin-top: -12px;
+  margin-bottom: -12px;
 
   &.page-active {
     display: flex;
@@ -4809,7 +4813,7 @@ nav {
 
 @media (max-width: 768px) {
   .direct-messages {
-    height: calc(100vh - 94px);
+    height: calc(100vh - 61px)
   }
 }
 
