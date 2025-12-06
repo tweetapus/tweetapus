@@ -228,7 +228,7 @@ const updateQuoteCount = db.query(`
 `);
 
 const getQuotedTweet = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.checkmark_outline, users.avatar_outline
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.checkmark_outline, users.avatar_outline, users.label_type
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.id = ?
@@ -272,7 +272,7 @@ const getTotalPollVotes = db.query(`
 `);
 
 const getPollVoters = db.query(`
-  SELECT DISTINCT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+  SELECT DISTINCT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.label_type
   FROM poll_votes 
   JOIN users ON poll_votes.user_id = users.id 
   WHERE poll_votes.poll_id = ?
@@ -281,7 +281,7 @@ const getPollVoters = db.query(`
 `);
 
 const getTweetLikes = db.query(`
-  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.label_type
   FROM likes
   JOIN users ON likes.user_id = users.id
   WHERE likes.post_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
@@ -290,7 +290,7 @@ const getTweetLikes = db.query(`
 `);
 
 const getTweetRetweets = db.query(`
-  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.label_type
   FROM retweets
   JOIN users ON retweets.user_id = users.id
   WHERE retweets.post_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
@@ -299,7 +299,7 @@ const getTweetRetweets = db.query(`
 `);
 
 const getTweetQuotes = db.query(`
-  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius
+  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.label_type
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.quote_tweet_id = ? AND users.suspended = 0 AND users.shadowbanned = 0

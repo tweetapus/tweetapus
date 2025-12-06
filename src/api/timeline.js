@@ -24,7 +24,7 @@ const stripInternalFields = (obj) => {
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const getTimelinePosts = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost, users.label_type
   FROM posts 
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
@@ -36,7 +36,7 @@ const getTimelinePosts = db.query(`
 `);
 
 const getTimelinePostsBefore = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost, users.label_type
   FROM posts 
   JOIN users ON posts.user_id = users.id
   LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)
@@ -49,7 +49,7 @@ const getTimelinePostsBefore = db.query(`
 `);
 
 const getFollowingTimelinePosts = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost, users.label_type
   FROM posts 
   JOIN follows ON posts.user_id = follows.following_id
   JOIN users ON posts.user_id = users.id
@@ -105,7 +105,7 @@ const getTotalPollVotes = db.query(`
 `);
 
 const getPollVoters = db.query(`
-  SELECT DISTINCT users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius
+  SELECT DISTINCT users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.label_type
   FROM poll_votes 
   JOIN users ON poll_votes.user_id = users.id 
   WHERE poll_votes.poll_id = ?
@@ -139,14 +139,14 @@ const getAttachmentsByPostId = db.query(`
 `);
 
 const getQuotedTweet = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.label_type
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.id = ? AND users.suspended = 0 AND users.shadowbanned = 0
 `);
 
 const getTopReply = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.label_type
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.reply_to = ? AND users.suspended = 0 AND users.shadowbanned = 0
@@ -170,7 +170,7 @@ const getReplyWithAuthorResponse = db.query(`
 `);
 
 const getAuthorReplyToReply = db.query(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.label_type
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.reply_to = ? AND posts.user_id = ?
@@ -259,7 +259,7 @@ const getCardDataForTweet = (tweetId) => {
 const getTimelinePostsByIds = (ids, userId, isAdmin) => {
 	if (!ids || ids.length === 0) return [];
 	const placeholders = ids.map(() => "?").join(",");
-	const query = `SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost
+	const query = `SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.checkmark_outline, users.avatar_outline, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.super_tweeter, users.super_tweeter_boost, users.label_type
 			FROM posts
 			JOIN users ON posts.user_id = users.id
 			LEFT JOIN blocks ON (posts.user_id = blocks.blocked_id AND blocks.blocker_id = ?)

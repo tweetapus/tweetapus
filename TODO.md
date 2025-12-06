@@ -11,6 +11,8 @@
 - fix new-message-modal css being broken. <-- doing
 - fix parody labels on tweets <-- doing
 
+- fix three dots menu on profile not doing anything
+
 - fix limited amount of replies being shown on tweets with a huge replies count <-- doing
 
 **other things:**

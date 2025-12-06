@@ -19,7 +19,7 @@ const getIdentifier = (headers) => {
 };
 
 const getFollowers = db.prepare(`
-  SELECT users.id, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.bio, users.checkmark_outline, users.avatar_outline
+  SELECT users.id, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.bio, users.checkmark_outline, users.avatar_outline, users.label_type
   FROM follows
   JOIN users ON follows.follower_id = users.id
 	WHERE follows.following_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
@@ -28,7 +28,7 @@ const getFollowers = db.prepare(`
 `);
 
 const getFollowing = db.prepare(`
-  SELECT users.id, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.bio, users.checkmark_outline, users.avatar_outline
+  SELECT users.id, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.bio, users.checkmark_outline, users.avatar_outline, users.label_type
   FROM follows
   JOIN users ON follows.following_id = users.id
 	WHERE follows.follower_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
@@ -117,7 +117,7 @@ const updateOutlines = db.prepare(`
 `);
 
 const getUserReplies = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline, users.label_type
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   WHERE posts.user_id = ? AND posts.reply_to IS NOT NULL
@@ -126,7 +126,7 @@ const getUserReplies = db.prepare(`
 `);
 
 const getUserRepliesPaginated = db.prepare(`
-  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline
+  SELECT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline, users.label_type
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   WHERE posts.user_id = ? AND posts.reply_to IS NOT NULL AND posts.id < ?
@@ -135,7 +135,7 @@ const getUserRepliesPaginated = db.prepare(`
 `);
 
 const getUserMedia = db.prepare(`
-  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline
+  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline, users.label_type
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   JOIN attachments ON posts.id = attachments.post_id
@@ -145,7 +145,7 @@ const getUserMedia = db.prepare(`
 `);
 
 const getUserMediaPaginated = db.prepare(`
-  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline
+  SELECT DISTINCT posts.*, users.username, users.name, users.avatar, users.verified, users.gold, users.gray, users.avatar_radius, users.affiliate, users.affiliate_with, users.selected_community_tag, users.checkmark_outline, users.avatar_outline, users.label_type
   FROM posts 
   JOIN users ON posts.user_id = users.id 
   JOIN attachments ON posts.id = attachments.post_id
