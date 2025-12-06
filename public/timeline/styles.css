@@ -1816,6 +1816,7 @@ nav {
     .tweet-header-info {
       display: flex;
       flex-direction: column;
+      flex-wrap: wrap;
 
       &:hover .name {
         text-decoration: underline;
@@ -1871,7 +1872,7 @@ nav {
           color: var(--text-secondary);
           cursor: pointer;
 
-          .tweet-source-icon-wrapper:not(.tweet[data-main-tweet="true"] .tweet-source-icon-wrapper) {
+          .tweet-source-icon-wrapper:not(.tweet[data-main-tweet="true"] .tweet-source-icon-wrapper:not(.tweet-preview .tweet-source-icon-wrapper)) {
             display: none;
           }
         }
