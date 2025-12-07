@@ -18,11 +18,20 @@ const getIdentifier = (headers) => {
 };
 
 const getUserByUsername = db.prepare(
-	"SELECT id, ip_address, created_at, avatar FROM users WHERE LOWER(username) = LOWER(?)",
+	"SELECT id, ip_address, created_at, avatar, follower_count FROM users WHERE LOWER(username) = LOWER(?)",
 );
 const getUserById = db.prepare("SELECT id FROM users WHERE id = ?");
 const checkBlockExists = db.prepare(
 	"SELECT 1 FROM blocks WHERE blocker_id = ? AND blocked_id = ?",
+);
+const getBlockerStats = db.prepare(
+	"SELECT follower_count, (SELECT COUNT(*) FROM blocks WHERE blocker_id = ?) as total_blocks_given FROM users WHERE id = ?",
+);
+const incrementBlockedByCountWeighted = db.prepare(
+	"UPDATE users SET blocked_by_count = blocked_by_count + ? WHERE id = ?",
+);
+const decrementBlockedByCountWeighted = db.prepare(
+	"UPDATE users SET blocked_by_count = MAX(0, blocked_by_count - ?) WHERE id = ?",
 );
 
 const getBlockerIps = db.prepare(`
@@ -55,12 +64,6 @@ const removeFollows = db.prepare(
 const removeFollowRequests = db.prepare(
 	"DELETE FROM follow_requests WHERE (requester_id = ? AND target_id = ?) OR (requester_id = ? AND target_id = ?)",
 );
-const incrementBlockedByCount = db.prepare(
-	"UPDATE users SET blocked_by_count = blocked_by_count + 1 WHERE id = ?",
-);
-const decrementBlockedByCount = db.prepare(
-	"UPDATE users SET blocked_by_count = MAX(0, blocked_by_count - 1) WHERE id = ?",
-);
 const checkMuteExists = db.prepare(
 	"SELECT 1 FROM mutes WHERE muter_id = ? AND muted_id = ?",
 );
@@ -80,6 +83,28 @@ const decrementMutedByCount = db.prepare(
 const deleteNotificationsFromUser = db.prepare(
 	"DELETE FROM notifications WHERE user_id = ? AND actor_id = ?",
 );
+
+const calculateBlockWeight = (blockerData) => {
+	const { followerCount, totalBlocksGiven } = blockerData;
+
+	let weight = 1.0;
+
+	if (totalBlocksGiven > 10) {
+		weight *= 1.0 / (1.0 + Math.log10(totalBlocksGiven / 10));
+	}
+
+	if (followerCount < 10) {
+		weight *= 0.3;
+	} else if (followerCount < 50) {
+		weight *= 0.5;
+	} else if (followerCount < 100) {
+		weight *= 0.7;
+	} else if (followerCount < 500) {
+		weight *= 0.85;
+	}
+
+	return Math.max(0.1, Math.min(1.0, weight));
+};
 
 export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
@@ -184,7 +209,13 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				}
 
 				if (shouldIncrement) {
-					incrementBlockedByCount.run(userId);
+					const blockerStats = getBlockerStats.get(user.id, user.id);
+					const weight = calculateBlockWeight({
+						followerCount: user.follower_count || 0,
+						totalBlocksGiven: blockerStats?.total_blocks_given || 0,
+					});
+
+					incrementBlockedByCountWeighted.run(weight, userId);
 				}
 
 				return { success: true, blocked: true };
@@ -272,7 +303,13 @@ export default new Elysia({ prefix: "/blocking", tags: ["Blocking"] })
 				}
 
 				if (shouldDecrement) {
-					decrementBlockedByCount.run(userId);
+					const blockerStats = getBlockerStats.get(user.id, user.id);
+					const weight = calculateBlockWeight({
+						followerCount: user.follower_count || 0,
+						totalBlocksGiven: blockerStats?.total_blocks_given || 0,
+					});
+
+					decrementBlockedByCountWeighted.run(weight, userId);
 				}
 
 				return { success: true, blocked: false };
