@@ -512,7 +512,7 @@ nav {
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: color 0.2s, background-color 0.2s;
+    transition: color 0.2s, background-color 0.2s, font-weight .2s;
 
     &:hover {
       background-color: var(--surface-hover);
@@ -520,7 +520,7 @@ nav {
 
     &.active {
       color: var(--text-primary);
-      font-weight: 600;
+      font-weight: 500;
     }
   }
 }
@@ -2826,29 +2826,20 @@ nav {
 .profile {
   display: none;
   flex-direction: column;
+  position: relative;
+  margin-top: -12px;
 
-  .profile-header {
+  .back-button {
+    position: absolute;
+    top: 10px;
+    left: 6px;
+    width: 31px;
+    height: 31px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 14px;
-    user-select: none;
-
-    h1 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 600;
-      display: flex;
-      gap: 8px;
-      line-height: 1;
-    }
-
-    .post-count {
-      color: var(--text-secondary);
-      font-size: 14px;
-      margin: 0;
-      margin-top: -1px;
-    }
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 999px;
   }
 
   @media (min-width: 570px) {
@@ -3067,6 +3058,25 @@ nav {
         font-size: 16px;
         margin-top: -2px;
         margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        .follows-me-badge {
+          margin: -5px 0;
+          padding: 4px 8px;
+          background: rgba(var(--primary-rgb), 0.1);
+          color: rgb(var(--primary-rgb));
+          border-radius: 4px;
+          font-weight: 500;
+          white-space: nowrap;
+          flex-shrink: 0;
+          user-select: none;
+          height: 21px;
+          display: flex;
+          align-items: center;
+          font-size: 12.5px;
+        }
       }
 
       .profile-pronouns {
@@ -3114,74 +3124,9 @@ nav {
           }
         }
       }
-
-      .profile-algo-stats {
-        background: var(--bg-secondary);
-        border: 1px solid var(--border-secondary);
-        border-radius: 12px;
-        padding: 16px;
-        margin-top: 16px;
-
-        .profile-algo-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 12px;
-          color: var(--text-primary);
-          font-size: 15px;
-
-          svg {
-            color: var(--text-secondary);
-          }
-        }
-
-        .profile-algo-body {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 12px;
-
-          .algo-stat-item {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-
-            &.algo-stat-full {
-              grid-column: 1 / -1;
-              padding-top: 8px;
-              border-top: 1px solid var(--border-secondary);
-              flex-direction: row;
-              justify-content: space-between;
-              align-items: center;
-            }
-
-            .algo-stat-label {
-              font-size: 13px;
-              color: var(--text-secondary);
-            }
-
-            .algo-stat-value {
-              font-size: 16px;
-              font-weight: 600;
-              color: var(--text-primary);
-            }
-          }
-
-          .algo-stat-description {
-            grid-column: 1 / -1;
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 4px;
-            line-height: 1.4;
-          }
-        }
-      }
     }
 
     @media (max-width: 768px) {
-      .profile-stats {
-        gap: 16px;
-      }
-
       .profile-tab-btn {
         font-size: 14px;
         padding: 12px;
@@ -3234,9 +3179,10 @@ nav {
 
   .profile-stats {
     display: flex;
-    gap: 24px;
-    font-size: 14px;
+    gap: 8px;
+    font-size: 15px;
     user-select: none;
+    margin-bottom: 4px;
 
     a {
       text-decoration: none;
@@ -3262,7 +3208,7 @@ nav {
   .followers-you-know {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
     margin-top: 12px;
     border-radius: 12px;
     cursor: pointer;
@@ -3278,11 +3224,11 @@ nav {
       align-items: center;
 
       img {
-        width: 24px;
-        height: 24px;
+        width: 30px;
+        height: 30px;
         border-radius: 50%;
         object-fit: cover;
-        border: 2px solid var(--bg-secondary);
+        border: 1px solid var(--bg-secondary);
         margin-left: -8px;
 
         &:first-child {
@@ -8543,7 +8489,6 @@ emoji-picker.emoji-picker-popup {
       padding: 16px 20px;
       border-bottom: 1px solid var(--border-primary);
 
-      /* allow positioning the close button absolutely to the top-right */
       position: relative;
 
       h2 {
@@ -10897,19 +10842,6 @@ emoji-picker.emoji-picker-popup {
   line-height: 1.5;
   white-space: pre-wrap;
   word-wrap: break-word;
-}
-
-.follows-me-badge {
-  margin: -5px 0;
-  padding: 4px 10px;
-  background: rgba(var(--primary-rgb), 0.1);
-  color: rgb(var(--primary-rgb));
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-  user-select: none;
 }
 
 .badge-popup-menu {

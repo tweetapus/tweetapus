@@ -56,7 +56,7 @@ const DOMPURIFY_CONFIG = {
 			`agree=yes; path=/; expires=Fri, 31 Dec 9999 23:59:59 GMT`,
 		);
 		setTimeout(() => {
-			window.location.href = "/timeline/";
+			window.location.href = "/";
 		}, 200);
 	}
 })();
@@ -708,7 +708,7 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 					);
 				}
 
-				window.location.href = "/timeline/";
+				window.location.href = "/";
 			} else {
 				throw new Error(verifyData.error || "Authentication failed");
 			}
@@ -840,7 +840,7 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 					}
 				} catch {}
 
-				window.location.href = "/timeline/";
+				window.location.href = "/";
 			} else {
 				throw new Error(error || "Login failed");
 			}

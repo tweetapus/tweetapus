@@ -489,7 +489,7 @@ async function loadFollowersYouKnow(username) {
 			textSpan.textContent = `Followed by ${data.followersYouKnow[0].name || data.followersYouKnow[0].username} and ${data.followersYouKnow[1].name || data.followersYouKnow[1].username}`;
 		} else {
 			const othersCount = data.count - 2;
-			textSpan.textContent = `Followed by ${data.followersYouKnow[0].name || data.followersYouKnow[0].username}, ${data.followersYouKnow[1].name || data.followersYouKnow[1].username}, and ${othersCount} other${othersCount > 1 ? "s" : ""} you follow`;
+			textSpan.textContent = `Followed by ${data.followersYouKnow[0].name || data.followersYouKnow[0].username}, ${data.followersYouKnow[1].name || data.followersYouKnow[1].username}, and ${othersCount} other${othersCount > 1 ? "s" : ""}`;
 		}
 
 		container.appendChild(avatarsContainer);
@@ -1167,14 +1167,11 @@ const renderProfile = (data) => {
 	const suspended = !!profile.suspended;
 	const restricted = !!profile.restricted;
 
-	const headerNameEl = document.getElementById("profileHeaderName");
-	const headerCountEl = document.getElementById("profileHeaderPostCount");
-	if (headerNameEl) headerNameEl.textContent = profile.name || profile.username;
 	const displayNameEl = document.getElementById("profileDisplayName");
-	if (displayNameEl)
-		displayNameEl.textContent = profile.name || profile.username;
-	if (headerCountEl)
-		headerCountEl.textContent = `${profile.post_count || 0} posts`;
+	displayNameEl.textContent = profile.name || profile.username;
+
+	document.querySelector("#profileTweetsCount").textContent =
+		profile.post_count;
 
 	const profileContainerEl = document.getElementById("profileContainer");
 	if (profileContainerEl)
@@ -1232,7 +1229,7 @@ const renderProfile = (data) => {
 			bannerElement.style.height = "200px";
 		} else {
 			bannerElement.style.backgroundImage = "none";
-			bannerElement.style.height = "58px";
+			bannerElement.style.height = "116px";
 		}
 	}
 
@@ -1273,37 +1270,6 @@ const renderProfile = (data) => {
 			} else {
 				applyAvatarOutline(avatarImg, "", avatarRadiusValue, 3);
 			}
-		}
-	}
-
-	const profileNameEl = document.getElementById("profileHeaderName");
-	if (profileNameEl) {
-		profileNameEl.textContent = profile.name || profile.username;
-		const existingBadge = profileNameEl.querySelector(".verification-badge");
-
-		if (!suspended && (profile.verified || profile.gold || profile.gray)) {
-			const badgeType = profile.gold
-				? "gold"
-				: profile.gray
-					? "gray"
-					: "verified";
-			if (!existingBadge) {
-				const verificationBadge = createVerificationBadge({
-					type: badgeType,
-					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
-					size: 16,
-				});
-				profileNameEl.appendChild(verificationBadge);
-			} else {
-				const newBadge = createVerificationBadge({
-					type: badgeType,
-					checkmarkOutline: profile.gray ? profile.checkmark_outline || "" : "",
-					size: 16,
-				});
-				existingBadge.replaceWith(newBadge);
-			}
-		} else if (existingBadge) {
-			existingBadge.remove();
 		}
 	}
 
@@ -1467,16 +1433,13 @@ const renderProfile = (data) => {
 	if (tabNav) tabNav.style.display = suspended ? "none" : "flex";
 
 	if (currentProfile?.followsMe && !isOwnProfile && !suspended) {
-		const createFollowsBadge = () => {
+		const displayNameEl = document.getElementById("profileDisplayName");
+		if (displayNameEl && !displayNameEl.querySelector(".follows-me-badge")) {
 			const el = document.createElement("span");
 			el.className = "follows-me-badge";
 			el.textContent = "Follows you";
-			return el;
-		};
 
-		const displayNameEl = document.getElementById("profileDisplayName");
-		if (displayNameEl && !displayNameEl.querySelector(".follows-me-badge")) {
-			displayNameEl.appendChild(createFollowsBadge());
+			usernameEl.appendChild(el);
 		}
 	}
 

@@ -223,10 +223,16 @@
   height: 16px;
 }
 
-.skeleton-profile {
+.skeleton-container.skeleton-profile {
   display: flex;
   flex-direction: column;
   overflow: visible;
+  margin-left: -12px;
+  padding-left: 12px;
+  margin-right: -12px;
+  padding-right: 12px;
+  width: calc(100% + 24px);
+  max-width: unset;
 
   .skeleton-profile-banner {
     margin-left: -24px;
