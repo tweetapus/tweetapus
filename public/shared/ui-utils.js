@@ -501,7 +501,7 @@ export function createModal(options) {
 	}
 
 	if (closeOnOverlayClick) {
-		overlay.addEventListener("click", (e) => {
+		overlay.addEventListener("mousedown", (e) => {
 			if (e.target === overlay) {
 				closeModal();
 			}

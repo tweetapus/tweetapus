@@ -1,5 +1,5 @@
-import DOMPurify from "../../shared/assets/js/dompurify.js";
-import { marked } from "../../shared/assets/js/marked.js";
+import DOMPurify from "../shared/assets/js/dompurify.js";
+import { marked } from "../shared/assets/js/marked.js";
 
 const DOMPURIFY_CONFIG = {
 	ALLOWED_TAGS: [
@@ -633,6 +633,12 @@ document.querySelector(".log-in").addEventListener("click", async (e) => {
 
 	const passwordModal = document.createElement("div");
 	passwordModal.className = "login-modal-backdrop";
+
+	passwordModal.addEventListener("click", (e) => {
+		if (e.target === passwordModal) {
+			passwordModal.remove();
+		}
+	});
 
 	const passwordContent = document.createElement("div");
 	passwordContent.className = "login-modal-content";

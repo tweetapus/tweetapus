@@ -97,7 +97,7 @@ const appServer = new Elysia()
 					"/legal",
 					"/admin",
 					"/api/owoembed",
-					"/public/account-v2",
+					"/public/landing",
 					"/public/admin",
 					"/public/shared/assets/img/flags/LICENSE",
 				],
@@ -132,8 +132,8 @@ const appServer = new Elysia()
 	})
 	.get("*", ({ cookie }) => {
 		return cookie.agree?.value === "yes"
-			? file("./public/timeline/index.html")
-			: file("./public/account-v2/index.html");
+			? file("./public/app/index.html")
+			: file("./public/landing/index.html");
 	})
 	.use(api)
 	.head(

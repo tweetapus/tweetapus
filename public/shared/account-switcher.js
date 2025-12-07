@@ -34,7 +34,7 @@ export async function openAccountSwitcher() {
 		const storedAccounts = JSON.parse(localStorage.getItem("accounts") || "[]");
 		const currentToken = localStorage.getItem("authToken");
 
-		const { default: query } = await import("../timeline/js/api.js");
+		const { default: query } = await import("../app/js/api.js");
 
 		if (!currentToken) {
 			toastQueue.add("<h1>No active session</h1>");
@@ -351,7 +351,7 @@ function createDelegateItem(delegation) {
 
 	item.onclick = async () => {
 		try {
-			const { default: query } = await import("../timeline/js/api.js");
+			const { default: query } = await import("../app/js/api.js");
 			const { success, token, error } = await query(
 				"/auth/switch-to-delegate",
 				{
@@ -501,7 +501,7 @@ async function openAddAccountModal() {
 		}
 
 		try {
-			const { default: query } = await import("../timeline/js/api.js");
+			const { default: query } = await import("../app/js/api.js");
 			const { success, token, user, error } = await query("/auth/add-account", {
 				method: "POST",
 				body: JSON.stringify({ username, password }),
@@ -546,7 +546,7 @@ async function openAddAccountModal() {
 
 	passkeyBtn.onclick = async () => {
 		try {
-			const { default: query } = await import("../timeline/js/api.js");
+			const { default: query } = await import("../app/js/api.js");
 
 			const { options, expectedChallenge } = await query(
 				"/auth/generate-authentication-options",

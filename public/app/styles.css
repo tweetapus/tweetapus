@@ -9911,6 +9911,7 @@ emoji-picker.emoji-picker-popup {
   flex-direction: column;
   gap: 15px;
   width: 100%;
+  margin-top: 12px;
 
   .transparency-item {
     display: flex;

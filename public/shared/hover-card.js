@@ -1,4 +1,4 @@
-import query from "../timeline/js/api.js";
+import query from "../app/js/api.js";
 import { applyAvatarOutline, createVerificationBadge } from "./badge-utils.js";
 
 let activeHoverCard = null;
@@ -185,15 +185,13 @@ export function attachHoverCard(element, username) {
 				});
 
 				card.addEventListener("click", () => {
-					import("../timeline/js/profile.js").then(
-						({ default: openProfile }) => {
-							openProfile(user.username);
-							if (activeHoverCard) {
-								activeHoverCard.remove();
-								activeHoverCard = null;
-							}
-						},
-					);
+					import("../app/js/profile.js").then(({ default: openProfile }) => {
+						openProfile(user.username);
+						if (activeHoverCard) {
+							activeHoverCard.remove();
+							activeHoverCard = null;
+						}
+					});
 				});
 			} catch (error) {
 				console.error("Error loading hover card:", error);

@@ -4,8 +4,7 @@
   "module": "src/index.js",
   "scripts": {
     "start": "bun run ./src/index.js",
-    "dev": "bun run --watch src/index.js",
-    "build-js": "bun build public/timeline/js/index.js --outdir ./public/timeline/dist-js --minify --splitting --target browser"
+    "dev": "bun run --watch src/index.js"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.8",

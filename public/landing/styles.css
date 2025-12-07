@@ -381,8 +381,16 @@ button {
   gap: 10px;
   transition: opacity 0.1s, transform .2s;
 
+  svg {
+    transition: transform .2s;
+  }
+
   &:hover {
     opacity: 0.9;
+
+    svg {
+      transform: translate(2px, 0px)
+    }
   }
 
   &:active {
