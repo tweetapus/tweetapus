@@ -9,16 +9,7 @@ import {
 import cap from "./cap.js";
 import { addNotification } from "./notifications.js";
 import { sendPushNotification } from "./push.js";
-
-let broadcastToUser, sendUnreadCounts;
-try {
-	const indexModule = await import("../index.js");
-	broadcastToUser = indexModule.broadcastToUser;
-	sendUnreadCounts = indexModule.sendUnreadCounts;
-} catch {
-	broadcastToUser = () => {};
-	sendUnreadCounts = () => {};
-}
+import { broadcastToUser, sendUnreadCounts } from "./sse.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
 

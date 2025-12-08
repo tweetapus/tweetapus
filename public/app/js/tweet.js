@@ -49,7 +49,6 @@ export default async function openTweet(
 		finalTweet = apiOutput.tweet;
 		finalThread = apiOutput?.threadPosts || [];
 		repliesCache = apiOutput?.replies || [];
-		finalTweet.extendedStats = apiOutput?.extendedStats || [];
 	}
 
 	let isLoadingMoreReplies = false;
@@ -172,7 +171,6 @@ export default async function openTweet(
 				}
 
 				finalTweet = apiOutput.tweet;
-				finalTweet.extendedStats = apiOutput.extendedStats || [];
 				hasMoreReplies = apiOutput?.hasMoreReplies || false;
 
 				const loadedAuthorName =

@@ -328,34 +328,51 @@ export default new Elysia({
 			detail: {
 				description:
 					"Get account transparency data (city and country) for a user",
-				tags: ["Transparency"],
+				tags: ["Profile"],
 			},
 		},
 	)
-	.get("/transparency/:user/asn", async ({ params }) => {
-		const { user } = params;
-		if (!user) {
-			set.status = 400;
-			return { error: "User parameter is required" };
-		}
+	.get(
+		"/transparency/:user/asn",
+		async ({ params }) => {
+			const { user } = params;
+			if (!user) {
+				set.status = 400;
+				return { error: "User parameter is required" };
+			}
 
-		const userRecord = db
-			.query(
-				"SELECT * FROM user_ips WHERE user_id = ? ORDER BY last_used_at DESC LIMIT 1",
-			)
-			.get(user);
+			const userRecord = db
+				.query(
+					"SELECT * FROM user_ips WHERE user_id = ? ORDER BY last_used_at DESC LIMIT 1",
+				)
+				.get(user);
 
-		if (!userRecord) {
-			return { error: "User not found" };
-		}
+			if (!userRecord) {
+				return { error: "User not found" };
+			}
 
-		const { announcedBy } = await (
-			await fetch(`https://ip2asn.ipinfo.app/lookup/${userRecord.ip_address}`)
-		).json();
-		const asn = announcedBy?.[0] || null;
+			const { announcedBy } = await (
+				await fetch(`https://ip2asn.ipinfo.app/lookup/${userRecord.ip_address}`)
+			).json();
+			const asn = announcedBy?.[0] || null;
 
-		return { name: asn?.name, id: asn?.asn };
-	})
+			return { name: asn?.name, id: asn?.asn };
+		},
+		{
+			detail: {
+				description:
+					"Get transparency IP ASN name and ID",
+				tags: ["Profile"],
+			},
+			params: t.Object({
+				user: t.String(),
+			}),
+			response: t.Object({
+				name: t.String(),
+				id: t.Number(),
+			}),
+		},
+	)
 	.get("/owoembed", ({ query }) => {
 		const { author, handle, stats } = query;
 

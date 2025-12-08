@@ -2,18 +2,15 @@ import { jwt } from "@elysiajs/jwt";
 import { openapi } from "@elysiajs/openapi";
 import { staticPlugin } from "@elysiajs/static";
 import { Elysia, file } from "elysia";
+
 import { mountServerExtensions } from "./api/extensions.js";
-import sse, { broadcastToUser, sendUnreadCounts } from "./api/sse.js";
+import sse from "./api/sse.js";
 import api from "./api.js";
 import { compression } from "./helpers/compress.js";
 import { embeds } from "./helpers/embeds.js";
+import { htmlEmbeds } from "./helpers/html-embeds.js";
 
-export { broadcastToUser, sendUnreadCounts };
-
-const appServer = new Elysia()
-	.use(embeds)
-	.use(compression)
-	.use(staticPlugin())
+const app = new Elysia()
 	.use(
 		openapi({
 			path: "/api",
@@ -74,7 +71,7 @@ const appServer = new Elysia()
 					},
 					{ name: "Timeline", description: "Scrolling your timeline" },
 					{
-						name: "Tweet",
+						name: "Tweets",
 						description: "Creating, viewing, and managing tweets",
 					},
 					{ name: "Upload", description: "Managing and viewing uploads" },
@@ -94,6 +91,7 @@ const appServer = new Elysia()
 				paths: [
 					"/*",
 					"/public/*",
+					"/public/app",
 					"/legal",
 					"/admin",
 					"/api/owoembed",
@@ -104,38 +102,20 @@ const appServer = new Elysia()
 			},
 		}),
 	)
+	.use(staticPlugin())
 	.use(jwt({ name: "jwt", secret: process.env.JWT_SECRET }))
+	.use(compression)
+	.use(embeds)
 	.use(sse)
+	.use(htmlEmbeds)
+	.use(api)
+	.get("/admin", () => file("./public/admin/index.html"))
+	.get("/legal", () => file("./public/legal.html"))
 	.get("/sw.js", ({ set }) => {
 		set.headers["Service-Worker-Allowed"] = "/";
 		set.headers["Content-Type"] = "application/javascript";
 		return file("./public/sw.js");
 	})
-	.get("/admin", () => file("./public/admin/index.html"))
-	.get("/legal", () => file("./public/legal.html"))
-	.get("/public/temporary/font-text.html", ({ set }) => {
-		set.headers["content-type"] = "text/html; charset=utf-8";
-		return file("./public/temporary/font-text.html");
-	})
-	.get("/public/temporary/font-text.css", ({ set }) => {
-		set.headers["content-type"] = "text/css; charset=utf-8";
-		return file("./public/temporary/font-text.css");
-	})
-	.get("/public/temporary/HappiesFont-Regular.otf", ({ set }) => {
-		set.headers["content-type"] = "font/otf";
-		return file("./public/temporary/HappiesFont-Regular.otf");
-	})
-	.get("/public/paste/script.js", () => file("./public/paste/script.js"))
-	.get("/public/shared/badge-utils.js", ({ set }) => {
-		set.headers["Content-Type"] = "application/javascript; charset=utf-8";
-		return file("./public/shared/badge-utils.js");
-	})
-	.get("*", ({ cookie }) => {
-		return cookie.agree?.value === "yes"
-			? file("./public/app/index.html")
-			: file("./public/landing/index.html");
-	})
-	.use(api)
 	.head(
 		"/public/shared/assets/js/emoji-picker-element/data.json",
 		({ set }) => {
@@ -158,17 +138,13 @@ const appServer = new Elysia()
 			},
 			tags: ["Emojis"],
 		},
-	);
-
-appServer.listen(
-	{ port: process.env.PORT || 3000, idleTimeout: 255 },
-	async () => {
-		try {
-			await mountServerExtensions(appServer);
-		} catch (err) {
-			console.error("Failed to mount server extensions:", err);
-		}
-
+	)
+	.get("*", ({ cookie }) => {
+		return cookie.agree?.value === "yes"
+			? file("./public/app/index.html")
+			: file("./public/landing/index.html");
+	})
+	.listen({ port: process.env.PORT || 3000, idleTimeout: 255 }, async () => {
 		console.log(
 			`\x1b[38;2;29;161;242m __    _                     _
  \\ \\  | |___      _____  ___| |_ __ _ _ __  _   _ ___
@@ -181,5 +157,8 @@ Happies tweetapus app is running on \x1b[38;2;29;161;242m\x1b[1m\x1b[4mhttp://lo
 				process.env.PORT || 3000
 			}\x1b[0m`,
 		);
-	},
-);
+
+		setTimeout(async () => {
+			mountServerExtensions(app);
+		});
+	});

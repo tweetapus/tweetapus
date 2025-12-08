@@ -55,6 +55,7 @@ const checkReplyPermission = async (replier, originalAuthor, restriction) => {
 			return true;
 	}
 };
+
 const getTweetById = db.query(`
   SELECT *
   FROM posts 
@@ -87,10 +88,6 @@ const isSuspendedQuery = db.query(`
   SELECT * FROM suspensions WHERE user_id = ? AND status = 'active' AND action = 'suspend' AND (expires_at IS NULL OR expires_at > datetime('now'))
 `);
 
-const isRestrictedQuery = db.query(`
-  SELECT * FROM suspensions WHERE user_id = ? AND status = 'active' AND action = 'restrict' AND (expires_at IS NULL OR expires_at > datetime('now'))
-`);
-
 const getUserSuspendedFlag = db.query(`
   SELECT suspended FROM users WHERE id = ?
 `);
@@ -99,9 +96,6 @@ const getUserShadowbannedFlag = db.query(`
 `);
 const isShadowbannedQuery = db.query(`
 	SELECT * FROM suspensions WHERE user_id = ? AND status = 'active' AND action = 'shadowban' AND (expires_at IS NULL OR expires_at > datetime('now'))
-`);
-const getUserRestrictedFlag = db.query(`
-  SELECT restricted FROM users WHERE id = ?
 `);
 
 const isUserSuspendedById = (userId) => {
@@ -143,39 +137,6 @@ SELECT *
 FROM thread_posts
 ORDER BY level DESC, created_at ASC;
 `);
-
-const getTweetReplies = (
-	replyToId,
-	currentUserId,
-	isAdmin,
-	tweetAuthorId,
-	limit,
-	offset = 0,
-) => {
-	return db
-		.query(`
-		SELECT posts.*,
-			CASE WHEN posts.user_id = ? THEN 0 ELSE 1 END as is_not_author,
-			CASE WHEN EXISTS(SELECT 1 FROM follows WHERE follows.follower_id = ? AND follows.following_id = posts.user_id) THEN 0 ELSE 1 END as is_not_following,
-			(posts.like_count + posts.reply_count + posts.retweet_count) as engagement
-		FROM posts
-		JOIN users ON posts.user_id = users.id
-		WHERE reply_to = ?
-		AND (users.suspended = 0)
-		AND (users.shadowbanned = 0 OR posts.user_id = ? OR ? = 1)
-		ORDER BY is_not_author ASC, is_not_following ASC, engagement DESC, posts.created_at ASC
-		LIMIT ? OFFSET ?
-	`)
-		.all(
-			tweetAuthorId,
-			currentUserId,
-			replyToId,
-			currentUserId,
-			isAdmin,
-			limit,
-			offset,
-		);
-};
 
 const createTweet = db.query(`
 	INSERT INTO posts (id, user_id, content, reply_to, source, poll_id, quote_tweet_id, reply_restriction, article_id, community_id, community_only, outline) 
@@ -248,33 +209,6 @@ const getPollVoters = db.query(`
   WHERE poll_votes.poll_id = ?
   ORDER BY poll_votes.created_at DESC
   LIMIT 10
-`);
-
-const getTweetLikes = db.query(`
-  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.label_type
-  FROM likes
-  JOIN users ON likes.user_id = users.id
-  WHERE likes.post_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
-  ORDER BY likes.created_at DESC
-  LIMIT 3
-`);
-
-const getTweetRetweets = db.query(`
-  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.label_type
-  FROM retweets
-  JOIN users ON retweets.user_id = users.id
-  WHERE retweets.post_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
-  ORDER BY retweets.created_at DESC
-  LIMIT 3
-`);
-
-const getTweetQuotes = db.query(`
-  SELECT users.username, users.name, users.avatar, users.verified, users.gold, users.avatar_radius, users.label_type
-  FROM posts
-  JOIN users ON posts.user_id = users.id
-  WHERE posts.quote_tweet_id = ? AND users.suspended = 0 AND users.shadowbanned = 0
-  ORDER BY posts.created_at DESC
-  LIMIT 3
 `);
 
 const getPollDataForTweet = (tweetId, userId) => {
@@ -518,14 +452,6 @@ const getCardDataForTweet = (tweetId) => {
 		...card,
 		options,
 	};
-};
-
-const getLinkPreviewByPostId = db.query(`
-  SELECT * FROM link_previews WHERE id = ?
-`);
-
-const getLinkPreviewForTweet = (tweetId) => {
-	return getLinkPreviewByPostId.get(tweetId) || null;
 };
 
 export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
@@ -1305,15 +1231,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 		const { id } = params;
 		const { offset = 0, limit = 20 } = query;
 
-		const tweet = getTweetById.get(id);
-		if (!tweet) {
-			return { error: "Tweet not found" };
-		}
-
-		if (isUserSuspendedById(tweet.user_id)) {
-			return { error: "Tweet not found" };
-		}
-
 		const authorization = headers.authorization;
 		if (!authorization) return { error: "Unauthorized" };
 
@@ -1327,31 +1244,48 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			return { error: "Invalid token" };
 		}
 
-		// If author is shadowbanned and the request is not from their account or an admin, hide the tweet
-		if (isUserShadowbannedById(tweet.user_id)) {
-			if (
-				!(
-					currentUser &&
-					(currentUser.admin || currentUser.id === tweet.user_id)
-				)
-			) {
-				return { error: "Tweet not found" };
-			}
+		const tweet = getTweetById.get(id);
+		if (!tweet) {
+			return { error: "Tweet not found" };
 		}
 
-		db.query("UPDATE posts SET view_count = view_count + 1 WHERE id = ?").run(
-			id,
-		);
+		if (isUserSuspendedById(tweet.user_id)) {
+			return { error: "Tweet not found" };
+		}
 
-		let threadPosts = getTweetWithThread.all(id);
-		let replies = getTweetReplies(
-			id,
-			currentUser.id,
-			currentUser.admin ? 1 : 0,
-			tweet.user_id,
-			parseInt(limit, 10),
-			parseInt(offset, 10),
-		);
+		if (currentUser) {
+			setTimeout(() => {
+				db.query(
+					"UPDATE posts SET view_count = view_count + 1 WHERE id = ?",
+				).run(id);
+			}, 100);
+		}
+
+		const threadPosts = getTweetWithThread.all(id);
+		let replies = limit
+			? db
+					.query(`
+		SELECT posts.*,
+			CASE WHEN posts.user_id = ? THEN 0 ELSE 1 END as is_not_author,
+			CASE WHEN EXISTS(SELECT 1 FROM follows WHERE follows.follower_id = ? AND follows.following_id = posts.user_id) THEN 0 ELSE 1 END as is_not_following,
+			(posts.like_count + posts.reply_count + posts.retweet_count) as engagement
+		FROM posts
+		JOIN users ON posts.user_id = users.id
+		WHERE reply_to = ?
+		AND (users.suspended = 0)
+		AND (users.shadowbanned = 0 OR posts.user_id = ?)
+		ORDER BY is_not_author ASC, is_not_following ASC, engagement DESC, posts.created_at ASC
+		LIMIT ? OFFSET ?
+	`)
+					.all(
+						tweet.user_id,
+						currentUser?.id || "0",
+						id,
+						currentUser?.id || "0",
+						parseInt(limit, 10),
+						parseInt(offset, 10),
+					)
+			: [];
 
 		const allPostIds = [
 			...threadPosts.map((p) => p.id),
@@ -1366,11 +1300,12 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			`SELECT post_id FROM retweets WHERE user_id = ? AND post_id IN (${postPlaceholders})`,
 		);
 
-		const userLikes = getUserLikesQuery.all(currentUser.id, ...allPostIds);
-		const userRetweets = getUserRetweetsQuery.all(
-			currentUser.id,
-			...allPostIds,
-		);
+		const userLikes = currentUser
+			? getUserLikesQuery.all(currentUser.id, ...allPostIds)
+			: [];
+		const userRetweets = currentUser
+			? getUserRetweetsQuery.all(currentUser.id, ...allPostIds)
+			: [];
 
 		const likedPosts = new Set(userLikes.map((like) => like.post_id));
 		const retweetedPosts = new Set(
@@ -1424,10 +1359,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 		if (
 			!(currentUser && (currentUser.admin || currentUser.id === tweet.user_id))
 		) {
-			threadPosts = threadPosts.filter((p) => {
-				const u = userMap.get(p.user_id);
-				return !u || !u.shadowbanned;
-			});
 			replies = replies.filter((p) => {
 				const u = userMap.get(p.user_id);
 				return !u || !u.shadowbanned;
@@ -1507,25 +1438,19 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 		const processedThreadPosts = threadPosts
 			.filter((post) => {
 				const author = userMap.get(post.user_id);
-				if (!author) return false;
-				if (author.suspended) return false;
-				if (author.shadowbanned) {
-					if (
-						currentUser &&
-						(currentUser.admin || currentUser.id === author.id)
-					)
-						return true;
-					return false;
-				}
-				return true;
+
+				return author && !author.suspended;
 			})
 			.map((post) => ({
 				...post,
 				liked_by_user: likedPosts.has(post.id),
 				retweeted_by_user: retweetedPosts.has(post.id),
 				author: userMap.get(post.user_id),
-				poll: getPollDataForTweet(post.id, currentUser.id),
-				quoted_tweet: getQuotedTweetData(post.quote_tweet_id, currentUser.id),
+				poll: getPollDataForTweet(post.id, currentUser?.id || "0"),
+				quoted_tweet: getQuotedTweetData(
+					post.quote_tweet_id,
+					currentUser?.id || "0",
+				),
 				attachments: getTweetAttachments(post.id),
 				article_preview: post.article_id
 					? articleMap.get(post.article_id) || null
@@ -1542,11 +1467,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				if (!author) return false;
 				if (author.suspended) return false;
 				if (author.shadowbanned) {
-					if (
-						currentUser &&
-						(currentUser.admin || currentUser.id === author.id)
-					)
-						return true;
+					if (currentUser && currentUser?.id === author.id) return true;
 					return false;
 				}
 				return true;
@@ -1556,8 +1477,11 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				liked_by_user: likedPosts.has(reply.id),
 				retweeted_by_user: retweetedPosts.has(reply.id),
 				author: userMap.get(reply.user_id),
-				poll: getPollDataForTweet(reply.id, currentUser.id),
-				quoted_tweet: getQuotedTweetData(reply.quote_tweet_id, currentUser.id),
+				poll: getPollDataForTweet(reply.id, currentUser?.id || "0"),
+				quoted_tweet: getQuotedTweetData(
+					reply.quote_tweet_id,
+					currentUser?.id || "0",
+				),
 				attachments: getTweetAttachments(reply.id),
 				article_preview: reply.article_id
 					? articleMap.get(reply.article_id) || null
@@ -1565,12 +1489,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				fact_check: getFactCheckForPost.get(reply.id) || null,
 				interactive_card: getCardDataForTweet(reply.id),
 			}));
-
-		const extendedStats = {
-			likes: getTweetLikes.all(tweet.id),
-			retweets: getTweetRetweets.all(tweet.id),
-			quotes: getTweetQuotes.all(tweet.id),
-		};
 
 		const hasMoreReplies = processedReplies.length >= parseInt(limit, 10);
 
@@ -1581,8 +1499,11 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			tweet: {
 				...tweet,
 				author: userMap.get(tweet.user_id),
-				poll: getPollDataForTweet(tweet.id, currentUser.id),
-				quoted_tweet: getQuotedTweetData(tweet.quote_tweet_id, currentUser.id),
+				poll: getPollDataForTweet(tweet.id, currentUser?.id || "0"),
+				quoted_tweet: getQuotedTweetData(
+					tweet.quote_tweet_id,
+					currentUser?.id || "0",
+				),
 				attachments: getTweetAttachments(tweet.id),
 				article_preview: tweet.article_id
 					? articleMap.get(tweet.article_id) || null
@@ -1594,7 +1515,6 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			},
 			threadPosts: processedThreadPosts,
 			replies: processedReplies,
-			extendedStats,
 			hasMoreReplies,
 		};
 	})

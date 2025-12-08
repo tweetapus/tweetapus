@@ -18,6 +18,80 @@ import { searchQuery } from "./search.js";
 import { maybeAddTranslation } from "./translate.js";
 import openTweet from "./tweet.js";
 
+const tweetStateStore = new Map();
+
+export function updateTweetState(tweetId, updates) {
+	if (!tweetStateStore.has(tweetId)) {
+		tweetStateStore.set(tweetId, {});
+	}
+	const state = tweetStateStore.get(tweetId);
+	Object.assign(state, updates);
+
+	document.querySelectorAll(`[data-tweet-id="${tweetId}"]`).forEach((el) => {
+		if (updates.liked_by_user !== undefined) {
+			const likeBtn = el.querySelector(".engagement[data-liked]");
+			if (likeBtn) {
+				const svg = likeBtn.querySelector("svg path");
+				const likeCountSpan = likeBtn.querySelector(".like-count");
+				likeBtn.dataset.liked = updates.liked_by_user;
+
+				if (updates.liked_by_user) {
+					svg.setAttribute("fill", "#F91980");
+					svg.setAttribute("stroke", "#F91980");
+				} else {
+					svg.setAttribute("fill", "none");
+					svg.setAttribute("stroke", "currentColor");
+				}
+
+				if (updates.like_count !== undefined) {
+					likeBtn.dataset.likeCount = updates.like_count;
+					likeCountSpan.textContent =
+						updates.like_count === 0 ? "" : formatNumber(updates.like_count);
+				}
+			}
+		}
+
+		if (updates.retweeted_by_user !== undefined) {
+			const retweetBtn = el.querySelector(".engagement[data-retweeted]");
+			if (retweetBtn) {
+				const svgPaths = retweetBtn.querySelectorAll("svg path");
+				const retweetCountSpan = retweetBtn.querySelector(".retweet-count");
+				retweetBtn.dataset.retweeted = updates.retweeted_by_user;
+
+				const color = updates.retweeted_by_user ? "#00BA7C" : "currentColor";
+				svgPaths.forEach((path) => {
+					path.setAttribute("stroke", color);
+				});
+
+				if (updates.retweet_count !== undefined) {
+					retweetBtn.dataset.retweetCount = updates.retweet_count;
+					retweetCountSpan.textContent =
+						updates.retweet_count === 0
+							? ""
+							: formatNumber(updates.retweet_count);
+				}
+			}
+		}
+	});
+}
+
+export function getTweetState(tweetId) {
+	return tweetStateStore.get(tweetId) || {};
+}
+
+function formatNumber(num) {
+	if (num >= 1_000_000_000_000) {
+		return `${(num / 1_000_000_000_000).toFixed(2).replace(/\.?0+$/, "")}T`;
+	} else if (num >= 1_000_000_000) {
+		return `${(num / 1_000_000_000).toFixed(2).replace(/\.?0+$/, "")}B`;
+	} else if (num >= 1_000_000) {
+		return `${(num / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`;
+	} else if (num >= 10_000) {
+		return `${(num / 1_000).toFixed(1).replace(/\.?0+$/, "")}k`;
+	}
+	return num;
+}
+
 const DOMPURIFY_CONFIG = {
 	ALLOWED_TAGS: [
 		"b",
@@ -1073,6 +1147,7 @@ export const createTweetElement = (tweet, config = {}) => {
 
 	const tweetEl = document.createElement("div");
 	tweetEl.className = isTopReply ? "tweet top-reply" : "tweet";
+	tweetEl.setAttribute("data-tweet-id", tweet.id);
 
 	if (size === "preview") {
 		tweetEl.classList.add("tweet-preview");
@@ -1983,19 +2058,6 @@ export const createTweetElement = (tweet, config = {}) => {
 		}
 	}
 
-	function formatNumber(num) {
-		if (num >= 1_000_000_000_000) {
-			return `${(num / 1_000_000_000_000).toFixed(2).replace(/\.?0+$/, "")}T`;
-		} else if (num >= 1_000_000_000) {
-			return `${(num / 1_000_000_000).toFixed(2).replace(/\.?0+$/, "")}B`;
-		} else if (num >= 1_000_000) {
-			return `${(num / 1_000_000).toFixed(2).replace(/\.?0+$/, "")}M`;
-		} else if (num >= 10_000) {
-			return `${(num / 1_000).toFixed(1).replace(/\.?0+$/, "")}k`;
-		}
-		return num;
-	}
-
 	const tweetInteractionsEl = document.createElement("div");
 	tweetInteractionsEl.className = "tweet-interactions";
 
@@ -2066,6 +2128,11 @@ export const createTweetElement = (tweet, config = {}) => {
 					? ""
 					: formatNumber(Math.max(0, currentCount - 1));
 		}
+
+		updateTweetState(tweet.id, {
+			liked_by_user: newIsLiked,
+			like_count: tweet.like_count,
+		});
 
 		const result = await query(`/tweets/${tweet.id}/like`, {
 			method: "POST",
@@ -2205,6 +2272,11 @@ export const createTweetElement = (tweet, config = {}) => {
 								retweetCountSpan.textContent =
 									newCount === 0 ? "" : formatNumber(newCount);
 							}
+
+							updateTweetState(tweet.id, {
+								retweeted_by_user: newIsRetweeted,
+								retweet_count: tweet.retweet_count,
+							});
 						} else {
 							if (result.error === "You cannot interact with this user") {
 								createBlockedModal();
@@ -2282,14 +2354,6 @@ export const createTweetElement = (tweet, config = {}) => {
 
 		const defaultItems = [
 			{
-				id: "see-interactions",
-				icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
-				title: "See interactions",
-				onClick: async () => {
-					await showInteractionsModal(tweet.id);
-				},
-			},
-			{
 				id: "bookmark",
 				icon: `
         <svg
@@ -2339,154 +2403,222 @@ export const createTweetElement = (tweet, config = {}) => {
 			},
 
 			{
-				id: "copy-link",
-				icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
-				title: "Copy link",
-				onClick: () => {
-					const tweetUrl = `${window.location.origin}/tweet/${tweet.id}`;
-
-					navigator.clipboard.writeText(tweetUrl);
-				},
-			},
-
-			{
 				id: "share",
 				icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.2171 2.2793L10.2171 12.9745M10.2171 2.2793L13.333 4.99984M10.2171 2.2793L7.08301 4.99984M2.49967 10.9925L2.49967 14.1592C2.49967 16.011 4.00084 17.5121 5.85261 17.5121L14.9801 17.5121C16.8318 17.5121 18.333 16.011 18.333 14.1592L18.333 10.9925" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 				title: "Share",
 				onClick: async () => {
-					const tweetUrl = `${window.location.origin}/tweet/${tweet.id}?ref=share`;
-					const shareData = {
-						title: `${tweet.author.name || tweet.author.username} on Tweetapus`,
-						text: tweet.content,
-						url: tweetUrl,
-					};
+					await new Promise((resolve) => setTimeout(resolve, 20));
+					createPopup({
+						triggerElement: tweetInteractionsOptionsEl,
+						items: [
+							{
+								title: "Share",
+								icon: `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10.2171 2.2793L10.2171 12.9745M10.2171 2.2793L13.333 4.99984M10.2171 2.2793L7.08301 4.99984M2.49967 10.9925L2.49967 14.1592C2.49967 16.011 4.00084 17.5121 5.85261 17.5121L14.9801 17.5121C16.8318 17.5121 18.333 16.011 18.333 14.1592L18.333 10.9925" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+								onClick: async () => {
+									const tweetUrl = `${window.location.origin}/tweet/${tweet.id}?ref=share`;
+									const shareData = {
+										title: `${tweet.author.name || tweet.author.username} on Tweetapus`,
+										text: tweet.content,
+										url: tweetUrl,
+									};
 
-					try {
-						if (
-							navigator.share &&
-							navigator.canShare &&
-							navigator.canShare(shareData)
-						) {
-							await navigator.share(shareData);
-						} else {
-							await navigator.clipboard.writeText(tweetUrl);
-							toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
-						}
-					} catch {
-						toastQueue.add(`<h1>Unable to share tweet</h1>`);
-					}
+									try {
+										if (
+											navigator.share &&
+											navigator.canShare &&
+											navigator.canShare(shareData)
+										) {
+											await navigator.share(shareData);
+										} else {
+											await navigator.clipboard.writeText(tweetUrl);
+											toastQueue.add(`<h1>Link copied to clipboard!</h1>`);
+										}
+									} catch {
+										toastQueue.add(`<h1>Unable to share tweet</h1>`);
+									}
+								},
+							},
+							{
+								title: "Share image",
+								icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`,
+								onClick: async () => {
+									const tweetElClone = document.createElement("div");
+									tweetElClone.innerHTML = tweetEl.outerHTML;
+
+									tweetElClone
+										.querySelectorAll(".tweet-actions")
+										.forEach((el) => {
+											el.remove();
+										});
+									tweetElClone
+										.querySelectorAll(".tweet-menu-btn")
+										.forEach((el) => {
+											el.remove();
+										});
+									tweetElClone
+										.querySelectorAll(".spoiler-overlay")
+										.forEach((el) => {
+											el.remove();
+										});
+
+									const computedPrimary = getComputedStyle(
+										document.documentElement,
+									)
+										.getPropertyValue("--primary")
+										.trim();
+									const computedPrimaryFg =
+										getComputedStyle(document.documentElement)
+											.getPropertyValue("--primary-fg")
+											.trim() || "#ffffff";
+									const computedBgPrimary =
+										getComputedStyle(document.documentElement)
+											.getPropertyValue("--bg-primary")
+											.trim() || "#ffffff";
+									const computedTextPrimary =
+										getComputedStyle(document.documentElement)
+											.getPropertyValue("--text-primary")
+											.trim() || "#0f1419";
+
+									tweetElClone
+										.querySelectorAll(".verification-badge svg path")
+										.forEach((path) => {
+											const fill = path.getAttribute("fill");
+											const stroke = path.getAttribute("stroke");
+											if (fill === "var(--primary)")
+												path.setAttribute("fill", computedPrimary);
+											if (stroke === "var(--primary-fg)")
+												path.setAttribute("stroke", computedPrimaryFg);
+										});
+
+									const wrapper = document.createElement("div");
+									wrapper.className = "tweet-share-wrapper";
+									wrapper.style.backgroundColor = computedPrimary;
+
+									const attribution = document.createElement("div");
+									attribution.className = "tweet-share-attribution";
+									attribution.innerHTML = `Tweetapus`;
+									attribution.style.color = computedPrimaryFg;
+									wrapper.appendChild(attribution);
+
+									const tweetContainer = document.createElement("div");
+									tweetContainer.className = "tweet-share-container";
+									tweetContainer.style.backgroundColor = computedBgPrimary;
+									tweetContainer.style.color = computedTextPrimary;
+
+									tweetContainer.appendChild(tweetElClone);
+									wrapper.appendChild(tweetContainer);
+
+									document.body.appendChild(wrapper);
+
+									const allImages = wrapper.querySelectorAll("img");
+									const imagePromises = Array.from(allImages).map((img) => {
+										return new Promise((resolve) => {
+											if (img.complete && img.naturalHeight !== 0) {
+												resolve();
+											} else {
+												img.onload = resolve;
+												img.onerror = resolve;
+											}
+										});
+									});
+
+									await Promise.all(imagePromises);
+
+									const runCapture = () => {
+										window
+											.html2canvas(wrapper, {
+												backgroundColor: computedPrimary,
+												scale: 3,
+												width: wrapper.offsetWidth,
+												useCORS: true,
+												allowTaint: true,
+												logging: false,
+											})
+											.then((canvas) => {
+												canvas.toBlob((blob) => {
+													const url = URL.createObjectURL(blob);
+													const a = document.createElement("a");
+													a.href = url;
+													a.download = `tweetapus_${tweet.id}.png`;
+													a.click();
+													wrapper.remove();
+												});
+											});
+									};
+
+									if (window.html2canvas) {
+										runCapture();
+									} else {
+										const script = document.createElement("script");
+										script.src = "/public/shared/assets/js/html2canvas.min.js";
+										script.onload = runCapture;
+										document.head.appendChild(script);
+									}
+								},
+							},
+							{
+								id: "copy-link",
+								icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>`,
+								title: "Copy link",
+								onClick: () => {
+									const tweetUrl = `${window.location.origin}/tweet/${tweet.id}`;
+
+									navigator.clipboard.writeText(tweetUrl);
+								},
+							},
+
+							{
+								icon: `<svg fill="none" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M14.242 3.03a1 1 0 0 1 .728 1.213l-4 16a1 1 0 1 1-1.94-.485l4-16a1 1 0 0 1 1.213-.728ZM6.707 7.293a1 1 0 0 1 0 1.414L3.414 12l3.293 3.293a1 1 0 1 1-1.414 1.414l-4-4a1 1 0 0 1 0-1.414l4-4a1 1 0 0 1 1.414 0Zm10.586 0a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 1 1-1.414-1.414L20.586 12l-3.293-3.293a1 1 0 0 1 0-1.414Z"></path></svg>`,
+								title: "Embed tweet",
+								onClick: () => {
+									const content = document.createElement("div");
+									content.innerHTML = `<p style="margin: 15px;font-size: 15px;line-height: 23px;color: var(--text-secondary);">Embed this post in your website. Simply copy the following snippet and paste it into the HTML code of your website.</p>
+									<div class="embed-code">
+									<div class="input">
+									<svg fill="none" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" fill-rule="evenodd" clip-rule="evenodd" d="M14.242 3.03a1 1 0 0 1 .728 1.213l-4 16a1 1 0 1 1-1.94-.485l4-16a1 1 0 0 1 1.213-.728ZM6.707 7.293a1 1 0 0 1 0 1.414L3.414 12l3.293 3.293a1 1 0 1 1-1.414 1.414l-4-4a1 1 0 0 1 0-1.414l4-4a1 1 0 0 1 1.414 0Zm10.586 0a1 1 0 0 1 1.414 0l4 4a1 1 0 0 1 0 1.414l-4 4a1 1 0 1 1-1.414-1.414L20.586 12l-3.293-3.293a1 1 0 0 1 0-1.414Z"></path></svg>
+									<input value="" autocomplete="off" autocorrect="off" readonly rows="1" spellcheck="false">
+									</div>
+									<button>Copy code</button>
+									</div>`;
+
+									content.querySelector("input").value =
+										`<script src="${window.location.origin}/embed/${tweet.id}.js" async charset="utf-8"></script>`;
+
+									content
+										.querySelector("button")
+										.addEventListener("click", () => {
+											navigator.clipboard.writeText(
+												content.querySelector("input").value,
+											);
+
+											content.querySelector("button").style.minWidth =
+												`${content.querySelector("button").offsetWidth}px`;
+											content.querySelector("button").disabled = true;
+											content.querySelector("button").innerText = "Copied!";
+
+											setTimeout(() => {
+												content.querySelector("button").disabled = false;
+												content.querySelector("button").innerText = "Copy code";
+											}, 1500);
+										});
+
+									createModal({
+										title: "Embed tweet",
+										content,
+									});
+								},
+							},
+						],
+					});
 				},
 			},
 
 			{
-				id: "share-image",
-				icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-image"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`,
-				title: "Share as image",
+				id: "see-interactions",
+				icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>`,
+				title: "See interactions",
 				onClick: async () => {
-					const tweetElClone = document.createElement("div");
-					tweetElClone.innerHTML = tweetEl.outerHTML;
-
-					tweetElClone.querySelectorAll(".tweet-actions").forEach((el) => {
-						el.remove();
-					});
-					tweetElClone.querySelectorAll(".tweet-menu-btn").forEach((el) => {
-						el.remove();
-					});
-					tweetElClone.querySelectorAll(".spoiler-overlay").forEach((el) => {
-						el.remove();
-					});
-
-					const computedPrimary = getComputedStyle(document.documentElement)
-						.getPropertyValue("--primary")
-						.trim();
-					const computedPrimaryFg =
-						getComputedStyle(document.documentElement)
-							.getPropertyValue("--primary-fg")
-							.trim() || "#ffffff";
-					const computedBgPrimary =
-						getComputedStyle(document.documentElement)
-							.getPropertyValue("--bg-primary")
-							.trim() || "#ffffff";
-					const computedTextPrimary =
-						getComputedStyle(document.documentElement)
-							.getPropertyValue("--text-primary")
-							.trim() || "#0f1419";
-
-					tweetElClone
-						.querySelectorAll(".verification-badge svg path")
-						.forEach((path) => {
-							const fill = path.getAttribute("fill");
-							const stroke = path.getAttribute("stroke");
-							if (fill === "var(--primary)")
-								path.setAttribute("fill", computedPrimary);
-							if (stroke === "var(--primary-fg)")
-								path.setAttribute("stroke", computedPrimaryFg);
-						});
-
-					const wrapper = document.createElement("div");
-					wrapper.className = "tweet-share-wrapper";
-					wrapper.style.backgroundColor = computedPrimary;
-
-					const attribution = document.createElement("div");
-					attribution.className = "tweet-share-attribution";
-					attribution.innerHTML = `Tweetapus`;
-					attribution.style.color = computedPrimaryFg;
-					wrapper.appendChild(attribution);
-
-					const tweetContainer = document.createElement("div");
-					tweetContainer.className = "tweet-share-container";
-					tweetContainer.style.backgroundColor = computedBgPrimary;
-					tweetContainer.style.color = computedTextPrimary;
-
-					tweetContainer.appendChild(tweetElClone);
-					wrapper.appendChild(tweetContainer);
-
-					document.body.appendChild(wrapper);
-
-					const allImages = wrapper.querySelectorAll("img");
-					const imagePromises = Array.from(allImages).map((img) => {
-						return new Promise((resolve) => {
-							if (img.complete && img.naturalHeight !== 0) {
-								resolve();
-							} else {
-								img.onload = resolve;
-								img.onerror = resolve;
-							}
-						});
-					});
-
-					await Promise.all(imagePromises);
-
-					const runCapture = () => {
-						window
-							.html2canvas(wrapper, {
-								backgroundColor: computedPrimary,
-								scale: 3,
-								width: wrapper.offsetWidth,
-								useCORS: true,
-								allowTaint: true,
-								logging: false,
-							})
-							.then((canvas) => {
-								canvas.toBlob((blob) => {
-									const url = URL.createObjectURL(blob);
-									const a = document.createElement("a");
-									a.href = url;
-									a.download = `tweetapus_${tweet.id}.png`;
-									a.click();
-									wrapper.remove();
-								});
-							});
-					};
-
-					if (window.html2canvas) {
-						runCapture();
-					} else {
-						const script = document.createElement("script");
-						script.src = "/public/shared/assets/js/html2canvas.min.js";
-						script.onload = runCapture;
-						document.head.appendChild(script);
-					}
+					await showInteractionsModal(tweet.id);
 				},
 			},
 		];
@@ -3397,6 +3529,10 @@ export const createTweetElement = (tweet, config = {}) => {
 		});
 		topReplyEl.style.marginTop = "4px";
 
+		if (!tweet.top_reply.parentsCache) {
+			tweet.top_reply.parentsCache = [tweet, tweet.top_reply];
+		}
+
 		tweetEl.appendChild(topReplyEl);
 
 		if (tweet.top_reply.author_response) {
@@ -3408,6 +3544,14 @@ export const createTweetElement = (tweet, config = {}) => {
 					isTopReply: true,
 				},
 			);
+
+			if (!tweet.top_reply.author_response.parentsCache) {
+				tweet.top_reply.author_response.parentsCache = [
+					tweet,
+					tweet.top_reply,
+					tweet.top_reply.author_response,
+				];
+			}
 
 			tweetEl.appendChild(authorResponseEl);
 		}
@@ -3424,7 +3568,7 @@ export const createTweetElement = (tweet, config = {}) => {
 				e.stopPropagation();
 			}
 
-			openTweet(tweet);
+			openTweet(tweet, { threadPostsCache: tweet.parentsCache });
 		});
 	}
 

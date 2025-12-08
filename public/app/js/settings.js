@@ -3539,8 +3539,7 @@ async function showSpamScoreDetails(username) {
 		};
 
 		const modal = document.createElement("div");
-		// Use a unique class or no class to avoid conflict with shared modal.css
-		// which sets .modal { opacity: 0 }
+		
 		modal.style.cssText =
 			"display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; align-items: center; justify-content: center; animation: fadeIn 0.2s;";
 

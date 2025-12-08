@@ -1,17 +1,7 @@
 import { Elysia } from "elysia";
 import db from "../db.js";
 import { sendPushNotification } from "./push.js";
-
-let sendUnreadCounts;
-let broadcastToUser;
-try {
-	const indexModule = await import("../index.js");
-	sendUnreadCounts = indexModule.sendUnreadCounts;
-	broadcastToUser = indexModule.broadcastToUser;
-} catch {
-	sendUnreadCounts = () => {};
-	broadcastToUser = () => {};
-}
+import { broadcastToUser, sendUnreadCounts } from "./sse.js";
 
 const getUserByUsername = db.query(
 	"SELECT id FROM users WHERE LOWER(username) = LOWER(?)",
