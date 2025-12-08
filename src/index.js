@@ -102,10 +102,10 @@ const app = new Elysia()
 			},
 		}),
 	)
-	.use(staticPlugin())
-	.use(jwt({ name: "jwt", secret: process.env.JWT_SECRET }))
-	.use(compression)
 	.use(embeds)
+	.use(jwt({ name: "jwt", secret: process.env.JWT_SECRET }))
+	.use(staticPlugin())
+	.use(compression)
 	.use(sse)
 	.use(htmlEmbeds)
 	.use(api)

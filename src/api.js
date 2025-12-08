@@ -360,8 +360,7 @@ export default new Elysia({
 		},
 		{
 			detail: {
-				description:
-					"Get transparency IP ASN name and ID",
+				description: "Get transparency IP ASN name and ID",
 				tags: ["Profile"],
 			},
 			params: t.Object({
@@ -374,17 +373,23 @@ export default new Elysia({
 		},
 	)
 	.get("/owoembed", ({ query }) => {
-		const { author, handle, stats } = query;
+		const { author, handle, stats, id } = query;
 
 		return {
 			type: "rich",
 			version: "1.0",
 
 			author_name: `${author} (@${handle})`,
-			author_url: `${process.env.BASE_URL}/${handle}`,
+			author_url: `${process.env.BASE_URL}/@${handle}`,
 
-			provider_name: `Tweetapus  •  ${stats}`,
+			provider_name: `Tweetapus`,
 			provider_url: process.env.BASE_URL,
+
+			cache_age: 86400,
+			width: 600,
+			height: null,
+
+			html: `<script src="${process.env.BASE_URL}/embed/${id}.js" async charset="utf-8"></script>`,
 		};
 	})
 	.use(auth)

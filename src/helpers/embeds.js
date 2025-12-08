@@ -14,7 +14,8 @@ const esc = (str) =>
 const getTweetById = db.query(`SELECT * FROM posts WHERE id = ?`);
 const getUserById = db.query(`SELECT * FROM users WHERE id = ?`);
 
-const botPatterns = /discord|telegram|slack|twitter|facebook|linkedinbot|whatsapp|skype/i;
+const botPatterns =
+	/discord|telegram|slack|twitter|facebook|linkedinbot|whatsapp|skype/i;
 
 export const embeds = new Elysia({ name: "generateEmbeds" })
 	.mapResponse(({ request, response, set }) => {
@@ -44,6 +45,7 @@ export const embeds = new Elysia({ name: "generateEmbeds" })
 		const author = getUserById.get(tweet.user_id);
 		const authorName = author ? author.name || author.username : "Unknown";
 		const authorHandle = author ? author.username : "unknown";
+		const authorAvatar = `${process.env.BASE_URL}${author?.avatar}`;
 
 		let cleanContent = stripHtml(tweet.content || "");
 		if (cleanContent.length > 350) {
@@ -51,14 +53,6 @@ export const embeds = new Elysia({ name: "generateEmbeds" })
 		}
 
 		const imageUrl = tweet.image_url || tweet.attachment_url || null;
-
-		let imageMeta = "";
-		if (imageUrl) {
-			imageMeta = `
-                <meta property="twitter:image" content="${imageUrl}" />
-                <meta property="og:image" content="${imageUrl}" />
-            `;
-		}
 
 		const statsString = `💬 ${tweet.reply_count || 0}   🔁 ${tweet.retweet_count || 0}   ❤️ ${tweet.like_count || 0}   👁️ ${tweet.view_count || 0}`;
 
@@ -72,22 +66,60 @@ export const embeds = new Elysia({ name: "generateEmbeds" })
                 
                 <meta property="og:title" content="${esc(authorName)} (@${authorHandle})"/>
                 <meta property="og:description" content="${esc(cleanContent)}"/>
+                <meta property="description" content="${esc(cleanContent)}"/>
                 <meta property="og:site_name" content="Tweetapus"/>
                 
-                <meta property="twitter:card" content="summary_large_image"/>
+                <meta name="twitter:card" content="summary">
                 <meta property="twitter:title" content="${esc(authorName)} (@${authorHandle})"/>
-                <meta property="twitter:description" content="${esc(cleanContent)}"/>
-                ${imageMeta}
-                
+                <meta property="twitter:description" content="${esc(cleanContent)}"/
+                <meta property="twitter:image" content="${imageUrl || authorAvatar}" />
+                <meta property="og:image" content="${imageUrl || authorAvatar}" />
+
+                <link rel="apple-touch-icon" href="${process.env.BASE_URL}/public/shared/assets/favicon.svg">
+                <link rel="icon" type="image/svg+xml" href="${process.env.BASE_URL}/public/shared/assets/favicon.svg">
+                <link rel="mask-icon" href="${process.env.BASE_URL}/public/shared/assets/favicon.svg" color="#AB96FF">
+                <meta property="og:logo" content="${process.env.BASE_URL}/public/shared/assets/favicon.svg">
+
                 <meta http-equiv="refresh" content="0;url=${process.env.BASE_URL}/tweet/${tweetId}?rb=1"/>
+                <meta name="application-name" content="Tweetapus">
+                <meta property="og:type" content="article">
+                <meta property="profile:username" content="${authorHandle}">
                 
-                <link rel="alternate" 
-                    href="${process.env.BASE_URL}/api/owooembed?author=${encodeURIComponent(authorName)}&handle=${encodeURIComponent(authorHandle)}&stats=${encodeURIComponent(statsString)}" 
-                    type="application/json+oembed" 
-                    title="${esc(authorName)} (@${authorHandle})"
-                >
+                <link rel="alternate" href="${process.env.BASE_URL}/api/owoembed?author=${encodeURIComponent(authorName)}&handle=${encodeURIComponent(authorHandle)}&stats=${encodeURIComponent(statsString)}&id=${encodeURIComponent(tweetId)}" type="application/json+oembed">
+
+								 <script type="application/ld+json">${JSON.stringify({
+										"@context": "https://schema.org",
+										"@type": "DiscussionForumPosting",
+										author: {
+											"@type": "Person",
+											name: authorName,
+											alternateName: `@${authorHandle}`,
+											url: `${process.env.BASE_URL}/${authorHandle}`,
+										},
+										text: cleanContent,
+
+										datePublished: new Date(tweet.created_at).toISOString(),
+										interactionStatistic: [
+											{
+												"@type": "InteractionCounter",
+												interactionType: "https://schema.org/LikeAction",
+												userInteractionCount: tweet.like_count,
+											},
+											{
+												"@type": "InteractionCounter",
+												interactionType: "https://schema.org/CommentAction",
+												userInteractionCount: tweet.reply_count,
+											},
+											{
+												"@type": "InteractionCounter",
+												interactionType: "https://schema.org/ShareAction",
+												userInteractionCount:
+													tweet.retweet_count + tweet.quote_count,
+											},
+										],
+									})}</script>
             </head>
-            <body></body>
+            <body><p>hi, human. this is supposed to be for robots only. <a href="${process.env.BASE_URL}/tweet/${tweetId}?rb=1">please click here to continue</a></p></body>
         </html>`;
 	})
 	.as("plugin");

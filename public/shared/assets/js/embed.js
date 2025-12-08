@@ -428,7 +428,9 @@
 			if (diff <= 0) return "Final results";
 
 			const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-			const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+			const hours = Math.floor(
+				(diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+			);
 			const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
 			if (days > 0) return `${days} day${days !== 1 ? "s" : ""} left`;
@@ -439,31 +441,40 @@
 		let attachmentsHTML = "";
 		if (tweet.attachments && tweet.attachments.length > 0) {
 			const count = tweet.attachments.length;
-			const gridClass = count === 1 ? "single-attachment" : count === 2 ? "two-attachments" : count === 3 ? "three-attachments" : "four-attachments";
-			
+			const gridClass =
+				count === 1
+					? "single-attachment"
+					: count === 2
+						? "two-attachments"
+						: count === 3
+							? "three-attachments"
+							: "four-attachments";
+
 			attachmentsHTML = `<div class="tweet-attachments ${gridClass}">`;
-			
+
 			for (const attachment of tweet.attachments) {
 				attachmentsHTML += '<div class="tweet-attachment">';
-				
+
 				if (attachment.file_type.startsWith("image/")) {
 					attachmentsHTML += `<img src="${escapeHtml(attachment.file_url)}" alt="${escapeHtml(attachment.file_name)}" loading="lazy" />`;
 				} else if (attachment.file_type === "video/mp4") {
 					attachmentsHTML += `<video src="${escapeHtml(attachment.file_url)}" controls></video>`;
 				}
-				
-				attachmentsHTML += '</div>';
+
+				attachmentsHTML += "</div>";
 			}
-			
-			attachmentsHTML += '</div>';
+
+			attachmentsHTML += "</div>";
 		}
 
 		let pollHTML = "";
 		if (tweet.poll) {
 			pollHTML = '<div class="tweet-poll"><div class="poll-options">';
-			
+
 			for (const option of tweet.poll.options) {
-				const safePercentage = Number.isFinite(option.percentage) ? Math.max(0, Math.min(100, option.percentage)) : 0;
+				const safePercentage = Number.isFinite(option.percentage)
+					? Math.max(0, Math.min(100, option.percentage))
+					: 0;
 				pollHTML += `
 					<div class="poll-option">
 						<div class="poll-option-bar" style="width: ${safePercentage}%"></div>
@@ -474,8 +485,10 @@
 					</div>
 				`;
 			}
-			
-			const safeTotalVotes = Number.isFinite(tweet.poll.totalVotes) ? Math.max(0, tweet.poll.totalVotes) : 0;
+
+			const safeTotalVotes = Number.isFinite(tweet.poll.totalVotes)
+				? Math.max(0, tweet.poll.totalVotes)
+				: 0;
 			pollHTML += `
 				</div>
 				<div class="poll-meta">
@@ -491,11 +504,19 @@
 		const safeName = escapeHtml(tweet.author.name);
 		const safeUsername = escapeHtml(tweet.author.username);
 		const safeContent = escapeHtml(tweet.content);
-		const safeAvatarRadius = Number.isFinite(tweet.author.avatar_radius) ? Math.max(0, Math.min(50, tweet.author.avatar_radius)) : 50;
-		const safeLikes = Number.isFinite(tweet.likes) ? Math.max(0, tweet.likes) : 0;
-		const safeRetweets = Number.isFinite(tweet.retweets) ? Math.max(0, tweet.retweets) : 0;
-		const safeReplies = Number.isFinite(tweet.replies) ? Math.max(0, tweet.replies) : 0;
-		
+		const safeAvatarRadius = Number.isFinite(tweet.author.avatar_radius)
+			? Math.max(0, Math.min(50, tweet.author.avatar_radius))
+			: 50;
+		const safeLikes = Number.isFinite(tweet.likes)
+			? Math.max(0, tweet.likes)
+			: 0;
+		const safeRetweets = Number.isFinite(tweet.retweets)
+			? Math.max(0, tweet.retweets)
+			: 0;
+		const safeReplies = Number.isFinite(tweet.replies)
+			? Math.max(0, tweet.replies)
+			: 0;
+
 		let safeOrigin;
 		try {
 			safeOrigin = new URL(tweet.link).origin;
