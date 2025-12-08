@@ -827,6 +827,10 @@ function renderMessages() {
 function createMessageElement(message, currentUser) {
 	message.content = message.content.trim() || "";
 
+	document
+		.querySelector(".dm-conversation .dm-messages .no-messages")
+		?.remove();
+
 	const isOwn = message.username === currentUser;
 	const avatar = message.avatar || "/public/shared/assets/default-avatar.svg";
 	const radius =

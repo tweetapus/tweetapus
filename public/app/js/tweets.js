@@ -3395,6 +3395,7 @@ export const createTweetElement = (tweet, config = {}) => {
 			showTopReply: false,
 			isTopReply: true,
 		});
+		topReplyEl.style.marginTop = "4px";
 
 		tweetEl.appendChild(topReplyEl);
 

@@ -37,7 +37,7 @@ export function createTweetSkeleton() {
 	const interactions = document.createElement("div");
 	interactions.className = "skeleton-tweet-interactions";
 
-	for (let i = 0; i < 4; i++) {
+	for (let i = 0; i < 3; i++) {
 		const action = document.createElement("div");
 		action.className = "skeleton-loader skeleton-tweet-action";
 		interactions.appendChild(action);

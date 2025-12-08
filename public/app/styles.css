@@ -2373,6 +2373,10 @@ nav {
     }
   }
 
+  .top-reply:first-of-type {
+    margin-top: 6px;
+  }
+
   .tweet-interactions {
     display: flex;
     gap: 14px;
@@ -2889,6 +2893,16 @@ nav {
     justify-content: center;
     background-color: rgba(0, 0, 0, 0.5);
     border-radius: 999px;
+    transition: background .2s, transform .2s, opacity .2s;
+
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    &:active {
+      transform: scale(.95);
+      opacity: .7;
+    }
   }
 
   @media (min-width: 570px) {
@@ -4079,13 +4093,19 @@ nav {
   padding-left: 16px;
   border-left: 3px solid var(--border-secondary);
   position: relative;
-  padding-top: 4px;
+  margin-top: -12px;
+  padding-top: 12px;
   padding-bottom: 4px;
-  gap: 6px;
 
-  .tweet-header img {
-    width: 32px;
-    height: 32px;
+  .tweet-header {
+    img {
+      width: 32px;
+      height: 32px;
+    }
+
+    .tweet-header-name, .tweet-header-username {
+      font-size: 14px;
+    }
   }
 
   .tweet-content {
@@ -10909,7 +10929,6 @@ emoji-picker.emoji-picker-popup {
     position: absolute;
     bottom: 0;
     left: 0;
-    right: 0;
     background: rgba(0, 0, 0, 0.6);
     color: white;
     font-size: 15px;
@@ -10918,14 +10937,14 @@ emoji-picker.emoji-picker-popup {
     transform: translateY(4px) scale(.9);
     text-align: center;
     width: fit-content;
-    margin: 0px auto;
+    transform-origin: left;
     border-radius: 4px;
     transition: opacity .2s, transform .2s;
     backdrop-filter: blur(1px);
   }
 
   &:hover .emojik-label {
-opacity: 1;
+    opacity: 1;
     transform: translateY(0px) scale(1);
   }
 }
