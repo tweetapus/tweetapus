@@ -868,7 +868,7 @@ export const useComposer = (
 		}
 	};
 
-	const showVibeModal = () => {
+	const showVibeModal = async () => {
 		const content = document.createElement("div");
 		content.className = "vibe-options-list";
 
@@ -890,6 +890,8 @@ export const useComposer = (
 			btn.appendChild(label);
 			content.appendChild(btn);
 		});
+
+		const { createModal } = await import("../../shared/ui-utils.js");
 
 		const { close } = createModal({
 			title: "Choose @h's vibe",

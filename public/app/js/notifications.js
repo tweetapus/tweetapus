@@ -83,22 +83,26 @@ function setupPullToRefresh() {
 			</svg>
 			<span class="ptr-text">Pull to refresh</span>
 		`;
-		
+
 		const listElement = document.getElementById("notificationsList");
 		if (listElement) {
 			listElement.parentElement.insertBefore(ptrIndicator, listElement);
 		}
 	}
 
-	document.addEventListener("touchstart", handleNotificationsTouchStart, { passive: true });
-	document.addEventListener("touchmove", handleNotificationsTouchMove, { passive: true });
+	document.addEventListener("touchstart", handleNotificationsTouchStart, {
+		passive: true,
+	});
+	document.addEventListener("touchmove", handleNotificationsTouchMove, {
+		passive: true,
+	});
 	document.addEventListener("touchend", handleNotificationsTouchEnd);
 }
 
 const handleNotificationsTouchStart = (e) => {
 	const notificationsPage = document.querySelector(".notifications");
 	if (!notificationsPage || notificationsPage.style.display === "none") return;
-	
+
 	if (window.scrollY === 0 && !ptrRefreshing) {
 		ptrStartY = e.touches[0].clientY;
 	}
@@ -107,7 +111,7 @@ const handleNotificationsTouchStart = (e) => {
 const handleNotificationsTouchMove = (e) => {
 	const notificationsPage = document.querySelector(".notifications");
 	if (!notificationsPage || notificationsPage.style.display === "none") return;
-	
+
 	if (ptrStartY === 0 || ptrRefreshing) return;
 	ptrCurrentY = e.touches[0].clientY;
 	const pullDistance = ptrCurrentY - ptrStartY;
@@ -121,7 +125,8 @@ const handleNotificationsTouchMove = (e) => {
 		}
 		const textEl = ptrIndicator.querySelector(".ptr-text");
 		if (textEl) {
-			textEl.textContent = pullDistance > 80 ? "Release to refresh" : "Pull to refresh";
+			textEl.textContent =
+				pullDistance > 80 ? "Release to refresh" : "Pull to refresh";
 		}
 	}
 };
@@ -132,7 +137,7 @@ const handleNotificationsTouchEnd = async () => {
 		ptrStartY = 0;
 		return;
 	}
-	
+
 	if (ptrStartY === 0 || ptrRefreshing) {
 		ptrStartY = 0;
 		return;

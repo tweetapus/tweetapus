@@ -458,9 +458,7 @@ const getLinkPreviewsByPostIds = (postIds) => {
 	if (!postIds.length) return [];
 	const placeholders = postIds.map(() => "?").join(",");
 	return db
-		.query(
-			`SELECT * FROM link_previews WHERE post_id IN (${placeholders})`,
-		)
+		.query(`SELECT * FROM link_previews WHERE post_id IN (${placeholders})`)
 		.all(...postIds);
 };
 
