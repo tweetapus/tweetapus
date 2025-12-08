@@ -10,6 +10,7 @@ const getTweetById = db.prepare(`
 		posts.retweet_count,
 		posts.reply_count,
 		posts.quote_count,
+		posts.poll_id,
 
     users.username,
     users.name,
@@ -23,6 +24,25 @@ const getTweetById = db.prepare(`
   FROM posts
   JOIN users ON posts.user_id = users.id
   WHERE posts.id = ?
+`);
+
+const getAttachments = db.prepare(`
+  SELECT file_url, file_type, file_name, is_spoiler
+  FROM attachments
+  WHERE post_id = ?
+`);
+
+const getPoll = db.prepare(`
+  SELECT id, expires_at
+  FROM polls
+  WHERE id = ?
+`);
+
+const getPollOptions = db.prepare(`
+  SELECT id, option_text, vote_count, option_order
+  FROM poll_options
+  WHERE poll_id = ?
+  ORDER BY option_order ASC
 `);
 
 export const htmlEmbeds = new Elysia({
@@ -39,9 +59,12 @@ export const htmlEmbeds = new Elysia({
 	.get("/:id", async ({ set, params }) => {
 		const { id } = params;
 		if (!id || !id.endsWith(".js")) {
-			return new Response(`console.error("[Tweetapus] Tweet ID not found")`, {
-				status: 405,
-			});
+			return new Response(
+				`console.error("[Tweetapus] Tweet not found or deleted")`,
+				{
+					status: 404,
+				},
+			);
 		}
 
 		const tweetId = id.split(".")[0];
@@ -55,7 +78,54 @@ export const htmlEmbeds = new Elysia({
 		const content = await file.text();
 		const tweet = getTweetById.get(tweetId);
 
-		console.log(tweet);
+		if (!tweet) {
+			return new Response(
+				`console.error("[Tweetapus] Tweet not found or deleted")`,
+				{
+					status: 404,
+				},
+			);
+		}
+
+		const attachments = getAttachments.all(tweetId);
+
+		let poll = null;
+		if (tweet.poll_id) {
+			const pollData = getPoll.get(tweet.poll_id);
+			if (pollData) {
+				const options = getPollOptions.all(tweet.poll_id);
+				const totalVotes = options.reduce(
+					(sum, opt) => sum + opt.vote_count,
+					0,
+				);
+				const now = new Date();
+				const expiresAt = new Date(pollData.expires_at);
+				const isExpired = now > expiresAt;
+
+				poll = {
+					options: options.map((opt) => ({
+						text: opt.option_text,
+						votes: opt.vote_count,
+						percentage:
+							totalVotes > 0
+								? Math.round((opt.vote_count / totalVotes) * 100)
+								: 0,
+					})),
+					totalVotes,
+					isExpired,
+					expiresAt: pollData.expires_at,
+				};
+			}
+		}
+
+		if (tweet.private) {
+			return new Response(
+				`console.error("[Tweetapus] Tweet not found or deleted")`,
+				{
+					status: 404,
+				},
+			);
+		}
 
 		return content.replaceAll(
 			"/*{tweet}*/",
@@ -67,6 +137,8 @@ export const htmlEmbeds = new Elysia({
 				retweets: tweet.retweet_count + tweet.quote_count,
 				replies: tweet.reply_count,
 				link: `${process.env.BASE_URL}/tweet/${tweetId}?ref=embed`,
+				attachments: attachments.length > 0 ? attachments : null,
+				poll,
 
 				author: {
 					username: tweet.username,

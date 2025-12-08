@@ -18,6 +18,8 @@
 - make ALL modals use the modal creation util
 - one-time impersonation tokens
 
+- move away from jwts for session tokens
+
 **other things:**
 
 - personalized algorithm + onboarding
