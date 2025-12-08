@@ -24,6 +24,10 @@ let hasMoreNotifications = true;
 let oldestNotificationId = null;
 let notificationsScrollHandler = null;
 let tabsInitialized = false;
+let ptrIndicator = null;
+let ptrStartY = 0;
+let ptrCurrentY = 0;
+let ptrRefreshing = false;
 
 function displayUnreadCount(count) {
 	const countElement = document.getElementById("notificationCount");
@@ -65,6 +69,94 @@ function initializeNotificationTabs() {
 	}
 }
 
+function setupPullToRefresh() {
+	if (!ptrIndicator) {
+		const notificationsPage = document.querySelector(".notifications");
+		if (!notificationsPage) return;
+
+		ptrIndicator = document.createElement("div");
+		ptrIndicator.id = "pull-to-refresh";
+		ptrIndicator.innerHTML = `
+			<svg class="ptr-spinner" width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+				<path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25" fill="currentColor"></path>
+				<path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z" fill="currentColor" class="ptr-path"></path>
+			</svg>
+			<span class="ptr-text">Pull to refresh</span>
+		`;
+		
+		const listElement = document.getElementById("notificationsList");
+		if (listElement) {
+			listElement.parentElement.insertBefore(ptrIndicator, listElement);
+		}
+	}
+
+	document.addEventListener("touchstart", handleNotificationsTouchStart, { passive: true });
+	document.addEventListener("touchmove", handleNotificationsTouchMove, { passive: true });
+	document.addEventListener("touchend", handleNotificationsTouchEnd);
+}
+
+const handleNotificationsTouchStart = (e) => {
+	const notificationsPage = document.querySelector(".notifications");
+	if (!notificationsPage || notificationsPage.style.display === "none") return;
+	
+	if (window.scrollY === 0 && !ptrRefreshing) {
+		ptrStartY = e.touches[0].clientY;
+	}
+};
+
+const handleNotificationsTouchMove = (e) => {
+	const notificationsPage = document.querySelector(".notifications");
+	if (!notificationsPage || notificationsPage.style.display === "none") return;
+	
+	if (ptrStartY === 0 || ptrRefreshing) return;
+	ptrCurrentY = e.touches[0].clientY;
+	const pullDistance = ptrCurrentY - ptrStartY;
+	if (pullDistance > 0 && window.scrollY === 0 && ptrIndicator) {
+		const progress = Math.min(pullDistance / 100, 1);
+		ptrIndicator.style.height = `${Math.min(pullDistance * 0.5, 60)}px`;
+		ptrIndicator.style.opacity = progress;
+		const pathEl = ptrIndicator.querySelector(".ptr-path");
+		if (pathEl) {
+			pathEl.style.transform = `rotate(${progress * 360}deg)`;
+		}
+		const textEl = ptrIndicator.querySelector(".ptr-text");
+		if (textEl) {
+			textEl.textContent = pullDistance > 80 ? "Release to refresh" : "Pull to refresh";
+		}
+	}
+};
+
+const handleNotificationsTouchEnd = async () => {
+	const notificationsPage = document.querySelector(".notifications");
+	if (!notificationsPage || notificationsPage.style.display === "none") {
+		ptrStartY = 0;
+		return;
+	}
+	
+	if (ptrStartY === 0 || ptrRefreshing) {
+		ptrStartY = 0;
+		return;
+	}
+	const pullDistance = ptrCurrentY - ptrStartY;
+	if (pullDistance > 80 && ptrIndicator) {
+		ptrRefreshing = true;
+		ptrIndicator.classList.add("refreshing");
+		const textEl = ptrIndicator.querySelector(".ptr-text");
+		if (textEl) {
+			textEl.textContent = "Refreshing...";
+		}
+		await loadNotifications();
+		ptrRefreshing = false;
+		ptrIndicator.classList.remove("refreshing");
+	}
+	if (ptrIndicator) {
+		ptrIndicator.style.height = "0";
+		ptrIndicator.style.opacity = "0";
+	}
+	ptrStartY = 0;
+	ptrCurrentY = 0;
+};
+
 async function openNotifications(isDirectClick = true) {
 	switchPage("notifications", {
 		path: "/notifications",
@@ -75,10 +167,18 @@ async function openNotifications(isDirectClick = true) {
 				window.removeEventListener("scroll", notificationsScrollHandler);
 				notificationsScrollHandler = null;
 			}
+			document.removeEventListener("touchstart", handleNotificationsTouchStart);
+			document.removeEventListener("touchmove", handleNotificationsTouchMove);
+			document.removeEventListener("touchend", handleNotificationsTouchEnd);
+			if (ptrIndicator) {
+				ptrIndicator.remove();
+				ptrIndicator = null;
+			}
 		},
 	});
 
 	initializeNotificationTabs();
+	setupPullToRefresh();
 
 	if (isDirectClick) {
 		setTimeout(() => window.scrollTo(0, 0), 0);

@@ -454,6 +454,16 @@ const getCardDataForTweet = (tweetId) => {
 	};
 };
 
+const getLinkPreviewsByPostIds = (postIds) => {
+	if (!postIds.length) return [];
+	const placeholders = postIds.map(() => "?").join(",");
+	return db
+		.query(
+			`SELECT * FROM link_previews WHERE post_id IN (${placeholders})`,
+		)
+		.all(...postIds);
+};
+
 export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
 	.use(
@@ -1046,9 +1056,7 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 			let linkPreview = null;
 			if (
-				!reply_to &&
 				!quote_tweet_id &&
-				!poll &&
 				attachments.length === 0 &&
 				!interactive_card &&
 				!targetArticleId
@@ -1365,6 +1373,60 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 			});
 		}
 
+		const allTweetIds = [tweet.id, ...allPostIds];
+		const tweetIdsPlaceholders = allTweetIds.map(() => "?").join(",");
+
+		const allAttachments = db
+			.query(
+				`SELECT * FROM attachments WHERE post_id IN (${tweetIdsPlaceholders})`,
+			)
+			.all(...allTweetIds);
+		const attachmentMap = new Map();
+		allAttachments.forEach((att) => {
+			if (!attachmentMap.has(att.post_id)) {
+				attachmentMap.set(att.post_id, []);
+			}
+			attachmentMap.get(att.post_id).push(att);
+		});
+
+		const allLinkPreviews = getLinkPreviewsByPostIds(allTweetIds);
+		const linkPreviewMap = new Map(
+			allLinkPreviews.map((lp) => [lp.post_id, lp]),
+		);
+
+		const allFactChecks = db
+			.query(
+				`SELECT fc.*, u.username as admin_username, u.name as admin_name
+				FROM fact_checks fc
+				JOIN users u ON fc.created_by = u.id
+				WHERE fc.post_id IN (${tweetIdsPlaceholders})`,
+			)
+			.all(...allTweetIds);
+		const factCheckMap = new Map(allFactChecks.map((fc) => [fc.post_id, fc]));
+
+		const allInteractiveCards = db
+			.query(
+				`SELECT * FROM interactive_cards WHERE post_id IN (${tweetIdsPlaceholders})`,
+			)
+			.all(...allTweetIds);
+		const cardMap = new Map(allInteractiveCards.map((c) => [c.post_id, c]));
+		const cardIds = allInteractiveCards.map((c) => c.id);
+		const cardOptionsMap = new Map();
+		if (cardIds.length > 0) {
+			const cardIdPlaceholders = cardIds.map(() => "?").join(",");
+			const allCardOptions = db
+				.query(
+					`SELECT * FROM interactive_card_options WHERE card_id IN (${cardIdPlaceholders}) ORDER BY option_order ASC`,
+				)
+				.all(...cardIds);
+			allCardOptions.forEach((opt) => {
+				if (!cardOptionsMap.has(opt.card_id)) {
+					cardOptionsMap.set(opt.card_id, []);
+				}
+				cardOptionsMap.get(opt.card_id).push(opt);
+			});
+		}
+
 		const articleIds = new Set();
 		if (tweet.article_id) {
 			articleIds.add(tweet.article_id);
@@ -1441,25 +1503,31 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 
 				return author && !author.suspended;
 			})
-			.map((post) => ({
-				...post,
-				liked_by_user: likedPosts.has(post.id),
-				retweeted_by_user: retweetedPosts.has(post.id),
-				author: userMap.get(post.user_id),
-				poll: getPollDataForTweet(post.id, currentUser?.id || "0"),
-				quoted_tweet: getQuotedTweetData(
-					post.quote_tweet_id,
-					currentUser?.id || "0",
-				),
-				attachments: getTweetAttachments(post.id),
-				article_preview: post.article_id
-					? articleMap.get(post.article_id) || null
-					: null,
-				reaction_count: countReactionsForPost.get(post.id)?.total || 0,
-				top_reactions: getTopReactionsForPost.all(post.id),
-				fact_check: getFactCheckForPost.get(post.id) || null,
-				interactive_card: getCardDataForTweet(post.id),
-			}));
+			.map((post) => {
+				const card = cardMap.get(post.id);
+				return {
+					...post,
+					liked_by_user: likedPosts.has(post.id),
+					retweeted_by_user: retweetedPosts.has(post.id),
+					author: userMap.get(post.user_id),
+					poll: getPollDataForTweet(post.id, currentUser?.id || "0"),
+					quoted_tweet: getQuotedTweetData(
+						post.quote_tweet_id,
+						currentUser?.id || "0",
+					),
+					attachments: attachmentMap.get(post.id) || [],
+					article_preview: post.article_id
+						? articleMap.get(post.article_id) || null
+						: null,
+					reaction_count: countReactionsForPost.get(post.id)?.total || 0,
+					top_reactions: getTopReactionsForPost.all(post.id),
+					fact_check: factCheckMap.get(post.id) || null,
+					interactive_card: card
+						? { ...card, options: cardOptionsMap.get(card.id) || [] }
+						: null,
+					link_preview: linkPreviewMap.get(post.id) || null,
+				};
+			});
 
 		const processedReplies = replies
 			.filter((reply) => {
@@ -1472,28 +1540,35 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 				}
 				return true;
 			})
-			.map((reply) => ({
-				...reply,
-				liked_by_user: likedPosts.has(reply.id),
-				retweeted_by_user: retweetedPosts.has(reply.id),
-				author: userMap.get(reply.user_id),
-				poll: getPollDataForTweet(reply.id, currentUser?.id || "0"),
-				quoted_tweet: getQuotedTweetData(
-					reply.quote_tweet_id,
-					currentUser?.id || "0",
-				),
-				attachments: getTweetAttachments(reply.id),
-				article_preview: reply.article_id
-					? articleMap.get(reply.article_id) || null
-					: null,
-				fact_check: getFactCheckForPost.get(reply.id) || null,
-				interactive_card: getCardDataForTweet(reply.id),
-			}));
+			.map((reply) => {
+				const card = cardMap.get(reply.id);
+				return {
+					...reply,
+					liked_by_user: likedPosts.has(reply.id),
+					retweeted_by_user: retweetedPosts.has(reply.id),
+					author: userMap.get(reply.user_id),
+					poll: getPollDataForTweet(reply.id, currentUser?.id || "0"),
+					quoted_tweet: getQuotedTweetData(
+						reply.quote_tweet_id,
+						currentUser?.id || "0",
+					),
+					attachments: attachmentMap.get(reply.id) || [],
+					article_preview: reply.article_id
+						? articleMap.get(reply.article_id) || null
+						: null,
+					fact_check: factCheckMap.get(reply.id) || null,
+					interactive_card: card
+						? { ...card, options: cardOptionsMap.get(card.id) || [] }
+						: null,
+					link_preview: linkPreviewMap.get(reply.id) || null,
+				};
+			});
 
 		const hasMoreReplies = processedReplies.length >= parseInt(limit, 10);
 
 		const tweetReactionCount = countReactionsForPost.get(tweet.id)?.total || 0;
 		const tweetTopReactions = getTopReactionsForPost.all(tweet.id);
+		const tweetCard = cardMap.get(tweet.id);
 
 		return {
 			tweet: {
@@ -1504,14 +1579,17 @@ export default new Elysia({ prefix: "/tweets", tags: ["Tweets"] })
 					tweet.quote_tweet_id,
 					currentUser?.id || "0",
 				),
-				attachments: getTweetAttachments(tweet.id),
+				attachments: attachmentMap.get(tweet.id) || [],
 				article_preview: tweet.article_id
 					? articleMap.get(tweet.article_id) || null
 					: null,
 				reaction_count: tweetReactionCount,
 				top_reactions: tweetTopReactions,
-				fact_check: getFactCheckForPost.get(tweet.id) || null,
-				interactive_card: getCardDataForTweet(tweet.id),
+				fact_check: factCheckMap.get(tweet.id) || null,
+				interactive_card: tweetCard
+					? { ...tweetCard, options: cardOptionsMap.get(tweetCard.id) || [] }
+					: null,
+				link_preview: linkPreviewMap.get(tweet.id) || null,
 			},
 			threadPosts: processedThreadPosts,
 			replies: processedReplies,

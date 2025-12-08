@@ -228,6 +228,8 @@ CREATE TABLE IF NOT EXISTS polls (
   UNIQUE(post_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_polls_post_id ON polls(post_id);
+
 CREATE TABLE IF NOT EXISTS poll_options (
   id TEXT PRIMARY KEY,
   poll_id TEXT NOT NULL,
@@ -237,6 +239,8 @@ CREATE TABLE IF NOT EXISTS poll_options (
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (poll_id) REFERENCES polls(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_poll_options_poll_id ON poll_options(poll_id);
 
 CREATE TABLE IF NOT EXISTS poll_votes (
   id TEXT PRIMARY KEY,
@@ -250,6 +254,9 @@ CREATE TABLE IF NOT EXISTS poll_votes (
   UNIQUE(user_id, poll_id)
 );
 
+CREATE INDEX IF NOT EXISTS idx_poll_votes_poll_id ON poll_votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_poll_votes_user_id ON poll_votes(user_id);
+
 CREATE TABLE IF NOT EXISTS attachments (
   id TEXT PRIMARY KEY,
   post_id TEXT NOT NULL,
@@ -262,6 +269,8 @@ CREATE TABLE IF NOT EXISTS attachments (
   created_at TIMESTAMP DEFAULT (datetime('now', 'utc')),
   FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_attachments_post_id ON attachments(post_id);
 
 CREATE TABLE IF NOT EXISTS notifications (
   id TEXT PRIMARY KEY,

@@ -11139,16 +11139,13 @@ emoji-picker.emoji-picker-popup {
     width: 24px;
     height: 24px;
     color: var(--color-accent);
-    opacity: 0;
-    transition: opacity 0.2s, transform 0.2s;
+    transition: transform 0.2s;
   }
 
   .ptr-text {
     margin-left: 8px;
     font-size: 13px;
     color: var(--color-secondary);
-    opacity: 0;
-    transition: opacity 0.2s;
   }
 
   &.refreshing {
