@@ -3358,9 +3358,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				}
 			}
 
-			const creationLocationFields = [
-				["creation_country", "country"],
-			];
+			const creationLocationFields = [["creation_country", "country"]];
 
 			for (const [bodyKey, fieldKey] of creationLocationFields) {
 				if (body[bodyKey] === undefined) continue;
@@ -3375,9 +3373,7 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				);
 			}
 
-			const loginLocationFields = [
-				["login_country", "country"],
-			];
+			const loginLocationFields = [["login_country", "country"]];
 
 			for (const [bodyKey, fieldKey] of loginLocationFields) {
 				if (body[bodyKey] === undefined) continue;

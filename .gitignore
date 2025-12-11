@@ -44,3 +44,5 @@ src/algo/*.dll
 **/dist-js
 ext
 **/ext
+
+.vsls.json

@@ -1853,7 +1853,7 @@ class AdminPanel {
 			document.getElementById("userModalBody").innerHTML =
 				`<div class="text-center py-5"><div class="spinner-border text-primary" role="status" style="border-radius:5000px"></div><div class="mt-2 text-muted">Loading user...</div></div>`;
 			document.getElementById("userModalFooter").innerHTML =
-				`<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>`;
+				``;
 			const modal = new bootstrap.Modal(document.getElementById("userModal"));
 			modal.show();
 
@@ -2331,13 +2331,6 @@ class AdminPanel {
                 ${this.buildAffiliateRequestHtml(affiliate, user.id)}
               </div>
             </div>
-
-            <div class="mt-4">
-              <h5>Custom Badges</h5>
-              <div id="userBadgesContainer" data-user-id="${user.id}">
-                ${this.buildUserBadgesHtml(userData.userBadges || [], user.id)}
-              </div>
-            </div>
             
             <h5>Recent Posts</h5>
             <div class="mb-3" style="max-height: 200px; overflow-y: auto;">
@@ -2522,7 +2515,6 @@ class AdminPanel {
       `;
 
 			document.getElementById("userModalFooter").innerHTML = `
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
         <button type="button" class="btn btn-primary" id="editProfileBtn" onclick="adminPanel.toggleEditMode(true)">Edit Profile</button>
         <button type="button" class="btn btn-success d-none" id="saveProfileBtn" onclick="adminPanel.saveProfile('${
 					user.id
@@ -4472,7 +4464,7 @@ class AdminPanel {
 			}
 
 			messageEl.textContent = `This will ban IP ${ipAddress} and ${actionText} associated with it. Are you sure?`;
-			
+
 			if (users.length > 0) {
 				listEl.innerHTML = users
 					.map(
@@ -4490,22 +4482,22 @@ class AdminPanel {
 					)
 					.join("");
 			} else {
-				listEl.innerHTML = '<div class="list-group-item text-muted">No users currently associated with this IP.</div>';
+				listEl.innerHTML =
+					'<div class="list-group-item text-muted">No users currently associated with this IP.</div>';
 			}
 
 			const modal = new bootstrap.Modal(modalEl);
-			
+
 			// Remove previous event listeners to avoid multiple calls
 			const newConfirmBtn = confirmBtn.cloneNode(true);
 			confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-			
+
 			newConfirmBtn.addEventListener("click", () => {
 				modal.hide();
 				this.executeIpBan(ipAddress, action);
 			});
 
 			modal.show();
-
 		} catch (error) {
 			this.showError("Failed to fetch users for this IP: " + error.message);
 		}
@@ -9071,7 +9063,9 @@ class AdminPanel {
 		const imageUrlInput = document.getElementById("badgeImageUrl");
 		const chooseBtn = document.getElementById("badgeImageChooseBtn");
 		const clearBtn = document.getElementById("badgeImageClearBtn");
-		const previewContainer = document.getElementById("badgeImagePreviewContainer");
+		const previewContainer = document.getElementById(
+			"badgeImagePreviewContainer",
+		);
 		const previewImg = document.getElementById("badgeImagePreview");
 
 		if (chooseBtn && imageFileInput) {
@@ -9126,12 +9120,19 @@ class AdminPanel {
 		form.addEventListener("submit", async (e) => {
 			e.preventDefault();
 			const name = document.getElementById("badgeName").value.trim();
-			const description = document.getElementById("badgeDescription").value.trim();
-			const svgContent = document.getElementById("badgeSvgContent").value.trim();
-			const imageUrl = document.getElementById("badgeImageUrl")?.value.trim() || "";
-			const actionType = document.getElementById("badgeActionType")?.value || "none";
+			const description = document
+				.getElementById("badgeDescription")
+				.value.trim();
+			const svgContent = document
+				.getElementById("badgeSvgContent")
+				.value.trim();
+			const imageUrl =
+				document.getElementById("badgeImageUrl")?.value.trim() || "";
+			const actionType =
+				document.getElementById("badgeActionType")?.value || "none";
 			const actionValue = this.collectBadgeActionValue(actionType, "");
-			const allowRawHtml = document.getElementById("badgeAllowRawHtml")?.checked || false;
+			const allowRawHtml =
+				document.getElementById("badgeAllowRawHtml")?.checked || false;
 			if (!name || (!svgContent && !imageUrl)) return;
 			try {
 				await this.apiCall("/api/admin/badges", {
@@ -9178,7 +9179,9 @@ class AdminPanel {
 			<textarea class="form-control form-control-sm popup-entry-value" rows="3" placeholder="https:// or JS code"></textarea>
 			<button type="button" class="btn btn-outline-danger btn-sm popup-entry-remove"><i class="bi bi-x"></i></button>
 		`;
-		row.querySelector(".popup-entry-remove").addEventListener("click", () => row.remove());
+		row
+			.querySelector(".popup-entry-remove")
+			.addEventListener("click", () => row.remove());
 		// set textarea value programmatically so multi-line JS is preserved
 		const valueEl = row.querySelector(".popup-entry-value");
 		if (valueEl) valueEl.value = entry.value || "";
@@ -9205,19 +9208,29 @@ class AdminPanel {
 	collectBadgeActionValue(actionType, prefix = "") {
 		const B = prefix ? "B" : "b";
 		if (actionType === "url") {
-			return document.getElementById(`${prefix}${B}adgeActionUrl`)?.value.trim() || "";
+			return (
+				document.getElementById(`${prefix}${B}adgeActionUrl`)?.value.trim() ||
+				""
+			);
 		}
 		if (actionType === "modal") {
 			return JSON.stringify({
-				title: document.getElementById(`${prefix}${B}adgeModalTitle`)?.value.trim() || "",
-				content: document.getElementById(`${prefix}${B}adgeModalContent`)?.value || "",
+				title:
+					document
+						.getElementById(`${prefix}${B}adgeModalTitle`)
+						?.value.trim() || "",
+				content:
+					document.getElementById(`${prefix}${B}adgeModalContent`)?.value || "",
 				css: document.getElementById(`${prefix}${B}adgeModalCss`)?.value || "",
 				js: document.getElementById(`${prefix}${B}adgeModalJs`)?.value || "",
 			});
 		}
 		if (actionType === "popup") {
 			return JSON.stringify({
-				title: document.getElementById(`${prefix}${B}adgePopupTitle`)?.value.trim() || "",
+				title:
+					document
+						.getElementById(`${prefix}${B}adgePopupTitle`)
+						?.value.trim() || "",
 				entries: this.collectBadgePopupEntries(prefix),
 			});
 		}
@@ -9229,11 +9242,19 @@ class AdminPanel {
 
 	populateBadgeActionFields(actionType, actionValue, prefix = "") {
 		const B = prefix ? "B" : "b";
-		const urlSection = document.getElementById(`${prefix}${B}adgeActionUrlSection`);
-		const modalSection = document.getElementById(`${prefix}${B}adgeActionModalSection`);
-		const popupSection = document.getElementById(`${prefix}${B}adgeActionPopupSection`);
-		const jsSection = document.getElementById(`${prefix}${B}adgeActionJsSection`);
-		
+		const urlSection = document.getElementById(
+			`${prefix}${B}adgeActionUrlSection`,
+		);
+		const modalSection = document.getElementById(
+			`${prefix}${B}adgeActionModalSection`,
+		);
+		const popupSection = document.getElementById(
+			`${prefix}${B}adgeActionPopupSection`,
+		);
+		const jsSection = document.getElementById(
+			`${prefix}${B}adgeActionJsSection`,
+		);
+
 		urlSection?.classList.toggle("d-none", actionType !== "url");
 		modalSection?.classList.toggle("d-none", actionType !== "modal");
 		popupSection?.classList.toggle("d-none", actionType !== "popup");
@@ -9244,9 +9265,13 @@ class AdminPanel {
 			if (urlInput) urlInput.value = actionValue || "";
 		} else if (actionType === "modal") {
 			let parsed = {};
-			try { parsed = JSON.parse(actionValue || "{}"); } catch {}
+			try {
+				parsed = JSON.parse(actionValue || "{}");
+			} catch {}
 			const titleInput = document.getElementById(`${prefix}${B}adgeModalTitle`);
-			const contentInput = document.getElementById(`${prefix}${B}adgeModalContent`);
+			const contentInput = document.getElementById(
+				`${prefix}${B}adgeModalContent`,
+			);
 			const cssInput = document.getElementById(`${prefix}${B}adgeModalCss`);
 			const jsInput = document.getElementById(`${prefix}${B}adgeModalJs`);
 			if (titleInput) titleInput.value = parsed.title || "";
@@ -9255,13 +9280,17 @@ class AdminPanel {
 			if (jsInput) jsInput.value = parsed.js || "";
 		} else if (actionType === "popup") {
 			let parsed = {};
-			try { parsed = JSON.parse(actionValue || "{}"); } catch {}
+			try {
+				parsed = JSON.parse(actionValue || "{}");
+			} catch {}
 			const titleInput = document.getElementById(`${prefix}${B}adgePopupTitle`);
 			if (titleInput) titleInput.value = parsed.title || "";
-			const container = document.getElementById(`${prefix}${B}adgePopupEntries`);
+			const container = document.getElementById(
+				`${prefix}${B}adgePopupEntries`,
+			);
 			if (container) {
 				container.innerHTML = "";
-				for (const entry of (parsed.entries || [])) {
+				for (const entry of parsed.entries || []) {
 					this.addBadgePopupEntry(container, entry);
 				}
 			}
@@ -9360,30 +9389,54 @@ class AdminPanel {
 		}
 
 		document.getElementById("editBadgeName").value = badge.name || "";
-		document.getElementById("editBadgeDescription").value = badge.description || "";
-		document.getElementById("editBadgeSvgContent").value = badge.svg_content || "";
+		document.getElementById("editBadgeDescription").value =
+			badge.description || "";
+		document.getElementById("editBadgeSvgContent").value =
+			badge.svg_content || "";
 		document.getElementById("editBadgeImageUrl").value = badge.image_url || "";
-		document.getElementById("editBadgeActionType").value = badge.action_type || "none";
-		document.getElementById("editBadgeAllowRawHtml").checked = !!badge.allow_raw_html;
+		document.getElementById("editBadgeActionType").value =
+			badge.action_type || "none";
+		document.getElementById("editBadgeAllowRawHtml").checked =
+			!!badge.allow_raw_html;
 
-		this.populateBadgeActionFields(badge.action_type || "none", badge.action_value || "", "edit");
+		this.populateBadgeActionFields(
+			badge.action_type || "none",
+			badge.action_value || "",
+			"edit",
+		);
 
 		const editActionTypeSelect = document.getElementById("editBadgeActionType");
 		const newActionTypeSelect = editActionTypeSelect.cloneNode(true);
-		editActionTypeSelect.parentNode.replaceChild(newActionTypeSelect, editActionTypeSelect);
+		editActionTypeSelect.parentNode.replaceChild(
+			newActionTypeSelect,
+			editActionTypeSelect,
+		);
 		newActionTypeSelect.value = badge.action_type || "none";
 		newActionTypeSelect.addEventListener("change", () => {
 			const val = newActionTypeSelect.value;
-			document.getElementById("editBadgeActionUrlSection")?.classList.toggle("d-none", val !== "url");
-			document.getElementById("editBadgeActionModalSection")?.classList.toggle("d-none", val !== "modal");
-			document.getElementById("editBadgeActionPopupSection")?.classList.toggle("d-none", val !== "popup");
-			document.getElementById("editBadgeActionJsSection")?.classList.toggle("d-none", val !== "client_js");
+			document
+				.getElementById("editBadgeActionUrlSection")
+				?.classList.toggle("d-none", val !== "url");
+			document
+				.getElementById("editBadgeActionModalSection")
+				?.classList.toggle("d-none", val !== "modal");
+			document
+				.getElementById("editBadgeActionPopupSection")
+				?.classList.toggle("d-none", val !== "popup");
+			document
+				.getElementById("editBadgeActionJsSection")
+				?.classList.toggle("d-none", val !== "client_js");
 		});
 
-		const editAddPopupEntryBtn = document.getElementById("editBadgeAddPopupEntry");
+		const editAddPopupEntryBtn = document.getElementById(
+			"editBadgeAddPopupEntry",
+		);
 		if (editAddPopupEntryBtn) {
 			const newAddBtn = editAddPopupEntryBtn.cloneNode(true);
-			editAddPopupEntryBtn.parentNode.replaceChild(newAddBtn, editAddPopupEntryBtn);
+			editAddPopupEntryBtn.parentNode.replaceChild(
+				newAddBtn,
+				editAddPopupEntryBtn,
+			);
 			newAddBtn.addEventListener("click", () => {
 				const container = document.getElementById("editBadgePopupEntries");
 				if (container) this.addBadgePopupEntry(container);
@@ -9394,7 +9447,9 @@ class AdminPanel {
 		const editImageUrlInput = document.getElementById("editBadgeImageUrl");
 		const editChooseBtn = document.getElementById("editBadgeImageChooseBtn");
 		const editClearBtn = document.getElementById("editBadgeImageClearBtn");
-		const editPreviewContainer = document.getElementById("editBadgeImagePreviewContainer");
+		const editPreviewContainer = document.getElementById(
+			"editBadgeImagePreviewContainer",
+		);
 		const editPreviewImg = document.getElementById("editBadgeImagePreview");
 
 		if (badge.image_url) {
@@ -9415,20 +9470,31 @@ class AdminPanel {
 		else newClearBtn.classList.add("d-none");
 
 		const newFileInput = editImageFileInput.cloneNode(true);
-		editImageFileInput.parentNode.replaceChild(newFileInput, editImageFileInput);
+		editImageFileInput.parentNode.replaceChild(
+			newFileInput,
+			editImageFileInput,
+		);
 		newChooseBtn.addEventListener("click", () => newFileInput.click());
 		newFileInput.addEventListener("change", async () => {
 			const file = newFileInput.files?.[0];
 			if (!file) return;
 			try {
-				const cropped = await window.openImageCropper(file, { aspect: 1, size: 128, transparent: true });
+				const cropped = await window.openImageCropper(file, {
+					aspect: 1,
+					size: 128,
+					transparent: true,
+				});
 				if (cropped === window.CROP_CANCELLED) {
 					newFileInput.value = "";
 					return;
 				}
 				const fd = new FormData();
 				fd.append("file", cropped, cropped.name);
-				const uploadResp = await fetch("/api/upload", { method: "POST", headers: { Authorization: `Bearer ${this.token}` }, body: fd });
+				const uploadResp = await fetch("/api/upload", {
+					method: "POST",
+					headers: { Authorization: `Bearer ${this.token}` },
+					body: fd,
+				});
 				const uploadData = await uploadResp.json();
 				if (!uploadResp.ok || uploadData?.error) {
 					this.showError(uploadData?.error || "Failed to upload image");
@@ -9437,7 +9503,8 @@ class AdminPanel {
 				}
 				editImageUrlInput.value = uploadData.file.url;
 				if (editPreviewImg) editPreviewImg.src = uploadData.file.url;
-				if (editPreviewContainer) editPreviewContainer.classList.remove("d-none");
+				if (editPreviewContainer)
+					editPreviewContainer.classList.remove("d-none");
 				newClearBtn.classList.remove("d-none");
 			} catch (err) {
 				this.showError(err.message || "Failed to process image");
@@ -9461,14 +9528,21 @@ class AdminPanel {
 			try {
 				const actionType = document.getElementById("editBadgeActionType").value;
 				const actionValue = this.collectBadgeActionValue(actionType, "edit");
-				const allowRawHtml = document.getElementById("editBadgeAllowRawHtml").checked;
+				const allowRawHtml = document.getElementById(
+					"editBadgeAllowRawHtml",
+				).checked;
 				await this.apiCall(`/api/admin/badges/${badge.id}`, {
 					method: "PATCH",
 					body: JSON.stringify({
 						name: document.getElementById("editBadgeName").value.trim(),
-						description: document.getElementById("editBadgeDescription").value.trim(),
-						svg_content: document.getElementById("editBadgeSvgContent").value.trim() || null,
-						image_url: document.getElementById("editBadgeImageUrl").value.trim() || null,
+						description: document
+							.getElementById("editBadgeDescription")
+							.value.trim(),
+						svg_content:
+							document.getElementById("editBadgeSvgContent").value.trim() ||
+							null,
+						image_url:
+							document.getElementById("editBadgeImageUrl").value.trim() || null,
 						action_type: actionType,
 						action_value: actionValue || null,
 						allow_raw_html: allowRawHtml,

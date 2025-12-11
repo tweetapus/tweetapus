@@ -1027,35 +1027,90 @@
                         </div>
                         <div id="badgeActionUrlSection" class="mb-3 d-none">
                           <label class="form-label">URL</label>
-                          <input type="text" class="form-control" id="badgeActionUrl" placeholder="https://example.com" />
+                          <input
+                            type="text"
+                            class="form-control"
+                            id="badgeActionUrl"
+                            placeholder="https://example.com"
+                          />
                         </div>
                         <div id="badgeActionModalSection" class="mb-3 d-none">
                           <div class="card bg-body-secondary border-0">
                             <div class="card-body">
-                              <h6 class="card-title mb-3"><i class="bi bi-window-stack"></i> Modal Configuration</h6>
+                              <h6 class="card-title mb-3">
+                                <i class="bi bi-window-stack"></i>
+                                Modal Configuration
+                              </h6>
                               <div class="mb-3">
                                 <label class="form-label">Modal Title</label>
-                                <input type="text" class="form-control" id="badgeModalTitle" placeholder="Badge Info" />
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  id="badgeModalTitle"
+                                  placeholder="Badge Info"
+                                />
                               </div>
                               <div class="mb-3">
-                                <label class="form-label">Modal Content (Markdown supported)</label>
-                                <textarea class="form-control" id="badgeModalContent" rows="5" placeholder="**Bold**, *italic*, [links](url), etc."></textarea>
-                                <div class="form-text">Supports Markdown formatting. HTML will be sanitized.</div>
+                                <label class="form-label">
+                                  Modal Content (Markdown supported)
+                                </label>
+                                <textarea
+                                  class="form-control"
+                                  id="badgeModalContent"
+                                  rows="5"
+                                  placeholder="**Bold**, *italic*, [links](url), etc."
+                                ></textarea>
+                                <div class="form-text">
+                                  Supports Markdown formatting. HTML will be
+                                  sanitized.
+                                </div>
                               </div>
                               <div class="mb-3">
-                                <label class="form-label">Custom CSS (optional)</label>
-                                <textarea class="form-control font-monospace" id="badgeModalCss" rows="3" placeholder=".badge-modal-content { color: gold; }"></textarea>
-                                <div class="form-text">Scoped CSS for the modal. Use .badge-modal-content as wrapper class.</div>
+                                <label class="form-label">
+                                  Custom CSS (optional)
+                                </label>
+                                <textarea
+                                  class="form-control font-monospace"
+                                  id="badgeModalCss"
+                                  rows="3"
+                                  placeholder=".badge-modal-content { color: gold; }"
+                                ></textarea>
+                                <div class="form-text">
+                                  Scoped CSS for the modal. Use
+                                  .badge-modal-content as wrapper class.
+                                </div>
                               </div>
                               <div class="mb-3">
-                                <label class="form-label">Custom JS (optional)</label>
-                                <textarea class="form-control font-monospace" id="badgeModalJs" rows="4" placeholder="// Runs when modal opens&#10;console.log('Modal opened');"></textarea>
-                                <div class="form-text">JavaScript executed when the modal opens. Has access to modalEl variable.</div>
+                                <label class="form-label">
+                                  Custom JS (optional)
+                                </label>
+                                <textarea
+                                  class="form-control font-monospace"
+                                  id="badgeModalJs"
+                                  rows="4"
+                                  placeholder="// Runs when modal opens&#10;console.log('Modal opened');"
+                                ></textarea>
+                                <div class="form-text">
+                                  JavaScript executed when the modal opens. Has
+                                  access to modalEl variable.
+                                </div>
                               </div>
                               <div class="mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="badgeAllowRawHtml">
-                                <label class="form-check-label" for="badgeAllowRawHtml">Allow raw HTML (bypass sanitization)</label>
-                                <div class="form-text text-warning">⚠️ Only enable for trusted content. Allows &lt;script&gt;, iframes, etc.</div>
+                                <input
+                                  type="checkbox"
+                                  class="form-check-input"
+                                  id="badgeAllowRawHtml"
+                                />
+                                <label
+                                  class="form-check-label"
+                                  for="badgeAllowRawHtml"
+                                >
+                                  Allow raw HTML (bypass sanitization)
+                                </label>
+                                <div class="form-text text-warning">
+                                  ⚠️ Only enable for trusted content. Allows
+                                  &lt;script&gt;, iframes, etc.
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1063,34 +1118,67 @@
                         <div id="badgeActionPopupSection" class="mb-3 d-none">
                           <div class="card bg-body-secondary border-0">
                             <div class="card-body">
-                              <h6 class="card-title mb-3"><i class="bi bi-list-ul"></i> Popup Menu Configuration</h6>
+                              <h6 class="card-title mb-3">
+                                <i class="bi bi-list-ul"></i>
+                                Popup Menu Configuration
+                              </h6>
                               <div class="mb-3">
-                                <label class="form-label">Popup Title (optional)</label>
-                                <input type="text" class="form-control" id="badgePopupTitle" placeholder="Options" />
+                                <label class="form-label">
+                                  Popup Title (optional)
+                                </label>
+                                <input
+                                  type="text"
+                                  class="form-control"
+                                  id="badgePopupTitle"
+                                  placeholder="Options"
+                                />
                               </div>
                               <div class="mb-3">
                                 <label class="form-label">Menu Entries</label>
                                 <div id="badgePopupEntries"></div>
-                                <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="badgeAddPopupEntry">
-                                  <i class="bi bi-plus"></i> Add Entry
+                                <button
+                                  type="button"
+                                  class="btn btn-outline-primary btn-sm mt-2"
+                                  id="badgeAddPopupEntry"
+                                >
+                                  <i class="bi bi-plus"></i>
+                                  Add Entry
                                 </button>
                               </div>
-                              <div class="form-text">Each entry can have a label, icon (bi-*), and action (URL or JS).</div>
+                              <div class="form-text">
+                                Each entry can have a label, icon (bi-*), and
+                                action (URL or JS).
+                              </div>
                             </div>
                           </div>
                         </div>
                         <div id="badgeActionJsSection" class="mb-3 d-none">
                           <div class="card bg-body-secondary border-0">
                             <div class="card-body">
-                              <h6 class="card-title mb-3"><i class="bi bi-code-slash"></i> Client JavaScript</h6>
-                              <textarea class="form-control font-monospace" id="badgeActionJs" rows="8" placeholder="// This code runs when the badge is clicked&#10;// Available variables: badgeEl, userId, username&#10;alert('Badge clicked!');"></textarea>
-                              <div class="form-text">JavaScript executed on badge click. Has access to badgeEl, userId, username variables.</div>
+                              <h6 class="card-title mb-3">
+                                <i class="bi bi-code-slash"></i>
+                                Client JavaScript
+                              </h6>
+                              <textarea
+                                class="form-control font-monospace"
+                                id="badgeActionJs"
+                                rows="8"
+                                placeholder="// This code runs when the badge is clicked&#10;// Available variables: badgeEl, userId, username&#10;alert('Badge clicked!');"
+                              ></textarea>
+                              <div class="form-text">
+                                JavaScript executed on badge click. Has access
+                                to badgeEl, userId, username variables.
+                              </div>
                             </div>
                           </div>
                         </div>
                         <div class="mb-3">
                           <label class="form-label">Preview</label>
-                          <div id="badgeSvgPreview" class="border rounded p-3 bg-body-secondary" style="min-height: 50px"></div>
+                          <div
+                            id="badgeSvgPreview"
+                            class="border rounded p-3 bg-body-secondary"
+                            style="min-height: 50px"
+                          ></div>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">
                           Create Badge
@@ -1127,12 +1215,17 @@
             </div>
             <!-- Blocks Section -->
             <div id="blocks-section" class="section d-none">
-              <div class="d-flex justify-content-between align-items-center mb-3">
+              <div
+                class="d-flex justify-content-between align-items-center mb-3"
+              >
                 <h4>
                   <i class="bi bi-slash-circle"></i>
                   Blocks
                 </h4>
-                <button class="btn btn-secondary" onclick="adminPanel.loadBlocks()">
+                <button
+                  class="btn btn-secondary"
+                  onclick="adminPanel.loadBlocks()"
+                >
                   <i class="bi bi-arrow-clockwise"></i>
                   Refresh
                 </button>
@@ -2337,7 +2430,11 @@
             <p id="ipBanConfirmMessage"></p>
             <div id="ipBanAffectedUsers" class="mt-3">
               <h6>Affected Users:</h6>
-              <div class="list-group" id="ipBanUsersList" style="max-height: 200px; overflow-y: auto;">
+              <div
+                class="list-group"
+                id="ipBanUsersList"
+                style="max-height: 200px; overflow-y: auto"
+              >
                 <!-- Users will be listed here -->
               </div>
             </div>
@@ -2350,11 +2447,7 @@
             >
               Cancel
             </button>
-            <button
-              type="button"
-              class="btn btn-danger"
-              id="ipBanConfirmBtn"
-            >
+            <button type="button" class="btn btn-danger" id="ipBanConfirmBtn">
               Confirm Ban
             </button>
           </div>

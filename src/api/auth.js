@@ -789,18 +789,18 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 					};
 				}
 
-				   if (!user) {
-					   const creationTransparency = JSON.stringify({
-						   country: headers["cf-ipcountry"] || null,
-						   continent: headers["cf-ipcontinent"] || null,
-						   timezone: headers["cf-timezone"] || null,
-						   vpn:
-							   (await isVPN(
-								   headers["cf-ip"] ||
-									   headers["cf-connecting-ip"] ||
-									   headers["x-forwarded-for"],
-							   )) || null,
-					   });
+				if (!user) {
+					const creationTransparency = JSON.stringify({
+						country: headers["cf-ipcountry"] || null,
+						continent: headers["cf-ipcontinent"] || null,
+						timezone: headers["cf-timezone"] || null,
+						vpn:
+							(await isVPN(
+								headers["cf-ip"] ||
+									headers["cf-connecting-ip"] ||
+									headers["x-forwarded-for"],
+							)) || null,
+					});
 
 					user = db
 						.query(
@@ -1246,23 +1246,30 @@ export default new Elysia({ prefix: "/auth", tags: ["Auth"] })
 				const passwordHash = await Bun.password.hash(password);
 				const userId = Bun.randomUUIDv7();
 
-				   const creationTransparency = JSON.stringify({
-					   country: headers["cf-ipcountry"] || null,
-					   continent: headers["cf-ipcontinent"] || null,
-					   timezone: headers["cf-timezone"] || null,
-					   vpn:
-						   (await isVPN(
-							   headers["cf-ip"] ||
-								   headers["cf-connecting-ip"] ||
-								   headers["x-forwarded-for"],
-						   )) || null,
-				   });
+				const creationTransparency = JSON.stringify({
+					country: headers["cf-ipcountry"] || null,
+					continent: headers["cf-ipcontinent"] || null,
+					timezone: headers["cf-timezone"] || null,
+					vpn:
+						(await isVPN(
+							headers["cf-ip"] ||
+								headers["cf-connecting-ip"] ||
+								headers["x-forwarded-for"],
+						)) || null,
+				});
 
 				const user = db
 					.query(
 						"INSERT INTO users (id, username, password_hash, character_limit, account_creation_transparency, ip_address) VALUES (?, ?, ?, ?, ?, ?) RETURNING *",
 					)
-					.get(userId, username, passwordHash, null, creationTransparency, headers["cf-connecting-ip"]);
+					.get(
+						userId,
+						username,
+						passwordHash,
+						null,
+						creationTransparency,
+						headers["cf-connecting-ip"],
+					);
 
 				const ip = headers["cf-connecting-ip"];
 				if (ip) recordUserIp.run(user.id, ip);

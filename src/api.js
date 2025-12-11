@@ -319,8 +319,7 @@ export default new Elysia({
 		},
 		{
 			detail: {
-				description:
-					"Get account transparency data (country) for a user",
+				description: "Get account transparency data (country) for a user",
 				tags: ["Profile"],
 			},
 		},

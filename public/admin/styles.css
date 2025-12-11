@@ -404,3 +404,12 @@ body[data-admin="1"] .image-cropper-overlay .image-cropper-panel .image-cropper-
 #ipBanConfirmModal {
   z-index: 1060;
 }
+
+#userModalFooter {
+
+  position: fixed;
+  bottom: 0px;
+  z-index: 9999;
+  background-color: var(--bs-modal-bg);
+  border-top: none;
+}

@@ -354,7 +354,8 @@ const createAccountContent = () => {
 	setTimeout(async () => {
 		const user = await ensureCurrentUser();
 		if (user && transparencyCheckbox) {
-			transparencyCheckbox.checked = user.transparency_location_display || false;
+			transparencyCheckbox.checked =
+				user.transparency_location_display || false;
 		}
 	}, 0);
 

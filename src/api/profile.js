@@ -2627,7 +2627,10 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				return { error: "Invalid display option" };
 			}
 
-			updateTransparencyLocationDisplay.run(showContinent ? 1 : 0, currentUser.id);
+			updateTransparencyLocationDisplay.run(
+				showContinent ? 1 : 0,
+				currentUser.id,
+			);
 
 			return { success: true };
 		} catch (error) {
