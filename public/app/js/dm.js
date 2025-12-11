@@ -2067,18 +2067,18 @@ function renderAttachmentPreviews() {
 	pendingFiles.forEach((file, index) => {
 		const preview = document.createElement("div");
 		preview.className = "dm-attachment-preview";
-		
+
 		const img = document.createElement("img");
 		img.src = file.url;
 		img.alt = sanitizeHTML(file.name);
 		preview.appendChild(img);
-		
+
 		const removeBtn = document.createElement("button");
 		removeBtn.className = "remove-attachment";
 		removeBtn.textContent = "×";
 		removeBtn.addEventListener("click", () => removePendingFile(index));
 		preview.appendChild(removeBtn);
-		
+
 		element.appendChild(preview);
 	});
 }
@@ -2148,13 +2148,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 	dmAttachmentBtn?.addEventListener("click", (e) => {
 		e.stopPropagation();
-		
+
 		const menuItems = [
 			{
 				title: "Upload from device",
 				icon: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>`,
 				onClick: () => {
-					if (pendingFiles.length > 0 && pendingFiles.some(f => f.type === "image/gif" && f.hash === null)) {
+					if (
+						pendingFiles.length > 0 &&
+						pendingFiles.some((f) => f.type === "image/gif" && f.hash === null)
+					) {
 						toastQueue.add("Remove the GIF first to upload files");
 						return;
 					}
@@ -2165,7 +2168,10 @@ document.addEventListener("DOMContentLoaded", () => {
 				title: "Search GIFs",
 				icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 256 256"><path d="M144,72V184a8,8,0,0,1-16,0V72a8,8,0,0,1,16,0Zm88-8H176a8,8,0,0,0-8,8V184a8,8,0,0,0,16,0V136h40a8,8,0,0,0,0-16H184V80h48a8,8,0,0,0,0-16ZM96,120H72a8,8,0,0,0,0,16H88v16a24,24,0,0,1-48,0V104A24,24,0,0,1,64,80c11.19,0,21.61,7.74,24.25,18a8,8,0,0,0,15.5-4C99.27,76.62,82.56,64,64,64a40,40,0,0,0-40,40v48a40,40,0,0,0,80,0V128A8,8,0,0,0,96,120Z"></path></svg>`,
 				onClick: () => {
-					if (pendingFiles.length > 0 && pendingFiles.some(f => f.hash !== null)) {
+					if (
+						pendingFiles.length > 0 &&
+						pendingFiles.some((f) => f.hash !== null)
+					) {
 						toastQueue.add("Remove uploaded files first to select a GIF");
 						return;
 					}
@@ -2180,7 +2186,10 @@ document.addEventListener("DOMContentLoaded", () => {
 				title: "Search Unsplash",
 				icon: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`,
 				onClick: () => {
-					if (pendingFiles.length > 0 && pendingFiles.some(f => f.hash === null)) {
+					if (
+						pendingFiles.length > 0 &&
+						pendingFiles.some((f) => f.hash === null)
+					) {
 						toastQueue.add("Remove the GIF first to select a photo");
 						return;
 					}
@@ -2325,7 +2334,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		let searchTimeout;
 		searchInput.addEventListener("input", (e) => {
 			clearTimeout(searchTimeout);
-			searchTimeout = setTimeout(() => searchUnsplash(e.target.value, results, picker), 500);
+			searchTimeout = setTimeout(
+				() => searchUnsplash(e.target.value, results, picker),
+				500,
+			);
 		});
 	}
 
@@ -2342,7 +2354,9 @@ document.addEventListener("DOMContentLoaded", () => {
 		`;
 
 		try {
-			const { results: images, error } = await query(`/unsplash/search?q=${encodeURIComponent(q)}&limit=12`);
+			const { results: images, error } = await query(
+				`/unsplash/search?q=${encodeURIComponent(q)}&limit=12`,
+			);
 
 			if (error || !images || images.length === 0) {
 				resultsEl.innerHTML = `
@@ -2368,9 +2382,11 @@ document.addEventListener("DOMContentLoaded", () => {
 					try {
 						const response = await fetch(img.url);
 						const blob = await response.blob();
-						const file = new File([blob], "unsplash-image.jpg", { type: "image/jpeg" });
+						const file = new File([blob], "unsplash-image.jpg", {
+							type: "image/jpeg",
+						});
 						const webpFile = await convertToWebP(file);
-						
+
 						const formData = new FormData();
 						formData.append("file", webpFile);
 
@@ -2392,7 +2408,9 @@ document.addEventListener("DOMContentLoaded", () => {
 							url: data.file.url,
 						});
 
-						await query(`/unsplash/download?download_location=${encodeURIComponent(img.download_location)}`);
+						await query(
+							`/unsplash/download?download_location=${encodeURIComponent(img.download_location)}`,
+						);
 					} catch (err) {
 						console.error("Failed to process Unsplash image:", err);
 						toastQueue.add("Failed to add image");
@@ -2439,7 +2457,10 @@ document.addEventListener("DOMContentLoaded", () => {
 			const validFiles = files.filter((file) => isConvertibleImage(file));
 
 			if (validFiles.length > 0) {
-				if (pendingFiles.length > 0 && pendingFiles.some(f => f.type === "image/gif" && f.hash === null)) {
+				if (
+					pendingFiles.length > 0 &&
+					pendingFiles.some((f) => f.type === "image/gif" && f.hash === null)
+				) {
 					toastQueue.add("Remove the GIF first to upload files");
 					return;
 				}
@@ -2456,8 +2477,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 				if (fileItems.length > 0) {
 					e.preventDefault();
-					
-					if (pendingFiles.length > 0 && pendingFiles.some(f => f.type === "image/gif" && f.hash === null)) {
+
+					if (
+						pendingFiles.length > 0 &&
+						pendingFiles.some((f) => f.type === "image/gif" && f.hash === null)
+					) {
 						toastQueue.add("Remove the GIF first to upload files");
 						return;
 					}
