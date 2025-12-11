@@ -1852,8 +1852,7 @@ class AdminPanel {
 
 			document.getElementById("userModalBody").innerHTML =
 				`<div class="text-center py-5"><div class="spinner-border text-primary" role="status" style="border-radius:5000px"></div><div class="mt-2 text-muted">Loading user...</div></div>`;
-			document.getElementById("userModalFooter").innerHTML =
-				``;
+			document.getElementById("userModalFooter").innerHTML = ``;
 			const modal = new bootstrap.Modal(document.getElementById("userModal"));
 			modal.show();
 
@@ -2688,7 +2687,9 @@ class AdminPanel {
 	}
 
 	async executeMassFollow(userId) {
-		const percentageInput = document.getElementById("editProfileMassFollowPercentage");
+		const percentageInput = document.getElementById(
+			"editProfileMassFollowPercentage",
+		);
 		const percentage = parseFloat(percentageInput?.value);
 
 		if (!percentage || percentage <= 0 || percentage > 100) {
@@ -2699,24 +2700,33 @@ class AdminPanel {
 		const user = this.userCache.get(userId);
 		const username = user?.user?.username || "this user";
 
-		if (!confirm(`Make ${percentage}% of all users follow @${username}?\n\nThis action cannot be undone and may take a while.`)) {
+		if (
+			!confirm(
+				`Make ${percentage}% of all users follow @${username}?\n\nThis action cannot be undone and may take a while.`,
+			)
+		) {
 			return;
 		}
 
 		try {
-			const data = await this.apiCall(`/api/admin/users/${userId}/mass-follow`, {
-				method: "POST",
-				body: JSON.stringify({ percentage }),
-			});
+			const data = await this.apiCall(
+				`/api/admin/users/${userId}/mass-follow`,
+				{
+					method: "POST",
+					body: JSON.stringify({ percentage }),
+				},
+			);
 
 			if (data.error) {
 				this.showError(data.error);
 				return;
 			}
 
-			this.showSuccess(`Successfully made ${data.followsCreated || 0} users follow @${username}`);
+			this.showSuccess(
+				`Successfully made ${data.followsCreated || 0} users follow @${username}`,
+			);
 			if (percentageInput) percentageInput.value = "";
-			
+
 			await this.showUserModal(userId);
 		} catch (error) {
 			console.error("Mass follow error:", error);

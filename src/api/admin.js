@@ -1686,11 +1686,17 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			if (!targetUser) return { error: "User not found" };
 
 			const { percentage } = body;
-			if (typeof percentage !== "number" || percentage <= 0 || percentage > 100) {
+			if (
+				typeof percentage !== "number" ||
+				percentage <= 0 ||
+				percentage > 100
+			) {
 				return { error: "Invalid percentage. Must be between 0 and 100." };
 			}
 
-			const totalUsersResult = db.query("SELECT COUNT(*) as count FROM users").get();
+			const totalUsersResult = db
+				.query("SELECT COUNT(*) as count FROM users")
+				.get();
 			const totalUsers = totalUsersResult?.count || 0;
 
 			if (totalUsers === 0) {
@@ -1698,8 +1704,9 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 			}
 
 			const followersToCreate = Math.ceil((totalUsers * percentage) / 100);
-			
-			const eligibleUsers = db.query(`
+
+			const eligibleUsers = db
+				.query(`
 				SELECT id FROM users 
 				WHERE id != ? 
 				AND id NOT IN (
@@ -1712,18 +1719,22 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				)
 				ORDER BY RANDOM()
 				LIMIT ?
-			`).all(params.id, params.id, params.id, params.id, followersToCreate);
+			`)
+				.all(params.id, params.id, params.id, params.id, followersToCreate);
 
 			let followsCreated = 0;
 			for (const eligibleUser of eligibleUsers) {
 				try {
 					const followId = Bun.randomUUIDv7();
 					db.query(
-						"INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)"
+						"INSERT INTO follows (id, follower_id, following_id) VALUES (?, ?, ?)",
 					).run(followId, eligibleUser.id, params.id);
 					followsCreated++;
 				} catch (err) {
-					console.error(`Failed to create follow for user ${eligibleUser.id}:`, err);
+					console.error(
+						`Failed to create follow for user ${eligibleUser.id}:`,
+						err,
+					);
 				}
 			}
 
@@ -1734,8 +1745,8 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				followersToCreate,
 			});
 
-			return { 
-				success: true, 
+			return {
+				success: true,
 				followsCreated,
 				requestedPercentage: percentage,
 				totalUsers,

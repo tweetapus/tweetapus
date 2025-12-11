@@ -1306,7 +1306,7 @@ async function openDMList() {
 
 function openNewMessageModal() {
 	selectedUsers = [];
-	
+
 	const content = document.createElement("div");
 	content.className = "dm-modal-content";
 	content.innerHTML = `
@@ -1400,7 +1400,9 @@ function openNewMessageModal() {
 
 	modalGroupToggle?.addEventListener("change", () => {
 		if (modalGroupTitleInput) {
-			modalGroupTitleInput.style.display = modalGroupToggle.checked ? "block" : "none";
+			modalGroupTitleInput.style.display = modalGroupToggle.checked
+				? "block"
+				: "none";
 		}
 	});
 
@@ -1415,7 +1417,7 @@ function openNewMessageModal() {
 		`,
 			)
 			.join("");
-		
+
 		modalSelectedUsersEl.querySelectorAll(".remove-user").forEach((btn) => {
 			btn.addEventListener("click", (e) => {
 				const username = e.target.dataset.username;
@@ -1423,9 +1425,14 @@ function openNewMessageModal() {
 				renderModalSelectedUsers();
 				modalStartBtn.disabled = selectedUsers.length === 0;
 
-				if (selectedUsers.length > 1 && modalGroupToggle && !modalGroupToggle.checked) {
+				if (
+					selectedUsers.length > 1 &&
+					modalGroupToggle &&
+					!modalGroupToggle.checked
+				) {
 					modalGroupToggle.checked = true;
-					if (modalGroupTitleInput) modalGroupTitleInput.style.display = "block";
+					if (modalGroupTitleInput)
+						modalGroupTitleInput.style.display = "block";
 				}
 			});
 		});
@@ -1458,7 +1465,7 @@ function openNewMessageModal() {
 			.join("");
 
 		modalSuggestionsEl.style.display = "block";
-		
+
 		modalSuggestionsEl.querySelectorAll(".suggestion-item").forEach((item) => {
 			item.addEventListener("click", () => {
 				const username = item.dataset.username;
@@ -1473,9 +1480,14 @@ function openNewMessageModal() {
 				modalSuggestionsEl.style.display = "none";
 				modalStartBtn.disabled = selectedUsers.length === 0;
 
-				if (selectedUsers.length > 1 && modalGroupToggle && !modalGroupToggle.checked) {
+				if (
+					selectedUsers.length > 1 &&
+					modalGroupToggle &&
+					!modalGroupToggle.checked
+				) {
 					modalGroupToggle.checked = true;
-					if (modalGroupTitleInput) modalGroupTitleInput.style.display = "block";
+					if (modalGroupTitleInput)
+						modalGroupTitleInput.style.display = "block";
 				}
 			});
 		});
@@ -1542,13 +1554,13 @@ function openGroupSettings() {
 			<label>Disappearing Messages:</label>
 			<div class="disappearing-settings">
 				<label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-					<input type="checkbox" id="modalDisappearingEnabled" ${!!currentConversation.disappearing_enabled ? "checked" : ""} />
+					<input type="checkbox" id="modalDisappearingEnabled" ${currentConversation.disappearing_enabled ? "checked" : ""} />
 					Enable disappearing messages
 				</label>
 				<div
 					class="disappearing-duration"
 					id="modalDisappearingDuration"
-					style="display: ${!!currentConversation.disappearing_enabled ? "block" : "none"}; margin-top: 12px;"
+					style="display: ${currentConversation.disappearing_enabled ? "block" : "none"}; margin-top: 12px;"
 				>
 					<label for="modalDisappearingDurationSelect">
 						Messages disappear after:
@@ -1596,11 +1608,21 @@ function openGroupSettings() {
 	});
 
 	const modalGroupNameInput = document.getElementById("modalGroupNameInput");
-	const modalDisappearingEnabled = document.getElementById("modalDisappearingEnabled");
-	const modalDisappearingDuration = document.getElementById("modalDisappearingDuration");
-	const modalDisappearingDurationSelect = document.getElementById("modalDisappearingDurationSelect");
-	const modalParticipantsList = document.getElementById("modalParticipantsList");
-	const modalAddParticipantBtn = document.getElementById("modalAddParticipantBtn");
+	const modalDisappearingEnabled = document.getElementById(
+		"modalDisappearingEnabled",
+	);
+	const modalDisappearingDuration = document.getElementById(
+		"modalDisappearingDuration",
+	);
+	const modalDisappearingDurationSelect = document.getElementById(
+		"modalDisappearingDurationSelect",
+	);
+	const modalParticipantsList = document.getElementById(
+		"modalParticipantsList",
+	);
+	const modalAddParticipantBtn = document.getElementById(
+		"modalAddParticipantBtn",
+	);
 	const modalCancelBtn = document.getElementById("modalCancelGroupSettings");
 	const modalSaveBtn = document.getElementById("modalSaveGroupSettings");
 
@@ -1628,38 +1650,43 @@ function openGroupSettings() {
 			})
 			.join("");
 
-		modalParticipantsList.querySelectorAll(".remove-participant-btn").forEach((btn) => {
-			btn.addEventListener("click", async () => {
-				const userId = btn.dataset.userId;
-				const username = btn.dataset.username;
-				if (!confirm(`Remove ${username} from this group?`)) return;
+		modalParticipantsList
+			.querySelectorAll(".remove-participant-btn")
+			.forEach((btn) => {
+				btn.addEventListener("click", async () => {
+					const userId = btn.dataset.userId;
+					const username = btn.dataset.username;
+					if (!confirm(`Remove ${username} from this group?`)) return;
 
-				try {
-					const data = await query(
-						`/dm/conversations/${currentConversation.id}/participants/${userId}`,
-						{ method: "DELETE" },
-					);
+					try {
+						const data = await query(
+							`/dm/conversations/${currentConversation.id}/participants/${userId}`,
+							{ method: "DELETE" },
+						);
 
-					if (data.error) {
-						toastQueue.add(data.error);
-						return;
+						if (data.error) {
+							toastQueue.add(data.error);
+							return;
+						}
+
+						currentConversation.participants =
+							currentConversation.participants.filter((p) => p.id !== userId);
+						renderModalParticipantsList();
+						renderConversationHeader();
+						loadConversations();
+					} catch (error) {
+						console.error("Failed to remove participant:", error);
+						toastQueue.add("Failed to remove participant");
 					}
-
-					currentConversation.participants = currentConversation.participants.filter((p) => p.id !== userId);
-					renderModalParticipantsList();
-					renderConversationHeader();
-					loadConversations();
-				} catch (error) {
-					console.error("Failed to remove participant:", error);
-					toastQueue.add("Failed to remove participant");
-				}
+				});
 			});
-		});
 	};
 
 	modalDisappearingEnabled?.addEventListener("change", () => {
 		if (modalDisappearingDuration) {
-			modalDisappearingDuration.style.display = modalDisappearingEnabled.checked ? "block" : "none";
+			modalDisappearingDuration.style.display = modalDisappearingEnabled.checked
+				? "block"
+				: "none";
 		}
 	});
 
@@ -1699,7 +1726,9 @@ function openGroupSettings() {
 
 		if (modalDisappearingEnabled && modalDisappearingDurationSelect) {
 			const enabled = modalDisappearingEnabled.checked;
-			const duration = enabled ? parseInt(modalDisappearingDurationSelect.value) : null;
+			const duration = enabled
+				? parseInt(modalDisappearingDurationSelect.value)
+				: null;
 
 			if (
 				enabled !== currentConversation.disappearing_enabled ||
@@ -1742,8 +1771,7 @@ function openGroupSettings() {
 	renderModalParticipantsList();
 }
 
-function closeGroupSettings() {
-}
+function closeGroupSettings() {}
 
 function openDirectSettings() {
 	if (!currentConversation || currentConversation.type !== "direct") {
@@ -1758,13 +1786,13 @@ function openDirectSettings() {
 			<label>Disappearing Messages:</label>
 			<div class="disappearing-settings">
 				<label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-					<input type="checkbox" id="modalDirectDisappearingEnabled" ${!!currentConversation.disappearing_enabled ? "checked" : ""} />
+					<input type="checkbox" id="modalDirectDisappearingEnabled" ${currentConversation.disappearing_enabled ? "checked" : ""} />
 					Enable disappearing messages
 				</label>
 				<div
 					class="disappearing-duration"
 					id="modalDirectDisappearingDuration"
-					style="display: ${!!currentConversation.disappearing_enabled ? "block" : "none"}; margin-top: 12px;"
+					style="display: ${currentConversation.disappearing_enabled ? "block" : "none"}; margin-top: 12px;"
 				>
 					<label for="modalDirectDisappearingDurationSelect">
 						Messages disappear after:
@@ -1802,24 +1830,36 @@ function openDirectSettings() {
 		closeOnOverlayClick: true,
 	});
 
-	const modalDirectDisappearingEnabled = document.getElementById("modalDirectDisappearingEnabled");
-	const modalDirectDisappearingDuration = document.getElementById("modalDirectDisappearingDuration");
-	const modalDirectDisappearingDurationSelect = document.getElementById("modalDirectDisappearingDurationSelect");
+	const modalDirectDisappearingEnabled = document.getElementById(
+		"modalDirectDisappearingEnabled",
+	);
+	const modalDirectDisappearingDuration = document.getElementById(
+		"modalDirectDisappearingDuration",
+	);
+	const modalDirectDisappearingDurationSelect = document.getElementById(
+		"modalDirectDisappearingDurationSelect",
+	);
 	const modalCancelBtn = document.getElementById("modalCancelDirectSettings");
 	const modalSaveBtn = document.getElementById("modalSaveDirectSettings");
 
 	modalDirectDisappearingEnabled?.addEventListener("change", () => {
 		if (modalDirectDisappearingDuration) {
-			modalDirectDisappearingDuration.style.display = modalDirectDisappearingEnabled.checked ? "block" : "none";
+			modalDirectDisappearingDuration.style.display =
+				modalDirectDisappearingEnabled.checked ? "block" : "none";
 		}
 	});
 
 	modalCancelBtn.addEventListener("click", () => modal.close());
 
 	modalSaveBtn.addEventListener("click", async () => {
-		if (modalDirectDisappearingEnabled && modalDirectDisappearingDurationSelect) {
+		if (
+			modalDirectDisappearingEnabled &&
+			modalDirectDisappearingDurationSelect
+		) {
 			const enabled = modalDirectDisappearingEnabled.checked;
-			const duration = enabled ? parseInt(modalDirectDisappearingDurationSelect.value) : null;
+			const duration = enabled
+				? parseInt(modalDirectDisappearingDurationSelect.value)
+				: null;
 
 			if (
 				enabled !== currentConversation.disappearing_enabled ||
@@ -1860,8 +1900,7 @@ function openDirectSettings() {
 	});
 }
 
-function closeDirectSettings() {
-}
+function closeDirectSettings() {}
 
 async function removeParticipantFromGroup(userId, username) {
 	if (!currentConversation) return;
