@@ -5,7 +5,7 @@ export function openImageFullscreen(imageUrl, imageName = "image") {
   const container = document.createElement("div");
   container.className = "image-fullscreen-container";
 
-  container.addEventListener("click", (e) => {
+  container.addEventListener("mousedown", (e) => {
     e.stopPropagation();
 
     if (e.target === container) {

@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import { join } from "node:path";
 import { jwt } from "@elysiajs/jwt";
 import { Elysia } from "elysia";
 import { rateLimit } from "elysia-rate-limit";
@@ -8,6 +10,13 @@ import { calculateSpamScoreWithDetails } from "../helpers/spam-detection.js";
 import { addNotification } from "./notifications.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
+
+const getShardedPath = (hash) => {
+	const shard1 = hash.substring(0, 3);
+	const shard2 = hash.substring(3, 6);
+	const remaining = hash.substring(6);
+	return { shard1, shard2, remaining };
+};
 
 const getIdentifier = (headers) => {
 	const token = headers.authorization?.split(" ")[1];
@@ -1603,49 +1612,54 @@ export default new Elysia({ prefix: "/profile", tags: ["Profile"] })
 				};
 			}
 
-			const uploadsDir = "./.data/uploads";
+		const uploadsDir = join(process.cwd(), ".data", "uploads");
 
-			const arrayBuffer = await avatar.arrayBuffer();
+		const arrayBuffer = await avatar.arrayBuffer();
 
-			if (avatar.type === "image/webp") {
-				try {
-					const bytes = new Uint8Array(arrayBuffer);
-					let hasANIM = false;
-					for (let i = 0; i < bytes.length - 3; i++) {
-						if (
-							bytes[i] === 0x41 &&
-							bytes[i + 1] === 0x4e &&
-							bytes[i + 2] === 0x49 &&
-							bytes[i + 3] === 0x4d
-						) {
-							hasANIM = true;
-							break;
-						}
+		if (avatar.type === "image/webp") {
+			try {
+				const bytes = new Uint8Array(arrayBuffer);
+				let hasANIM = false;
+				for (let i = 0; i < bytes.length - 3; i++) {
+					if (
+						bytes[i] === 0x41 &&
+						bytes[i + 1] === 0x4e &&
+						bytes[i + 2] === 0x49 &&
+						bytes[i + 3] === 0x4d
+					) {
+						hasANIM = true;
+						break;
 					}
+				}
 
-					if (hasANIM && !currentUser.gold) {
-						return {
-							error:
-								"Animated WebP avatars are allowed for Gold accounts only.",
-						};
-					}
-				} catch {}
-			}
+				if (hasANIM && !currentUser.gold) {
+					return {
+						error:
+							"Animated WebP avatars are allowed for Gold accounts only.",
+					};
+				}
+			} catch {}
+		}
 
-			const hasher = new Bun.CryptoHasher("sha256");
-			hasher.update(arrayBuffer);
-			const fileHash = hasher.digest("hex");
+		const hasher = new Bun.CryptoHasher("sha256");
+		hasher.update(arrayBuffer);
+		const fileHash = hasher.digest("hex");
 
-			const fileName = `${fileHash}${fileExtension}`;
-			const filePath = `${uploadsDir}/${fileName}`;
+		const { shard1, shard2, remaining } = getShardedPath(fileHash);
+		const shardDir = join(uploadsDir, shard1, shard2);
+		mkdirSync(shardDir, { recursive: true });
 
-			await Bun.write(filePath, arrayBuffer);
+		const shardedFileName = remaining + fileExtension;
+		const filePath = join(shardDir, shardedFileName);
+		const fileName = `${fileHash}${fileExtension}`;
 
-			const avatarUrl = `/api/uploads/${fileName}`;
-			updateAvatar.run(avatarUrl, currentUser.id);
+		await Bun.write(filePath, arrayBuffer);
 
-			const updatedUser = getUserByUsername.get(currentUser.username);
-			return { success: true, avatar: updatedUser.avatar };
+		const avatarUrl = `/api/uploads/${fileName}`;
+		updateAvatar.run(avatarUrl, currentUser.id);
+
+		const updatedUser = getUserByUsername.get(currentUser.username);
+		return { success: true, avatar: updatedUser.avatar };
 		} catch (error) {
 			console.error("Avatar upload error:", error);
 			return { error: "Failed to upload avatar" };

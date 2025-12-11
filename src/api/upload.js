@@ -35,7 +35,6 @@ const ALLOWED_TYPES = {
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
-const MAX_COMPRESSED_SIZE = 15 * 1024 * 1024;
 
 export default new Elysia({ prefix: "/upload", tags: ["Upload"] })
 	.use(jwt({ name: "jwt", secret: JWT_SECRET }))
@@ -162,32 +161,39 @@ export const uploadRoutes = new Elysia({
 		async ({ params, set }) => {
 			const { filename } = params;
 
-			if (
-				!/^[a-f0-9]{64}\.(webp|mp4|gif)$/i.test(filename) ||
-				filename.includes("..")
-			) {
+			if (!/^[a-f0-9]{64}\.(webp|mp4|gif)$/i.test(filename)) {
+				return new Response("Invalid filename", { status: 400 });
+			}
+			if (filename.includes("..")) {
 				return new Response("Invalid filename", { status: 400 });
 			}
 
-			const baseUploadsDir = join(process.cwd(), ".data", "uploads");
-			const extension = filename.slice(-5);
-			const hash = filename.slice(0, -extension.length);
+			const extMatch = filename.match(/\.(webp|mp4|gif)$/i);
+			if (!extMatch) {
+				return new Response("Invalid filename", { status: 400 });
+			}
 
-			const { shard1, shard2, remaining } = getShardedPath(hash);
-			const filePath = join(
-				baseUploadsDir,
-				shard1,
-				shard2,
-				remaining + extension,
-			);
+			const ext = extMatch[0];
+			const fullHash = filename.slice(0, -ext.length);
+
+			const { shard1, shard2, remaining } = getShardedPath(fullHash);
+
+			const safeBase = join(process.cwd(), ".data", "uploads");
+			const filePath = join(safeBase, shard1, shard2, remaining + ext);
 
 			set.headers["Cache-Control"] = "public, max-age=31536000, immutable";
 
-			const file = Bun.file(filePath);
-
+			let file = Bun.file(filePath);
+			
 			if (!(await file.exists())) {
-				return new Response("File not found", { status: 404 });
+				const legacyPath = join(safeBase, filename);
+				file = Bun.file(legacyPath);
+				
+				if (!(await file.exists())) {
+					return new Response("File not found", { status: 404 });
+				}
 			}
+
 			return file;
 		},
 		{

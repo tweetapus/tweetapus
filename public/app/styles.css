@@ -2999,6 +2999,16 @@ nav {
         margin: 0 0 10px 0;
         font-size: 16px;
         line-height: 1.4;
+
+        a {
+          color: var(--primary);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+
+          &:hover {
+            text-decoration: none;
+          }
+        } /*Ranchel*/
       }
 
       .profile-meta {
@@ -8330,10 +8340,12 @@ label[for*="radio"] {
 @keyframes fadeIn {
   from {
     opacity: 0;
+    filter: blur(2px);
   }
 
   to {
     opacity: 1;
+    filter: blur(0px);
   }
 }
 

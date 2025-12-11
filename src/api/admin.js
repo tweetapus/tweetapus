@@ -7,6 +7,13 @@ import db from "../db.js";
 import { clearSuspensionCache } from "../helpers/suspensionCache.js";
 import { addNotification } from "./notifications.js";
 
+const getShardedPath = (hash) => {
+	const shard1 = hash.substring(0, 3);
+	const shard2 = hash.substring(3, 6);
+	const remaining = hash.substring(6);
+	return { shard1, shard2, remaining };
+};
+
 const superAdminIds = (process.env.SUPERADMIN_IDS || "")
 	.split(";")
 	.map((id) => id.trim())
@@ -1557,28 +1564,34 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				};
 			}
 
-			const uploadsDir = "./.data/uploads";
-			const arrayBuffer = await avatar.arrayBuffer();
-			const hasher = new Bun.CryptoHasher("sha256");
-			hasher.update(arrayBuffer);
-			const fileHash = hasher.digest("hex");
-			const fileName = `${fileHash}${fileExtension}`;
-			const filePath = `${uploadsDir}/${fileName}`;
+		const uploadsDir = join(process.cwd(), ".data", "uploads");
+		const arrayBuffer = await avatar.arrayBuffer();
+		const hasher = new Bun.CryptoHasher("sha256");
+		hasher.update(arrayBuffer);
+		const fileHash = hasher.digest("hex");
 
-			await Bun.write(filePath, arrayBuffer);
+		const { shard1, shard2, remaining } = getShardedPath(fileHash);
+		const shardDir = join(uploadsDir, shard1, shard2);
+		mkdirSync(shardDir, { recursive: true });
 
-			const avatarUrl = `/api/uploads/${fileName}`;
-			db.query("UPDATE users SET avatar = ? WHERE id = ?").run(
-				avatarUrl,
-				params.id,
-			);
+		const shardedFileName = remaining + fileExtension;
+		const filePath = join(shardDir, shardedFileName);
+		const fileName = `${fileHash}${fileExtension}`;
 
-			logModerationAction(user.id, "set_avatar", "user", params.id, {
-				username: targetUser?.username,
-				avatar: avatarUrl,
-			});
+		await Bun.write(filePath, arrayBuffer);
 
-			return { success: true, avatar: avatarUrl };
+		const avatarUrl = `/api/uploads/${fileName}`;
+		db.query("UPDATE users SET avatar = ? WHERE id = ?").run(
+			avatarUrl,
+			params.id,
+		);
+
+		logModerationAction(user.id, "set_avatar", "user", params.id, {
+			username: targetUser?.username,
+			avatar: avatarUrl,
+		});
+
+		return { success: true, avatar: avatarUrl };
 		},
 		{
 			body: t.Object({
@@ -1623,28 +1636,34 @@ export default new Elysia({ prefix: "/admin", tags: ["Admin"] })
 				};
 			}
 
-			const uploadsDir = "./.data/uploads";
-			const arrayBuffer = await banner.arrayBuffer();
-			const hasher = new Bun.CryptoHasher("sha256");
-			hasher.update(arrayBuffer);
-			const fileHash = hasher.digest("hex");
-			const fileName = `${fileHash}${fileExtension}`;
-			const filePath = `${uploadsDir}/${fileName}`;
+		const uploadsDir = join(process.cwd(), ".data", "uploads");
+		const arrayBuffer = await banner.arrayBuffer();
+		const hasher = new Bun.CryptoHasher("sha256");
+		hasher.update(arrayBuffer);
+		const fileHash = hasher.digest("hex");
 
-			await Bun.write(filePath, arrayBuffer);
+		const { shard1, shard2, remaining } = getShardedPath(fileHash);
+		const shardDir = join(uploadsDir, shard1, shard2);
+		mkdirSync(shardDir, { recursive: true });
 
-			const bannerUrl = `/api/uploads/${fileName}`;
-			db.query("UPDATE users SET banner = ? WHERE id = ?").run(
-				bannerUrl,
-				params.id,
-			);
+		const shardedFileName = remaining + fileExtension;
+		const filePath = join(shardDir, shardedFileName);
+		const fileName = `${fileHash}${fileExtension}`;
 
-			logModerationAction(user.id, "set_banner", "user", params.id, {
-				username: targetUser?.username,
-				banner: bannerUrl,
-			});
+		await Bun.write(filePath, arrayBuffer);
 
-			return { success: true, banner: bannerUrl };
+		const bannerUrl = `/api/uploads/${fileName}`;
+		db.query("UPDATE users SET banner = ? WHERE id = ?").run(
+			bannerUrl,
+			params.id,
+		);
+
+		logModerationAction(user.id, "set_banner", "user", params.id, {
+			username: targetUser?.username,
+			banner: bannerUrl,
+		});
+
+		return { success: true, banner: bannerUrl };
 		},
 		{
 			body: t.Object({
